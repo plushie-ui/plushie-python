@@ -82,9 +82,8 @@ markers = [
     "windowed: requires windowed backend (real windows, needs display)",
 ]
 
-# Uncomment when testing framework is implemented:
-# [project.entry-points.pytest11]
-# plushie = "plushie.testing.plugin"
+[project.entry-points.pytest11]
+plushie = "plushie.testing.plugin"
 
 # Uncomment when CLI is implemented:
 # [project.scripts]
