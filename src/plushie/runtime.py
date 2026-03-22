@@ -368,7 +368,9 @@ class Runtime:
 
             if event is None:
                 # Connection closed / reader thread finished
-                logger.info("plushie runtime: connection closed")
+                if self._attempt_reconnect():
+                    continue
+                logger.info("plushie runtime: connection closed, stopping")
                 self._running = False
                 break
 
@@ -980,6 +982,102 @@ class Runtime:
 
         for _key, event in pending.items():
             self._run_update(event)
+
+    # -------------------------------------------------------------------
+    # Renderer crash recovery
+    # -------------------------------------------------------------------
+
+    _MAX_RESTART_ATTEMPTS = 5
+    _BASE_BACKOFF_MS = 100
+    _MAX_BACKOFF_MS = 5000
+
+    def _attempt_reconnect(self) -> bool:
+        """Attempt to reconnect to the renderer after a crash.
+
+        Uses exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms.
+        On successful reconnect, re-sends settings and a full snapshot,
+        re-syncs subscriptions and windows, and flushes pending effects.
+
+        Returns:
+            ``True`` if reconnection succeeded, ``False`` if all
+            attempts were exhausted.
+        """
+        if not hasattr(self._conn, "restart"):
+            return False
+
+        # Let the app handle the exit
+        try:
+            self._model = self._app.handle_renderer_exit(
+                self._model, "renderer_crashed"
+            )
+        except Exception:
+            logger.exception("app.handle_renderer_exit() raised")
+
+        # Flush pending effects with error
+        for effect_id, timer in list(self._pending_effects.items()):
+            timer.cancel()
+            self._queue.put(
+                EffectResult(
+                    request_id=effect_id,
+                    status="error",
+                    result=None,
+                    error="renderer_restarted",
+                )
+            )
+        self._pending_effects.clear()
+
+        for attempt in range(self._MAX_RESTART_ATTEMPTS):
+            delay_ms = min(
+                self._BASE_BACKOFF_MS * (2**attempt),
+                self._MAX_BACKOFF_MS,
+            )
+            logger.info(
+                "plushie runtime: renderer exited, reconnecting "
+                "(attempt %d/%d, backoff %dms)",
+                attempt + 1,
+                self._MAX_RESTART_ATTEMPTS,
+                delay_ms,
+            )
+            time.sleep(delay_ms / 1000.0)
+
+            try:
+                self._conn.restart()
+                self._conn.send_settings(self._app.settings())
+                self._conn.wait_hello(timeout=10.0)
+            except Exception:
+                logger.warning(
+                    "plushie runtime: reconnect attempt %d failed",
+                    attempt + 1,
+                    exc_info=True,
+                )
+                continue
+
+            # Success -- re-send full snapshot and re-sync everything
+            logger.info("plushie runtime: renderer reconnected")
+            self._prev_tree = None  # force full snapshot
+            tree = self._safe_view(self._model)
+            self._tree = tree
+            if tree is not None:
+                self._conn.send_snapshot(tree)
+
+            # Re-sync subscriptions (force all to re-register)
+            self._subscriptions.clear()
+            self._subscription_keys = []
+            self._sync_subscriptions(self._model)
+
+            # Re-sync windows (force all to re-open)
+            self._windows = set()
+            self._sync_windows(tree)
+
+            # Restart reader thread
+            self._start_reader()
+            return True
+
+        logger.error(
+            "plushie runtime: renderer restart failed after %d attempts",
+            self._MAX_RESTART_ATTEMPTS,
+        )
+        return False
 
     # -------------------------------------------------------------------
     # Reader thread

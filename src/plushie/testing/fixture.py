@@ -284,16 +284,40 @@ class AppFixture[M]:
 
         Args:
             selector: Widget selector (e.g. ``"#button_id"``).
+
+        Raises:
+            TypeError: If the target is a checkbox or toggler (use
+                ``toggle()`` instead).
         """
+        self._check_interaction_type(
+            selector,
+            "click",
+            {"button"},
+            {
+                "checkbox": "toggle",
+                "toggler": "toggle",
+            },
+        )
         self._interact("click", selector)
 
     def type_text(self, selector: str, text: str) -> None:
-        """Type text into a text input.
+        """Type text into a text input or text editor.
 
         Args:
             selector: Widget selector.
             text: Text to type.
+
+        Raises:
+            TypeError: If the target is not a text input or editor.
         """
+        self._check_interaction_type(
+            selector,
+            "type_text",
+            {
+                "text_input",
+                "text_editor",
+            },
+        )
         self._interact("type_text", selector, payload={"text": text})
 
     def submit(self, selector: str) -> None:
@@ -304,7 +328,11 @@ class AppFixture[M]:
 
         Args:
             selector: Widget selector.
+
+        Raises:
+            TypeError: If the target is not a text input.
         """
+        self._check_interaction_type(selector, "submit", {"text_input"})
         value = self._read_widget_value(selector)
         self._interact("submit", selector, payload={"value": value})
 
@@ -316,7 +344,22 @@ class AppFixture[M]:
 
         Args:
             selector: Widget selector.
+
+        Raises:
+            TypeError: If the target is not a checkbox or toggler (use
+                ``click()`` for buttons).
         """
+        self._check_interaction_type(
+            selector,
+            "toggle",
+            {
+                "checkbox",
+                "toggler",
+            },
+            {
+                "button": "click",
+            },
+        )
         value = self._read_toggle_value(selector)
         self._interact("toggle", selector, payload={"value": not value})
 
@@ -745,6 +788,47 @@ class AppFixture[M]:
         props = node.get("props", {})
         return str(props.get("value", ""))
 
+    def _check_interaction_type(
+        self,
+        selector: str,
+        action: str,
+        allowed_types: set[str],
+        suggestions: dict[str, str] | None = None,
+    ) -> None:
+        """Validate the target widget type for an interaction.
+
+        Provides helpful error messages when the wrong interaction
+        method is used (e.g. click on a checkbox).
+
+        Args:
+            selector: Widget selector.
+            action: The interaction being attempted.
+            allowed_types: Widget types that support this action.
+            suggestions: Map of wrong-type to suggested action name.
+        """
+        if self._tree is None:
+            return
+        target_id = selector[1:] if selector.startswith("#") else None
+        if target_id is None:
+            return
+        node = find(self._tree, target_id)
+        if node is None:
+            return  # will fail later with ElementNotFoundError
+        widget_type = node.get("type", "")
+        if not allowed_types or widget_type in allowed_types:
+            return
+        if suggestions and widget_type in suggestions:
+            suggested = suggestions[widget_type]
+            raise TypeError(
+                f"cannot {action} a {widget_type} widget -- use {suggested}() instead"
+            )
+        # Not in allowed set but no specific suggestion
+        if allowed_types:
+            raise TypeError(
+                f"cannot {action} a {widget_type} widget "
+                f"(expected one of: {', '.join(sorted(allowed_types))})"
+            )
+
     def _read_toggle_value(self, selector: str) -> bool:
         """Read the current toggle/check state from the local tree."""
         if self._tree is None:
@@ -756,7 +840,8 @@ class AppFixture[M]:
         if node is None:
             return False
         props = node.get("props", {})
-        return bool(props.get("is_checked", props.get("is_toggled", False)))
+        # checkbox uses "checked", toggler uses "is_toggled"
+        return bool(props.get("checked", props.get("is_toggled", False)))
 
 
 def _available_ids(tree: Node | None) -> list[str]:

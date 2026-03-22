@@ -112,9 +112,13 @@ class Connection:
         process: subprocess.Popen[bytes],
         *,
         session: str = "",
+        _spawn_args: list[str] | None = None,
+        _spawn_env: dict[str, str] | None = None,
     ) -> None:
         self._process = process
         self._session = session
+        self._spawn_args = _spawn_args
+        self._spawn_env = _spawn_env
         self._framing = MsgpackFraming()
         self._send_lock = threading.Lock()
         self._event_queue: Queue[Any] = Queue()
@@ -195,7 +199,7 @@ class Connection:
         except OSError as exc:
             raise ConnectionError(f"failed to start renderer: {exc}") from exc
 
-        return cls(process, session=session)
+        return cls(process, session=session, _spawn_args=args, _spawn_env=proc_env)
 
     @property
     def hello(self) -> HelloInfo | None:
@@ -280,6 +284,78 @@ class Connection:
         if proc.stderr:
             with contextlib.suppress(OSError):
                 proc.stderr.close()
+
+    def restart(self) -> None:
+        """Restart the renderer subprocess after a crash.
+
+        Closes the old process (if still alive), starts a new one with
+        the same arguments, and starts a new reader thread. The caller
+        must re-send settings and a snapshot after restarting.
+
+        Raises:
+            ConnectionError: If the subprocess cannot be restarted.
+            RuntimeError: If spawn args are not available (e.g. for
+                connections not created via ``open()``).
+        """
+        if self._spawn_args is None:
+            raise RuntimeError("cannot restart: no spawn args available")
+
+        # Clean up old process
+        self._closed = True
+        proc = self._process
+        if proc.stdin:
+            with contextlib.suppress(OSError):
+                proc.stdin.close()
+        with contextlib.suppress(OSError):
+            proc.terminate()
+        try:
+            proc.wait(timeout=2.0)
+        except subprocess.TimeoutExpired:
+            with contextlib.suppress(OSError):
+                proc.kill()
+
+        if proc.stdout:
+            with contextlib.suppress(OSError):
+                proc.stdout.close()
+        if proc.stderr:
+            with contextlib.suppress(OSError):
+                proc.stderr.close()
+
+        # Start new process
+        try:
+            new_proc = subprocess.Popen(
+                self._spawn_args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=self._spawn_env,
+                bufsize=0,
+            )
+        except OSError as exc:
+            raise ConnectionError(f"failed to restart renderer: {exc}") from exc
+
+        self._process = new_proc
+        self._closed = False
+        self._hello = None
+        self._hello_event.clear()
+        self._framing = MsgpackFraming()
+
+        # Drain queues
+        while not self._event_queue.empty():
+            try:
+                self._event_queue.get_nowait()
+            except Empty:
+                break
+        with self._pending_lock:
+            self._pending.clear()
+
+        # Start new reader thread
+        self._reader_thread = threading.Thread(
+            target=self._reader_loop,
+            name="plushie-reader",
+            daemon=True,
+        )
+        self._reader_thread.start()
 
     @property
     def is_alive(self) -> bool:
