@@ -1,0 +1,239 @@
+"""Wire framing for the plushie protocol.
+
+Two framing modes:
+
+- **MsgpackFraming**: 4-byte big-endian length prefix + MessagePack payload.
+- **JsonFraming**: newline-delimited JSON (JSONL).
+
+Both framings support ``encode`` (message -> bytes) and ``feed``
+(accumulate incoming bytes, yield complete frames). The ``detect_format``
+function inspects the first byte to choose the correct framing.
+
+Binary fields (image data, pixel buffers) use base64 encoding in JSON
+mode and native bytes in MessagePack mode.
+
+Maximum message size: 64 MiB.
+"""
+
+from __future__ import annotations
+
+import base64
+import json
+import struct
+from typing import Any
+
+import msgpack
+
+MAX_MESSAGE_SIZE: int = 64 * 1024 * 1024
+"""Maximum wire message size in bytes (64 MiB)."""
+
+_LENGTH_PREFIX = struct.Struct(">I")
+
+
+class FramingError(Exception):
+    """Raised when a framing violation is detected (e.g. oversized message)."""
+
+
+# ---------------------------------------------------------------------------
+# MsgpackFraming
+# ---------------------------------------------------------------------------
+
+
+class MsgpackFraming:
+    """MessagePack framing: 4-byte big-endian length prefix + msgpack payload.
+
+    Use ``encode`` to produce a framed bytes object ready for the wire.
+    Use ``feed`` to accumulate incoming bytes and extract complete frames.
+    """
+
+    def __init__(self) -> None:
+        self._buffer = bytearray()
+
+    @staticmethod
+    def encode(msg: dict[str, Any]) -> bytes:
+        """Encode a message dict as a length-prefixed msgpack frame.
+
+        Binary values (``bytes`` / ``bytearray``) in the message are
+        preserved as native msgpack binary type -- no base64 encoding.
+
+        Raises ``FramingError`` if the encoded payload exceeds 64 MiB.
+        """
+        payload: bytes = msgpack.packb(msg, use_bin_type=True)  # type: ignore[assignment]
+        if len(payload) > MAX_MESSAGE_SIZE:
+            raise FramingError(
+                f"message size {len(payload)} exceeds maximum {MAX_MESSAGE_SIZE}"
+            )
+        return _LENGTH_PREFIX.pack(len(payload)) + payload
+
+    def feed(self, data: bytes | bytearray) -> list[dict[str, Any]]:
+        """Accumulate incoming bytes and return any complete decoded messages.
+
+        Partial frames are buffered internally. Call repeatedly as data
+        arrives from the wire.
+
+        Raises ``FramingError`` if a frame header declares a size
+        exceeding 64 MiB.
+        """
+        self._buffer.extend(data)
+        messages: list[dict[str, Any]] = []
+        while len(self._buffer) >= 4:
+            (payload_len,) = _LENGTH_PREFIX.unpack_from(self._buffer, 0)
+            if payload_len > MAX_MESSAGE_SIZE:
+                raise FramingError(
+                    f"frame declares size {payload_len} exceeding "
+                    f"maximum {MAX_MESSAGE_SIZE}"
+                )
+            if len(self._buffer) < 4 + payload_len:
+                break
+            payload = bytes(self._buffer[4 : 4 + payload_len])
+            del self._buffer[: 4 + payload_len]
+            messages.append(msgpack.unpackb(payload, raw=False))
+        return messages
+
+    def reset(self) -> None:
+        """Clear the internal buffer."""
+        self._buffer.clear()
+
+
+# ---------------------------------------------------------------------------
+# JsonFraming
+# ---------------------------------------------------------------------------
+
+
+class JsonFraming:
+    """JSON framing: newline-delimited JSON (JSONL).
+
+    Binary values (``bytes`` / ``bytearray``) are base64-encoded
+    during ``encode`` and decoded back during ``feed``.
+
+    Use ``encode`` to produce a framed bytes object ready for the wire.
+    Use ``feed`` to accumulate incoming bytes and extract complete frames.
+    """
+
+    def __init__(self) -> None:
+        self._buffer = bytearray()
+
+    @staticmethod
+    def encode(msg: dict[str, Any]) -> bytes:
+        """Encode a message dict as a JSON line (UTF-8 + newline).
+
+        Binary values (``bytes`` / ``bytearray``) found in the message
+        are replaced with their base64-encoded string representation.
+
+        Raises ``FramingError`` if the encoded line exceeds 64 MiB.
+        """
+        converted = _encode_binary_fields(msg)
+        line = json.dumps(converted, separators=(",", ":"), ensure_ascii=False)
+        encoded = line.encode("utf-8") + b"\n"
+        if len(encoded) > MAX_MESSAGE_SIZE:
+            raise FramingError(
+                f"message size {len(encoded)} exceeds maximum {MAX_MESSAGE_SIZE}"
+            )
+        return encoded
+
+    def feed(self, data: bytes | bytearray) -> list[dict[str, Any]]:
+        """Accumulate incoming bytes and return any complete decoded messages.
+
+        Lines are split on ``\\n``. Partial lines are buffered.
+
+        Raises ``FramingError`` if a complete line exceeds 64 MiB.
+        """
+        self._buffer.extend(data)
+        messages: list[dict[str, Any]] = []
+        while True:
+            idx = self._buffer.find(b"\n")
+            if idx < 0:
+                break
+            line_bytes = bytes(self._buffer[:idx])
+            del self._buffer[: idx + 1]
+            if len(line_bytes) > MAX_MESSAGE_SIZE:
+                raise FramingError(
+                    f"line size {len(line_bytes)} exceeds maximum {MAX_MESSAGE_SIZE}"
+                )
+            if not line_bytes:
+                continue
+            messages.append(json.loads(line_bytes))
+        return messages
+
+    def reset(self) -> None:
+        """Clear the internal buffer."""
+        self._buffer.clear()
+
+
+# ---------------------------------------------------------------------------
+# Format detection
+# ---------------------------------------------------------------------------
+
+
+def detect_format(first_byte: int) -> str:
+    """Detect the wire format from the first byte of data.
+
+    Returns ``"json"`` if the byte is ``0x7B`` (``{``), otherwise
+    ``"msgpack"``.
+
+    Args:
+        first_byte: The first byte received from the renderer (0-255).
+
+    Returns:
+        ``"json"`` or ``"msgpack"``.
+    """
+    if first_byte == 0x7B:
+        return "json"
+    return "msgpack"
+
+
+# ---------------------------------------------------------------------------
+# Binary field helpers
+# ---------------------------------------------------------------------------
+
+
+def _encode_binary_fields(obj: Any) -> Any:
+    """Recursively replace bytes/bytearray values with base64 strings."""
+    if isinstance(obj, (bytes, bytearray)):
+        return base64.b64encode(obj).decode("ascii")
+    if isinstance(obj, dict):
+        return {k: _encode_binary_fields(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_encode_binary_fields(v) for v in obj]
+    return obj
+
+
+def encode_binary_for_json(data: bytes | bytearray) -> str:
+    """Encode binary data as a base64 string for JSON wire transport.
+
+    Standard base64 alphabet, no padding stripped.
+
+    Args:
+        data: Raw binary data.
+
+    Returns:
+        Base64-encoded string.
+    """
+    return base64.b64encode(data).decode("ascii")
+
+
+def decode_binary_from_json(value: str) -> bytes:
+    """Decode a base64 string from JSON wire transport back to bytes.
+
+    Args:
+        value: Base64-encoded string.
+
+    Returns:
+        Decoded binary data.
+    """
+    return base64.b64decode(value)
+
+
+# ---------------------------------------------------------------------------
+# __all__
+# ---------------------------------------------------------------------------
+
+__all__ = [
+    "MAX_MESSAGE_SIZE",
+    "FramingError",
+    "JsonFraming",
+    "MsgpackFraming",
+    "decode_binary_from_json",
+    "detect_format",
+    "encode_binary_for_json",
+]
