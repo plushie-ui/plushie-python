@@ -211,7 +211,7 @@ class SessionPool:
         self,
         session_id: str,
         action: str,
-        selector: dict[str, str] | None = None,
+        selector: str | None = None,
         payload: dict[str, Any] | None = None,
         *,
         on_step: Any | None = None,
@@ -225,7 +225,7 @@ class SessionPool:
         Args:
             session_id: Target session.
             action: Interaction type.
-            selector: Target selector.
+            selector: Target selector string (e.g. ``"#button_id"``).
             payload: Action-specific parameters.
             on_step: Callback for headless interact steps.
             timeout: Maximum seconds to wait.
@@ -242,7 +242,7 @@ class SessionPool:
         try:
             return conn.interact(
                 action,
-                selector=None,
+                selector=selector,
                 payload=payload,
                 on_step=on_step,
                 timeout=timeout,

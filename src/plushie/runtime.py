@@ -1013,6 +1013,12 @@ class Runtime:
         except Exception:
             logger.exception("app.handle_renderer_exit() raised")
 
+        # Discard stale coalescable events from the old renderer.
+        if self._coalesce_timer is not None:
+            self._coalesce_timer.cancel()
+            self._coalesce_timer = None
+        self._pending_coalesce.clear()
+
         # Flush pending effects with error
         for effect_id, timer in list(self._pending_effects.items()):
             timer.cancel()
@@ -1054,7 +1060,6 @@ class Runtime:
 
             # Success -- re-send full snapshot and re-sync everything
             logger.info("plushie runtime: renderer reconnected")
-            self._prev_tree = None  # force full snapshot
             tree = self._safe_view(self._model)
             self._tree = tree
             if tree is not None:

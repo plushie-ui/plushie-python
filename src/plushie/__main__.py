@@ -119,17 +119,32 @@ def _cmd_connect(args: argparse.Namespace) -> None:
 
 def _cmd_download(args: argparse.Namespace) -> None:
     """Handle the ``download`` command."""
-    from plushie.binary import download
-
     version = args.version
-    path = download(version=version)
-    print(f"downloaded: {path}")
+
+    if args.wasm:
+        from plushie.binary import download_wasm
+
+        path = download_wasm(version=version)
+        print(f"downloaded WASM bundle: {path}")
+    else:
+        from plushie.binary import download
+
+        path = download(version=version)
+        print(f"downloaded: {path}")
 
 
 def _cmd_build(args: argparse.Namespace) -> None:
     """Handle the ``build`` command."""
     import os
     import subprocess
+
+    if args.wasm:
+        from plushie.binary import build_wasm
+
+        source = os.environ.get("PLUSHIE_SOURCE_PATH")
+        path = build_wasm(source_path=source)
+        print(f"built WASM renderer: {path}")
+        return
 
     from plushie.extension import ExtensionDef, generate_cargo_toml, generate_main_rs
 
@@ -313,6 +328,11 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="version to download (default: latest)",
     )
+    download_parser.add_argument(
+        "--wasm",
+        action="store_true",
+        help="download WASM renderer bundle instead of native binary",
+    )
 
     # build
     build_parser = subparsers.add_parser(
@@ -328,6 +348,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--name",
         default=None,
         help="output binary name (default: plushie-custom)",
+    )
+    build_parser.add_argument(
+        "--wasm",
+        action="store_true",
+        help="build WASM renderer from source via wasm-pack",
     )
 
     # inspect

@@ -4,7 +4,8 @@ Resolution chain for ``resolve()``:
 
 1. ``PLUSHIE_BINARY_PATH`` environment variable (fail-fast if set but missing)
 2. Downloaded binary in ``~/.local/share/plushie/bin/``
-3. ``plushie`` on system PATH via ``shutil.which``
+3. Bundled binary (PyInstaller, Nuitka, Briefcase)
+4. ``plushie`` on system PATH via ``shutil.which``
 
 Platform detection identifies os (linux/darwin/windows) and arch
 (x86_64/aarch64) for download naming.
@@ -17,7 +18,9 @@ import os
 import platform
 import shutil
 import stat
+import subprocess
 import sys
+import tarfile
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -27,6 +30,15 @@ logger = logging.getLogger("plushie")
 GITHUB_RELEASE_URL = "https://github.com/anthropics/plushie/releases/download"
 """Base URL for GitHub release asset downloads."""
 
+WASM_ARCHIVE_NAME = "plushie-wasm.tar.gz"
+"""Filename of the WASM renderer archive on GitHub releases."""
+
+WASM_JS_NAME = "plushie_wasm.js"
+"""JS entry point filename inside the WASM bundle."""
+
+WASM_BG_NAME = "plushie_wasm_bg.wasm"
+"""Background WASM binary filename inside the WASM bundle."""
+
 
 class PlushieNotFoundError(FileNotFoundError):
     """Raised when the plushie binary cannot be resolved.
@@ -34,6 +46,10 @@ class PlushieNotFoundError(FileNotFoundError):
     The error message lists the resolution chain and provides install
     instructions.
     """
+
+
+class WasmNotFoundError(FileNotFoundError):
+    """Raised when the WASM renderer files cannot be resolved."""
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +133,36 @@ def download_dir() -> Path:
     return base / "plushie" / "bin"
 
 
+# ---------------------------------------------------------------------------
+# WASM directory
+# ---------------------------------------------------------------------------
+
+
+def wasm_dir() -> Path:
+    """Return the standard directory for WASM renderer files.
+
+    Uses ``~/.local/share/plushie/wasm/`` on Linux/macOS and
+    ``%LOCALAPPDATA%/plushie/wasm/`` on Windows.
+
+    Returns:
+        Path to the WASM directory (may not exist yet).
+    """
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+    return base / "plushie" / "wasm"
+
+
+def wasm_download_name() -> str:
+    """Return the WASM archive filename for downloads.
+
+    Returns:
+        ``"plushie-wasm.tar.gz"``.
+    """
+    return WASM_ARCHIVE_NAME
+
+
 def _is_native_binary(path: str) -> bool:
     """Check if a file is a native executable, not a Python script.
 
@@ -147,6 +193,47 @@ def _is_native_binary(path: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Bundled binary resolution (PyInstaller / Nuitka / Briefcase)
+# ---------------------------------------------------------------------------
+
+
+def _resolve_bundled() -> str | None:
+    """Check for plushie binary in common bundled/packaged locations.
+
+    Checks (in order):
+
+    1. PyInstaller's ``sys._MEIPASS`` temporary directory
+    2. Adjacent to this Python file (Nuitka, Briefcase)
+    3. Adjacent to the running executable (``sys.executable``)
+
+    Returns:
+        Absolute path to the binary if found, ``None`` otherwise.
+    """
+    binary_name = "plushie.exe" if sys.platform in ("win32", "cygwin") else "plushie"
+
+    # PyInstaller: frozen apps unpack data to sys._MEIPASS
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass is not None:
+        candidate = os.path.join(meipass, binary_name)
+        if os.path.isfile(candidate):
+            return os.path.abspath(candidate)
+
+    # Adjacent to this source file (Nuitka, Briefcase)
+    pkg_dir = os.path.dirname(os.path.abspath(__file__))
+    candidate = os.path.join(pkg_dir, binary_name)
+    if os.path.isfile(candidate) and _is_native_binary(candidate):
+        return os.path.abspath(candidate)
+
+    # Adjacent to the running executable
+    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+    candidate = os.path.join(exe_dir, binary_name)
+    if os.path.isfile(candidate) and _is_native_binary(candidate):
+        return os.path.abspath(candidate)
+
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Resolution chain
 # ---------------------------------------------------------------------------
 
@@ -160,7 +247,8 @@ def resolve() -> str:
        file does not exist, raises immediately (explicit config should
        not silently fall through).
     2. Downloaded binary in the standard download directory.
-    3. ``plushie`` on the system PATH.
+    3. Bundled binary (PyInstaller, Nuitka, Briefcase).
+    4. ``plushie`` on the system PATH.
 
     Returns:
         Absolute path to the plushie binary.
@@ -190,7 +278,12 @@ def resolve() -> str:
         # Platform detection failed -- skip this step
         pass
 
-    # Step 3: system PATH (native binaries only, not Python scripts)
+    # Step 3: bundled binary (PyInstaller / Nuitka / Briefcase)
+    bundled = _resolve_bundled()
+    if bundled is not None:
+        return bundled
+
+    # Step 4: system PATH (native binaries only, not Python scripts)
     which_path = shutil.which("plushie")
     if which_path is not None and _is_native_binary(which_path):
         return os.path.abspath(which_path)
@@ -206,7 +299,8 @@ def resolve() -> str:
         "Resolution chain (checked in order):\n"
         "  1. PLUSHIE_BINARY_PATH environment variable (not set)\n"
         f"  2. Downloaded binary in {dl_dir} (not found)\n"
-        "  3. 'plushie' on system PATH (not found)\n"
+        "  3. Bundled binary (PyInstaller/Nuitka/Briefcase) (not found)\n"
+        "  4. 'plushie' on system PATH (not found)\n"
         "\n"
         "To download a precompiled binary:\n"
         "  python -m plushie download\n"
@@ -270,16 +364,199 @@ def download(version: str | None = None) -> str:
 
 
 # ---------------------------------------------------------------------------
+# WASM download
+# ---------------------------------------------------------------------------
+
+
+def download_wasm(version: str | None = None) -> str:
+    """Download the WASM renderer bundle from GitHub releases.
+
+    Downloads ``plushie-wasm.tar.gz`` and extracts ``plushie_wasm.js``
+    and ``plushie_wasm_bg.wasm`` into the standard WASM directory.
+
+    Args:
+        version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
+            downloads the latest release.
+
+    Returns:
+        Path to the WASM directory containing the extracted files.
+
+    Raises:
+        RuntimeError: On download failure or extraction error.
+    """
+    archive_name = wasm_download_name()
+    tag = f"v{version}" if version else "latest"
+
+    if tag == "latest":
+        url = f"{GITHUB_RELEASE_URL}/latest/{archive_name}"
+    else:
+        url = f"{GITHUB_RELEASE_URL}/{tag}/{archive_name}"
+
+    dest_dir = wasm_dir()
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    tarball = dest_dir / archive_name
+
+    logger.info("downloading WASM bundle from %s", url)
+
+    try:
+        urllib.request.urlretrieve(url, str(tarball))
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(
+            f"failed to download WASM bundle from {url}: "
+            f"HTTP {exc.code} {exc.reason}\n\n"
+            f"To build from source instead:\n"
+            f"  python -m plushie build --wasm"
+        ) from exc
+
+    # Extract and clean up tarball
+    try:
+        with tarfile.open(str(tarball), "r:gz") as tf:
+            tf.extractall(path=str(dest_dir), filter="data")
+    except (tarfile.TarError, OSError) as exc:
+        raise RuntimeError(f"failed to extract WASM bundle: {exc}") from exc
+    finally:
+        tarball.unlink(missing_ok=True)
+
+    logger.info("WASM files extracted to %s", dest_dir)
+    return str(dest_dir)
+
+
+# ---------------------------------------------------------------------------
+# WASM build
+# ---------------------------------------------------------------------------
+
+
+def build_wasm(source_path: str | None = None) -> str:
+    """Build the WASM renderer from source using wasm-pack.
+
+    Requires ``wasm-pack`` to be installed and the plushie Rust source
+    checkout to contain a ``plushie-wasm`` crate directory.
+
+    Args:
+        source_path: Path to the plushie Rust source checkout. If
+            ``None``, reads from ``PLUSHIE_SOURCE_PATH`` env var.
+
+    Returns:
+        Path to the WASM output directory.
+
+    Raises:
+        RuntimeError: If wasm-pack is not found, source path is
+            invalid, or the build fails.
+    """
+    # Verify wasm-pack is available
+    try:
+        subprocess.run(
+            ["wasm-pack", "--version"],
+            capture_output=True,
+            check=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError(
+            "wasm-pack not found. Install via https://rustwasm.github.io/wasm-pack/"
+        ) from exc
+
+    # Resolve source path
+    src = source_path or os.environ.get("PLUSHIE_SOURCE_PATH")
+    if src is None:
+        raise RuntimeError(
+            "plushie source path not specified.\n\n"
+            "Set PLUSHIE_SOURCE_PATH or pass source_path= argument."
+        )
+
+    wasm_crate = os.path.join(src, "plushie-wasm")
+    if not os.path.isdir(wasm_crate):
+        raise RuntimeError(
+            f"plushie-wasm crate not found at {wasm_crate}.\n\n"
+            f"The WASM build requires the plushie source checkout to "
+            f"include the plushie-wasm crate directory."
+        )
+
+    logger.info("building plushie-wasm from %s", wasm_crate)
+
+    result = subprocess.run(
+        ["wasm-pack", "build", "--target", "web", "--release"],
+        cwd=wasm_crate,
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"wasm-pack build failed (exit code {result.returncode}):\n"
+            f"{result.stdout}\n{result.stderr}"
+        )
+
+    # Copy output to standard WASM directory
+    pkg_dir = os.path.join(wasm_crate, "pkg")
+    dest = wasm_dir()
+    dest.mkdir(parents=True, exist_ok=True)
+
+    for name in [WASM_JS_NAME, WASM_BG_NAME]:
+        src_file = os.path.join(pkg_dir, name)
+        if os.path.isfile(src_file):
+            shutil.copy2(src_file, str(dest / name))
+        else:
+            logger.warning("expected %s not found in wasm-pack output", src_file)
+
+    logger.info("WASM files installed to %s", dest)
+    return str(dest)
+
+
+# ---------------------------------------------------------------------------
+# WASM resolution
+# ---------------------------------------------------------------------------
+
+
+def resolve_wasm() -> tuple[Path, Path]:
+    """Resolve paths to the WASM renderer JS and WASM files.
+
+    Checks the standard WASM directory for ``plushie_wasm.js`` and
+    ``plushie_wasm_bg.wasm``.
+
+    Returns:
+        Tuple of ``(js_path, wasm_path)``.
+
+    Raises:
+        WasmNotFoundError: If either file is missing.
+    """
+    d = wasm_dir()
+    js_path = d / WASM_JS_NAME
+    wasm_path = d / WASM_BG_NAME
+
+    if not js_path.is_file() or not wasm_path.is_file():
+        raise WasmNotFoundError(
+            f"WASM renderer files not found in {d}.\n"
+            "\n"
+            "To download the precompiled WASM bundle:\n"
+            "  python -m plushie download --wasm\n"
+            "\n"
+            "To build from source:\n"
+            "  python -m plushie build --wasm"
+        )
+
+    return js_path, wasm_path
+
+
+# ---------------------------------------------------------------------------
 # __all__
 # ---------------------------------------------------------------------------
 
 __all__ = [
     "GITHUB_RELEASE_URL",
+    "WASM_ARCHIVE_NAME",
+    "WASM_BG_NAME",
+    "WASM_JS_NAME",
     "PlushieNotFoundError",
+    "WasmNotFoundError",
+    "build_wasm",
     "detect_arch",
     "detect_os",
     "download",
     "download_dir",
     "download_name",
+    "download_wasm",
     "resolve",
+    "resolve_wasm",
+    "wasm_dir",
+    "wasm_download_name",
 ]
