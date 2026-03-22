@@ -109,9 +109,9 @@ class TodoApp(plushie.App[Model]):
                     on_submit=True,
                 ),
                 ui.row(
-                    ui.radio("filter-all", "all", model.filter, label="All"),
-                    ui.radio("filter-active", "active", model.filter, label="Active"),
-                    ui.radio("filter-done", "done", model.filter, label="Done"),
+                    ui.radio("filter", "all", model.filter, label="All"),
+                    ui.radio("filter", "active", model.filter, label="Active"),
+                    ui.radio("filter", "done", model.filter, label="Done"),
                     spacing=12,
                 ),
                 *(_todo_item(item) for item in visible),

@@ -160,7 +160,7 @@ class TestResolve:
         ):
             resolve()
 
-    def test_not_found_raises(self) -> None:
+    def test_not_found_raises(self, tmp_path: Path) -> None:
         """When nothing is found, PlushieNotFoundError lists the chain."""
         env = dict(os.environ)
         env.pop("PLUSHIE_BINARY_PATH", None)
@@ -168,8 +168,10 @@ class TestResolve:
         env["PATH"] = "/nonexistent"
         with (
             mock_patch.dict(os.environ, env, clear=True),
+            mock_patch("plushie.binary.download_dir") as mock_dd,
             pytest.raises(PlushieNotFoundError, match="Resolution chain"),
         ):
+            mock_dd.return_value = tmp_path / "nonexistent"
             resolve()
 
     def test_path_fallback(self, tmp_path: Path) -> None:

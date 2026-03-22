@@ -186,6 +186,7 @@ class Connection:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env=proc_env,
+                bufsize=0,  # unbuffered I/O for real-time message delivery
             )
         except FileNotFoundError as exc:
             raise PlushieNotFoundError(
