@@ -25,7 +25,7 @@ dependencies = [
     "msgpack>=1.0",
 ]
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "ruff>=0.9",
@@ -82,8 +82,10 @@ markers = [
     "windowed: requires windowed backend (real windows, needs display)",
 ]
 
-[project.entry-points.pytest11]
-plushie = "plushie.testing.plugin"
+# Uncomment when testing framework is implemented:
+# [project.entry-points.pytest11]
+# plushie = "plushie.testing.plugin"
 
-[project.scripts]
-plushie = "plushie.__main__:main"
+# Uncomment when CLI is implemented:
+# [project.scripts]
+# plushie = "plushie.__main__:main"
