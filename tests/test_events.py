@@ -1,0 +1,852 @@
+"""Tests for plushie.events -- event dataclasses and helpers."""
+
+from __future__ import annotations
+
+import pytest
+
+from plushie.events import (
+    AllWindowsClosed,
+    AnimationFrame,
+    Announce,
+    AsyncResult,
+    CanvasMove,
+    CanvasPress,
+    CanvasRelease,
+    CanvasScroll,
+    CanvasShapeClick,
+    CanvasShapeDrag,
+    CanvasShapeDragEnd,
+    CanvasShapeEnter,
+    CanvasShapeFocused,
+    CanvasShapeLeave,
+    Click,
+    Close,
+    DuplicateNodeIds,
+    EffectResult,
+    FileDropped,
+    FileHovered,
+    FilesHoveredLeft,
+    FocusedWidget,
+    ImageList,
+    ImeClose,
+    ImeCommit,
+    ImeOpen,
+    ImePreedit,
+    Input,
+    KeyBinding,
+    KeyPress,
+    KeyRelease,
+    ModifiersChanged,
+    MouseAreaDoubleClick,
+    MouseAreaEnter,
+    MouseAreaExit,
+    MouseAreaMiddlePress,
+    MouseAreaMiddleRelease,
+    MouseAreaMove,
+    MouseAreaRightPress,
+    MouseAreaRightRelease,
+    MouseAreaScroll,
+    MouseButtonPress,
+    MouseButtonRelease,
+    MouseEnter,
+    MouseLeave,
+    MouseMove,
+    MouseWheel,
+    Open,
+    OptionHovered,
+    PaneClicked,
+    PaneDragged,
+    PaneFocusCycle,
+    PaneResized,
+    Paste,
+    Scroll,
+    ScrollData,
+    Select,
+    SensorResize,
+    Slide,
+    SlideRelease,
+    Sort,
+    StreamChunk,
+    Submit,
+    SystemInfo,
+    SystemTheme,
+    ThemeChanged,
+    TimerTick,
+    Toggle,
+    TouchLift,
+    TouchLost,
+    TouchMove,
+    TouchPress,
+    TreeHash,
+    WidgetEvent,
+    WindowClosed,
+    WindowCloseRequested,
+    WindowFocused,
+    WindowMoved,
+    WindowOpen,
+    WindowRescaled,
+    WindowResized,
+    WindowUnfocused,
+    split_scoped_id,
+    target,
+)
+from plushie.types import KeyModifiers
+
+# ---------------------------------------------------------------------------
+# Frozen enforcement
+# ---------------------------------------------------------------------------
+
+
+class TestFrozen:
+    """All event dataclasses must be immutable."""
+
+    def test_click_frozen(self) -> None:
+        e = Click(id="btn")
+        with pytest.raises(AttributeError):
+            e.id = "other"  # type: ignore[misc]
+
+    def test_input_frozen(self) -> None:
+        e = Input(id="txt", value="hello")
+        with pytest.raises(AttributeError):
+            e.value = "world"  # type: ignore[misc]
+
+    def test_key_press_frozen(self) -> None:
+        e = KeyPress(key="a", modified_key="a", modifiers=KeyModifiers())
+        with pytest.raises(AttributeError):
+            e.key = "b"  # type: ignore[misc]
+
+
+# ---------------------------------------------------------------------------
+# Scope is tuple
+# ---------------------------------------------------------------------------
+
+
+class TestScope:
+    """Widget events must use tuple for scope, not list."""
+
+    def test_click_scope_default(self) -> None:
+        e = Click(id="btn")
+        assert e.scope == ()
+        assert isinstance(e.scope, tuple)
+
+    def test_click_scope_explicit(self) -> None:
+        e = Click(id="btn", scope=("form", "app"))
+        assert e.scope == ("form", "app")
+
+    def test_input_scope(self) -> None:
+        e = Input(id="txt", value="hi", scope=("section",))
+        assert e.scope == ("section",)
+
+
+# ---------------------------------------------------------------------------
+# Widget event construction
+# ---------------------------------------------------------------------------
+
+
+class TestWidgetEvents:
+    """Construct every scoped widget event type and verify fields."""
+
+    def test_click(self) -> None:
+        e = Click(id="save")
+        assert e.id == "save"
+        assert e.scope == ()
+
+    def test_input(self) -> None:
+        e = Input(id="name", value="Arthur")
+        assert e.value == "Arthur"
+
+    def test_submit(self) -> None:
+        e = Submit(id="search", value="query text")
+        assert e.value == "query text"
+
+    def test_toggle(self) -> None:
+        e = Toggle(id="dark_mode", value=True)
+        assert e.value is True
+
+    def test_select(self) -> None:
+        e = Select(id="lang", value="python")
+        assert e.value == "python"
+
+    def test_slide(self) -> None:
+        e = Slide(id="volume", value=0.75)
+        assert e.value == 0.75
+
+    def test_slide_release(self) -> None:
+        e = SlideRelease(id="volume", value=0.8)
+        assert e.value == 0.8
+
+    def test_scroll(self) -> None:
+        sd = ScrollData(
+            absolute_x=10.0,
+            absolute_y=20.0,
+            relative_x=0.1,
+            relative_y=0.2,
+            bounds_width=400.0,
+            bounds_height=300.0,
+            content_width=800.0,
+            content_height=1200.0,
+        )
+        e = Scroll(id="log", data=sd)
+        assert e.data.absolute_x == 10.0
+        assert e.data.content_height == 1200.0
+
+    def test_paste(self) -> None:
+        e = Paste(id="editor", value="pasted text")
+        assert e.value == "pasted text"
+
+    def test_sort(self) -> None:
+        e = Sort(id="table", value="name")
+        assert e.value == "name"
+
+    def test_open(self) -> None:
+        e = Open(id="dropdown")
+        assert e.id == "dropdown"
+
+    def test_close(self) -> None:
+        e = Close(id="dropdown")
+        assert e.id == "dropdown"
+
+    def test_option_hovered(self) -> None:
+        e = OptionHovered(id="combo", value="option_a")
+        assert e.value == "option_a"
+
+    def test_key_binding(self) -> None:
+        e = KeyBinding(id="editor", value="ctrl+s")
+        assert e.value == "ctrl+s"
+
+    def test_widget_event_catchall(self) -> None:
+        e = WidgetEvent(
+            kind="custom_event",
+            id="widget",
+            value="some_val",
+            data={"extra": True},
+            scope=("parent",),
+        )
+        assert e.kind == "custom_event"
+        assert e.data == {"extra": True}
+
+
+# ---------------------------------------------------------------------------
+# MouseArea events
+# ---------------------------------------------------------------------------
+
+
+class TestMouseAreaEvents:
+    """Construct every mouse_area event type."""
+
+    def test_right_press(self) -> None:
+        e = MouseAreaRightPress(id="area")
+        assert e.id == "area"
+
+    def test_right_release(self) -> None:
+        e = MouseAreaRightRelease(id="area", scope=("panel",))
+        assert e.scope == ("panel",)
+
+    def test_middle_press(self) -> None:
+        e = MouseAreaMiddlePress(id="area")
+        assert e.id == "area"
+
+    def test_middle_release(self) -> None:
+        e = MouseAreaMiddleRelease(id="area")
+        assert e.id == "area"
+
+    def test_double_click(self) -> None:
+        e = MouseAreaDoubleClick(id="area")
+        assert e.id == "area"
+
+    def test_enter(self) -> None:
+        e = MouseAreaEnter(id="area")
+        assert e.id == "area"
+
+    def test_exit(self) -> None:
+        e = MouseAreaExit(id="area")
+        assert e.id == "area"
+
+    def test_move(self) -> None:
+        e = MouseAreaMove(id="area", x=10.5, y=20.5)
+        assert e.x == 10.5
+        assert e.y == 20.5
+
+    def test_scroll(self) -> None:
+        e = MouseAreaScroll(id="area", delta_x=1.0, delta_y=-2.0)
+        assert e.delta_x == 1.0
+        assert e.delta_y == -2.0
+
+
+# ---------------------------------------------------------------------------
+# Canvas events
+# ---------------------------------------------------------------------------
+
+
+class TestCanvasEvents:
+    """Construct every canvas event type."""
+
+    def test_press(self) -> None:
+        e = CanvasPress(id="draw", x=100.0, y=200.0, button="left")
+        assert e.button == "left"
+
+    def test_release(self) -> None:
+        e = CanvasRelease(id="draw", x=100.0, y=200.0, button="right")
+        assert e.button == "right"
+
+    def test_move(self) -> None:
+        e = CanvasMove(id="draw", x=150.0, y=250.0)
+        assert e.x == 150.0
+
+    def test_scroll(self) -> None:
+        e = CanvasScroll(id="draw", x=100.0, y=200.0, delta_x=0.0, delta_y=-3.0)
+        assert e.delta_y == -3.0
+
+
+# ---------------------------------------------------------------------------
+# Canvas shape events
+# ---------------------------------------------------------------------------
+
+
+class TestCanvasShapeEvents:
+    """Construct every canvas shape event type."""
+
+    def test_enter(self) -> None:
+        e = CanvasShapeEnter(id="canvas", shape_id="bar-1", x=10.0, y=20.0)
+        assert e.shape_id == "bar-1"
+        assert e.captured is False
+
+    def test_leave(self) -> None:
+        e = CanvasShapeLeave(id="canvas", shape_id="bar-1", captured=True)
+        assert e.captured is True
+
+    def test_click(self) -> None:
+        e = CanvasShapeClick(
+            id="canvas", shape_id="bar-1", x=10.0, y=20.0, button="left"
+        )
+        assert e.button == "left"
+
+    def test_click_keyboard(self) -> None:
+        e = CanvasShapeClick(
+            id="canvas", shape_id="star", x=50.0, y=50.0, button="keyboard"
+        )
+        assert e.button == "keyboard"
+
+    def test_drag(self) -> None:
+        e = CanvasShapeDrag(
+            id="canvas",
+            shape_id="handle",
+            x=100.0,
+            y=200.0,
+            delta_x=5.0,
+            delta_y=-3.0,
+        )
+        assert e.delta_x == 5.0
+        assert e.delta_y == -3.0
+
+    def test_drag_end(self) -> None:
+        e = CanvasShapeDragEnd(id="canvas", shape_id="handle", x=105.0, y=197.0)
+        assert e.x == 105.0
+
+    def test_focused(self) -> None:
+        e = CanvasShapeFocused(id="canvas", shape_id="bar-1")
+        assert e.captured is False
+
+
+# ---------------------------------------------------------------------------
+# Sensor events
+# ---------------------------------------------------------------------------
+
+
+class TestSensorEvents:
+    def test_sensor_resize(self) -> None:
+        e = SensorResize(id="content", width=800.0, height=600.0, scope=("panel",))
+        assert e.width == 800.0
+        assert e.height == 600.0
+        assert e.scope == ("panel",)
+
+
+# ---------------------------------------------------------------------------
+# Pane events
+# ---------------------------------------------------------------------------
+
+
+class TestPaneEvents:
+    def test_pane_resized(self) -> None:
+        e = PaneResized(id="grid", split=42, ratio=0.5)
+        assert e.ratio == 0.5
+
+    def test_pane_dragged(self) -> None:
+        e = PaneDragged(
+            id="grid",
+            pane=1,
+            target=2,
+            action="dropped",
+            region="center",
+            edge=None,
+        )
+        assert e.action == "dropped"
+        assert e.region == "center"
+
+    def test_pane_clicked(self) -> None:
+        e = PaneClicked(id="grid", pane=0)
+        assert e.pane == 0
+
+    def test_pane_focus_cycle(self) -> None:
+        e = PaneFocusCycle(id="grid", pane=1)
+        assert e.pane == 1
+
+
+# ---------------------------------------------------------------------------
+# Key events
+# ---------------------------------------------------------------------------
+
+
+class TestKeyEvents:
+    def test_key_press_minimal(self) -> None:
+        mods = KeyModifiers()
+        e = KeyPress(key="a", modified_key="a", modifiers=mods)
+        assert e.key == "a"
+        assert e.repeat is False
+        assert e.captured is False
+        assert e.location == "standard"
+        assert e.physical_key is None
+        assert e.text is None
+
+    def test_key_press_full(self) -> None:
+        mods = KeyModifiers(shift=True)
+        e = KeyPress(
+            key="a",
+            modified_key="A",
+            modifiers=mods,
+            physical_key="KeyA",
+            location="left",
+            text="A",
+            repeat=False,
+            captured=True,
+        )
+        assert e.modified_key == "A"
+        assert e.modifiers.shift is True
+        assert e.location == "left"
+        assert e.text == "A"
+        assert e.captured is True
+
+    def test_key_release(self) -> None:
+        mods = KeyModifiers()
+        e = KeyRelease(key="Enter", modified_key="Enter", modifiers=mods)
+        assert e.key == "Enter"
+        assert e.captured is False
+
+    def test_modifiers_changed(self) -> None:
+        mods = KeyModifiers(ctrl=True, alt=True)
+        e = ModifiersChanged(modifiers=mods)
+        assert e.modifiers.ctrl is True
+        assert e.modifiers.alt is True
+
+
+# ---------------------------------------------------------------------------
+# Mouse events (global subscription)
+# ---------------------------------------------------------------------------
+
+
+class TestMouseEvents:
+    def test_mouse_move(self) -> None:
+        e = MouseMove(x=100.0, y=200.0)
+        assert e.captured is False
+
+    def test_mouse_enter(self) -> None:
+        e = MouseEnter()
+        assert e.captured is False
+
+    def test_mouse_leave(self) -> None:
+        e = MouseLeave(captured=True)
+        assert e.captured is True
+
+    def test_button_press(self) -> None:
+        e = MouseButtonPress(button="left")
+        assert e.button == "left"
+
+    def test_button_release(self) -> None:
+        e = MouseButtonRelease(button="right")
+        assert e.button == "right"
+
+    def test_mouse_wheel(self) -> None:
+        e = MouseWheel(delta_x=0.0, delta_y=-3.0, unit="pixel")
+        assert e.unit == "pixel"
+        assert e.delta_y == -3.0
+
+    def test_mouse_wheel_default_unit(self) -> None:
+        e = MouseWheel(delta_x=0.0, delta_y=1.0)
+        assert e.unit == "line"
+
+
+# ---------------------------------------------------------------------------
+# Touch events
+# ---------------------------------------------------------------------------
+
+
+class TestTouchEvents:
+    def test_touch_press(self) -> None:
+        e = TouchPress(finger_id=0, x=100.0, y=200.0)
+        assert e.finger_id == 0
+        assert e.captured is False
+
+    def test_touch_move(self) -> None:
+        e = TouchMove(finger_id=1, x=110.0, y=210.0, captured=True)
+        assert e.captured is True
+
+    def test_touch_lift(self) -> None:
+        e = TouchLift(finger_id=0, x=100.0, y=200.0)
+        assert e.finger_id == 0
+
+    def test_touch_lost(self) -> None:
+        e = TouchLost(finger_id=2, x=50.0, y=60.0)
+        assert e.finger_id == 2
+
+
+# ---------------------------------------------------------------------------
+# IME events
+# ---------------------------------------------------------------------------
+
+
+class TestImeEvents:
+    def test_ime_open(self) -> None:
+        e = ImeOpen()
+        assert e.captured is False
+
+    def test_ime_preedit(self) -> None:
+        e = ImePreedit(text="ni", cursor=(0, 2))
+        assert e.text == "ni"
+        assert e.cursor == (0, 2)
+
+    def test_ime_preedit_no_cursor(self) -> None:
+        e = ImePreedit(text="test")
+        assert e.cursor is None
+
+    def test_ime_commit(self) -> None:
+        e = ImeCommit(text="hello")
+        assert e.text == "hello"
+
+    def test_ime_close(self) -> None:
+        e = ImeClose(captured=True)
+        assert e.captured is True
+
+
+# ---------------------------------------------------------------------------
+# Window events
+# ---------------------------------------------------------------------------
+
+
+class TestWindowEvents:
+    def test_window_open(self) -> None:
+        e = WindowOpen(
+            window_id="main",
+            width=1024.0,
+            height=768.0,
+            scale_factor=2.0,
+            position_x=100.0,
+            position_y=200.0,
+        )
+        assert e.width == 1024.0
+        assert e.scale_factor == 2.0
+        assert e.position_x == 100.0
+
+    def test_window_open_no_position(self) -> None:
+        e = WindowOpen(window_id="main", width=800.0, height=600.0, scale_factor=1.0)
+        assert e.position_x is None
+        assert e.position_y is None
+
+    def test_window_closed(self) -> None:
+        e = WindowClosed(window_id="popup")
+        assert e.window_id == "popup"
+
+    def test_window_close_requested(self) -> None:
+        e = WindowCloseRequested(window_id="main")
+        assert e.window_id == "main"
+
+    def test_window_resized(self) -> None:
+        e = WindowResized(window_id="main", width=1920.0, height=1080.0)
+        assert e.width == 1920.0
+
+    def test_window_moved(self) -> None:
+        e = WindowMoved(window_id="main", x=50.0, y=100.0)
+        assert e.x == 50.0
+
+    def test_window_focused(self) -> None:
+        e = WindowFocused(window_id="main")
+        assert e.window_id == "main"
+
+    def test_window_unfocused(self) -> None:
+        e = WindowUnfocused(window_id="main")
+        assert e.window_id == "main"
+
+    def test_window_rescaled(self) -> None:
+        e = WindowRescaled(window_id="main", scale_factor=1.5)
+        assert e.scale_factor == 1.5
+
+    def test_file_hovered(self) -> None:
+        e = FileHovered(window_id="main", path="/tmp/test.txt")
+        assert e.path == "/tmp/test.txt"
+
+    def test_file_dropped(self) -> None:
+        e = FileDropped(window_id="main", path="/tmp/test.txt")
+        assert e.path == "/tmp/test.txt"
+
+    def test_files_hovered_left(self) -> None:
+        e = FilesHoveredLeft(window_id="main")
+        assert e.window_id == "main"
+
+
+# ---------------------------------------------------------------------------
+# System / query events
+# ---------------------------------------------------------------------------
+
+
+class TestSystemEvents:
+    def test_animation_frame(self) -> None:
+        e = AnimationFrame(timestamp=16000)
+        assert e.timestamp == 16000
+
+    def test_theme_changed(self) -> None:
+        e = ThemeChanged(theme="dark")
+        assert e.theme == "dark"
+
+    def test_all_windows_closed(self) -> None:
+        e = AllWindowsClosed()
+        assert isinstance(e, AllWindowsClosed)
+
+    def test_system_info(self) -> None:
+        e = SystemInfo(tag="q1", data={"cpu_brand": "AMD Ryzen"})
+        assert e.tag == "q1"
+
+    def test_system_theme(self) -> None:
+        e = SystemTheme(tag="q2", theme="light")
+        assert e.theme == "light"
+
+    def test_image_list(self) -> None:
+        e = ImageList(tag="q3", handles=("img1", "img2"))
+        assert len(e.handles) == 2
+
+    def test_focused_widget(self) -> None:
+        e = FocusedWidget(tag="q4", widget_id="input1")
+        assert e.widget_id == "input1"
+
+    def test_focused_widget_none(self) -> None:
+        e = FocusedWidget(tag="q4", widget_id=None)
+        assert e.widget_id is None
+
+    def test_tree_hash(self) -> None:
+        e = TreeHash(tag="q5", hash="abc123")
+        assert e.hash == "abc123"
+
+
+# ---------------------------------------------------------------------------
+# Error / announce events
+# ---------------------------------------------------------------------------
+
+
+class TestErrorEvents:
+    def test_duplicate_node_ids(self) -> None:
+        e = DuplicateNodeIds(details=["btn1", "btn1"])
+        assert "btn1" in e.details
+
+    def test_announce(self) -> None:
+        e = Announce(text="Item saved")
+        assert e.text == "Item saved"
+
+
+# ---------------------------------------------------------------------------
+# Effect result
+# ---------------------------------------------------------------------------
+
+
+class TestEffectResult:
+    def test_ok(self) -> None:
+        e = EffectResult(
+            request_id="req-1",
+            status="ok",
+            result={"path": "/tmp/file.txt"},
+        )
+        assert e.status == "ok"
+        assert e.result["path"] == "/tmp/file.txt"
+        assert e.error is None
+
+    def test_cancelled(self) -> None:
+        e = EffectResult(request_id="req-2", status="cancelled")
+        assert e.result is None
+
+    def test_error(self) -> None:
+        e = EffectResult(request_id="req-3", status="error", error="permission denied")
+        assert e.error == "permission denied"
+
+
+# ---------------------------------------------------------------------------
+# Runtime events
+# ---------------------------------------------------------------------------
+
+
+class TestRuntimeEvents:
+    def test_async_result(self) -> None:
+        e = AsyncResult(tag="fetch", value={"data": [1, 2, 3]})
+        assert e.tag == "fetch"
+
+    def test_stream_chunk(self) -> None:
+        e = StreamChunk(tag="download", value=b"chunk")
+        assert e.tag == "download"
+
+    def test_timer_tick(self) -> None:
+        e = TimerTick(tag="clock", timestamp=1000)
+        assert e.timestamp == 1000
+
+
+# ---------------------------------------------------------------------------
+# split_scoped_id
+# ---------------------------------------------------------------------------
+
+
+class TestSplitScopedId:
+    """Test wire ID splitting into local ID and reversed scope."""
+
+    def test_no_scope(self) -> None:
+        local_id, scope = split_scoped_id("save")
+        assert local_id == "save"
+        assert scope == ()
+
+    def test_single_scope(self) -> None:
+        local_id, scope = split_scoped_id("form/save")
+        assert local_id == "save"
+        assert scope == ("form",)
+
+    def test_deep_scope(self) -> None:
+        local_id, scope = split_scoped_id("app/form/section/save")
+        assert local_id == "save"
+        assert scope == ("section", "form", "app")
+
+    def test_two_levels(self) -> None:
+        local_id, scope = split_scoped_id("panel/input")
+        assert local_id == "input"
+        assert scope == ("panel",)
+
+
+# ---------------------------------------------------------------------------
+# target()
+# ---------------------------------------------------------------------------
+
+
+class TestTarget:
+    """Test full path reconstruction from scoped events."""
+
+    def test_no_scope(self) -> None:
+        e = Click(id="save")
+        assert target(e) == "save"
+
+    def test_single_scope(self) -> None:
+        e = Click(id="save", scope=("form",))
+        assert target(e) == "form/save"
+
+    def test_deep_scope(self) -> None:
+        e = Click(id="save", scope=("section", "form", "app"))
+        assert target(e) == "app/form/section/save"
+
+    def test_roundtrip(self) -> None:
+        wire_id = "app/form/section/save"
+        local_id, scope = split_scoped_id(wire_id)
+        e = Click(id=local_id, scope=scope)
+        assert target(e) == wire_id
+
+    def test_with_input_event(self) -> None:
+        e = Input(id="email", value="test@example.com", scope=("form",))
+        assert target(e) == "form/email"
+
+    def test_with_sensor_resize(self) -> None:
+        e = SensorResize(id="content", width=800.0, height=600.0, scope=("panel",))
+        assert target(e) == "panel/content"
+
+    def test_with_canvas_press(self) -> None:
+        e = CanvasPress(id="draw", x=10.0, y=20.0, button="left", scope=("editor",))
+        assert target(e) == "editor/draw"
+
+
+# ---------------------------------------------------------------------------
+# Pattern matching
+# ---------------------------------------------------------------------------
+
+
+class TestPatternMatching:
+    """Verify events work naturally with Python match statements."""
+
+    def test_match_click(self) -> None:
+        event: Click | Input = Click(id="save")
+        result = None
+        match event:
+            case Click(id="save"):
+                result = "saved"
+            case _:
+                result = "other"
+        assert result == "saved"
+
+    def test_match_click_with_scope(self) -> None:
+        event = Click(id="delete", scope=("item_3", "list"))
+        item_id = None
+        match event:
+            case Click(id="delete", scope=(iid, *_)):
+                item_id = iid
+        assert item_id == "item_3"
+
+    def test_match_input_value(self) -> None:
+        event = Input(id="search", value="hello world")
+        captured_value = None
+        match event:
+            case Input(id="search", value=v):
+                captured_value = v
+        assert captured_value == "hello world"
+
+    def test_match_key_press(self) -> None:
+        event = KeyPress(
+            key="Escape",
+            modified_key="Escape",
+            modifiers=KeyModifiers(),
+        )
+        matched = False
+        match event:
+            case KeyPress(key="Escape"):
+                matched = True
+        assert matched is True
+
+    def test_match_toggle_bool(self) -> None:
+        event = Toggle(id="dark", value=True)
+        is_on = None
+        match event:
+            case Toggle(id="dark", value=v):
+                is_on = v
+        assert is_on is True
+
+
+# ---------------------------------------------------------------------------
+# ScrollData
+# ---------------------------------------------------------------------------
+
+
+class TestScrollData:
+    def test_construction(self) -> None:
+        sd = ScrollData(
+            absolute_x=0.0,
+            absolute_y=50.0,
+            relative_x=0.0,
+            relative_y=0.5,
+            bounds_width=200.0,
+            bounds_height=400.0,
+            content_width=200.0,
+            content_height=800.0,
+        )
+        assert sd.relative_y == 0.5
+        assert sd.content_height == 800.0
+
+    def test_frozen(self) -> None:
+        sd = ScrollData(
+            absolute_x=0.0,
+            absolute_y=0.0,
+            relative_x=0.0,
+            relative_y=0.0,
+            bounds_width=100.0,
+            bounds_height=100.0,
+            content_width=100.0,
+            content_height=100.0,
+        )
+        with pytest.raises(AttributeError):
+            sd.absolute_x = 10.0  # type: ignore[misc]
