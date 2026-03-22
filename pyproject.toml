@@ -85,6 +85,5 @@ markers = [
 [project.entry-points.pytest11]
 plushie = "plushie.testing.plugin"
 
-# Uncomment when CLI is implemented:
-# [project.scripts]
-# plushie = "plushie.__main__:main"
+[project.scripts]
+plushie = "plushie.__main__:main"

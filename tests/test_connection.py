@@ -7,7 +7,6 @@ Tests that require the plushie binary are marked with
 from __future__ import annotations
 
 import os
-import shutil
 import stat
 from pathlib import Path
 from unittest.mock import patch as mock_patch
@@ -176,7 +175,8 @@ class TestResolve:
     def test_path_fallback(self, tmp_path: Path) -> None:
         """Falls back to PATH when env var and download not available."""
         binary = tmp_path / "plushie"
-        binary.write_text("#!/bin/sh\necho hi")
+        # Write a fake ELF header so _is_native_binary recognizes it
+        binary.write_bytes(b"\x7fELF" + b"\x00" * 100)
         binary.chmod(binary.stat().st_mode | stat.S_IXUSR)
 
         env = dict(os.environ)
@@ -330,9 +330,13 @@ class TestConnectionAttributes:
 # Binary-requiring tests (skipped when binary not available)
 # ===================================================================
 
-_binary_available = shutil.which("plushie") is not None or os.environ.get(
-    "PLUSHIE_BINARY_PATH"
-)
+try:
+    from plushie.binary import resolve
+
+    _resolved = resolve()
+    _binary_available = True
+except Exception:
+    _binary_available = False
 
 
 @pytest.mark.skipif(

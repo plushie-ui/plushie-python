@@ -117,6 +117,35 @@ def download_dir() -> Path:
     return base / "plushie" / "bin"
 
 
+def _is_native_binary(path: str) -> bool:
+    """Check if a file is a native executable, not a Python script.
+
+    Reads the first two bytes to detect ELF (``\\x7fELF``), Mach-O,
+    or PE (``MZ``) magic. Returns ``False`` for text files like
+    Python entry-point scripts (which start with ``#!``).
+    """
+    try:
+        with open(path, "rb") as f:
+            header = f.read(4)
+        if len(header) < 2:
+            return False
+        # ELF (Linux)
+        if header[:4] == b"\x7fELF":
+            return True
+        # Mach-O (macOS) -- both 32 and 64 bit, both endiannesses
+        if header[:4] in (
+            b"\xfe\xed\xfa\xce",
+            b"\xfe\xed\xfa\xcf",
+            b"\xce\xfa\xed\xfe",
+            b"\xcf\xfa\xed\xfe",
+        ):
+            return True
+        # PE (Windows)
+        return header[:2] == b"MZ"
+    except OSError:
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Resolution chain
 # ---------------------------------------------------------------------------
@@ -161,9 +190,9 @@ def resolve() -> str:
         # Platform detection failed -- skip this step
         pass
 
-    # Step 3: system PATH
+    # Step 3: system PATH (native binaries only, not Python scripts)
     which_path = shutil.which("plushie")
-    if which_path is not None:
+    if which_path is not None and _is_native_binary(which_path):
         return os.path.abspath(which_path)
 
     try:
