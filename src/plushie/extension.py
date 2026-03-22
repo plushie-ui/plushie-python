@@ -1,0 +1,359 @@
+"""Extension system for custom widget types.
+
+Plushie supports two kinds of extensions:
+
+**Composite extensions** are pure Python functions that compose existing
+widgets into reusable components.  They produce standard node dicts and
+require no special framework support -- just write a function::
+
+    from plushie import ui
+
+    def labeled_input(id: str, label: str, value: str) -> dict:
+        return ui.column(id, children=[
+            ui.text(f"{id}-label", label),
+            ui.text_input(f"{id}-input", value),
+        ])
+
+No registration, no Rust code, no build step.
+
+**Native extensions** are backed by a Rust crate implementing the
+``WidgetExtension`` trait.  The Rust crate is compiled into a custom
+plushie binary, and the widget communicates via the standard wire
+protocol.  Use :class:`ExtensionDef` to describe the widget, then
+:func:`build_node` and :func:`build_command` to produce wire-compatible
+nodes and commands at runtime.
+
+Example::
+
+    from plushie.extension import (
+        ExtensionDef, PropDef, CommandDef, ParamDef,
+        build_node, build_command,
+    )
+
+    gauge_def = ExtensionDef(
+        kind="gauge",
+        rust_crate="native/my_gauge",
+        rust_constructor="my_gauge::GaugeExtension::new()",
+        props=[
+            PropDef("value", "number"),
+            PropDef("min", "number"),
+            PropDef("max", "number"),
+            PropDef("color", "color"),
+        ],
+        commands=[
+            CommandDef("set_value", [ParamDef("value", "number")]),
+        ],
+    )
+
+    def gauge(id: str, value: float, **kwargs: object) -> dict:
+        return build_node(gauge_def, id, {"value": value, **kwargs})
+
+    def set_gauge_value(node_id: str, value: float) -> Command:
+        return build_command(gauge_def, node_id, "set_value", {"value": value})
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Literal
+
+from plushie.commands import Command
+
+# -- Prop types ---------------------------------------------------------------
+
+#: Valid prop type strings for extension property definitions.
+PropType = Literal[
+    "string",
+    "number",
+    "bool",
+    "color",
+    "length",
+    "padding",
+    "alignment",
+    "font",
+    "style",
+    "atom",
+    "map",
+    "any",
+]
+
+#: Valid param type strings for extension command parameters.
+ParamType = Literal["string", "number", "bool"]
+
+# -- Data definitions ---------------------------------------------------------
+
+#: Property names that are reserved by the framework and cannot be used
+#: in extension definitions.
+RESERVED_PROP_NAMES: frozenset[str] = frozenset(
+    {"id", "type", "children", "a11y", "event_rate"}
+)
+
+
+@dataclass(frozen=True, slots=True)
+class PropDef:
+    """Definition of a single property on an extension widget.
+
+    Attributes:
+        name: The property name as it appears on the wire.
+        prop_type: One of the supported prop type strings.
+    """
+
+    name: str
+    prop_type: PropType
+
+
+@dataclass(frozen=True, slots=True)
+class ParamDef:
+    """Definition of a single parameter in an extension command.
+
+    Attributes:
+        name: The parameter name as it appears on the wire.
+        param_type: One of the supported param type strings.
+    """
+
+    name: str
+    param_type: ParamType
+
+
+@dataclass(frozen=True, slots=True)
+class CommandDef:
+    """Definition of a command that can be sent to a native extension widget.
+
+    Attributes:
+        name: The command operation name.
+        params: The typed parameters this command accepts.
+    """
+
+    name: str
+    params: list[ParamDef] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class ExtensionDef:
+    """Definition of a native widget extension.
+
+    Describes the Rust crate, constructor, props, and commands that a
+    native widget supports.  Used at build time to configure the plushie
+    binary and at runtime to construct nodes and commands.
+
+    Attributes:
+        kind: Widget type string (e.g. ``"gauge"``).  Must match the Rust
+            crate's registered widget type name.
+        rust_crate: Path to the Rust crate relative to the project root
+            (e.g. ``"native/my_gauge"``).
+        rust_constructor: Rust expression to construct the extension
+            instance (e.g. ``"my_gauge::GaugeExtension::new()"``).
+        props: Declared properties with their types.
+        commands: Declared commands that can be sent to this widget type.
+    """
+
+    kind: str
+    rust_crate: str
+    rust_constructor: str
+    props: list[PropDef] = field(default_factory=list)
+    commands: list[CommandDef] = field(default_factory=list)
+
+
+# -- Validation ---------------------------------------------------------------
+
+
+def validate(ext_def: ExtensionDef) -> list[str]:
+    """Validate an extension definition.
+
+    Returns an empty list when valid, or a list of human-readable error
+    messages describing what is wrong.
+
+    Checks performed:
+
+    - ``kind`` must be non-empty.
+    - No duplicate prop names.
+    - No reserved prop names (id, type, children, a11y, event_rate).
+    """
+    errors: list[str] = []
+
+    if not ext_def.kind:
+        errors.append("kind must not be empty")
+
+    seen: set[str] = set()
+    for prop in ext_def.props:
+        if prop.name in seen:
+            errors.append(f'duplicate prop name "{prop.name}"')
+        seen.add(prop.name)
+
+        if prop.name in RESERVED_PROP_NAMES:
+            errors.append(f'prop name "{prop.name}" is reserved')
+
+    return errors
+
+
+# -- Runtime helpers ----------------------------------------------------------
+
+
+def prop_names(ext_def: ExtensionDef) -> list[str]:
+    """Return the declared property names from an extension definition."""
+    return [p.name for p in ext_def.props]
+
+
+def command_names(ext_def: ExtensionDef) -> list[str]:
+    """Return the declared command names from an extension definition."""
+    return [c.name for c in ext_def.commands]
+
+
+def build_node(
+    ext_def: ExtensionDef,
+    id: str,
+    props: dict[str, Any] | None = None,
+    *,
+    children: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Build a node dict for a native extension widget.
+
+    Creates a node with the extension's ``kind`` as the type and the
+    given props.  The node dict is wire-compatible and can be included
+    directly in a view tree.
+
+    Args:
+        ext_def: The extension definition.
+        id: Unique node ID.
+        props: Property key-value pairs.
+        children: Optional child nodes (for container extensions).
+
+    Returns:
+        A node dict with ``id``, ``type``, ``props``, and ``children``.
+    """
+    return {
+        "id": id,
+        "type": ext_def.kind,
+        "props": dict(props) if props else {},
+        "children": list(children) if children else [],
+    }
+
+
+def build_command(
+    ext_def: ExtensionDef,
+    node_id: str,
+    op: str,
+    payload: dict[str, Any] | None = None,
+) -> Command:
+    """Build an extension command targeting a specific widget instance.
+
+    The command is sent via the wire protocol's ``extension_command``
+    message type and delivered to the Rust widget by node ID.
+
+    Args:
+        ext_def: The extension definition (used for documentation; the
+            ``kind`` is not sent on the wire since commands target by
+            node ID).
+        node_id: The target widget's node ID.
+        op: The command operation name (must match a declared command).
+        payload: Parameter key-value pairs for the command.
+
+    Returns:
+        A :class:`~plushie.commands.Command` of type
+        ``"extension_command"``.
+    """
+    _ = ext_def  # present for API symmetry and future validation
+    return Command.extension_command(node_id, op, payload or {})
+
+
+# -- Build system integration -------------------------------------------------
+
+
+def generate_cargo_toml(
+    extensions: list[ExtensionDef],
+    binary_name: str = "plushie-custom",
+) -> str:
+    """Generate a Cargo.toml workspace for a custom binary build.
+
+    Produces the Cargo workspace manifest that includes plushie-core
+    and all extension crates as path dependencies.  This is the Python
+    equivalent of ``mix plushie.build``'s Cargo generation.
+
+    Args:
+        extensions: Extension definitions to include.
+        binary_name: Name for the output binary.
+
+    Returns:
+        The Cargo.toml content as a string.
+    """
+    members = [f'    "{ext.rust_crate}"' for ext in extensions]
+    members_block = ",\n".join(members)
+
+    deps = []
+    for ext in extensions:
+        # Derive crate name from the last path segment.
+        crate_name = ext.rust_crate.rsplit("/", maxsplit=1)[-1]
+        deps.append(f'{crate_name} = {{ path = "{ext.rust_crate}" }}')
+    deps_block = "\n".join(deps)
+
+    return f"""\
+[workspace]
+members = [
+    "runner",
+{members_block}
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+
+[package]
+name = "{binary_name}"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "{binary_name}"
+path = "runner/src/main.rs"
+
+[dependencies]
+plushie-core = {{ git = "https://github.com/nicklasxyz/plushie.git" }}
+{deps_block}
+"""
+
+
+def generate_main_rs(extensions: list[ExtensionDef]) -> str:
+    """Generate main.rs registering all extensions.
+
+    Produces the Rust entry point that creates a ``PlushieAppBuilder``,
+    registers each extension via ``.extension()``, and calls ``run()``.
+
+    Args:
+        extensions: Extension definitions to register.
+
+    Returns:
+        The main.rs content as a string.
+    """
+    registrations = []
+    for ext in extensions:
+        registrations.append(f"        .extension({ext.rust_constructor})")
+    registrations_block = "\n".join(registrations)
+
+    return f"""\
+use plushie_core::prelude::*;
+
+fn main() {{
+    plushie::run(
+        PlushieAppBuilder::new()
+{registrations_block}
+    )
+}}
+"""
+
+
+__all__ = [
+    "RESERVED_PROP_NAMES",
+    "CommandDef",
+    "ExtensionDef",
+    "ParamDef",
+    "ParamType",
+    "PropDef",
+    "PropType",
+    "build_command",
+    "build_node",
+    "command_names",
+    "generate_cargo_toml",
+    "generate_main_rs",
+    "prop_names",
+    "validate",
+]
