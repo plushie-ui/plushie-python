@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Mirrors CI: format check, lint, type check, test.
+# Run before committing.
+set -euo pipefail
+
+echo "==> ruff format --check"
+ruff format --check src tests examples
+
+echo "==> ruff check"
+ruff check src tests examples
+
+echo "==> pyright"
+pyright src
+
+echo "==> pytest"
+pytest
+
+echo ""
+echo "All checks passed."
