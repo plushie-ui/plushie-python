@@ -201,6 +201,30 @@ class Connection:
 
         return cls(process, session=session, _spawn_args=args, _spawn_env=proc_env)
 
+    @classmethod
+    def from_iostream(
+        cls,
+        adapter: Any,
+        *,
+        session: str = "",
+    ) -> _IoStreamConnection:
+        """Create a Connection-like object backed by an iostream adapter.
+
+        The adapter (e.g. ``IoStreamAdapter``) handles the underlying
+        transport. The returned object exposes the same public API as
+        ``Connection`` for sending messages and receiving events.
+
+        Args:
+            adapter: An ``IoStreamAdapter`` instance (or any object with
+                ``send()``, ``receive_event()``, ``close()``, ``hello``,
+                and ``wait_hello()`` methods).
+            session: Default session identifier for outbound messages.
+
+        Returns:
+            A connection-like object wrapping the adapter.
+        """
+        return _IoStreamConnection(adapter, session=session)
+
     @property
     def hello(self) -> HelloInfo | None:
         """The hello info received from the renderer, or ``None`` if not yet received."""
@@ -1081,6 +1105,76 @@ def _decode_events_list(raw_events: list[dict[str, Any]]) -> list[Any]:
 # ---------------------------------------------------------------------------
 # __all__
 # ---------------------------------------------------------------------------
+
+
+class _IoStreamConnection:
+    """Connection-like wrapper around an iostream adapter.
+
+    Provides the same outbound message API as ``Connection`` but
+    delegates transport to the adapter. Used by
+    ``Connection.from_iostream()``.
+    """
+
+    def __init__(self, adapter: Any, *, session: str = "") -> None:
+        self._adapter = adapter
+        self._session = session
+
+    @property
+    def hello(self) -> HelloInfo | None:
+        return self._adapter.hello
+
+    @property
+    def session(self) -> str:
+        return self._session
+
+    @session.setter
+    def session(self, value: str) -> None:
+        self._session = value
+
+    @property
+    def is_alive(self) -> bool:
+        return not self._adapter.is_closed
+
+    def __enter__(self) -> _IoStreamConnection:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()
+
+    def wait_hello(self, timeout: float = 10.0) -> HelloInfo:
+        return self._adapter.wait_hello(timeout)
+
+    def send(self, msg: dict[str, Any]) -> None:
+        self._adapter.send(msg)
+
+    def receive_event(self, timeout: float | None = None) -> Any:
+        return self._adapter.receive_event(timeout)
+
+    def send_settings(self, settings_dict: dict[str, Any] | None = None) -> None:
+        msg = settings(settings_dict or {}, session=self._session)
+        self.send(msg)
+
+    def send_snapshot(self, tree: dict[str, Any]) -> None:
+        msg = snapshot(tree, session=self._session)
+        self.send(msg)
+
+    def send_patch(self, ops: list[dict[str, Any]]) -> None:
+        msg = patch(ops, session=self._session)
+        self.send(msg)
+
+    def send_subscribe(
+        self, kind: str, tag: str, *, max_rate: int | None = None
+    ) -> None:
+        msg = subscribe_msg(kind, tag, max_rate=max_rate, session=self._session)
+        self.send(msg)
+
+    def send_unsubscribe(self, kind: str) -> None:
+        msg = unsubscribe_msg(kind, session=self._session)
+        self.send(msg)
+
+    def close(self) -> None:
+        self._adapter.close()
+
 
 __all__ = [
     "Connection",

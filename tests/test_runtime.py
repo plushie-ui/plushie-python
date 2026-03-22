@@ -495,3 +495,107 @@ class TestWindowPropEdgeCases:
             "children": [],
         }
         assert extract_window_props(tree, "main") == {}
+
+
+# ===================================================================
+# window_config callback
+# ===================================================================
+
+
+class TestWindowConfig:
+    """App.window_config() defaults and override behavior."""
+
+    def test_default_returns_empty_dict(self) -> None:
+        class MinimalApp(App[int]):
+            def init(self) -> int:
+                return 0
+
+            def update(self, model: int, event: Any) -> int:
+                return model
+
+            def view(self, model: int) -> dict[str, Any]:
+                return {}
+
+        app = MinimalApp()
+        assert app.window_config(0) == {}
+
+    def test_override_returns_custom_props(self) -> None:
+        class CustomApp(App[int]):
+            def init(self) -> int:
+                return 0
+
+            def update(self, model: int, event: Any) -> int:
+                return model
+
+            def view(self, model: int) -> dict[str, Any]:
+                return {}
+
+            def window_config(self, model: int) -> dict[str, Any]:
+                return {"title": "My App", "width": 1024, "height": 768}
+
+        app = CustomApp()
+        config = app.window_config(0)
+        assert config["title"] == "My App"
+        assert config["width"] == 1024
+
+    def test_model_available_in_window_config(self) -> None:
+        """window_config receives the current model for dynamic defaults."""
+
+        class DynamicApp(App[str]):
+            def init(self) -> str:
+                return "untitled"
+
+            def update(self, model: str, event: Any) -> str:
+                return model
+
+            def view(self, model: str) -> dict[str, Any]:
+                return {}
+
+            def window_config(self, model: str) -> dict[str, Any]:
+                return {"title": model.capitalize()}
+
+        app = DynamicApp()
+        assert app.window_config("hello") == {"title": "Hello"}
+        assert app.window_config("world") == {"title": "World"}
+
+    def test_decorator_app_window_config(self) -> None:
+        builder = create_app("WinApp")
+
+        @builder.init
+        def init() -> int:
+            return 0
+
+        @builder.update
+        def update(model: int, event: Any) -> int:
+            return model
+
+        @builder.view
+        def view(model: int) -> dict[str, Any]:
+            return {}
+
+        @builder.window_config
+        def window_config(model: int) -> dict[str, Any]:
+            return {"title": "Decorated", "theme": "dark"}
+
+        app = builder.build()
+        config = app.window_config(0)
+        assert config == {"title": "Decorated", "theme": "dark"}
+
+    def test_decorator_app_window_config_default(self) -> None:
+        """Without registering window_config, returns empty dict."""
+        builder = create_app("Plain")
+
+        @builder.init
+        def init() -> int:
+            return 0
+
+        @builder.update
+        def update(model: int, event: Any) -> int:
+            return model
+
+        @builder.view
+        def view(model: int) -> dict[str, Any]:
+            return {}
+
+        app = builder.build()
+        assert app.window_config(0) == {}

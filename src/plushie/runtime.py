@@ -931,7 +931,14 @@ class Runtime:
 
         # Open new windows
         for win_id in new_windows - old_windows:
-            props = extract_window_props(tree, win_id)
+            # Start with app-level window defaults, then overlay tree props
+            try:
+                defaults = self._app.window_config(self._model)
+            except Exception:
+                logger.exception("plushie runtime: window_config() raised")
+                defaults = {}
+            tree_props = extract_window_props(tree, win_id)
+            props = {**defaults, **tree_props}
             msg = window_op("open", win_id, props or None, session=self._conn.session)
             self._conn.send(msg)
 

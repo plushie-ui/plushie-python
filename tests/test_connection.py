@@ -14,6 +14,7 @@ from unittest.mock import patch as mock_patch
 import pytest
 
 from plushie.binary import (
+    GITHUB_RELEASE_URL,
     WASM_BG_NAME,
     WASM_JS_NAME,
     PlushieNotFoundError,
@@ -40,6 +41,18 @@ from plushie.types import HelloInfo
 # ===================================================================
 # Binary resolution tests (no binary required)
 # ===================================================================
+
+
+class TestGitHubReleaseURL:
+    """Verify the GitHub release URL points to the correct organization."""
+
+    def test_url_uses_plushie_ui_org(self) -> None:
+        assert GITHUB_RELEASE_URL == (
+            "https://github.com/plushie-ui/plushie/releases/download"
+        )
+
+    def test_url_does_not_use_anthropics(self) -> None:
+        assert "anthropics" not in GITHUB_RELEASE_URL
 
 
 class TestDetectOS:

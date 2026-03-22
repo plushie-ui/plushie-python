@@ -120,6 +120,14 @@ class App[M](ABC):
         """
         return {}
 
+    def window_config(self, model: M) -> dict[str, Any]:
+        """Called when windows are opened. Returns default window properties.
+
+        Override to set default title, size, position, theme, etc.
+        Per-window props set in the view tree override these defaults.
+        """
+        return {}
+
     def handle_renderer_exit(self, model: M, reason: Any) -> M:
         """Called when the renderer process exits unexpectedly.
 
@@ -143,6 +151,7 @@ class _DecoratorApp(App[Any]):
         view_fn: Any = None,
         subscribe_fn: Any = None,
         settings_fn: Any = None,
+        window_config_fn: Any = None,
         handle_renderer_exit_fn: Any = None,
     ) -> None:
         self._name = name
@@ -151,6 +160,7 @@ class _DecoratorApp(App[Any]):
         self._view_fn = view_fn
         self._subscribe_fn = subscribe_fn
         self._settings_fn = settings_fn
+        self._window_config_fn = window_config_fn
         self._handle_renderer_exit_fn = handle_renderer_exit_fn
 
     def init(self) -> Any:
@@ -176,6 +186,11 @@ class _DecoratorApp(App[Any]):
     def settings(self) -> dict[str, Any]:
         if self._settings_fn is not None:
             return self._settings_fn()
+        return {}
+
+    def window_config(self, model: Any) -> dict[str, Any]:
+        if self._window_config_fn is not None:
+            return self._window_config_fn(model)
         return {}
 
     def handle_renderer_exit(self, model: Any, reason: Any) -> Any:
@@ -215,6 +230,7 @@ class AppBuilder:
         self._view_fn: Any = None
         self._subscribe_fn: Any = None
         self._settings_fn: Any = None
+        self._window_config_fn: Any = None
         self._handle_renderer_exit_fn: Any = None
 
     def init(self, fn: Any) -> Any:
@@ -242,6 +258,11 @@ class AppBuilder:
         self._settings_fn = fn
         return fn
 
+    def window_config(self, fn: Any) -> Any:
+        """Register the ``window_config`` callback."""
+        self._window_config_fn = fn
+        return fn
+
     def handle_renderer_exit(self, fn: Any) -> Any:
         """Register the ``handle_renderer_exit`` callback."""
         self._handle_renderer_exit_fn = fn
@@ -260,6 +281,7 @@ class AppBuilder:
             view_fn=self._view_fn,
             subscribe_fn=self._subscribe_fn,
             settings_fn=self._settings_fn,
+            window_config_fn=self._window_config_fn,
             handle_renderer_exit_fn=self._handle_renderer_exit_fn,
         )
 

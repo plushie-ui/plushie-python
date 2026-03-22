@@ -27,7 +27,7 @@ from pathlib import Path
 
 logger = logging.getLogger("plushie")
 
-GITHUB_RELEASE_URL = "https://github.com/anthropics/plushie/releases/download"
+GITHUB_RELEASE_URL = "https://github.com/plushie-ui/plushie/releases/download"
 """Base URL for GitHub release asset downloads."""
 
 WASM_ARCHIVE_NAME = "plushie-wasm.tar.gz"
