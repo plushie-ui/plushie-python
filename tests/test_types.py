@@ -84,6 +84,15 @@ class TestColorsFromHex:
         with pytest.raises(ValueError, match="invalid hex color digits"):
             Colors.from_hex("gghhii")
 
+    def test_invalid_digits_partial_hex(self) -> None:
+        """Hex-like string with trailing non-hex chars must fail."""
+        with pytest.raises(ValueError, match="invalid hex color digits"):
+            Colors.from_hex("aabb0z")
+
+    def test_valid_all_digits(self) -> None:
+        """Pure numeric hex string without hash prefix."""
+        assert Colors.from_hex("001122") == "#001122"
+
 
 class TestColorsCast:
     def test_named_red(self) -> None:
@@ -333,6 +342,16 @@ class TestStyleMap:
         s = StyleMap().with_pressed({"background": "#990000"})
         assert s.pressed is not None
 
+    def test_with_disabled(self) -> None:
+        s = StyleMap().with_disabled({"text_color": "#888888"})
+        assert s.disabled == {"text_color": "#888888"}
+
+    def test_with_focused(self) -> None:
+        b = Border(color="#0000ff", width=2)
+        s = StyleMap().with_focused({"border": b})
+        assert s.focused is not None
+        assert s.focused["border"] is b
+
     def test_with_base(self) -> None:
         s = StyleMap().with_base("primary")
         assert s.base == "primary"
@@ -489,12 +508,19 @@ class TestA11y:
             a.label = "changed"  # type: ignore[misc]
 
     def test_field_count(self) -> None:
-        # A11y should have exactly 24 fields (23 from protocol + has_popup = 24 total)
-        # Actually the plan says 23 fields, let's count them
         import dataclasses
 
         fields = dataclasses.fields(A11y)
         assert len(fields) == 24
+
+    def test_table_context_roles(self) -> None:
+        """Table-context roles (row, cell, column_header) are valid A11y roles."""
+        a_row = A11y(role="row")
+        assert a_row.role == "row"
+        a_cell = A11y(role="cell")
+        assert a_cell.role == "cell"
+        a_col = A11y(role="column_header")
+        assert a_col.role == "column_header"
 
 
 # ---------------------------------------------------------------------------

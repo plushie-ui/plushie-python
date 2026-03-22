@@ -571,16 +571,27 @@ class TestDecodeWidgetEvents:
         assert isinstance(result, OptionHovered)
         assert result.value == "opt"
 
-    def test_key_binding(self) -> None:
+    def test_key_binding_data_string(self) -> None:
         raw = {
             "type": "event",
             "family": "key_binding",
             "id": "editor",
-            "value": "save",
+            "data": "save",
         }
         result = decode_message(raw)
         assert isinstance(result, KeyBinding)
         assert result.value == "save"
+
+    def test_key_binding_data_dict(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "key_binding",
+            "id": "editor",
+            "data": {"binding": "undo"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, KeyBinding)
+        assert result.value == "undo"
 
 
 class TestDecodeMouseAreaEvents:

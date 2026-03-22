@@ -842,7 +842,14 @@ def _decode_event(msg: dict[str, Any]) -> Any:
 
     if family == "key_binding":
         local_id, scope = split_scoped_id(wire_id)
-        return KeyBinding(id=local_id, value=str(value or ""), scope=scope)
+        # Wire sends binding name in `data` (string) or `data.binding` (dict).
+        if isinstance(data, dict):
+            binding = str(data.get("binding", ""))
+        elif isinstance(data, str):
+            binding = data
+        else:
+            binding = str(value or "")
+        return KeyBinding(id=local_id, value=binding, scope=scope)
 
     # ------- MouseArea events (scoped) -------
 

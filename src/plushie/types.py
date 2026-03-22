@@ -251,7 +251,7 @@ NAMED_COLORS: dict[str, str] = {
     "yellowgreen": "#9acd32",
 }
 
-_HEX_RE = re.compile(r"\A[0-9a-fA-F]+\z")
+_HEX_RE = re.compile(r"\A[0-9a-fA-F]+\Z")
 
 
 class Colors:
@@ -521,10 +521,10 @@ class StyleMap:
     text_color: str | None = None
     border: Border | None = None
     shadow: Shadow | None = None
-    hovered: dict[str, str | Border | Shadow | Gradient | None] | None = None
-    pressed: dict[str, str | Border | Shadow | Gradient | None] | None = None
-    disabled: dict[str, str | Border | Shadow | Gradient | None] | None = None
-    focused: dict[str, str | Border | Shadow | Gradient | None] | None = None
+    hovered: StatusOverride | None = None
+    pressed: StatusOverride | None = None
+    disabled: StatusOverride | None = None
+    focused: StatusOverride | None = None
 
     def with_base(self, preset: str) -> StyleMap:
         """Return a new StyleMap extending from the given base preset."""
@@ -551,27 +551,19 @@ class StyleMap:
         """Return a new StyleMap with the given shadow."""
         return replace(self, shadow=shadow)
 
-    def with_hovered(
-        self, override: dict[str, str | Border | Shadow | Gradient | None]
-    ) -> StyleMap:
+    def with_hovered(self, override: StatusOverride) -> StyleMap:
         """Return a new StyleMap with the given hovered state override."""
         return replace(self, hovered=override)
 
-    def with_pressed(
-        self, override: dict[str, str | Border | Shadow | Gradient | None]
-    ) -> StyleMap:
+    def with_pressed(self, override: StatusOverride) -> StyleMap:
         """Return a new StyleMap with the given pressed state override."""
         return replace(self, pressed=override)
 
-    def with_disabled(
-        self, override: dict[str, str | Border | Shadow | Gradient | None]
-    ) -> StyleMap:
+    def with_disabled(self, override: StatusOverride) -> StyleMap:
         """Return a new StyleMap with the given disabled state override."""
         return replace(self, disabled=override)
 
-    def with_focused(
-        self, override: dict[str, str | Border | Shadow | Gradient | None]
-    ) -> StyleMap:
+    def with_focused(self, override: StatusOverride) -> StyleMap:
         """Return a new StyleMap with the given focused state override."""
         return replace(self, focused=override)
 
@@ -712,7 +704,9 @@ type A11yRole = Literal[
     "alert_dialog",
     "button",
     "canvas",
+    "cell",
     "check_box",
+    "column_header",
     "combo_box",
     "dialog",
     "document",
@@ -733,6 +727,7 @@ type A11yRole = Literal[
     "progress_indicator",
     "radio_button",
     "region",
+    "row",
     "scroll_bar",
     "scroll_view",
     "search",
@@ -752,7 +747,13 @@ type A11yRole = Literal[
     "tree_item",
     "window",
 ]
-"""Accessibility role overriding the widget's auto-inferred role."""
+"""Accessibility role overriding the widget's auto-inferred role.
+
+Canonical underscore-separated forms matching the Rust renderer's ``parse_role``
+function. Includes table-context roles (``row``, ``cell``, ``column_header``)
+recognized by the renderer. ``generic_container`` is an SDK-level hint that
+maps to iced's ``GenericContainer`` role.
+"""
 
 type A11yLive = Literal["polite", "assertive"]
 """Live region announcement urgency."""
