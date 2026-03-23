@@ -1071,19 +1071,69 @@ class StdioConnection:
 # ---------------------------------------------------------------------------
 
 
-def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
-    """Build the subprocess environment.
+# Exact variable names to forward to the renderer subprocess.
+# Prevents leaking sensitive variables (API keys, tokens, DB URLs).
+# Mirrors the Elixir SDK's RendererEnv whitelist.
+_ENV_WHITELIST_EXACT = frozenset(
+    {
+        "DISPLAY",
+        "WAYLAND_DISPLAY",
+        "WAYLAND_SOCKET",
+        "WINIT_UNIX_BACKEND",
+        "XDG_RUNTIME_DIR",
+        "XDG_DATA_DIRS",
+        "XDG_DATA_HOME",
+        "PATH",
+        "LD_LIBRARY_PATH",
+        "DYLD_LIBRARY_PATH",
+        "DYLD_FALLBACK_LIBRARY_PATH",
+        "LANG",
+        "LANGUAGE",
+        "DBUS_SESSION_BUS_ADDRESS",
+        "GTK_MODULES",
+        "NO_AT_BRIDGE",
+        "WGPU_BACKEND",
+        "RUST_LOG",
+        "RUST_BACKTRACE",
+        "HOME",
+        "USER",
+        "PLUSHIE_NO_CATCH_UNWIND",
+    }
+)
 
-    Inherits the parent environment and whitelists display/rendering
-    variables. Merges any extra vars on top.
+# Prefixes -- any variable starting with one of these is forwarded.
+_ENV_WHITELIST_PREFIXES = (
+    "LC_",
+    "MESA_",
+    "LIBGL_",
+    "__GLX_",
+    "VK_",
+    "GALLIUM_",
+    "AT_SPI_",
+    "FONTCONFIG_",
+)
+
+
+def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Build a safe, whitelisted environment for the renderer subprocess.
+
+    Only forwards display, rendering, locale, accessibility, font, and
+    renderer-specific variables. Prevents leaking sensitive variables
+    (API keys, database credentials, tokens) to the renderer process.
 
     Args:
-        extra: Additional environment variables.
+        extra: Additional environment variables to include (always
+            forwarded regardless of whitelist).
 
     Returns:
-        Complete environment dict for subprocess.Popen.
+        Filtered environment dict for subprocess.Popen.
     """
-    env = dict(os.environ)
+    env: dict[str, str] = {}
+    for key, value in os.environ.items():
+        if key in _ENV_WHITELIST_EXACT or any(
+            key.startswith(p) for p in _ENV_WHITELIST_PREFIXES
+        ):
+            env[key] = value
     if extra:
         env.update(extra)
     return env
