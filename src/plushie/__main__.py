@@ -375,7 +375,20 @@ def _cmd_build(args: argparse.Namespace) -> None:
     if verbose and result.stdout:
         sys.stdout.buffer.write(result.stdout)
 
-    print(f"built: {build_dir}/target/{profile}/{binary_name}")
+    # Install to standard download location so resolve() finds it
+    from plushie.binary import download_dir, download_name
+
+    built_path = os.path.join(build_dir, "target", profile, binary_name)
+    if os.path.isfile(built_path):
+        dest_dir = download_dir()
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest = dest_dir / download_name()
+        shutil.copy2(built_path, str(dest))
+        dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+        print(f"installed: {dest}")
+    else:
+        print(f"built: {built_path}")
+        print("warning: could not install -- binary not found at expected path")
 
 
 def _cmd_inspect(args: argparse.Namespace) -> None:
