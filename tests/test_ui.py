@@ -297,7 +297,7 @@ class TestComboBox:
             type="combo_box",
             props={
                 "options": ["x", "y"],
-                "value": "x",
+                "selected": "x",
                 "placeholder": "Search",
             },
         )

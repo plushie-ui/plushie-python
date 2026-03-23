@@ -472,7 +472,7 @@ def combo_box(
             font, line_height, menu_height, icon, on_option_hovered,
             shaping, ellipsis, menu_style, style, a11y).
     """
-    return _node(id, "combo_box", {"options": options, "value": value, **kwargs})
+    return _node(id, "combo_box", {"options": options, "selected": value, **kwargs})
 
 
 def text_editor(id: str, content: str, /, **kwargs: Any) -> Node:

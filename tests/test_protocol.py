@@ -193,9 +193,9 @@ class TestWindowOp:
         assert msg["window_id"] == "win1"
         assert msg["settings"]["width"] == 800
 
-    def test_no_settings(self) -> None:
+    def test_no_settings_defaults_to_empty(self) -> None:
         msg = window_op("close", "win1")
-        assert "settings" not in msg
+        assert msg["settings"] == {}
 
 
 class TestEffectMsg:
@@ -986,7 +986,7 @@ class TestDecodeImeEvents:
             "family": "ime_preedit",
             "id": "",
             "tag": "ime",
-            "data": {"text": "ni", "cursor": [0, 2]},
+            "data": {"text": "ni", "cursor": {"start": 0, "end": 2}},
         }
         result = decode_message(raw)
         assert isinstance(result, ImePreedit)

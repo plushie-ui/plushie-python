@@ -240,9 +240,8 @@ def window_op(
         "session": session,
         "op": op,
         "window_id": window_id,
+        "settings": op_settings if op_settings is not None else {},
     }
-    if op_settings:
-        msg["settings"] = op_settings
     return msg
 
 
@@ -1159,7 +1158,17 @@ def _decode_event(msg: dict[str, Any]) -> Any:
 
     if family == "ime_preedit":
         cursor_raw = data.get("cursor")
-        cursor = tuple(cursor_raw) if cursor_raw and len(cursor_raw) == 2 else None
+        if (
+            isinstance(cursor_raw, dict)
+            and "start" in cursor_raw
+            and "end" in cursor_raw
+        ):
+            cursor: tuple[int, int] | None = (
+                int(cursor_raw["start"]),
+                int(cursor_raw["end"]),
+            )
+        else:
+            cursor = None
         return ImePreedit(
             text=str(data.get("text", "")),
             cursor=cursor,

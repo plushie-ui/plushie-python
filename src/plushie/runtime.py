@@ -707,14 +707,20 @@ class Runtime:
 
     def _schedule_send_after(self, delay_ms: int, event: Any) -> None:
         """Schedule an event for delivery after delay_ms milliseconds."""
+        # Use the event value itself as the dedup key so that two
+        # send_after calls with equal events cancel the first timer
+        # (matching Elixir's value-keyed Map).  Fall back to id() for
+        # unhashable events (dicts, lists) where dedup isn't possible.
+        try:
+            hash(event)
+            event_key = event
+        except TypeError:
+            event_key = id(event)
+
         # Cancel existing timer for same event to prevent duplicates
-        old = self._pending_timers.pop(
-            id(event) if not isinstance(event, str) else event, None
-        )
+        old = self._pending_timers.pop(event_key, None)
         if old is not None:
             old.cancel()
-
-        event_key = id(event) if not isinstance(event, str) else event
 
         def fire() -> None:
             self._pending_timers.pop(event_key, None)
@@ -1026,18 +1032,10 @@ class Runtime:
             self._coalesce_timer = None
         self._pending_coalesce.clear()
 
-        # Flush pending effects with error
-        for effect_id, timer in list(self._pending_effects.items()):
-            timer.cancel()
-            self._queue.put(
-                EffectResult(
-                    request_id=effect_id,
-                    status="error",
-                    result=None,
-                    error="renderer_restarted",
-                )
-            )
-        self._pending_effects.clear()
+        # Flush pending effects synchronously (matching Elixir, which
+        # dispatches effect errors through update/2 before re-sending
+        # settings and the snapshot to the new renderer).
+        self._flush_pending_effects("renderer_restarted")
 
         for attempt in range(self._MAX_RESTART_ATTEMPTS):
             delay_ms = min(
@@ -1068,6 +1066,11 @@ class Runtime:
             # Success -- re-send full snapshot and re-sync everything
             logger.info("plushie runtime: renderer reconnected")
             tree = self._safe_view(self._model)
+            if tree is None:
+                # view() failed -- keep the previous tree so window
+                # sync still has something to work with (matches Elixir
+                # which falls back to state.tree on safe_view error).
+                tree = self._tree
             self._tree = tree
             if tree is not None:
                 self._conn.send_snapshot(tree)
