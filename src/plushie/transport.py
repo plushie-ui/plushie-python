@@ -42,16 +42,22 @@ logger = logging.getLogger("plushie")
 class ReadableStream(Protocol):
     """Any object that supports blocking reads of raw bytes."""
 
-    def read(self, n: int = ..., /) -> bytes: ...
+    def read(self, n: int = ..., /) -> bytes:
+        """Read up to *n* bytes, blocking until data is available."""
+        ...
 
 
 @runtime_checkable
 class WritableStream(Protocol):
     """Any object that supports writing raw bytes."""
 
-    def write(self, data: bytes, /) -> int | None: ...
+    def write(self, data: bytes, /) -> int | None:
+        """Write *data* bytes to the stream."""
+        ...
 
-    def flush(self) -> None: ...
+    def flush(self) -> None:
+        """Flush any buffered output."""
+        ...
 
 
 class IoStreamAdapter:
