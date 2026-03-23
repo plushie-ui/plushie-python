@@ -419,7 +419,7 @@ def resolve() -> str:
         return bundled
 
     # Step 5: system PATH (native binaries only, not Python scripts)
-    which_path = shutil.which("plushie")
+    which_path = shutil.which("plushie-renderer")
     if which_path is not None and _is_native_binary(which_path):
         return os.path.abspath(which_path)
 
@@ -429,20 +429,20 @@ def resolve() -> str:
         dl_dir = "~/.local/share/plushie/bin/"
 
     raise PlushieNotFoundError(
-        "plushie binary not found.\n"
+        "plushie-renderer binary not found.\n"
         "\n"
         "Resolution chain (checked in order):\n"
         "  1. PLUSHIE_BINARY_PATH environment variable (not set)\n"
         "  2. Custom extension build in build/ (not found)\n"
         f"  3. Downloaded binary in {dl_dir} (not found)\n"
         "  4. Bundled binary (PyInstaller/Nuitka/Briefcase) (not found)\n"
-        "  5. 'plushie' on system PATH (not found)\n"
+        "  5. 'plushie-renderer' on system PATH (not found)\n"
         "\n"
         "To download a precompiled binary:\n"
         "  python -m plushie download\n"
         "\n"
         "To use an existing binary:\n"
-        "  export PLUSHIE_BINARY_PATH=/path/to/plushie"
+        "  export PLUSHIE_BINARY_PATH=/path/to/plushie-renderer"
     )
 
 

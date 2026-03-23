@@ -197,7 +197,7 @@ class TestResolve:
 
     def test_path_fallback(self, tmp_path: Path) -> None:
         """Falls back to PATH when env var, download, and bundled not available."""
-        binary = tmp_path / "plushie"
+        binary = tmp_path / "plushie-renderer"
         # Write a fake ELF header so _is_native_binary recognizes it
         binary.write_bytes(b"\x7fELF" + b"\x00" * 100)
         binary.chmod(binary.stat().st_mode | stat.S_IXUSR)
@@ -212,7 +212,7 @@ class TestResolve:
         ):
             mock_dd.return_value = tmp_path / "nonexistent"
             result = resolve()
-            assert os.path.basename(result) == "plushie"
+            assert os.path.basename(result) == "plushie-renderer"
 
     def test_bundled_binary(self, tmp_path: Path) -> None:
         """Falls through to bundled binary when env var and download are absent."""
