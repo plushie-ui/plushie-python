@@ -333,7 +333,6 @@ def generate_cargo_toml(
     return f"""\
 [workspace]
 members = [
-    "runner",
 {members_block}
 ]
 resolver = "2"

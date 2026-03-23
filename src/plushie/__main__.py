@@ -146,7 +146,6 @@ def _cmd_download(args: argparse.Namespace) -> None:
 
 def _cmd_build(args: argparse.Namespace) -> None:
     """Handle the ``build`` command."""
-    import json
     import os
     import shutil
     import stat

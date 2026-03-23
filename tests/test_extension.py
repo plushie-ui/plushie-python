@@ -15,6 +15,7 @@ from plushie.extension import (
     generate_main_rs,
     prop_names,
     validate,
+    validate_all,
 )
 
 # -- Fixtures ----------------------------------------------------------------
@@ -186,6 +187,70 @@ class TestValidate:
         errors = validate(ext)
         # Should report: empty kind, reserved "id", duplicate "x"
         assert len(errors) == 3
+
+
+class TestValidateAll:
+    def test_valid_pair(self) -> None:
+        assert validate_all([_gauge_def(), _sparkline_def()]) == []
+
+    def test_empty_list(self) -> None:
+        assert validate_all([]) == []
+
+    def test_single_valid(self) -> None:
+        assert validate_all([_gauge_def()]) == []
+
+    def test_kind_collision(self) -> None:
+        a = _gauge_def()
+        b = ExtensionDef(
+            kind="gauge",
+            rust_crate="native/other_gauge",
+            rust_constructor="other::Gauge::new()",
+        )
+        errors = validate_all([a, b])
+        assert any("gauge" in e and "claimed by both" in e for e in errors)
+
+    def test_crate_name_collision(self) -> None:
+        a = ExtensionDef(
+            kind="foo",
+            rust_crate="native/shared",
+            rust_constructor="shared::Foo::new()",
+        )
+        b = ExtensionDef(
+            kind="bar",
+            rust_crate="vendor/shared",
+            rust_constructor="shared::Bar::new()",
+        )
+        errors = validate_all([a, b])
+        assert any("crate name" in e and "shared" in e for e in errors)
+
+    def test_per_extension_errors_propagated(self) -> None:
+        bad = ExtensionDef(
+            kind="",
+            rust_crate="native/bad",
+            rust_constructor="bad::B::new()",
+            props=[PropDef("id", "string")],
+        )
+        errors = validate_all([bad])
+        assert any("kind must not be empty" in e for e in errors)
+        assert any("reserved" in e for e in errors)
+
+    def test_both_collisions_reported(self) -> None:
+        """Two extensions with the same kind AND same crate name."""
+        a = ExtensionDef(
+            kind="widget",
+            rust_crate="native/same_crate",
+            rust_constructor="same_crate::A::new()",
+        )
+        b = ExtensionDef(
+            kind="widget",
+            rust_crate="vendor/same_crate",
+            rust_constructor="same_crate::B::new()",
+        )
+        errors = validate_all([a, b])
+        kind_errors = [e for e in errors if "claimed by both" in e]
+        crate_errors = [e for e in errors if "crate name" in e]
+        assert len(kind_errors) >= 1
+        assert len(crate_errors) >= 1
 
 
 # -- Helper functions ---------------------------------------------------------
