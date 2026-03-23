@@ -163,13 +163,17 @@ def _cmd_download(args: argparse.Namespace) -> None:
     if want_bin:
         from plushie.binary import download
 
-        path = download(version=version, force=force)
+        path = download(
+            version=version, force=force, bin_file=getattr(args, "bin_file", None)
+        )
         print(f"downloaded: {path}")
 
     if want_wasm:
         from plushie.binary import download_wasm
 
-        path = download_wasm(version=version, force=force)
+        path = download_wasm(
+            version=version, force=force, wasm_dir_path=getattr(args, "wasm_dir", None)
+        )
         print(f"downloaded WASM bundle: {path}")
 
 
@@ -535,6 +539,16 @@ def _build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="re-download even if files already exist",
+    )
+    download_parser.add_argument(
+        "--bin-file",
+        default=None,
+        help="override native binary destination path",
+    )
+    download_parser.add_argument(
+        "--wasm-dir",
+        default=None,
+        help="override WASM output directory",
     )
 
     # build

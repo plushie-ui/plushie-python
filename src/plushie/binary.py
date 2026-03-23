@@ -189,8 +189,11 @@ def detect_arch() -> str:
 def download_name(*, os_name: str | None = None, arch: str | None = None) -> str:
     """Return the platform-specific binary asset name for downloads.
 
-    Format: ``plushie-renderer-{os}-{arch}`` (e.g. ``plushie-renderer-linux-x86_64``).
+    Format: ``plushie-{os}-{arch}`` (e.g. ``plushie-linux-x86_64``).
     On Windows the ``.exe`` extension is appended.
+
+    Note: download names use the legacy ``plushie`` prefix (not
+    ``plushie-renderer``) until GitHub release artifacts are renamed.
 
     Args:
         os_name: Override OS detection (for testing).
@@ -202,7 +205,7 @@ def download_name(*, os_name: str | None = None, arch: str | None = None) -> str
     os_val = os_name or detect_os()
     arch_val = arch or detect_arch()
     ext = ".exe" if os_val == "windows" else ""
-    return f"plushie-renderer-{os_val}-{arch_val}{ext}"
+    return f"plushie-{os_val}-{arch_val}{ext}"
 
 
 # ---------------------------------------------------------------------------
@@ -451,7 +454,12 @@ def resolve() -> str:
 # ---------------------------------------------------------------------------
 
 
-def download(version: str | None = None, *, force: bool = False) -> str:
+def download(
+    version: str | None = None,
+    *,
+    force: bool = False,
+    bin_file: str | None = None,
+) -> str:
     """Download a precompiled plushie binary from GitHub releases.
 
     The binary is saved to the standard download directory and made
@@ -462,6 +470,8 @@ def download(version: str | None = None, *, force: bool = False) -> str:
         version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
             uses ``BINARY_VERSION`` (the pinned default for this SDK).
         force: Re-download even if the binary already exists.
+        bin_file: Override the destination path. If ``None``, uses the
+            standard download directory.
 
     Returns:
         Path to the downloaded binary.
@@ -475,9 +485,13 @@ def download(version: str | None = None, *, force: bool = False) -> str:
     tag = f"v{version or BINARY_VERSION}"
     url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
 
-    dest_dir = download_dir()
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    dest = dest_dir / name
+    if bin_file is not None:
+        dest = Path(bin_file)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        dest_dir = download_dir()
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest = dest_dir / name
 
     if dest.is_file() and not force:
         logger.info(
@@ -511,7 +525,12 @@ def download(version: str | None = None, *, force: bool = False) -> str:
 # ---------------------------------------------------------------------------
 
 
-def download_wasm(version: str | None = None, *, force: bool = False) -> str:
+def download_wasm(
+    version: str | None = None,
+    *,
+    force: bool = False,
+    wasm_dir_path: str | None = None,
+) -> str:
     """Download the WASM renderer bundle from GitHub releases.
 
     Downloads ``plushie-renderer-wasm.tar.gz``, verifies its SHA-256 checksum,
@@ -522,6 +541,8 @@ def download_wasm(version: str | None = None, *, force: bool = False) -> str:
         version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
             uses ``BINARY_VERSION`` (the pinned default for this SDK).
         force: Re-download even if WASM files already exist.
+        wasm_dir_path: Override the WASM output directory. If ``None``,
+            uses the standard WASM directory.
 
     Returns:
         Path to the WASM directory containing the extracted files.
@@ -534,7 +555,7 @@ def download_wasm(version: str | None = None, *, force: bool = False) -> str:
     tag = f"v{version or BINARY_VERSION}"
     url = f"{GITHUB_RELEASE_URL}/{tag}/{archive_name}"
 
-    dest_dir = wasm_dir()
+    dest_dir = Path(wasm_dir_path) if wasm_dir_path else wasm_dir()
     js_path = dest_dir / WASM_JS_NAME
     wasm_path = dest_dir / WASM_BG_NAME
 

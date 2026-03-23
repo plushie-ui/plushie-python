@@ -48,7 +48,7 @@ class TestGitHubReleaseURL:
 
     def test_url_uses_plushie_ui_org(self) -> None:
         assert GITHUB_RELEASE_URL == (
-            "https://github.com/plushie-ui/plushie/releases/download"
+            "https://github.com/plushie-ui/plushie-renderer/releases/download"
         )
 
     def test_url_does_not_use_anthropics(self) -> None:
@@ -291,7 +291,7 @@ class TestWasmDownloadName:
     """Tests for wasm_download_name()."""
 
     def test_returns_archive_name(self) -> None:
-        assert wasm_download_name() == "plushie-wasm.tar.gz"
+        assert wasm_download_name() == "plushie-renderer-wasm.tar.gz"
 
 
 class TestResolveWasm:
