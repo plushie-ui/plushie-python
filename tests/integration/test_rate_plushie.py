@@ -34,22 +34,22 @@ class TestRatePlushieIntegration:
         assert len(app.model.reviews) > 0
 
     def test_star_canvas_exists(self, app: AppFixture[Model]) -> None:
-        """The star rating canvas widget exists (scoped under page/rating-card)."""
-        assert app.exists("#page/rating-card/stars")
+        """The star rating canvas widget exists (scoped under page-theme/page/rating-card)."""
+        assert app.exists("#page-theme/page/rating-card/stars")
 
     def test_heading_exists(self, app: AppFixture[Model]) -> None:
         """The heading text is displayed."""
         assert app.text("#heading") == "Rate Plushie"
 
     def test_review_form_elements(self, app: AppFixture[Model]) -> None:
-        """The review form inputs and submit button exist (scoped under page)."""
-        assert app.exists("#page/rating-card/review-form/review-name")
-        assert app.exists("#page/rating-card/review-form/review-comment")
-        assert app.exists("#page/rating-card/review-form/submit-review")
+        """The review form inputs and submit button exist (scoped under page-theme/page)."""
+        assert app.exists("#page-theme/page/rating-card/review-form/review-name")
+        assert app.exists("#page-theme/page/rating-card/review-form/review-comment")
+        assert app.exists("#page-theme/page/rating-card/review-form/submit-review")
 
     def test_theme_toggle_exists(self, app: AppFixture[Model]) -> None:
-        """The theme toggle canvas exists (scoped under page/rating-card)."""
-        assert app.exists("#page/rating-card/theme-row/theme-toggle")
+        """The theme toggle canvas exists (scoped under page-theme/page/rating-card)."""
+        assert app.exists("#page-theme/page/rating-card/theme-row/theme-toggle")
 
     def test_review_name_input(self, app: AppFixture[Model]) -> None:
         """Typing in the review name input updates the model."""

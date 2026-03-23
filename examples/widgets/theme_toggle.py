@@ -6,9 +6,9 @@ during the transition.
 
 Usage::
 
-    from examples.widgets.theme_toggle import ThemeToggle
+    from examples.widgets.theme_toggle import render as toggle_render
 
-    ThemeToggle.render("my-toggle", model.toggle_progress)
+    toggle_render("my-toggle", model.toggle_progress)
 
 Events: ``CanvasElementClick`` with element_id ``"switch"``.
 Drive ``progress`` from 0.0 (light) to 1.0 (dark) with a timer.
@@ -35,6 +35,9 @@ def render(id: str, progress: float) -> dict[str, Any]:
     rotation = eased * math.pi
     face_color = "#665500" if progress < 0.5 else "#4c1d95"
 
+    # Padding for the outset focus ring.
+    ring_pad = 4
+
     toggle_group = c.interactive(
         c.group(
             # Track
@@ -54,18 +57,26 @@ def render(id: str, progress: float) -> dict[str, Any]:
                 ),
                 transforms=[c.translate(thumb_x, TRACK_H / 2), c.rotate(rotation)],
             ),
+            x=ring_pad,
+            y=ring_pad,
         ),
         "switch",
         on_click=True,
         cursor="pointer",
         hit_rect={"x": 0, "y": 0, "w": TRACK_W, "h": TRACK_H},
-        a11y={"role": "switch", "label": "Dark humor"},
+        focus_ring_radius=TRACK_H / 2 + ring_pad,
+        a11y={
+            "role": "switch",
+            "label": "Dark humor",
+            "toggled": progress >= 0.5,
+        },
     )
 
     return ui.canvas(
         id,
-        width=TRACK_W,
-        height=TRACK_H,
+        width=TRACK_W + ring_pad * 2,
+        height=TRACK_H + ring_pad * 2,
+        alt="Theme toggle",
         layers=dict([c.layer("toggle", toggle_group)]),
     )
 

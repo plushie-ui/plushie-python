@@ -30,7 +30,6 @@ from plushie import ui
 from plushie.events import (
     CanvasElementClick,
     CanvasElementEnter,
-    CanvasElementFocused,
     CanvasElementLeave,
     Click,
     Input,
@@ -38,6 +37,7 @@ from plushie.events import (
     TimerTick,
 )
 from plushie.subscriptions import Subscription
+from plushie.types import Theme
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,7 +86,6 @@ class Model:
 
     rating: int = 0
     hover_star: int | None = None
-    focused_star: int | None = None
     toggle_progress: float = 0.0
     toggle_target: float = 0.0
     reviews: tuple[Review, ...] = INITIAL_REVIEWS
@@ -133,7 +132,7 @@ def _fade(c1: tuple[int, int, int], c2: tuple[int, int, int], t: float) -> str:
 
 
 @dataclass(frozen=True, slots=True)
-class Theme:
+class _Theme:
     """Interpolated color theme."""
 
     page_bg: str
@@ -144,8 +143,8 @@ class Theme:
     text_muted: str
 
 
-def _theme(p: float) -> Theme:
-    return Theme(
+def _theme(p: float) -> _Theme:
+    return _Theme(
         page_bg=_fade((248, 248, 250), (19, 19, 31), p),
         card_bg=_fade((255, 255, 255), (28, 28, 50), p),
         card_border=_fade((224, 224, 224), (42, 42, 74), p),
@@ -178,12 +177,6 @@ class RatePlushie(plushie.App[Model]):
 
             case CanvasElementLeave(id="stars"):
                 return replace(model, hover_star=None)
-
-            case CanvasElementFocused(id="stars", element_id=sid) if sid.startswith(
-                "star-"
-            ):
-                n = int(sid.removeprefix("star-"))
-                return replace(model, focused_star=n)
 
             # Theme toggle
             case CanvasElementClick(id="theme-toggle"):
@@ -221,28 +214,51 @@ class RatePlushie(plushie.App[Model]):
         p = _smoothstep(model.toggle_progress)
         t = _theme(p)
 
+        page_theme = Theme.custom(
+            "rate-plushie",
+            background=t.page_bg,
+            text=t.text,
+            primary=_fade((59, 130, 246), (139, 92, 246), p),
+        )
+
         return ui.window(
             "main",
-            ui.container(
-                "page",
-                ui.column(
-                    ui.text("heading", "Rate Plushie", size=28, color=t.text),
-                    _rating_card(model, p, t),
-                    ui.text("reviews-heading", "Reviews", size=20, color=t.text),
-                    _reviews_list(model.reviews, p, t),
-                    spacing=24,
+            ui.themer(
+                "page-theme",
+                ui.container(
+                    "page",
+                    ui.column(
+                        ui.text(
+                            "heading",
+                            "Rate Plushie",
+                            size=28,
+                            color=t.text,
+                            a11y={"role": "heading", "level": 1},
+                        ),
+                        _rating_card(model, p, t),
+                        ui.text(
+                            "reviews-heading",
+                            "Reviews",
+                            size=20,
+                            color=t.text,
+                            a11y={"role": "heading", "level": 2},
+                        ),
+                        _reviews_list(model.reviews, p, t),
+                        spacing=24,
+                        width="fill",
+                    ),
+                    padding=(32, 24, 32, 24),
+                    background=t.page_bg,
                     width="fill",
+                    height="fill",
                 ),
-                padding=(32, 24, 32, 24),
-                background=t.page_bg,
-                width="fill",
-                height="fill",
+                theme=page_theme,
             ),
             title="Rate Plushie",
         )
 
 
-def _rating_card(model: Model, p: float, t: Theme) -> dict[str, Any]:
+def _rating_card(model: Model, p: float, t: _Theme) -> dict[str, Any]:
     return ui.container(
         "rating-card",
         ui.column(
@@ -256,7 +272,6 @@ def _rating_card(model: Model, p: float, t: Theme) -> dict[str, Any]:
                 "stars",
                 model.rating,
                 hover=model.hover_star,
-                focused=model.focused_star,
                 theme_progress=p,
             ),
             ui.rule(),
@@ -277,12 +292,14 @@ def _review_form(model: Model) -> dict[str, Any]:
             "review-name",
             model.review_name,
             placeholder="Your name",
+            a11y={"label": "Your name"},
         ),
         ui.text_editor(
             "review-comment",
             model.review_comment,
             placeholder="Write your review...",
             height=80,
+            a11y={"label": "Review text"},
         ),
         ui.button("submit-review", "Submit Review"),
         id="review-form",
@@ -291,7 +308,7 @@ def _review_form(model: Model) -> dict[str, Any]:
     )
 
 
-def _theme_row(model: Model, t: Theme) -> dict[str, Any]:
+def _theme_row(model: Model, t: _Theme) -> dict[str, Any]:
     return ui.row(
         ui.space(width="fill"),
         ui.text("toggle-label", "Dark humor", color=t.text_secondary),
@@ -301,7 +318,7 @@ def _theme_row(model: Model, t: Theme) -> dict[str, Any]:
     )
 
 
-def _reviews_list(reviews: tuple[Review, ...], p: float, t: Theme) -> dict[str, Any]:
+def _reviews_list(reviews: tuple[Review, ...], p: float, t: _Theme) -> dict[str, Any]:
     children: list[dict[str, Any]] = []
     for i, review in enumerate(reviews):
         if i > 0:
@@ -311,7 +328,7 @@ def _reviews_list(reviews: tuple[Review, ...], p: float, t: Theme) -> dict[str, 
     return ui.column(*children, id="reviews", spacing=0, width="fill")
 
 
-def _review_card(review: Review, i: int, p: float, t: Theme) -> dict[str, Any]:
+def _review_card(review: Review, i: int, p: float, t: _Theme) -> dict[str, Any]:
     return ui.column(
         ui.row(
             star_render(
