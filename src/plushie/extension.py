@@ -186,6 +186,50 @@ def validate(ext_def: ExtensionDef) -> list[str]:
     return errors
 
 
+def validate_all(extensions: list[ExtensionDef]) -> list[str]:
+    """Validate a list of extensions, including cross-extension checks.
+
+    Runs :func:`validate` on each extension individually, then checks
+    for collisions across the full list:
+
+    - No two extensions may claim the same ``kind`` (widget type name).
+    - No two extensions may share the same crate name (last segment of
+      ``rust_crate`` path).
+
+    Returns an empty list when valid, or a list of human-readable error
+    messages.
+    """
+    errors: list[str] = []
+
+    # Per-extension validation
+    for ext in extensions:
+        for err in validate(ext):
+            errors.append(f"[{ext.kind or '?'}] {err}")
+
+    # Kind collisions
+    seen_kinds: dict[str, str] = {}
+    for ext in extensions:
+        if ext.kind in seen_kinds:
+            errors.append(
+                f'widget type "{ext.kind}" claimed by both '
+                f'"{seen_kinds[ext.kind]}" and "{ext.rust_crate}"'
+            )
+        seen_kinds[ext.kind] = ext.rust_crate
+
+    # Crate name collisions
+    seen_crates: dict[str, str] = {}
+    for ext in extensions:
+        crate_name = ext.rust_crate.rsplit("/", maxsplit=1)[-1]
+        if crate_name in seen_crates:
+            errors.append(
+                f'crate name "{crate_name}" used by both '
+                f'"{seen_crates[crate_name]}" and "{ext.kind}"'
+            )
+        seen_crates[crate_name] = ext.kind
+
+    return errors
+
+
 # -- Runtime helpers ----------------------------------------------------------
 
 
@@ -356,4 +400,5 @@ __all__ = [
     "generate_main_rs",
     "prop_names",
     "validate",
+    "validate_all",
 ]

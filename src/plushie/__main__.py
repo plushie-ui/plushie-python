@@ -146,7 +146,10 @@ def _cmd_download(args: argparse.Namespace) -> None:
 
 def _cmd_build(args: argparse.Namespace) -> None:
     """Handle the ``build`` command."""
+    import json
     import os
+    import shutil
+    import stat
     import subprocess
 
     from plushie.binary import check_rust_version
@@ -211,8 +214,64 @@ def _cmd_build(args: argparse.Namespace) -> None:
             )
 
     if not extensions:
-        print("no extensions found -- nothing to build")
-        print(f"  looked for config at: {config_path}")
+        # Stock build (no extensions) -- build vanilla binary from source
+        source = os.environ.get("PLUSHIE_SOURCE_PATH")
+        if source is None:
+            print("no extensions found and PLUSHIE_SOURCE_PATH not set")
+            print(f"  looked for extension config at: {config_path}")
+            print("")
+            print("to build with extensions:")
+            print(f"  create {config_path} with extension definitions")
+            print("")
+            print("to build the stock binary from source:")
+            print("  export PLUSHIE_SOURCE_PATH=/path/to/plushie")
+            raise SystemExit(1)
+
+        # Build stock binary from source
+        plushie_crate = os.path.join(source, "plushie")
+        if not os.path.isdir(plushie_crate):
+            print(f"plushie crate not found at {plushie_crate}", file=sys.stderr)
+            raise SystemExit(1)
+
+        cargo_args = ["cargo", "build"]
+        if release:
+            cargo_args.append("--release")
+        profile = "release" if release else "debug"
+        verbose = getattr(args, "verbose", False)
+
+        print(f"building stock binary{' (release)' if release else ''}...")
+        result = subprocess.run(
+            cargo_args,
+            cwd=plushie_crate,
+            capture_output=not verbose,
+            check=False,
+        )
+        if result.returncode != 0:
+            if not verbose and result.stderr:
+                sys.stderr.buffer.write(result.stderr)
+            print("build failed", file=sys.stderr)
+            raise SystemExit(result.returncode)
+
+        # Install to standard download location
+        from plushie.binary import download_dir, download_name
+
+        built = os.path.join(source, "target", profile, "plushie")
+        dest_dir = download_dir()
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest = dest_dir / download_name()
+        shutil.copy2(built, str(dest))
+        dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+        print(f"installed: {dest}")
+        return
+
+    # Validate extensions
+    from plushie.extension import validate_all
+
+    errors = validate_all(extensions)
+    if errors:
+        print("extension validation failed:", file=sys.stderr)
+        for err in errors:
+            print(f"  - {err}", file=sys.stderr)
         raise SystemExit(1)
 
     binary_name = args.name or "plushie-custom"
