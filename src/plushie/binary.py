@@ -59,7 +59,7 @@ class ChecksumError(RuntimeError):
     """Raised when SHA-256 verification of a downloaded artifact fails."""
 
 
-BINARY_VERSION = "0.4.1"
+BINARY_VERSION = "0.5.0"
 """Default plushie binary version. Matches the renderer protocol this SDK was built against."""
 
 MIN_RUST_VERSION = (1, 92, 0)
@@ -189,11 +189,8 @@ def detect_arch() -> str:
 def download_name(*, os_name: str | None = None, arch: str | None = None) -> str:
     """Return the platform-specific binary asset name for downloads.
 
-    Format: ``plushie-{os}-{arch}`` (e.g. ``plushie-linux-x86_64``).
+    Format: ``plushie-renderer-{os}-{arch}`` (e.g. ``plushie-renderer-linux-x86_64``).
     On Windows the ``.exe`` extension is appended.
-
-    Note: download names use the legacy ``plushie`` prefix (not
-    ``plushie-renderer``) until GitHub release artifacts are renamed.
 
     Args:
         os_name: Override OS detection (for testing).
@@ -205,7 +202,7 @@ def download_name(*, os_name: str | None = None, arch: str | None = None) -> str
     os_val = os_name or detect_os()
     arch_val = arch or detect_arch()
     ext = ".exe" if os_val == "windows" else ""
-    return f"plushie-{os_val}-{arch_val}{ext}"
+    return f"plushie-renderer-{os_val}-{arch_val}{ext}"
 
 
 # ---------------------------------------------------------------------------
@@ -467,7 +464,7 @@ def download(
     is verified against the sidecar ``.sha256`` file on GitHub.
 
     Args:
-        version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
+        version: Release version tag (e.g. ``"0.5.0"``). If ``None``,
             uses ``BINARY_VERSION`` (the pinned default for this SDK).
         force: Re-download even if the binary already exists.
         bin_file: Override the destination path. If ``None``, uses the
@@ -538,7 +535,7 @@ def download_wasm(
     the standard WASM directory.
 
     Args:
-        version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
+        version: Release version tag (e.g. ``"0.5.0"``). If ``None``,
             uses ``BINARY_VERSION`` (the pinned default for this SDK).
         force: Re-download even if WASM files already exist.
         wasm_dir_path: Override the WASM output directory. If ``None``,

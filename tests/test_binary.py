@@ -67,7 +67,10 @@ class TestDetectArch:
 
 class TestDownloadName:
     def test_linux_x86(self) -> None:
-        assert download_name(os_name="linux", arch="x86_64") == "plushie-linux-x86_64"
+        assert (
+            download_name(os_name="linux", arch="x86_64")
+            == "plushie-renderer-linux-x86_64"
+        )
 
     def test_windows_gets_exe(self) -> None:
         name = download_name(os_name="windows", arch="x86_64")
@@ -216,9 +219,12 @@ class TestDownloadForce:
     def test_skip_when_exists_and_not_forced(self, tmp_path: Path) -> None:
         with (
             patch("plushie.binary.download_dir", return_value=tmp_path),
-            patch("plushie.binary.download_name", return_value="plushie-linux-x86_64"),
+            patch(
+                "plushie.binary.download_name",
+                return_value="plushie-renderer-linux-x86_64",
+            ),
         ):
-            existing = tmp_path / "plushie-linux-x86_64"
+            existing = tmp_path / "plushie-renderer-linux-x86_64"
             existing.write_bytes(b"existing binary")
 
             result = download(version="0.4.0", force=False)
@@ -227,13 +233,16 @@ class TestDownloadForce:
     def test_redownload_when_forced(self, tmp_path: Path) -> None:
         with (
             patch("plushie.binary.download_dir", return_value=tmp_path),
-            patch("plushie.binary.download_name", return_value="plushie-linux-x86_64"),
+            patch(
+                "plushie.binary.download_name",
+                return_value="plushie-renderer-linux-x86_64",
+            ),
             patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
             patch("plushie.binary._verify_checksum") as mock_verify,
             patch("plushie.binary.sys") as mock_sys,
         ):
             mock_sys.platform = "linux"
-            existing = tmp_path / "plushie-linux-x86_64"
+            existing = tmp_path / "plushie-renderer-linux-x86_64"
             existing.write_bytes(b"old binary")
 
             mock_retrieve.side_effect = lambda url, dest: Path(dest).write_bytes(b"new")
@@ -247,8 +256,8 @@ class TestDownloadForce:
 class TestDownloadWasmForce:
     def test_skip_when_exists_and_not_forced(self, tmp_path: Path) -> None:
         with patch("plushie.binary.wasm_dir", return_value=tmp_path):
-            (tmp_path / "plushie_wasm.js").write_text("js")
-            (tmp_path / "plushie_wasm_bg.wasm").write_bytes(b"wasm")
+            (tmp_path / "plushie_renderer_wasm.js").write_text("js")
+            (tmp_path / "plushie_renderer_wasm_bg.wasm").write_bytes(b"wasm")
 
             result = download_wasm(version="0.4.0", force=False)
             assert result == str(tmp_path)
@@ -260,8 +269,8 @@ class TestDownloadWasmForce:
             patch("plushie.binary._verify_checksum") as mock_verify,
             patch("plushie.binary.tarfile.open") as mock_taropen,
         ):
-            (tmp_path / "plushie_wasm.js").write_text("js")
-            (tmp_path / "plushie_wasm_bg.wasm").write_bytes(b"wasm")
+            (tmp_path / "plushie_renderer_wasm.js").write_text("js")
+            (tmp_path / "plushie_renderer_wasm_bg.wasm").write_bytes(b"wasm")
 
             def fake_retrieve(url: str, dest: str) -> None:
                 Path(dest).write_bytes(b"fake tar")

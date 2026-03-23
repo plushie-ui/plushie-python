@@ -119,17 +119,21 @@ class TestDownloadName:
     """Tests for download_name()."""
 
     def test_linux_x86_64(self) -> None:
-        assert download_name(os_name="linux", arch="x86_64") == "plushie-linux-x86_64"
+        assert (
+            download_name(os_name="linux", arch="x86_64")
+            == "plushie-renderer-linux-x86_64"
+        )
 
     def test_darwin_aarch64(self) -> None:
         assert (
-            download_name(os_name="darwin", arch="aarch64") == "plushie-darwin-aarch64"
+            download_name(os_name="darwin", arch="aarch64")
+            == "plushie-renderer-darwin-aarch64"
         )
 
     def test_windows_exe(self) -> None:
         assert (
             download_name(os_name="windows", arch="x86_64")
-            == "plushie-windows-x86_64.exe"
+            == "plushie-renderer-windows-x86_64.exe"
         )
 
 
@@ -528,7 +532,7 @@ class TestConnectionWithBinary:
             hello = conn.wait_hello(timeout=5.0)
             assert hello.protocol == PROTOCOL_VERSION
             assert hello.mode == "mock"
-            assert hello.name == "plushie"
+            assert hello.name == "plushie-renderer"
 
     def test_snapshot_and_query(self) -> None:
         """Send a snapshot and query for a widget."""
