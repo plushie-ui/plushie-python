@@ -138,12 +138,13 @@ briefcase build windows          # Windows .msi
 The SDK resolves the plushie binary in this order:
 
 1. `PLUSHIE_BINARY_PATH` environment variable (fail-fast)
-2. Downloaded binary in the standard location
-3. Bundled binary (PyInstaller `sys._MEIPASS`, adjacent to
+2. Custom extension build in `build/*/target/`
+3. Downloaded binary in the standard location
+4. Bundled binary (PyInstaller `sys._MEIPASS`, adjacent to
    `__file__`, adjacent to `sys.executable`)
-4. `plushie` on system PATH
+5. `plushie` on system PATH
 
-For most bundling tools, step 3 handles resolution automatically.
+For most bundling tools, step 4 handles resolution automatically.
 Set `PLUSHIE_BINARY_PATH` explicitly if automatic resolution does
 not find the binary in your specific packaging setup.
 

@@ -146,8 +146,23 @@ The built binary is installed to the standard download location.
 
 ### Extension build
 
-Create a `plushie_extensions.json` file describing your native
-extensions:
+Extensions can be configured in `pyproject.toml` (preferred) or a
+JSON file:
+
+**pyproject.toml** (recommended):
+
+```toml
+[tool.plushie]
+source_path = "~/projects/plushie"
+build_name = "my-app-plushie"
+
+[[tool.plushie.extensions]]
+kind = "gauge"
+rust_crate = "native/my_gauge"
+rust_constructor = "my_gauge::GaugeExtension::new()"
+```
+
+**JSON** (alternative):
 
 ```json
 {
@@ -155,17 +170,7 @@ extensions:
     {
       "kind": "gauge",
       "rust_crate": "native/my_gauge",
-      "rust_constructor": "my_gauge::GaugeExtension::new()",
-      "props": [
-        {"name": "value", "prop_type": "number"},
-        {"name": "color", "prop_type": "color"}
-      ],
-      "commands": [
-        {
-          "name": "set_value",
-          "params": [{"name": "value", "param_type": "number"}]
-        }
-      ]
+      "rust_constructor": "my_gauge::GaugeExtension::new()"
     }
   ]
 }
@@ -174,11 +179,17 @@ extensions:
 Then build:
 
 ```bash
-python -m plushie build --config plushie_extensions.json --release
+python -m plushie build --release
 ```
 
 The build validates extensions (no duplicate widget types or crate
-names), generates a Cargo workspace, and runs `cargo build`.
+names), generates a Cargo workspace, runs `cargo build`, and
+installs the built binary to the standard download location so
+`resolve()` finds it automatically.
+
+Configuration resolution:
+- `--name` flag > `build_name` from pyproject.toml > `"plushie-custom"`
+- `PLUSHIE_SOURCE_PATH` env > `source_path` from pyproject.toml
 
 See [Extensions](extensions.md) for the full guide.
 

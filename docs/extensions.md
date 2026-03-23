@@ -428,9 +428,43 @@ events in order.
 
 ## Build system
 
+### Configuration
+
+Extensions are configured in `pyproject.toml` under `[tool.plushie]`
+(recommended) or in a JSON file:
+
+```toml
+[tool.plushie]
+source_path = "~/projects/plushie"
+build_name = "my-app-plushie"
+
+[[tool.plushie.extensions]]
+kind = "sparkline"
+rust_crate = "native/my_sparkline"
+rust_constructor = "my_sparkline::SparklineExtension::new()"
+
+[[tool.plushie.extensions]]
+kind = "gauge"
+rust_crate = "native/my_gauge"
+rust_constructor = "my_gauge::GaugeExtension::new()"
+```
+
+The `source_path` and `build_name` keys are optional. They can also
+be set via `PLUSHIE_SOURCE_PATH` environment variable and the
+`--name` CLI flag respectively.
+
+The build command reads this config, validates extensions (no
+duplicate widget types or crate names via `validate_all()`),
+generates a Cargo workspace, runs `cargo build`, and installs the
+binary to the standard download location.
+
+```bash
+python -m plushie build --release
+```
+
 ### generate_cargo_toml
 
-Generate a Cargo workspace manifest for a custom binary build:
+Generate a Cargo workspace manifest programmatically:
 
 ```python
 from plushie.extension import generate_cargo_toml
