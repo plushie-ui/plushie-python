@@ -1008,8 +1008,302 @@ my_widget/
     pyproject.toml
 ```
 
+#### Example: DonutChart (pure Python, canvas-based)
+
+```python
+# my_widget/donut_chart.py
+"""Donut chart widget rendered via canvas shape primitives."""
+
+from __future__ import annotations
+
+import math
+from typing import Any
+
+from plushie import ui
+from plushie.canvas import circle, path, group, layer, canvas_text
+
+
+def donut_chart(
+    id: str,
+    segments: list[tuple[float, str]],
+    *,
+    size: float = 200,
+    thickness: float = 40,
+    background: str = "#e0e0e0",
+    **props: Any,
+) -> dict:
+    """Build a donut chart widget.
+
+    Args:
+        id: Widget ID.
+        segments: List of ``(value, color)`` tuples.
+        size: Outer diameter in pixels.
+        thickness: Ring thickness.
+        background: Color for empty segments.
+    """
+    r_outer = size / 2
+    r_inner = r_outer - thickness
+    cx, cy = r_outer, r_outer
+    total = sum(v for v, _ in segments) or 1.0
+
+    shapes = []
+    # Background ring
+    shapes.append(circle(cx, cy, r_outer, fill=background))
+    shapes.append(circle(cx, cy, r_inner, fill="#ffffff"))
+
+    # Segments as arc paths
+    start_angle = -math.pi / 2
+    for value, color in segments:
+        sweep = (value / total) * 2 * math.pi
+        end_angle = start_angle + sweep
+
+        # Outer arc point
+        x1 = cx + r_outer * math.cos(start_angle)
+        y1 = cy + r_outer * math.sin(start_angle)
+        x2 = cx + r_outer * math.cos(end_angle)
+        y2 = cy + r_outer * math.sin(end_angle)
+        # Inner arc point
+        x3 = cx + r_inner * math.cos(end_angle)
+        y3 = cy + r_inner * math.sin(end_angle)
+        x4 = cx + r_inner * math.cos(start_angle)
+        y4 = cy + r_inner * math.sin(start_angle)
+
+        large = 1 if sweep > math.pi else 0
+        commands = [
+            ["move_to", x1, y1],
+            ["arc", r_outer, r_outer, 0, large, 1, x2, y2],
+            ["line_to", x3, y3],
+            ["arc", r_inner, r_inner, 0, large, 0, x4, y4],
+            ["close"],
+        ]
+        shapes.append(path(commands, fill=color))
+        start_angle = end_angle
+
+    return ui.canvas(
+        id,
+        width=size,
+        height=size,
+        layers={"chart": shapes},
+        **props,
+    )
+```
+
+Usage in an app:
+
+```python
+from my_widget.donut_chart import donut_chart
+
+def view(self, model):
+    return ui.window("main",
+        donut_chart("revenue", [
+            (model.q1, "#4CAF50"),
+            (model.q2, "#2196F3"),
+            (model.q3, "#FF9800"),
+            (model.q4, "#F44336"),
+        ], size=250, thickness=50),
+        title="Revenue",
+    )
+```
+
 ### Native packages (Python + Rust)
 
-Native packages include both Python definitions (`ExtensionDef`) and a Rust
-crate. Consumers need a Rust toolchain to build the custom renderer binary.
-Document this in your package README.
+Native packages include both Python definitions (`ExtensionDef`) and a
+Rust crate. Consumers need a Rust toolchain to build the custom
+renderer binary.
+
+#### Example: Sparkline (complete Python + Rust)
+
+**Python side** -- defines the extension and provides the API:
+
+```python
+# my_sparkline/__init__.py
+from plushie.extension import (
+    ExtensionDef, PropDef, CommandDef, ParamDef,
+    build_node, build_command,
+)
+from plushie.commands import Command
+
+sparkline_def = ExtensionDef(
+    kind="sparkline",
+    rust_crate="native/my_sparkline",
+    rust_constructor="my_sparkline::SparklineExtension::new()",
+    props=[
+        PropDef("color", "color"),
+        PropDef("capacity", "number"),
+        PropDef("stroke_width", "number"),
+    ],
+    commands=[
+        CommandDef("push", [ParamDef("value", "number")]),
+        CommandDef("clear", []),
+    ],
+)
+
+def sparkline(id: str, *, color: str = "#4CAF50", capacity: int = 100, **kwargs) -> dict:
+    """Create a sparkline widget node."""
+    return build_node(sparkline_def, id, {"color": color, "capacity": capacity, **kwargs})
+
+def push(node_id: str, value: float) -> Command:
+    """Push a new sample value to the sparkline."""
+    return build_command(sparkline_def, node_id, "push", {"value": value})
+
+def clear(node_id: str) -> Command:
+    """Clear all samples from the sparkline."""
+    return build_command(sparkline_def, node_id, "clear", {})
+```
+
+**Rust side** -- renders a polyline from a ring buffer of samples:
+
+```rust
+// native/my_sparkline/src/lib.rs
+use plushie_core::prelude::*;
+
+pub struct SparklineExtension;
+
+impl SparklineExtension {
+    pub fn new() -> Self { Self }
+}
+
+struct SparklineState {
+    samples: Vec<f32>,
+    capacity: usize,
+    generation: GenerationCounter,
+}
+
+impl SparklineState {
+    fn new(capacity: usize) -> Self {
+        Self { samples: Vec::new(), capacity, generation: GenerationCounter::new() }
+    }
+
+    fn push(&mut self, value: f32) {
+        if self.samples.len() >= self.capacity {
+            self.samples.remove(0);
+        }
+        self.samples.push(value);
+    }
+}
+
+impl WidgetExtension for SparklineExtension {
+    fn type_names(&self) -> &[&str] { &["sparkline"] }
+    fn config_key(&self) -> &str { "sparkline" }
+
+    fn prepare(&mut self, node: &TreeNode, caches: &mut ExtensionCaches, _theme: &Theme) {
+        caches.get_or_insert::<SparklineState>(self.config_key(), &node.id, || {
+            SparklineState::new(prop_usize(node, "capacity").unwrap_or(100))
+        });
+    }
+
+    fn render<'a>(&self, node: &'a TreeNode, env: &WidgetEnv<'a>) -> Element<'a, Message> {
+        let color = prop_color(node, "color").unwrap_or(Color::from_rgb8(76, 175, 80));
+        let stroke_w = prop_f32(node, "stroke_width").unwrap_or(2.0);
+        let width = prop_f32(node, "width").unwrap_or(200.0);
+        let height = prop_f32(node, "height").unwrap_or(60.0);
+
+        // Read samples from cache
+        let samples = env.caches
+            .get::<SparklineState>(self.config_key(), &node.id)
+            .map(|s| &s.samples[..])
+            .unwrap_or(&[]);
+
+        if samples.is_empty() {
+            return container(text("no data")).width(width).height(height).into();
+        }
+
+        // Build polyline path
+        let min = samples.iter().copied().reduce(f32::min).unwrap();
+        let max = samples.iter().copied().reduce(f32::max).unwrap();
+        let range = (max - min).max(0.001);
+        let step = width / (samples.len() as f32 - 1.0).max(1.0);
+
+        let points: Vec<_> = samples.iter().enumerate().map(|(i, &v)| {
+            let x = i as f32 * step;
+            let y = height - ((v - min) / range) * height;
+            (x, y)
+        }).collect();
+
+        // Render as canvas with a single line path
+        use iced::widget::canvas;
+        canvas::Canvas::new(SparklineRenderer { points, color, stroke_w })
+            .width(width)
+            .height(height)
+            .into()
+    }
+
+    fn handle_command(
+        &mut self, node_id: &str, op: &str, payload: &Value,
+        caches: &mut ExtensionCaches,
+    ) -> Vec<OutgoingEvent> {
+        if let Some(state) = caches.get_mut::<SparklineState>(self.config_key(), node_id) {
+            match op {
+                "push" => {
+                    if let Some(v) = payload.get("value").and_then(|v| v.as_f64()) {
+                        state.push(v as f32);
+                        state.generation.bump();
+                    }
+                }
+                "clear" => {
+                    state.samples.clear();
+                    state.generation.bump();
+                }
+                _ => {}
+            }
+        }
+        vec![]
+    }
+
+    fn cleanup(&mut self, node_id: &str, caches: &mut ExtensionCaches) {
+        caches.remove(self.config_key(), node_id);
+    }
+}
+```
+
+**Using it in an app:**
+
+```python
+import plushie
+from plushie import ui
+from plushie.events import Click, TimerTick
+from plushie.subscriptions import Subscription
+from my_sparkline import sparkline, push
+import random
+
+class SparklineDemo(plushie.App):
+    def init(self):
+        return {"running": True}
+
+    def update(self, model, event):
+        match event:
+            case TimerTick(tag="sample"):
+                return model, push("spark", random.uniform(0, 100))
+            case Click(id="toggle"):
+                return {**model, "running": not model["running"]}
+            case _:
+                return model
+
+    def subscribe(self, model):
+        if model["running"]:
+            return [Subscription.every(100, "sample")]
+        return []
+
+    def view(self, model):
+        return ui.window("main",
+            ui.column(
+                sparkline("spark", color="#2196F3", capacity=50,
+                           width=400, height=80),
+                ui.button("toggle",
+                           "Stop" if model["running"] else "Start"),
+                padding=16, spacing=8,
+            ),
+            title="Sparkline Demo",
+        )
+```
+
+**Build and run:**
+
+```bash
+python -m plushie build --release
+python -m plushie run sparkline_demo:SparklineDemo
+```
+
+Document the Rust toolchain requirement in your package README.
+Consumers need to run `python -m plushie build` after installing your
+package.
