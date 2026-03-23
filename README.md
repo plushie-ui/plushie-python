@@ -224,10 +224,16 @@ Guides are in [`docs/`](docs/):
 ## Development
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+python -m plushie download              # renderer binary for test suite
 ./preflight                              # run all CI checks locally
 ```
 
-Mirrors CI and stops on first failure: format, lint, type check, test.
+Use a local `.venv`; `pyright` is configured to resolve types from it.
+`./preflight` mirrors CI and stops on first failure: format, lint, type
+check, test, doc verification, and docs build.
 
 ## System requirements
 
