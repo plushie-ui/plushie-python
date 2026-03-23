@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import argparse
 import textwrap
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from plushie.__main__ import _load_pyproject_config, _parse_extensions
+from plushie.__main__ import (
+    _load_pyproject_config,
+    _parse_extensions,
+    _resolve_artifacts,
+)
 from plushie.extension import ExtensionDef
 
 # ===================================================================
@@ -278,3 +283,141 @@ class TestBuildConfigResolution:
 
         source = os.environ.get("PLUSHIE_SOURCE_PATH", cfg.get("source_path"))
         assert source == "/env/plushie"
+
+
+# ===================================================================
+# _resolve_artifacts
+# ===================================================================
+
+
+def _make_args(**kwargs: Any) -> argparse.Namespace:
+    """Build an ``argparse.Namespace`` with download/build-style defaults."""
+    defaults: dict[str, Any] = {"bin": False, "wasm": False}
+    defaults.update(kwargs)
+    return argparse.Namespace(**defaults)
+
+
+class TestResolveArtifacts:
+    """Artifact resolution: CLI flags > pyproject.toml > default."""
+
+    def test_default_is_bin_only(self) -> None:
+        want_bin, want_wasm = _resolve_artifacts(_make_args(), {})
+        assert want_bin is True
+        assert want_wasm is False
+
+    def test_cli_bin_flag(self) -> None:
+        want_bin, want_wasm = _resolve_artifacts(_make_args(bin=True), {})
+        assert want_bin is True
+        assert want_wasm is False
+
+    def test_cli_wasm_flag(self) -> None:
+        want_bin, want_wasm = _resolve_artifacts(_make_args(wasm=True), {})
+        assert want_bin is False
+        assert want_wasm is True
+
+    def test_cli_both_flags(self) -> None:
+        want_bin, want_wasm = _resolve_artifacts(_make_args(bin=True, wasm=True), {})
+        assert want_bin is True
+        assert want_wasm is True
+
+    def test_pyproject_artifacts_bin_and_wasm(self) -> None:
+        cfg = {"artifacts": ["bin", "wasm"]}
+        want_bin, want_wasm = _resolve_artifacts(_make_args(), cfg)
+        assert want_bin is True
+        assert want_wasm is True
+
+    def test_pyproject_artifacts_wasm_only(self) -> None:
+        cfg = {"artifacts": ["wasm"]}
+        want_bin, want_wasm = _resolve_artifacts(_make_args(), cfg)
+        assert want_bin is False
+        assert want_wasm is True
+
+    def test_pyproject_artifacts_bin_only(self) -> None:
+        cfg = {"artifacts": ["bin"]}
+        want_bin, want_wasm = _resolve_artifacts(_make_args(), cfg)
+        assert want_bin is True
+        assert want_wasm is False
+
+    def test_cli_flag_overrides_pyproject_artifacts(self) -> None:
+        """CLI --wasm should ignore pyproject artifacts entirely."""
+        cfg = {"artifacts": ["bin", "wasm"]}
+        want_bin, want_wasm = _resolve_artifacts(_make_args(wasm=True), cfg)
+        assert want_bin is False
+        assert want_wasm is True
+
+    def test_empty_artifacts_list(self) -> None:
+        """An explicit empty list means download nothing."""
+        cfg = {"artifacts": []}
+        want_bin, want_wasm = _resolve_artifacts(_make_args(), cfg)
+        assert want_bin is False
+        assert want_wasm is False
+
+
+# ===================================================================
+# Artifact path config resolution
+# ===================================================================
+
+
+class TestArtifactPathConfig:
+    """Reading bin_file and wasm_dir from pyproject.toml."""
+
+    def test_reads_bin_file(self, tmp_path: Path) -> None:
+        toml = textwrap.dedent("""\
+            [tool.plushie]
+            bin_file = "bin/plushie-renderer"
+        """)
+        (tmp_path / "pyproject.toml").write_text(toml)
+        cfg = _load_pyproject_config(tmp_path)
+        assert cfg["bin_file"] == "bin/plushie-renderer"
+
+    def test_reads_wasm_dir(self, tmp_path: Path) -> None:
+        toml = textwrap.dedent("""\
+            [tool.plushie]
+            wasm_dir = "static/wasm"
+        """)
+        (tmp_path / "pyproject.toml").write_text(toml)
+        cfg = _load_pyproject_config(tmp_path)
+        assert cfg["wasm_dir"] == "static/wasm"
+
+    def test_reads_artifacts(self, tmp_path: Path) -> None:
+        toml = textwrap.dedent("""\
+            [tool.plushie]
+            artifacts = ["bin", "wasm"]
+        """)
+        (tmp_path / "pyproject.toml").write_text(toml)
+        cfg = _load_pyproject_config(tmp_path)
+        assert cfg["artifacts"] == ["bin", "wasm"]
+
+    def test_full_artifact_config(self, tmp_path: Path) -> None:
+        toml = textwrap.dedent("""\
+            [tool.plushie]
+            artifacts = ["bin", "wasm"]
+            bin_file = "bin/plushie-renderer"
+            wasm_dir = "static"
+        """)
+        (tmp_path / "pyproject.toml").write_text(toml)
+        cfg = _load_pyproject_config(tmp_path)
+        assert cfg["artifacts"] == ["bin", "wasm"]
+        assert cfg["bin_file"] == "bin/plushie-renderer"
+        assert cfg["wasm_dir"] == "static"
+
+    def test_cli_bin_file_overrides_pyproject(self) -> None:
+        """CLI --bin-file takes priority over pyproject bin_file."""
+        cli_val = "/tmp/my-binary"
+        cfg_val = "bin/plushie-renderer"
+        resolved = cli_val or cfg_val
+        assert resolved == "/tmp/my-binary"
+
+    def test_pyproject_bin_file_used_when_no_cli(self) -> None:
+        """Without --bin-file, pyproject bin_file is used."""
+        cli_val = None
+        cfg_val = "bin/plushie-renderer"
+        resolved = cli_val or cfg_val
+        assert resolved == "bin/plushie-renderer"
+
+    def test_neither_cli_nor_pyproject_gives_none(self) -> None:
+        """Without --bin-file or pyproject, result is None (standard location)."""
+        cli_val = None
+        cfg_val = None
+        resolved = cli_val or cfg_val
+        assert resolved is None

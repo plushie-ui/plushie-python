@@ -102,6 +102,10 @@ The binary is saved to `~/.local/share/plushie/bin/` (Linux/macOS)
 or `%LOCALAPPDATA%\plushie\bin\` (Windows). WASM files go to the
 `wasm/` subdirectory.
 
+Both `download` and `build` respect artifact configuration from
+`pyproject.toml`. See [Project configuration](#project-configuration)
+below.
+
 
 ## build
 
@@ -194,6 +198,55 @@ Configuration resolution:
 - `PLUSHIE_SOURCE_PATH` env > `source_path` from pyproject.toml
 
 See [Extensions](extensions.md) for the full guide.
+
+
+## Project configuration
+
+The `download` and `build` commands read artifact settings from
+`[tool.plushie]` in `pyproject.toml`. This lets you configure what
+gets downloaded or built -- and where it goes -- without CLI flags.
+
+```toml
+[tool.plushie]
+# What artifacts to install (replaces --bin / --wasm flags)
+# Default: ["bin"]. Options: "bin", "wasm"
+artifacts = ["bin", "wasm"]
+
+# Where to put the native binary (replaces --bin-file flag)
+# Default: standard download location (~/.local/share/plushie/bin/)
+bin_file = "bin/plushie-renderer"
+
+# Where to put WASM files (replaces --wasm-dir flag)
+# Default: standard WASM location (~/.local/share/plushie/wasm/)
+wasm_dir = "static/wasm"
+```
+
+**Resolution order** (matching the Elixir SDK pattern):
+
+| Setting | CLI flag | pyproject.toml | Default |
+|---|---|---|---|
+| What to download/build | `--bin` / `--wasm` | `artifacts` | `["bin"]` |
+| Binary destination | `--bin-file` | `bin_file` | standard location |
+| WASM destination | `--wasm-dir` | `wasm_dir` | standard location |
+
+CLI flags always win. If no CLI flags are given, `artifacts`
+determines what to download or build. If `artifacts` is also absent,
+the default is `["bin"]` only.
+
+For example, a collaborative web app could use:
+
+```toml
+[tool.plushie]
+artifacts = ["bin", "wasm"]
+wasm_dir = "static"
+```
+
+Then a bare `python -m plushie download` fetches both the native
+binary (to the standard location) and WASM files (to `static/`).
+
+For the `build` command, `bin_file` controls an additional install
+location -- the binary is always installed to the standard download
+directory, and also copied to `bin_file` if set.
 
 
 ## inspect

@@ -148,31 +148,58 @@ def _cmd_connect(args: argparse.Namespace) -> None:
         runtime.run()
 
 
+def _resolve_artifacts(
+    args: argparse.Namespace,
+    pyproject_cfg: dict[str, Any],
+) -> tuple[bool, bool]:
+    """Determine which artifacts to process (bin, wasm).
+
+    Resolution order: CLI flags > pyproject.toml ``artifacts`` > default ``["bin"]``.
+
+    Returns:
+        Tuple of ``(want_bin, want_wasm)``.
+    """
+    cli_bin = getattr(args, "bin", False)
+    cli_wasm = getattr(args, "wasm", False)
+
+    # If any CLI flag is set, use CLI flags exclusively
+    if cli_bin or cli_wasm:
+        return cli_bin, cli_wasm
+
+    # Fall back to pyproject.toml artifacts config
+    artifacts = pyproject_cfg.get("artifacts")
+    if artifacts is not None:
+        return "bin" in artifacts, "wasm" in artifacts
+
+    # Default: bin only
+    return True, False
+
+
 def _cmd_download(args: argparse.Namespace) -> None:
     """Handle the ``download`` command."""
     version = args.version
     force = args.force
 
-    want_bin = getattr(args, "bin", False)
-    want_wasm = args.wasm
+    pyproject_cfg = _load_pyproject_config()
+    want_bin, want_wasm = _resolve_artifacts(args, pyproject_cfg)
 
-    # No explicit target means bin only (backward compatible)
-    if not want_bin and not want_wasm:
-        want_bin = True
+    # Resolve bin_file: CLI flag > pyproject.toml > None (standard location)
+    bin_file = getattr(args, "bin_file", None) or pyproject_cfg.get("bin_file")
+
+    # Resolve wasm_dir: CLI flag > pyproject.toml > None (standard location)
+    wasm_dir_override = getattr(args, "wasm_dir", None) or pyproject_cfg.get("wasm_dir")
 
     if want_bin:
         from plushie.binary import download
 
-        path = download(
-            version=version, force=force, bin_file=getattr(args, "bin_file", None)
-        )
+        path = download(version=version, force=force, bin_file=bin_file)
         print(f"downloaded: {path}")
 
     if want_wasm:
         from plushie.binary import download_wasm
 
         path = download_wasm(
-            version=version, force=force, wasm_dir_path=getattr(args, "wasm_dir", None)
+            version=version, force=force, wasm_dir_path=wasm_dir_override
         )
         print(f"downloaded WASM bundle: {path}")
 
@@ -218,16 +245,11 @@ def _cmd_build(args: argparse.Namespace) -> None:
 
     release = args.release
 
-    want_bin = getattr(args, "bin", False)
-    want_wasm = args.wasm
-
-    # No explicit target means bin only (backward compatible)
-    if not want_bin and not want_wasm:
-        want_bin = True
-
     # Load pyproject.toml config (used for source_path, build_name,
-    # extensions, and WASM source resolution).
+    # extensions, artifacts, and path overrides).
     pyproject_cfg = _load_pyproject_config()
+
+    want_bin, want_wasm = _resolve_artifacts(args, pyproject_cfg)
 
     if want_wasm:
         from plushie.binary import build_wasm
@@ -236,7 +258,10 @@ def _cmd_build(args: argparse.Namespace) -> None:
             "PLUSHIE_SOURCE_PATH",
             pyproject_cfg.get("source_path"),
         )
-        path = build_wasm(source_path=source, release=release)
+        wasm_dir_override = pyproject_cfg.get("wasm_dir")
+        path = build_wasm(
+            source_path=source, release=release, wasm_dir_path=wasm_dir_override
+        )
         print(f"built WASM renderer: {path}")
 
     if not want_bin:
@@ -329,6 +354,15 @@ def _cmd_build(args: argparse.Namespace) -> None:
         shutil.copy2(built, str(dest))
         dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
         print(f"installed: {dest}")
+
+        # Also install to bin_file if configured in pyproject.toml
+        bin_file = pyproject_cfg.get("bin_file")
+        if bin_file:
+            bin_path = Path(bin_file)
+            bin_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(built, str(bin_path))
+            bin_path.chmod(bin_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            print(f"installed: {bin_path}")
         return
 
     # Validate extensions
@@ -410,6 +444,15 @@ def _cmd_build(args: argparse.Namespace) -> None:
         shutil.copy2(built_path, str(dest))
         dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
         print(f"installed: {dest}")
+
+        # Also install to bin_file if configured in pyproject.toml
+        bin_file = pyproject_cfg.get("bin_file")
+        if bin_file:
+            bin_path = Path(bin_file)
+            bin_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(built_path, str(bin_path))
+            bin_path.chmod(bin_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            print(f"installed: {bin_path}")
     else:
         print(f"built: {built_path}")
         print("warning: could not install -- binary not found at expected path")

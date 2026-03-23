@@ -602,6 +602,7 @@ def build_wasm(
     source_path: str | None = None,
     *,
     release: bool = False,
+    wasm_dir_path: str | None = None,
 ) -> str:
     """Build the WASM renderer from source using wasm-pack.
 
@@ -612,6 +613,8 @@ def build_wasm(
         source_path: Path to the plushie Rust source checkout. If
             ``None``, reads from ``PLUSHIE_SOURCE_PATH`` env var.
         release: Build with optimizations. Default is debug build.
+        wasm_dir_path: Override the WASM output directory. If ``None``,
+            uses the standard WASM directory.
 
     Returns:
         Path to the WASM output directory.
@@ -668,9 +671,9 @@ def build_wasm(
             f"{result.stdout}\n{result.stderr}"
         )
 
-    # Copy output to standard WASM directory
+    # Copy output to WASM directory (override or standard location)
     pkg_dir = os.path.join(wasm_crate, "pkg")
-    dest = wasm_dir()
+    dest = Path(wasm_dir_path) if wasm_dir_path else wasm_dir()
     dest.mkdir(parents=True, exist_ok=True)
 
     for name in [WASM_JS_NAME, WASM_BG_NAME]:
