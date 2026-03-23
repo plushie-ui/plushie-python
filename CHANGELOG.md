@@ -1,9 +1,9 @@
 # Changelog
 
-## v0.1.0 -- 2026-03-23
+## v0.5.0 -- 2026-03-23
 
 Initial release of the plushie Python SDK. Full feature parity with
-the plushie-elixir SDK, verified by cross-SDK audit.
+the plushie-elixir and plushie-gleam SDKs, verified by cross-SDK audit.
 
 ### Framework
 
@@ -24,20 +24,28 @@ the plushie-elixir SDK, verified by cross-SDK audit.
 - Auto-detection from first byte
 - All 17 outbound and 9 inbound message types
 - SHA-256 checksum verification on all downloads
-- Binary version pinned to renderer v0.4.1
 
 ### Widgets and UI
 
 - 38 widget builder functions via `plushie.ui`
 - Canvas shape builders via `plushie.canvas` (rect, circle, line,
   path, text, image, svg, group, layer, interactive)
+- Canvas groups with `transforms`, `clip`, and top-level interactive
+  fields (`on_click`, `on_hover`, `focusable`, `focus_style`, etc.)
+- Canvas widget `role` and `arrow_mode` props
 - Type system: `Border`, `Shadow`, `Gradient`, `Font`, `StyleMap`,
   `Theme` (22 built-in), `A11y` (24 fields), `Color` (148 CSS names)
 - Automatic wire serialization via `to_wire()` during tree normalization
 
 ### Events
 
-- ~75 frozen dataclasses (one per wire event family)
+- ~80 frozen dataclasses (one per wire event family)
+- Canvas element events: `CanvasElementEnter`, `CanvasElementLeave`,
+  `CanvasElementClick`, `CanvasElementDrag`, `CanvasElementDragEnd`,
+  `CanvasElementFocused`, `CanvasElementBlurred`
+- Canvas lifecycle: `CanvasFocused`, `CanvasBlurred`,
+  `CanvasGroupFocused`, `CanvasGroupBlurred`
+- `Diagnostic` event for renderer validation warnings
 - ~200 key name constants
 - Scoped ID splitting with tuple-based scope matching
 - Union types for pattern matching
@@ -45,8 +53,8 @@ the plushie-elixir SDK, verified by cross-SDK audit.
 ### Commands and subscriptions
 
 - All command types: task, stream, cancel, done, send_after, focus,
-  scroll, select, window ops, window queries, image ops, extension
-  commands, pane operations, batch, exit
+  focus_element, scroll, select, window ops, window queries, image ops,
+  extension commands, pane operations, batch, exit
 - 20 subscription types with key-based diffing and max_rate support
 
 ### Effects
@@ -116,10 +124,9 @@ the plushie-elixir SDK, verified by cross-SDK audit.
 
 ### Documentation
 
-- 17 guides matching plushie-elixir coverage
-- mkdocs-material site with link checking
+- 16 guides matching plushie-elixir coverage
+- CLI reference
 - 164 HTML test markers linking doc code blocks to 354 tests
-- Doc test marker verification script
 
 ### Examples
 
@@ -128,12 +135,3 @@ the plushie-elixir SDK, verified by cross-SDK audit.
 - 3 reusable widget modules: color_picker_widget, star_rating,
   theme_toggle
 - Integration tests for all examples
-
-### Tooling
-
-- GitHub Actions CI: lint, typecheck, test-mock, test-headless, docs
-- Preflight script mirroring CI (7 checks)
-- 100% docstring coverage via interrogate
-- pyright type checking on src, tests, and examples
-- pytest-cov for coverage measurement
-- ruff for formatting and linting

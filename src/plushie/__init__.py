@@ -41,7 +41,7 @@ from __future__ import annotations
 import threading
 from typing import Any
 
-__version__ = "0.1.0"
+__version__ = "0.5.0"
 
 from plushie.app import App, AppBuilder, create_app
 from plushie.commands import Command

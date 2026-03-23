@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "plushie"
-version = "0.1.0"
+version = "0.5.0"
 description = "Native desktop GUI framework for Python, powered by iced"
 readme = "README.md"
 license = "MIT"
