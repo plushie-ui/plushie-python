@@ -18,7 +18,12 @@ import importlib
 import json
 import logging
 import sys
-from typing import Any
+import tomllib
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from plushie.extension import ExtensionDef
 
 from plushie.app import App
 
@@ -71,6 +76,30 @@ def _import_app(spec: str) -> type[App[Any]]:
         raise SystemExit(1)
 
     return cls
+
+
+# ---------------------------------------------------------------------------
+# pyproject.toml config
+# ---------------------------------------------------------------------------
+
+
+def _load_pyproject_config(project_dir: str | Path | None = None) -> dict[str, Any]:
+    """Load ``[tool.plushie]`` from pyproject.toml if present.
+
+    Looks for ``pyproject.toml`` in *project_dir* (defaults to cwd).
+    Returns the ``[tool.plushie]`` table as a dict, or an empty dict
+    if the file is missing or the section doesn't exist.
+    """
+    root = Path(project_dir) if project_dir else Path.cwd()
+    toml_path = root / "pyproject.toml"
+    if not toml_path.is_file():
+        return {}
+    try:
+        with open(toml_path, "rb") as f:
+            data = tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+    return data.get("tool", {}).get("plushie", {})
 
 
 # ---------------------------------------------------------------------------
@@ -144,6 +173,36 @@ def _cmd_download(args: argparse.Namespace) -> None:
         print(f"downloaded WASM bundle: {path}")
 
 
+def _parse_extensions(raw: list[dict[str, Any]]) -> list[ExtensionDef]:
+    """Parse a list of raw extension dicts into ``ExtensionDef`` objects.
+
+    Works for both JSON config files and pyproject.toml ``[tool.plushie]``
+    extension entries.
+    """
+    from plushie.extension import CommandDef, ExtensionDef, ParamDef, PropDef
+
+    extensions: list[ExtensionDef] = []
+    for ext_data in raw:
+        props = [PropDef(p["name"], p["prop_type"]) for p in ext_data.get("props", [])]
+        commands = [
+            CommandDef(
+                c["name"],
+                [ParamDef(pm["name"], pm["param_type"]) for pm in c.get("params", [])],
+            )
+            for c in ext_data.get("commands", [])
+        ]
+        extensions.append(
+            ExtensionDef(
+                kind=ext_data["kind"],
+                rust_crate=ext_data["rust_crate"],
+                rust_constructor=ext_data["rust_constructor"],
+                props=props,
+                commands=commands,
+            )
+        )
+    return extensions
+
+
 def _cmd_build(args: argparse.Namespace) -> None:
     """Handle the ``build`` command."""
     import os
@@ -162,10 +221,17 @@ def _cmd_build(args: argparse.Namespace) -> None:
     if not want_bin and not want_wasm:
         want_bin = True
 
+    # Load pyproject.toml config (used for source_path, build_name,
+    # extensions, and WASM source resolution).
+    pyproject_cfg = _load_pyproject_config()
+
     if want_wasm:
         from plushie.binary import build_wasm
 
-        source = os.environ.get("PLUSHIE_SOURCE_PATH")
+        source = os.environ.get(
+            "PLUSHIE_SOURCE_PATH",
+            pyproject_cfg.get("source_path"),
+        )
         path = build_wasm(source_path=source, release=release)
         print(f"built WASM renderer: {path}")
 
@@ -174,56 +240,45 @@ def _cmd_build(args: argparse.Namespace) -> None:
 
     check_rust_version()
 
-    from plushie.extension import ExtensionDef, generate_cargo_toml, generate_main_rs
+    from plushie.extension import generate_cargo_toml, generate_main_rs
 
-    # Look for extensions configuration. For now, support a simple
-    # JSON config file or environment variable.
-    config_path = args.config or "plushie_extensions.json"
-
+    # Extension resolution order:
+    # 1. pyproject.toml [tool.plushie] extensions
+    # 2. JSON config file (--config flag or plushie_extensions.json)
+    # 3. Stock build (no extensions)
     extensions: list[ExtensionDef] = []
 
-    if os.path.isfile(config_path):
-        with open(config_path) as f:
-            data = json.load(f)
+    pyproject_extensions = pyproject_cfg.get("extensions", [])
+    if pyproject_extensions:
+        extensions = _parse_extensions(pyproject_extensions)
+    else:
+        config_path = args.config or "plushie_extensions.json"
+        if os.path.isfile(config_path):
+            with open(config_path) as f:
+                data = json.load(f)
+            extensions = _parse_extensions(data.get("extensions", []))
 
-        for ext_data in data.get("extensions", []):
-            from plushie.extension import CommandDef, ParamDef, PropDef
-
-            props = [
-                PropDef(p["name"], p["prop_type"]) for p in ext_data.get("props", [])
-            ]
-            commands = [
-                CommandDef(
-                    c["name"],
-                    [
-                        ParamDef(pm["name"], pm["param_type"])
-                        for pm in c.get("params", [])
-                    ],
-                )
-                for c in ext_data.get("commands", [])
-            ]
-            extensions.append(
-                ExtensionDef(
-                    kind=ext_data["kind"],
-                    rust_crate=ext_data["rust_crate"],
-                    rust_constructor=ext_data["rust_constructor"],
-                    props=props,
-                    commands=commands,
-                )
-            )
+    # source_path resolution: env var > pyproject.toml
+    source = os.environ.get(
+        "PLUSHIE_SOURCE_PATH",
+        pyproject_cfg.get("source_path"),
+    )
 
     if not extensions:
         # Stock build (no extensions) -- build vanilla binary from source
-        source = os.environ.get("PLUSHIE_SOURCE_PATH")
         if source is None:
+            config_path = args.config or "plushie_extensions.json"
             print("no extensions found and PLUSHIE_SOURCE_PATH not set")
             print(f"  looked for extension config at: {config_path}")
+            print("  looked for [tool.plushie] in pyproject.toml")
             print("")
             print("to build with extensions:")
-            print(f"  create {config_path} with extension definitions")
+            print("  add [tool.plushie] extensions to pyproject.toml")
+            print(f"  or create {config_path} with extension definitions")
             print("")
             print("to build the stock binary from source:")
             print("  export PLUSHIE_SOURCE_PATH=/path/to/plushie")
+            print("  or set source_path in [tool.plushie]")
             raise SystemExit(1)
 
         # Build stock binary from source
@@ -273,7 +328,8 @@ def _cmd_build(args: argparse.Namespace) -> None:
             print(f"  - {err}", file=sys.stderr)
         raise SystemExit(1)
 
-    binary_name = args.name or "plushie-custom"
+    # binary_name resolution: --name flag > pyproject.toml build_name > default
+    binary_name = args.name or pyproject_cfg.get("build_name") or "plushie-custom"
 
     # Generate build files
     build_dir = os.path.join("build", binary_name)
