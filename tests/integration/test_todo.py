@@ -78,8 +78,7 @@ class TestTodoIntegration:
         item_id = app.model.items[0].id
         app.toggle(f"#{item_id}/done")
 
-        # Filter uses radio widgets with shared group id "filter"
-        app.select("#filter", "active")
+        app.click("#filter-active")
         assert app.model.filter == "active"
 
     def test_filter_done(self, app: AppFixture[Model]) -> None:
@@ -90,5 +89,5 @@ class TestTodoIntegration:
         item_id = app.model.items[0].id
         app.toggle(f"#{item_id}/done")
 
-        app.select("#filter", "done")
+        app.click("#filter-done")
         assert app.model.filter == "done"

@@ -24,7 +24,7 @@ from typing import Any
 import plushie
 from plushie import ui
 from plushie.commands import Command
-from plushie.events import Click, Select, Submit, Toggle
+from plushie.events import Click, Submit, Toggle
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,8 +89,12 @@ class TodoApp(plushie.App[Model]):
                 items = tuple(item for item in model.items if item.id != item_id)
                 return replace(model, items=items)
 
-            case Select(id="filter", value=v):
-                return replace(model, filter=v)
+            case Click(id="filter-all"):
+                return replace(model, filter="all")
+            case Click(id="filter-active"):
+                return replace(model, filter="active")
+            case Click(id="filter-done"):
+                return replace(model, filter="done")
 
             case _:
                 return model
@@ -110,10 +114,10 @@ class TodoApp(plushie.App[Model]):
                     width="fill",
                 ),
                 ui.row(
-                    ui.radio("filter", "all", model.filter, label="All"),
-                    ui.radio("filter", "active", model.filter, label="Active"),
-                    ui.radio("filter", "done", model.filter, label="Done"),
-                    spacing=12,
+                    ui.button("filter-all", "All"),
+                    ui.button("filter-active", "Active"),
+                    ui.button("filter-done", "Done"),
+                    spacing=8,
                 ),
                 *(_todo_item(item) for item in visible),
                 padding=16,
