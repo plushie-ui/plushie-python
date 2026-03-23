@@ -157,7 +157,7 @@ For web-based deployment, bundle the WASM renderer instead:
 python -m plushie download --wasm
 ```
 
-This downloads `plushie_wasm.js` and `plushie_wasm_bg.wasm` to
+This downloads `plushie_renderer_wasm.js` and `plushie_renderer_wasm_bg.wasm` to
 the standard WASM directory. See `plushie.binary.resolve_wasm()`
 for programmatic resolution.
 

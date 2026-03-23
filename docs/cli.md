@@ -91,7 +91,7 @@ python -m plushie download --force            # re-download if exists
 | Flag | Description |
 |---|---|
 | `--bin` | Download the native binary. Default when no target specified. |
-| `--wasm` | Download the WASM renderer bundle (`plushie_wasm.js` + `plushie_wasm_bg.wasm`). |
+| `--wasm` | Download the WASM renderer bundle (`plushie_renderer_wasm.js` + `plushie_renderer_wasm_bg.wasm`). |
 | `--version VERSION` | Version to download (e.g. `0.5.0`). Defaults to pinned version. |
 | `--force` | Re-download even if the file already exists. |
 | `--bin-file PATH` | Override native binary destination (default: `~/.local/share/plushie/bin/`). |
