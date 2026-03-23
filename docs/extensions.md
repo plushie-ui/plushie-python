@@ -784,6 +784,163 @@ you what happened.
 | `files_hovered_left` | `data.window_id` |
 
 
+## plushie-iced Widget trait guide
+
+Extensions implementing `iced::advanced::Widget` directly (Tier C)
+need to be aware of the plushie-iced API. Several methods changed
+names and signatures from earlier iced versions.
+
+### Key changes
+
+**`on_event` is now `update`:**
+
+```rust
+fn update(
+    &mut self,
+    tree: &mut widget::Tree,
+    event: iced::Event,
+    layout: Layout<'_>,
+    cursor: mouse::Cursor,
+    renderer: &Renderer,
+    clipboard: &mut dyn Clipboard,
+    shell: &mut Shell<'_, Message>,
+    viewport: &Rectangle,
+) -> event::Status {
+    // ...
+}
+```
+
+**Capturing events:** Call `shell.capture_event()` and return
+`event::Status::Captured`:
+
+```rust
+shell.capture_event();
+event::Status::Captured
+```
+
+**Alignment fields renamed:** `horizontal_alignment` -> `align_x`,
+`vertical_alignment` -> `align_y`.
+
+**Widget::size() returns Size\<Length\>:**
+
+```rust
+fn size(&self) -> iced::Size<Length> {
+    iced::Size::new(self.width, self.height)
+}
+```
+
+**Widget::state() initializes tree state:**
+
+```rust
+fn state(&self) -> widget::tree::State {
+    widget::tree::State::new(MyWidgetState::default())
+}
+```
+
+Called once on first mount. The state persists in iced's widget tree
+and is accessible via `tree.state.downcast_ref::<MyWidgetState>()`.
+
+### Publishing events from custom widgets
+
+Use `shell.publish(Message::Event(...))` as described in the
+EventResult section above.
+
+### Full Widget skeleton
+
+```rust
+use iced::advanced::widget::{self, Widget};
+use iced::advanced::{layout, mouse, renderer, Clipboard, Layout, Shell};
+use iced::event;
+use iced::{Element, Length, Rectangle, Size, Theme};
+use plushie_core::prelude::*;
+
+struct MyWidget<'a> {
+    node_id: String,
+    node: &'a TreeNode,
+}
+
+struct MyWidgetState {
+    // per-instance state
+}
+
+impl Default for MyWidgetState {
+    fn default() -> Self { Self { /* ... */ } }
+}
+
+impl<'a> Widget<Message, Theme, iced::Renderer> for MyWidget<'a> {
+    fn tag(&self) -> widget::tree::Tag {
+        widget::tree::Tag::of::<MyWidgetState>()
+    }
+
+    fn state(&self) -> widget::tree::State {
+        widget::tree::State::new(MyWidgetState::default())
+    }
+
+    fn size(&self) -> Size<Length> {
+        Size::new(Length::Fill, Length::Shrink)
+    }
+
+    fn layout(
+        &self, _tree: &mut widget::Tree,
+        _renderer: &iced::Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node {
+        let size = limits.max();
+        layout::Node::new(Size::new(size.width, 200.0))
+    }
+
+    fn draw(
+        &self,
+        tree: &widget::Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        // Draw your widget
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut widget::Tree,
+        event: iced::Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) -> event::Status {
+        if let iced::Event::Mouse(
+            mouse::Event::ButtonPressed(mouse::Button::Left)
+        ) = &event {
+            if cursor.is_over(layout.bounds()) {
+                shell.publish(Message::Event(
+                    self.node_id.clone(),
+                    serde_json::json!({"x": 0, "y": 0}),
+                    "my_widget_click".to_string(),
+                ));
+                shell.capture_event();
+                return event::Status::Captured;
+            }
+        }
+        event::Status::Ignored
+    }
+}
+
+impl<'a> From<MyWidget<'a>> for Element<'a, Message> {
+    fn from(w: MyWidget<'a>) -> Self {
+        Self::new(w)
+    }
+}
+```
+
+This Rust code is the same regardless of which language SDK you use.
+The Widget trait is part of plushie-iced, not the Python SDK.
+
+
 ## Prop helpers reference
 
 The `plushie_core::prop_helpers` module (re-exported via `prelude::*`) provides

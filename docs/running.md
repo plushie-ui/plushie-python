@@ -348,6 +348,29 @@ python -m plushie build --wasm
 ```
 
 
+### Framing
+
+Raw byte streams (SSH channels, raw sockets) need message boundaries.
+The `plushie.framing` module handles this:
+
+```python
+from plushie.framing import MsgpackFraming, JsonFraming
+
+# MessagePack: 4-byte big-endian length prefix
+framing = MsgpackFraming()
+encoded = MsgpackFraming.encode(msg_dict)    # -> bytes with length prefix
+messages = framing.feed(raw_bytes)            # -> list of decoded dicts
+
+# JSON: newline-delimited
+framing = JsonFraming()
+encoded = JsonFraming.encode(msg_dict)       # -> bytes with newline
+messages = framing.feed(raw_bytes)            # -> list of decoded dicts
+```
+
+The `IoStreamAdapter` handles framing automatically. You only need
+these directly if building a custom adapter from scratch.
+
+
 ## Connection modes summary
 
 | Mode | Class | How it works |

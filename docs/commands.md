@@ -643,6 +643,35 @@ def update(self, model, event):
             return replace(model, importing=False)
 ```
 
+#### Cancellation with threads
+
+If you track the thread yourself, you can implement cooperative
+cancellation via a `threading.Event`:
+
+```python
+import threading
+
+def update(self, model, event):
+    match event:
+        case Click(id="start_import"):
+            cancel = threading.Event()
+            thread = threading.Thread(
+                target=import_worker, args=(cancel, runtime_ref)
+            )
+            thread.start()
+            return replace(model, importing=True, cancel_event=cancel)
+
+        case Click(id="cancel_import"):
+            if model.cancel_event is not None:
+                model.cancel_event.set()
+            return replace(model, importing=False, cancel_event=None)
+```
+
+Note: Python threads cannot be forcibly killed (unlike Erlang
+processes). `Command.cancel()` prevents delivery of stale results
+but cannot stop a blocked thread. Design task functions to check a
+cancellation flag periodically for long-running work.
+
 #### When to use which
 
 Use `Command.task()` and `Command.stream()` when you want the runtime
