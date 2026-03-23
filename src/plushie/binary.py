@@ -3,8 +3,8 @@
 Resolution chain for ``resolve()``:
 
 1. ``PLUSHIE_BINARY_PATH`` environment variable (fail-fast if set but missing)
-2. Downloaded binary in ``~/.local/share/plushie/bin/``
-3. Custom extension build in ``build/*/target/``
+2. Custom extension build in ``build/*/target/``
+3. Downloaded binary in ``~/.local/share/plushie/bin/``
 4. Bundled binary (PyInstaller, Nuitka, Briefcase)
 5. ``plushie`` on system PATH via ``shutil.which``
 
@@ -368,8 +368,8 @@ def resolve() -> str:
     1. ``PLUSHIE_BINARY_PATH`` environment variable -- if set but the
        file does not exist, raises immediately (explicit config should
        not silently fall through).
-    2. Downloaded binary in the standard download directory.
-    3. Custom extension build in ``build/*/target/``.
+    2. Custom extension build in ``build/*/target/``.
+    3. Downloaded binary in the standard download directory.
     4. Bundled binary (PyInstaller, Nuitka, Briefcase).
     5. ``plushie`` on the system PATH.
 
@@ -391,7 +391,12 @@ def resolve() -> str:
             )
         return os.path.abspath(env_path)
 
-    # Step 2: downloaded binary
+    # Step 2: custom extension build in build/ directory
+    custom = _resolve_custom_build()
+    if custom is not None:
+        return custom
+
+    # Step 3: downloaded binary
     try:
         name = download_name()
         downloaded = download_dir() / name
@@ -400,11 +405,6 @@ def resolve() -> str:
     except RuntimeError:
         # Platform detection failed -- skip this step
         pass
-
-    # Step 3: custom extension build in build/ directory
-    custom = _resolve_custom_build()
-    if custom is not None:
-        return custom
 
     # Step 4: bundled binary (PyInstaller / Nuitka / Briefcase)
     bundled = _resolve_bundled()
@@ -426,8 +426,8 @@ def resolve() -> str:
         "\n"
         "Resolution chain (checked in order):\n"
         "  1. PLUSHIE_BINARY_PATH environment variable (not set)\n"
-        f"  2. Downloaded binary in {dl_dir} (not found)\n"
-        "  3. Custom extension build in build/ (not found)\n"
+        "  2. Custom extension build in build/ (not found)\n"
+        f"  3. Downloaded binary in {dl_dir} (not found)\n"
         "  4. Bundled binary (PyInstaller/Nuitka/Briefcase) (not found)\n"
         "  5. 'plushie' on system PATH (not found)\n"
         "\n"

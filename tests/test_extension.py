@@ -385,7 +385,7 @@ class TestGenerateMainRs:
         assert "my_gauge::GaugeExtension::new()" in rs
         assert "PlushieAppBuilder::new()" in rs
         assert ".extension(" in rs
-        assert "fn main()" in rs
+        assert "fn main() -> iced::Result" in rs
 
     def test_multiple_extensions(self) -> None:
         rs = generate_main_rs([_gauge_def(), _sparkline_def()])

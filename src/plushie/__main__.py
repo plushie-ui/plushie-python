@@ -309,7 +309,14 @@ def _cmd_build(args: argparse.Namespace) -> None:
         # Install to standard download location
         from plushie.binary import download_dir, download_name
 
-        built = os.path.join(source, "target", profile, "plushie")
+        bin_ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
+        built = os.path.join(source, "target", profile, f"plushie{bin_ext}")
+        if not os.path.isfile(built):
+            print(
+                f"build succeeded but binary not found at {built}",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
         dest_dir = download_dir()
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / download_name()
@@ -378,7 +385,8 @@ def _cmd_build(args: argparse.Namespace) -> None:
     # Install to standard download location so resolve() finds it
     from plushie.binary import download_dir, download_name
 
-    built_path = os.path.join(build_dir, "target", profile, binary_name)
+    bin_ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
+    built_path = os.path.join(build_dir, "target", profile, f"{binary_name}{bin_ext}")
     if os.path.isfile(built_path):
         dest_dir = download_dir()
         dest_dir.mkdir(parents=True, exist_ok=True)

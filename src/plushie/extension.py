@@ -338,12 +338,12 @@ members = [
 resolver = "2"
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 
 [package]
 name = "{binary_name}"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [[bin]]
 name = "{binary_name}"
@@ -373,13 +373,12 @@ def generate_main_rs(extensions: list[ExtensionDef]) -> str:
     registrations_block = "\n".join(registrations)
 
     return f"""\
-use plushie_core::prelude::*;
+use plushie_core::app::PlushieAppBuilder;
 
-fn main() {{
-    plushie::run(
-        PlushieAppBuilder::new()
-{registrations_block}
-    )
+fn main() -> iced::Result {{
+    let builder = PlushieAppBuilder::new()
+{registrations_block};
+    plushie::run(builder)
 }}
 """
 
