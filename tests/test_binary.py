@@ -188,6 +188,26 @@ class TestCheckRustVersion:
         ):
             check_rust_version()
 
+    def test_nightly_version_accepted(self) -> None:
+        result = subprocess.CompletedProcess(
+            args=["rustc", "--version"],
+            returncode=0,
+            stdout="rustc 1.93.0-nightly (abc1234 2025-02-15)",
+            stderr="",
+        )
+        with patch("plushie.binary.subprocess.run", return_value=result):
+            check_rust_version()
+
+    def test_beta_version_accepted(self) -> None:
+        result = subprocess.CompletedProcess(
+            args=["rustc", "--version"],
+            returncode=0,
+            stdout="rustc 1.92.0-beta.3 (abc1234 2025-01-10)",
+            stderr="",
+        )
+        with patch("plushie.binary.subprocess.run", return_value=result):
+            check_rust_version()
+
 
 # -- Download with force and checksum ---------------------------------------
 
@@ -340,6 +360,10 @@ class TestCliParser:
     def test_build_no_release_default(self) -> None:
         args = self._parse("build")
         assert args.release is False  # type: ignore[union-attr]
+
+    def test_build_verbose(self) -> None:
+        args = self._parse("build", "--verbose")
+        assert args.verbose is True  # type: ignore[union-attr]
 
     def test_build_bin_and_wasm(self) -> None:
         args = self._parse("build", "--bin", "--wasm")
