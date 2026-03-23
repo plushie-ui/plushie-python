@@ -84,7 +84,7 @@ Download precompiled plushie binaries from GitHub releases.
 python -m plushie download                    # native binary (default)
 python -m plushie download --wasm             # WASM renderer only
 python -m plushie download --bin --wasm       # both
-python -m plushie download --version 0.5.0    # specific version
+python -m plushie download --version 0.5.1    # specific version
 python -m plushie download --force            # re-download if exists
 ```
 
@@ -92,7 +92,7 @@ python -m plushie download --force            # re-download if exists
 |---|---|
 | `--bin` | Download the native binary. Default when no target specified. |
 | `--wasm` | Download the WASM renderer bundle (`plushie_renderer_wasm.js` + `plushie_renderer_wasm_bg.wasm`). |
-| `--version VERSION` | Version to download (e.g. `0.5.0`). Defaults to pinned version. |
+| `--version VERSION` | Version to download (e.g. `0.5.1`). Defaults to pinned version. |
 | `--force` | Re-download even if the file already exists. |
 | `--bin-file PATH` | Override native binary destination (default: `~/.local/share/plushie/bin/`). |
 | `--wasm-dir PATH` | Override WASM output directory (default: `~/.local/share/plushie/wasm/`). |

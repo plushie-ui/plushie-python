@@ -59,7 +59,7 @@ class ChecksumError(RuntimeError):
     """Raised when SHA-256 verification of a downloaded artifact fails."""
 
 
-BINARY_VERSION = "0.5.0"
+BINARY_VERSION = "0.5.1"
 """Default plushie binary version. Matches the renderer protocol this SDK was built against."""
 
 MIN_RUST_VERSION = (1, 92, 0)
@@ -464,7 +464,7 @@ def download(
     is verified against the sidecar ``.sha256`` file on GitHub.
 
     Args:
-        version: Release version tag (e.g. ``"0.5.0"``). If ``None``,
+        version: Release version tag (e.g. ``"0.5.1"``). If ``None``,
             uses ``BINARY_VERSION`` (the pinned default for this SDK).
         force: Re-download even if the binary already exists.
         bin_file: Override the destination path. If ``None``, uses the
@@ -535,7 +535,7 @@ def download_wasm(
     the standard WASM directory.
 
     Args:
-        version: Release version tag (e.g. ``"0.5.0"``). If ``None``,
+        version: Release version tag (e.g. ``"0.5.1"``). If ``None``,
             uses ``BINARY_VERSION`` (the pinned default for this SDK).
         force: Re-download even if WASM files already exist.
         wasm_dir_path: Override the WASM output directory. If ``None``,
