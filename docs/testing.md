@@ -2,36 +2,56 @@
 
 ## Philosophy
 
-Progressive fidelity: test your app's logic with fast mock tests;
-promote to headless or windowed backends when you need wire-protocol
-verification or pixel-accurate screenshots.
+Progressive fidelity: test your app's logic with fast, pure-Python mock tests;
+promote to headless or windowed backends when you need wire-protocol verification
+or pixel-accurate screenshots.
 
-All testing goes through the real renderer binary. The renderer's
-`--mock` mode is the mock. No Python-side simulation of widget
-behavior or event synthesis.
 
 ## Unit testing
 
-`update()` is pure, `view()` returns dicts. Plain pytest -- no
-framework needed.
+`update()` is pure, `view()` returns dicts. Plain pytest -- no framework
+needed.
 
 ### Testing `update()`
 
 ```python
-from dataclasses import replace
 from plushie.events import Click
 
-def test_increment():
-    app = Counter()
+def test_adding_a_todo_appends_and_clears_input():
+    app = MyApp()
     model = app.init()
-    model = app.update(model, Click(id="inc"))
-    assert model.count == 1
+    model = dataclasses.replace(model, todos=[], input="Buy milk")
+    model = app.update(model, Click(id="add_todo"))
 
-def test_unknown_event_returns_model():
-    app = Counter()
-    model = app.init()
-    result = app.update(model, "something unknown")
-    assert result == model
+    assert model.todos == [{"text": "Buy milk", "done": False}]
+    assert model.input == ""
+```
+
+### Testing commands from `update()`
+
+Commands are plain `Command` dataclasses. Inspect `type` and `payload`
+to verify what `update()` asked the runtime to do, without executing
+anything.
+
+```python
+from plushie.events import Submit, Click
+
+def test_submitting_todo_returns_focus_command():
+    app = MyApp()
+    model = dataclasses.replace(app.init(), todos=[], input="Buy milk")
+    model, cmd = app.update(model, Submit(id="todo_input", value="Buy milk"))
+
+    assert model.todos == [{"text": "Buy milk"}]
+    assert cmd.type == "focus"
+    assert cmd.payload["target"] == "todo_input"
+
+def test_save_triggers_async_task():
+    app = MyApp()
+    model = dataclasses.replace(app.init(), data="unsaved")
+    _model, cmd = app.update(model, Click(id="save"))
+
+    assert cmd.type == "task"
+    assert cmd.payload["tag"] == "save_result"
 ```
 
 ### Testing `view()`
@@ -39,129 +59,506 @@ def test_unknown_event_returns_model():
 ```python
 from plushie.tree import normalize, find, text_of
 
-def test_view_shows_count():
-    app = Counter()
-    model = replace(app.init(), count=42)
-    tree = normalize(app.view(model))
-    node = find(tree, "count")
-    assert node is not None
-    assert text_of(node) == "Count: 42"
-```
-
-### Testing commands from `update()`
-
-Commands are plain `Command` dataclasses. Inspect `type` and `payload`:
-
-```python
-def test_save_triggers_async():
+def test_view_shows_todo_count():
     app = MyApp()
-    model, cmd = app.update(model, Click(id="save"))
-    assert cmd.type == "async"
-    assert cmd.payload["tag"] == "save_result"
+    model = dataclasses.replace(
+        app.init(),
+        todos=[{"id": 1, "text": "Buy milk", "done": False}],
+        input="",
+    )
+    tree = normalize(app.view(model))
+
+    counter = find(tree, "todo_count")
+    assert counter is not None
+    assert "1" in text_of(counter)
 ```
 
-## The test framework
-
-Unit tests cover logic but cannot click a button or verify a widget
-appears after an interaction. That is what `AppFixture` is for.
+### Testing `init()`
 
 ```python
-from plushie.testing import AppFixture
+def test_init_returns_valid_initial_state():
+    app = MyApp()
+    model = app.init()
 
-def test_counter(plushie_pool):
-    with AppFixture(Counter, plushie_pool) as app:
-        app.click("#inc")
-        assert app.model.count == 1
-        assert app.text("#count") == "Count: 1"
+    assert isinstance(model.todos, list)
+    assert model.input == ""
 ```
 
-`AppFixture` starts a session, processes commands synchronously, and
-tears down on exit.
+### Tree query helpers
 
-## AppFixture API
-
-| Method | Description |
-|---|---|
-| `app.click(selector)` | Click a button |
-| `app.type_text(selector, text)` | Type text into a text_input |
-| `app.submit(selector)` | Submit a text_input (press enter) |
-| `app.toggle(selector)` | Toggle a checkbox or toggler |
-| `app.select(selector, value)` | Select from pick_list, combo_box, radio |
-| `app.slide(selector, value)` | Slide a slider to a value |
-| `app.find(selector)` | Find an element (returns Element or raises) |
-| `app.text(selector)` | Extract text content from a widget |
-| `app.model` | Current model (property) |
-| `app.tree` | Current normalized UI tree (property) |
-
-Selectors use `#id` syntax (e.g. `"#save_btn"`).
-
-## Backends
-
-All tests work on all backends. Write tests once, swap backends
-without changing assertions.
-
-### Three backends
-
-| | mock | headless | windowed |
-|---|---|---|---|
-| **Speed** | ~ms | ~100ms | ~seconds |
-| **Renderer** | `--mock` | `--headless` | full |
-| **Display server** | No | No | Yes (Xvfb) |
-| **Protocol round-trip** | Yes | Yes | Yes |
-| **Pixel screenshots** | No | Yes (software) | Yes |
-| **Real rendering** | No | Yes (tiny-skia) | Yes (GPU) |
-
-- **mock** -- shared `plushie --mock` process with session
-  multiplexing. Tests app logic, tree structure, and wire protocol.
-  Sub-millisecond. The default for most tests.
-
-- **headless** -- `plushie --headless` with software rendering via
-  tiny-skia. Pixel screenshots for visual regression. No display
-  server needed.
-
-- **windowed** -- real iced windows and GPU rendering. Effects
-  execute, subscriptions fire. Needs a display server (Xvfb in CI).
-
-### Backend selection
-
-Backend is an infrastructure decision, not a test-code decision.
-
-```sh
-pytest                                      # mock (default)
-PLUSHIE_TEST_BACKEND=headless pytest        # headless
-PLUSHIE_TEST_BACKEND=windowed pytest        # windowed
-```
-
-## Golden files
-
-### Tree snapshots
-
-Normalize a view tree and compare against a stored JSON file:
+`plushie.tree` provides helpers for querying view trees directly:
 
 ```python
-from plushie.tree import normalize
+from plushie.tree import find, ids, find_all, exists
+
+find(tree, "my_button")                         # find node by ID
+exists(tree, "my_button")                       # check existence
+ids(tree)                                       # all IDs (depth-first)
+find_all(tree, lambda node: node["type"] == "button")  # find by predicate
+```
+
+These work on the raw node dicts returned by `view()`. No test session or
+backend required.
+
+### JSON tree snapshots
+
+For complex views, snapshot the entire tree as JSON to catch unintended
+structural changes:
+
+```python
 import json
 from pathlib import Path
+from plushie.tree import normalize
 
 def test_initial_view_snapshot():
     app = MyApp()
     tree = normalize(app.view(app.init()))
     golden = Path("tests/snapshots/initial_view.json")
+
     if not golden.exists():
         golden.parent.mkdir(parents=True, exist_ok=True)
-        golden.write_text(json.dumps(tree, indent=2))
+        golden.write_text(json.dumps(tree, indent=2, sort_keys=True))
     else:
         expected = json.loads(golden.read_text())
         assert tree == expected
 ```
 
-### Pixel screenshots
+First run writes the file. Subsequent runs compare and fail with a diff on
+mismatch. Update after intentional changes:
 
-Available on headless and windowed backends. Mock mode returns stubs.
+```bash
+PLUSHIE_UPDATE_SNAPSHOTS=1 pytest
+```
+
+This is a pure JSON comparison -- distinct from the framework's
+`assert_tree_hash()` (which uses SHA-256 hashes of the tree via a backend
+session) and `assert_screenshot()` (which compares pixel data).
+
+
+## The test framework
+
+Unit tests cover logic. But they cannot click a button, verify a widget
+appears after an interaction, or catch a rendering regression when you bump
+iced. That is what the test framework is for.
+
+```python
+from plushie.testing import AppFixture
+
+def test_clicking_increment_updates_counter(plushie_pool):
+    with AppFixture(Counter, plushie_pool) as app:
+        app.click("#increment")
+        app.assert_text("#count", "1")
+```
+
+`AppFixture` starts a session, processes commands synchronously, and
+tears down on exit. The default backend is `mock` -- the plushie binary in
+`--mock` mode (lightweight rendering, no display). Sessions are pooled for
+performance via the `plushie_pool` pytest fixture.
+
+
+## Selectors, interactions, and assertions
+
+### Where do widget IDs come from?
+
+Every widget in plushie gets an ID from the first argument to its builder.
+For example, `ui.button("save_btn", "Save")` creates a button with ID
+`"save_btn"`.
+
+When using selectors in tests, prefix the ID with `#`:
+
+```python
+app.click("#save_btn")
+app.find("#save_btn")
+app.assert_text("#save_btn", "Save")
+```
+
+### Selectors
+
+Two selector forms:
+
+- **`"#id"`** -- find by widget ID. The `#` prefix is required.
+- **`"text content"`** -- find by text content (checks `content`, `label`,
+  `value`, `placeholder` props in that order, depth-first).
+
+```python
+app.click("#my_button")         # by ID
+app.find("Click me")           # by text content
+app.assert_exists("#sidebar")  # by ID
+```
+
+### Element handles
+
+`query()` returns `None` if not found. `find()` raises
+`ElementNotFoundError` with a clear message. Both return an `Element`
+instance:
+
+```python
+element = app.find("#my-button")
+element.id        # => "my-button"
+element.type      # => "button"
+element.props     # => {"label": "Click me", ...}
+element.children  # => [...]
+```
+
+Use `text()` to extract display text from an element:
+
+```python
+assert app.find("#count").text() == "42"
+```
+
+`Element.text()` checks props in order: `content`, `label`, `value`,
+`placeholder`. Returns `None` if no text prop is found.
+
+### Interaction methods
+
+All interaction methods accept a selector string. They are available on
+the `AppFixture` instance.
+
+| Method | Widget types | Event produced |
+|---|---|---|
+| `click(selector)` | `button` | `Click(id=id)` |
+| `type_text(selector, text)` | `text_input`, `text_editor` | `Input(id=id, value=text)` |
+| `submit(selector)` | `text_input` | `Submit(id=id, value=val)` |
+| `toggle(selector)` | `checkbox`, `toggler` | `Toggle(id=id, value=!current)` |
+| `select(selector, value)` | `pick_list`, `combo_box`, `radio` | `Select(id=id, value=val)` |
+| `slide(selector, value)` | `slider`, `vertical_slider` | `Slide(id=id, value=val)` |
+
+Interacting with the wrong widget type raises with an actionable hint:
+
+```
+TypeError: cannot click a checkbox widget -- use toggle() instead
+```
+
+### Additional interactions
+
+| Method | Description |
+|---|---|
+| `press(key)` | Press a key (key down). Supports modifiers: `"ctrl+s"` |
+| `release(key)` | Release a key (key up). Supports modifiers: `"ctrl+s"` |
+| `type_key(key)` | Type a key (press + release). Supports modifiers: `"enter"` |
+| `move_to(x, y)` | Move the cursor to absolute coordinates |
+| `scroll(selector, delta_x, delta_y)` | Scroll a widget |
+| `paste(selector, text)` | Paste text into a widget |
+| `sort(selector, column)` | Sort a table column |
+| `canvas_press(selector, x, y, button)` | Press on a canvas |
+| `canvas_release(selector, x, y, button)` | Release on a canvas |
+| `canvas_move(selector, x, y)` | Move on a canvas |
+| `pane_focus_cycle(selector)` | Cycle focus in a pane grid |
+
+### Assertions
+
+```python
+# Text content
+app.assert_text("#count", "42")
+
+# Existence
+app.assert_exists("#my-button")
+app.assert_not_exists("#admin-panel")
+
+# Full model equality
+app.assert_model(MyModel(count=5, name="test"))
+
+# Direct model inspection
+assert app.model.count == 5
+
+# Direct element access when you need more control
+element = app.find("#count")
+assert element.text() == "42"
+assert element.type == "text"
+```
+
+
+## API reference
+
+All of the following are available on an `AppFixture` instance:
+
+| Method / Property | Description |
+|---|---|
+| `find(selector)` | Find element by selector, raises `ElementNotFoundError` if not found |
+| `query(selector)` | Find element by selector, returns `None` if not found |
+| `click(selector)` | Click a button widget |
+| `type_text(selector, text)` | Type text into a text_input or text_editor |
+| `submit(selector)` | Submit a text_input (simulates pressing enter) |
+| `toggle(selector)` | Toggle a checkbox or toggler |
+| `select(selector, value)` | Select a value from pick_list, combo_box, or radio |
+| `slide(selector, value)` | Slide a slider to a numeric value |
+| `press(key)` | Press a key (key down). Supports modifiers: `"ctrl+s"` |
+| `release(key)` | Release a key (key up). Supports modifiers |
+| `type_key(key)` | Type a key (press + release). Supports modifiers |
+| `move_to(x, y)` | Move the cursor to absolute coordinates |
+| `scroll(selector, delta_x, delta_y)` | Scroll a widget |
+| `paste(selector, text)` | Paste text into a widget |
+| `sort(selector, column)` | Sort a table column |
+| `canvas_press(selector, x, y, button)` | Press on a canvas |
+| `canvas_release(selector, x, y, button)` | Release on a canvas |
+| `canvas_move(selector, x, y)` | Move on a canvas |
+| `pane_focus_cycle(selector)` | Cycle focus in a pane grid |
+| `model` | Returns the current app model (property) |
+| `tree` | Returns the current normalized UI tree (property) |
+| `text(selector)` | Extract text content from a widget |
+| `exists(selector)` | Check whether an element exists in the tree |
+| `find_by_role(role)` | Find an element by its accessible role |
+| `find_by_label(label)` | Find an element by its accessible label |
+| `find_focused()` | Find the currently focused element |
+| `assert_text(selector, expected)` | Assert widget contains expected text |
+| `assert_exists(selector)` | Assert widget exists in the tree |
+| `assert_not_exists(selector)` | Assert widget does NOT exist in the tree |
+| `assert_model(expected)` | Assert model equals expected (strict equality) |
+| `assert_tree_hash(name)` | Capture tree hash and assert it matches golden file |
+| `assert_screenshot(name)` | Capture screenshot and assert it matches golden file |
+| `save_screenshot(name)` | Capture screenshot and save as PNG to `test/screenshots/` |
+| `await_async()` | No-op in synchronous test mode (work already done) |
+| `reset()` | Reset session to initial state |
+| `close()` | Release the session back to the pool |
+
+
+## Backends
+
+All tests work on all backends. Write tests once, swap backends without
+changing assertions.
+
+### Three backends
+
+| | `mock` | `headless` | `windowed` |
+|---|---|---|---|
+| **Speed** | ~ms | ~100ms | ~seconds |
+| **Renderer** | Yes (`--mock`) | Yes (`--headless`) | Yes |
+| **Display server** | No | No | Yes (Xvfb in CI) |
+| **Protocol round-trip** | Yes | Yes | Yes |
+| **Structural tree hashes** | Yes | Yes | Yes |
+| **Pixel screenshots** | No | Yes (software) | Yes |
+| **Effects** | Cancelled | Cancelled | Executed |
+| **Subscriptions** | Tracked, not fired | Tracked, not fired | Active |
+| **Real rendering** | No | Yes (tiny-skia) | Yes (GPU) |
+| **Real windows** | No | No | Yes |
+
+- **`mock`** -- shared `plushie --mock` process with session
+  multiplexing. Tests app logic, tree structure, and wire protocol.
+  No rendering, no display, sub-millisecond. The right default for
+  90% of tests.
+
+- **`headless`** -- `plushie --headless` with software rendering via
+  tiny-skia (no display server). Pixel screenshots for visual
+  regression. Catches rendering bugs that mock mode cannot.
+
+- **`windowed`** -- `plushie` with real iced windows and GPU rendering.
+  Effects execute, subscriptions fire, screenshots capture exactly
+  what a user sees. Needs a display server (Xvfb or headless Weston).
+
+### Backend selection
+
+You never choose a backend in your test code. Backend selection is an
+infrastructure decision made via environment variable.
+
+| Priority | Source | Example |
+|---|---|---|
+| 1 | Environment variable | `PLUSHIE_TEST_BACKEND=headless pytest` |
+| 2 | Default | `mock` |
+
+The `plushie_pool` pytest fixture (provided by `plushie.testing.plugin`)
+reads `PLUSHIE_TEST_BACKEND` at session startup and configures the
+`SessionPool` accordingly.
+
+
+## Snapshots and screenshots
+
+Plushie has three distinct regression testing mechanisms. Understanding the
+difference is important.
+
+### Structural tree hashes (`assert_tree_hash`)
+
+`assert_tree_hash()` captures a SHA-256 hash of the serialized UI tree and
+compares it against a golden file. It works on all three backends because
+every backend can produce a tree.
+
+```python
+def test_counter_initial_state(plushie_pool):
+    with AppFixture(Counter, plushie_pool) as app:
+        app.assert_tree_hash("counter-initial")
+
+def test_counter_after_increment(plushie_pool):
+    with AppFixture(Counter, plushie_pool) as app:
+        app.click("#increment")
+        app.assert_tree_hash("counter-at-1")
+```
+
+Golden files are stored in `test/snapshots/` as `.tree_hash` files. On first
+run, the golden file is created automatically. On subsequent runs, the hash
+is compared and the test fails on mismatch.
+
+To update golden files after intentional changes:
+
+```bash
+PLUSHIE_UPDATE_SNAPSHOTS=1 pytest
+```
+
+### Pixel screenshots (`assert_screenshot`)
+
+`assert_screenshot()` captures real RGBA pixel data and compares it against
+a golden file. It produces meaningful data on the `headless` backend
+(software rendering via tiny-skia) and the `windowed` backend (GPU rendering
+via wgpu). On `mock`, it silently succeeds as a no-op (returns an empty
+hash, which is accepted without creating or checking a golden file).
+
+Note that headless screenshots use software rendering, so pixels will not
+match GPU output exactly. Maintain separate golden files per backend, or
+use headless screenshots for layout regression testing only.
+
+```python
+def test_counter_renders_correctly(plushie_pool):
+    with AppFixture(Counter, plushie_pool) as app:
+        app.click("#increment")
+        app.assert_screenshot("counter-at-1")
+```
+
+Golden files are stored in `test/screenshots/` as `.screenshot_hash` files.
+The workflow is the same as structural snapshots but uses a separate env var:
+
+```bash
+PLUSHIE_UPDATE_SCREENSHOTS=1 pytest
+```
+
+Because screenshots silently no-op on mock, you can include
+`assert_screenshot` calls in any test without conditional logic. They will
+produce assertions when run on the headless or windowed backends.
+
+### Saving screenshots to disk
+
+`save_screenshot()` writes the actual PNG pixel data to
+`test/screenshots/<name>.png`. Useful for debugging visual issues.
+
+```python
+def test_save_counter_screenshot(plushie_pool):
+    with AppFixture(Counter, plushie_pool) as app:
+        app.click("#increment")
+        path = app.save_screenshot("counter-debug")
+        assert path.exists()
+```
+
+### JSON tree snapshots
+
+Pure JSON comparison at the unit test level -- no backend or session needed.
+See the [Unit testing](#json-tree-snapshots) section above.
+
+### When to use each
+
+- **`assert_tree_hash`** -- always appropriate. Catches structural regressions
+  (widgets appearing/disappearing, prop changes, nesting changes). Works on
+  every backend. Use liberally.
+
+- **`assert_screenshot`** -- after bumping iced, changing the renderer,
+  modifying themes, or any change that affects visual output. Only meaningful
+  on headless and windowed backends. Include alongside `assert_tree_hash` for
+  critical views.
+
+- **JSON tree snapshots** -- for unit tests of `view()` output. No framework
+  overhead. Good for documenting what a view produces for a given model state.
+
+
+## Testing async workflows
+
+### On the mock backend
+
+The mock backend executes `task`, `stream`, and `done` commands
+synchronously. When `update()` returns a command like
+`Command.task(fn, tag="data_loaded")`, the fixture immediately calls the
+function, gets the result, and dispatches the result through `update()` --
+all within the same call.
+
+This means `await_async()` is a no-op (the work is already done):
+
+```python
+def test_fetching_data_loads_results(plushie_pool):
+    with AppFixture(MyApp, plushie_pool) as app:
+        app.click("#fetch")
+        # On mock, the task command already executed synchronously.
+        # await_async() is a no-op -- the model is already updated.
+        app.await_async()
+        assert len(app.model.results) > 0
+```
+
+Widget ops (focus, scroll), window ops, and timers are silently skipped on
+mock because they require a renderer. Test the command shape at the
+unit test level instead:
+
+```python
+def test_clicking_fetch_starts_async_load():
+    app = MyApp()
+    model = dataclasses.replace(app.init(), loading=False, data=None)
+    model, cmd = app.update(model, Click(id="fetch"))
+
+    assert model.loading is True
+    assert cmd.type == "task"
+    assert cmd.payload["tag"] == "data_loaded"
+```
+
+### On headless and windowed backends
+
+All three backends use the same synchronous `CommandProcessor` for async
+commands. `await_async()` returns immediately on all backends because the
+commands have already completed.
+
+
+## Debugging and error messages
+
+### Element not found
+
+```python
+app.find("#nonexistent")
+# ElementNotFoundError: element not found: '#nonexistent'. Available IDs: ['inc', 'dec', 'count']
+```
+
+Use `app.tree` to inspect the current tree and verify the widget's ID or
+text content:
+
+```python
+import pprint
+pprint.pprint(app.tree)
+```
+
+### Wrong interaction type
+
+```python
+app.click("#my-checkbox")
+# TypeError: cannot click a checkbox widget -- use toggle() instead
+```
+
+Use the correct interaction method for the widget type. See the
+[interaction table](#interaction-methods) for the mapping.
+
+### Headless binary not built
+
+```
+PlushieNotFoundError: failed to start renderer: ...
+```
+
+Download or build the renderer:
+
+```bash
+python -m plushie download
+```
+
+### Inspecting state when a test fails
+
+`model` and `tree` are your best debugging tools:
+
+```python
+def test_debugging_a_failing_test(plushie_pool):
+    with AppFixture(Counter, plushie_pool) as app:
+        app.click("#increment")
+
+        print("model:", app.model)
+        print("tree:", app.tree)
+
+        assert app.find("#count").text() == "1"
+```
+
 
 ## CI configuration
 
 ### Mock CI (simplest)
+
+No special setup. Works anywhere Python runs.
 
 ```yaml
 - run: pip install plushie
@@ -169,6 +566,8 @@ Available on headless and windowed backends. Mock mode returns stubs.
 ```
 
 ### Headless CI
+
+Requires the plushie binary (download or build from source).
 
 ```yaml
 - run: pip install plushie
@@ -178,12 +577,171 @@ Available on headless and windowed backends. Mock mode returns stubs.
 
 ### Windowed CI
 
+Requires a display server and GPU/software rendering. Two options:
+
+**Option A: Xvfb (X11)**
+
 ```yaml
 - run: pip install plushie
 - run: python -m plushie download
+- run: sudo apt-get install -y xvfb mesa-vulkan-drivers
 - run: |
-    sudo apt-get install -y xvfb mesa-vulkan-drivers
     Xvfb :99 -screen 0 1024x768x24 &
     export DISPLAY=:99
+    export WINIT_UNIX_BACKEND=x11
     PLUSHIE_TEST_BACKEND=windowed pytest
 ```
+
+**Option B: Weston (Wayland)**
+
+Weston's headless backend provides a Wayland compositor without a physical
+display. Combined with `vulkan-swrast` (Mesa software rasterizer), this
+runs the full rendering pipeline on CPU.
+
+```yaml
+- run: pip install plushie
+- run: python -m plushie download
+- run: sudo apt-get install -y weston mesa-vulkan-drivers
+- run: |
+    export XDG_RUNTIME_DIR=/tmp/plushie-xdg-runtime
+    mkdir -p "$XDG_RUNTIME_DIR" && chmod 0700 "$XDG_RUNTIME_DIR"
+    weston --backend=headless --width=1024 --height=768 --socket=plushie-test &
+    sleep 1
+    export WAYLAND_DISPLAY=plushie-test
+    PLUSHIE_TEST_BACKEND=windowed pytest
+```
+
+On Arch Linux, `weston` and `vulkan-swrast` are available via pacman.
+
+### Progressive CI
+
+Run mock tests fast, then promote to higher-fidelity backends for subsets:
+
+```yaml
+# All tests on mock (fast, catches logic bugs)
+- run: pytest
+
+# Full suite on headless for protocol verification
+- run: PLUSHIE_TEST_BACKEND=headless pytest
+
+# Windowed for pixel regression (tagged subset)
+- run: |
+    Xvfb :99 -screen 0 1024x768x24 &
+    export DISPLAY=:99
+    PLUSHIE_TEST_BACKEND=windowed pytest -m windowed
+```
+
+Tag tests that need a specific backend with pytest markers:
+
+```python
+import pytest
+
+@pytest.mark.headless
+def test_protocol_round_trip(plushie_pool):
+    ...
+
+@pytest.mark.windowed
+def test_window_opens_and_renders(plushie_pool):
+    ...
+```
+
+
+## Testing extensions
+
+Extension widgets have two testing layers: Python-side logic (node building,
+command generation, demo app behavior) and Rust-side rendering (the widget
+actually renders, handles events, etc.).
+
+### Python-side: unit tests (no renderer)
+
+Extension definitions produce nodes and commands via `build_node()` and
+`build_command()`. Test these directly:
+
+```python
+from plushie.extension import build_node, build_command
+
+def test_build_node_creates_correct_type():
+    node = build_node(gauge_def, "g1", {"value": 50})
+    assert node["type"] == "gauge"
+    assert node["props"]["value"] == 50
+
+def test_build_command_creates_extension_command():
+    cmd = build_command(gauge_def, "g1", "set_value", {"value": 42.0})
+    assert cmd.type == "extension_command"
+```
+
+Demo apps test the extension in context:
+
+```python
+def test_view_produces_a_gauge_widget():
+    app = GaugeDemo()
+    model = app.init()
+    tree = normalize(app.view(model))
+    gauge = find(tree, "my-gauge")
+    assert gauge["type"] == "gauge"
+```
+
+### Rust-side: unit tests (no Python)
+
+The `plushie_core::testing` module provides `TestEnv` and node factories
+for testing `WidgetExtension::render()` in isolation:
+
+```rust
+use plushie_core::testing::*;
+use plushie_core::prelude::*;
+
+#[test]
+fn gauge_renders_without_panic() {
+    let ext = MyGaugeExtension::new();
+    let test = TestEnv::default();
+    let node = node_with_props("g1", "gauge", json!({"value": 75}));
+    let env = test.env();
+    let _element = ext.render(&node, &env);
+}
+```
+
+### End-to-end: through the renderer
+
+To verify extension widgets survive the wire protocol round-trip and
+render correctly, build a custom renderer binary that includes the
+extension's Rust crate:
+
+```bash
+# Build the custom renderer with your extension compiled in
+python -m plushie build
+
+# Run tests through the real renderer (headless, no display server)
+PLUSHIE_TEST_BACKEND=headless pytest
+```
+
+Write end-to-end tests with `AppFixture`:
+
+```python
+def test_gauge_appears_in_rendered_tree(plushie_pool):
+    with AppFixture(GaugeDemo, plushie_pool) as app:
+        app.assert_exists("#my-gauge")
+
+def test_gauge_responds_to_command(plushie_pool):
+    with AppFixture(GaugeDemo, plushie_pool) as app:
+        app.click("#push-value")
+        app.assert_text("#value-display", "42")
+```
+
+These tests run on `mock` by default (fast, logic-only). Set
+`PLUSHIE_TEST_BACKEND=headless` to exercise the full Rust rendering path
+with the extension compiled in.
+
+
+## Known limitations
+
+- `move_to` on the mock backend dispatches cursor events but has no spatial
+  layout info. Mouse area enter/exit events will not fire.
+- Pixel screenshots are only available on the headless and windowed backends
+  (mock returns stubs).
+- Headless screenshots use software rendering (tiny-skia) and may not match
+  GPU output pixel-for-pixel.
+- The `CommandProcessor` executes task/stream/batch commands synchronously
+  in all test backends. Timing and concurrency bugs will not surface in mock
+  tests. Use headless or windowed backends for concurrency-sensitive tests.
+- There is a safety limit of 100 levels of recursive command processing to
+  prevent infinite command loops.
