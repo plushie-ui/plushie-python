@@ -107,6 +107,7 @@ class TodoApp(plushie.App[Model]):
                     model.input_value,
                     placeholder="What needs to be done?",
                     on_submit=True,
+                    width="fill",
                 ),
                 ui.row(
                     ui.radio("filter", "all", model.filter, label="All"),
@@ -117,6 +118,7 @@ class TodoApp(plushie.App[Model]):
                 *(_todo_item(item) for item in visible),
                 padding=16,
                 spacing=8,
+                width="fill",
             ),
             title="Todo",
         )
