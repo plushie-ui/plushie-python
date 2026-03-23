@@ -173,6 +173,13 @@ event. You can save state, persist data, or show a confirmation
 dialog. In non-daemon mode, the plushie process exits. In daemon mode,
 plushie keeps running and waits for a new renderer to connect.
 
+### Demo: crash-test
+
+The [crash-test demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/crash-test)
+exercises both failure paths: Python exceptions in `update()`/`view()`
+and Rust panics in `render()`/`handle_command()`. A working counter
+proves the app keeps functioning through all crashes.
+
 
 ## Event rate limiting
 
