@@ -14,6 +14,7 @@ Length controls how a widget claims space along an axis.
 | `"shrink"` | `Length::Shrink` | Use minimum/intrinsic size |
 | `200` or `200.0` | `Length::Fixed(200.0)` | Exact pixel size |
 
+<!-- test: TestLengthFill, TestLengthFixed, TestLengthFillPortion, TestLengthShrink -- keep this code block in sync with the test -->
 ```python
 from plushie import ui
 
@@ -50,6 +51,7 @@ Padding is the space between a widget's boundary and its content.
 | `{"top": 5, "right": 10, "bottom": 5, "left": 10}` | Per-side |
 | `0` | No padding |
 
+<!-- test: TestPaddingUniform, TestPaddingXY, TestPaddingPerSide -- keep this code block in sync with the test -->
 ```python
 ui.container("box", ..., padding=16)
 ui.container("box", ..., padding=(8, 16))
@@ -63,6 +65,7 @@ Padding is accepted by `container`, `column`, `row`, `scrollable`,
 
 Spacing is the gap between children in a layout container.
 
+<!-- test: TestSpacing -- keep this code block in sync with the test -->
 ```python
 ui.column(
     ui.text("First"),
@@ -95,6 +98,7 @@ the cross axis.
 | `"center"` | Centered |
 | `"end"` or `"bottom"` | Bottom-aligned |
 
+<!-- test: TestAlignXColumn, TestAlignCenterContainer -- keep this code block in sync with the test -->
 ```python
 # Center children horizontally in a column
 ui.column(
@@ -122,6 +126,7 @@ and `align_y="center"`.
 
 Arranges children vertically (top to bottom).
 
+<!-- test: TestColumnWithProps -- keep this code block in sync with the test -->
 ```python
 ui.column(
     ui.text("title", "Title", size=24),
@@ -140,6 +145,7 @@ Props: `spacing`, `padding`, `width`, `height`, `align_x`.
 
 Arranges children horizontally (left to right).
 
+<!-- test: TestRowWithAlignY -- keep this code block in sync with the test -->
 ```python
 ui.row(
     ui.button("back", "<"),
@@ -157,6 +163,7 @@ children to next line when they overflow).
 
 Wraps a single child with padding, alignment, and styling.
 
+<!-- test: TestContainerWithStyle -- keep this code block in sync with the test -->
 ```python
 ui.container(
     "card",
@@ -177,6 +184,7 @@ Props: `padding`, `width`, `height`, `align_x`, `align_y`, `center`,
 
 Wraps content in a scrollable region.
 
+<!-- test: TestScrollable -- keep this code block in sync with the test -->
 ```python
 ui.scrollable(
     "list",
@@ -197,6 +205,7 @@ Props: `width`, `height`, `direction` (`"vertical"`, `"horizontal"`,
 Overlays children on top of each other (z-stacking). Later children
 are on top.
 
+<!-- test: TestStack -- keep this code block in sync with the test -->
 ```python
 ui.stack(
     ui.image("bg", "background.png", width="fill", height="fill"),
@@ -214,6 +223,7 @@ ui.stack(
 
 Empty spacer. Takes up space without rendering anything.
 
+<!-- test: TestSpace -- keep this code block in sync with the test -->
 ```python
 ui.row(
     ui.text("Left"),
@@ -226,6 +236,7 @@ ui.row(
 
 Arranges children in a grid layout.
 
+<!-- test: TestGrid -- keep this code block in sync with the test -->
 ```python
 ui.grid(
     *(ui.image(f"img:{item.id}", item.url, width="fill") for item in items),
@@ -239,6 +250,7 @@ ui.grid(
 
 ### Centered page
 
+<!-- test: TestCenteredPage -- keep this code block in sync with the test -->
 ```python
 ui.container(
     "page",
@@ -256,6 +268,7 @@ ui.container(
 
 ### Sidebar + content
 
+<!-- test: TestSidebarContent -- keep this code block in sync with the test -->
 ```python
 ui.row(
     ui.container(
@@ -279,6 +292,7 @@ ui.row(
 
 ### Header + body + footer
 
+<!-- test: TestHeaderBodyFooter -- keep this code block in sync with the test -->
 ```python
 ui.column(
     ui.container("header", header(model), width="fill", padding=(8, 16)),

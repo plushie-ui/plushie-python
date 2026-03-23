@@ -8,6 +8,7 @@ build them in your app.
 
 Themes are set at the window level:
 
+<!-- test: test_themer_widget_builtin -- keep this code block in sync with the test -->
 ```python
 from plushie import ui
 
@@ -58,6 +59,7 @@ Unknown names fall back to `dark`.
 
 Built-in theme name constants are available in `plushie.types`:
 
+<!-- test: test_builtin_theme_constants -- keep this code block in sync with the test -->
 ```python
 from plushie.types import THEME_CATPPUCCIN_MOCHA, BUILTIN_THEMES
 ```
@@ -66,6 +68,7 @@ from plushie.types import THEME_CATPPUCCIN_MOCHA, BUILTIN_THEMES
 
 Custom themes are defined by providing a palette:
 
+<!-- test: test_theme_custom -- keep this code block in sync with the test -->
 ```python
 from plushie.types import Theme
 
@@ -81,6 +84,7 @@ theme = Theme.custom("my_app",
 
 Then pass it to a `themer` widget:
 
+<!-- test: test_themer_widget_custom_theme -- keep this code block in sync with the test -->
 ```python
 ui.themer("app_theme", theme=theme,
     # ...
@@ -145,6 +149,7 @@ Each background key also supports a `_text` suffix (e.g.
 
 ### Example
 
+<!-- test: test_theme_custom_with_shade_overrides -- keep this code block in sync with the test -->
 ```python
 from plushie.types import Theme
 
@@ -167,6 +172,7 @@ name strings like `"dark"` or `"nord"` are not affected.
 
 Themes can be overridden for a subtree using a `themer` wrapper:
 
+<!-- test: test_themer_subtree_override -- keep this code block in sync with the test -->
 ```python
 ui.column(
     ui.text("Uses window theme"),
@@ -204,6 +210,7 @@ writing Rust. They work on all 13 styleable widgets: button, container,
 text_input, text_editor, checkbox, radio, toggler, pick_list, progress_bar,
 rule, slider, vertical_slider, and tooltip.
 
+<!-- test: test_style_map_builder_pattern -- keep this code block in sync with the test -->
 ```python
 from plushie.types import StyleMap, Border, Shadow
 
@@ -234,6 +241,7 @@ Style maps support interaction state overrides. Each override is a
 partial style dict that is merged on top of the base when the widget
 enters that state:
 
+<!-- test: test_style_map_status_overrides -- keep this code block in sync with the test -->
 ```python
 nav_item_style = (
     StyleMap()
@@ -262,6 +270,7 @@ a specific look.
 Style maps don't replace presets -- they complement them. Use presets
 for standard looks and style maps when you need custom appearance:
 
+<!-- test: test_style_map_cta_button -- keep this code block in sync with the test -->
 ```python
 # Standard danger button
 ui.button("delete", "Delete", style="danger")
@@ -283,6 +292,7 @@ polished UI patterns with style maps.
 The simplest way to follow the OS light/dark preference is to set the
 window theme to `"system"`:
 
+<!-- test: test_system_theme_in_settings -- keep this code block in sync with the test -->
 ```python
 def view(self, model):
     return ui.window("main", title="My App",
@@ -303,6 +313,7 @@ def settings(self):
 For manual control, subscribe to theme change events with
 `Subscription.on_theme_change()`:
 
+<!-- test: test_subscription_on_theme_change (see test_commands_doc.py) -- keep this code block in sync with the test -->
 ```python
 from plushie.subscriptions import Subscription
 from plushie.events import ThemeChanged
@@ -329,6 +340,7 @@ on window nodes or in `settings()` instead.
 For apps that need density-aware spacing (compact, comfortable, roomy),
 build a simple helper function in your app:
 
+<!-- test: test_density_helper -- keep this code block in sync with the test -->
 ```python
 def spacing(density: str, size: str) -> int:
     table = {

@@ -14,6 +14,7 @@ schedule a delayed event. These are commands.
 
 `update()` can return either a bare model or a `(model, command)` tuple:
 
+<!-- test: test_update_returns_bare_model, test_update_returns_model_command_tuple -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -41,6 +42,7 @@ def update(self, model, event):
 
 #### Async work
 
+<!-- test: test_command_task -- keep this code block in sync with the test -->
 ```python
 # Run a function in a background thread. Result is delivered as an AsyncResult event.
 Command.task(fn, tag)
@@ -49,6 +51,7 @@ Command.task(fn, tag)
 #   AsyncResult(tag=tag, value=result)
 ```
 
+<!-- test: test_command_task -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -75,6 +78,7 @@ callback; each call to `emit` delivers a `StreamChunk(tag=tag, value=value)`
 event through the normal update cycle. The function's final return value
 is delivered as `AsyncResult(tag=tag, value=result)`.
 
+<!-- test: test_command_stream -- keep this code block in sync with the test -->
 ```python
 Command.stream(fn, tag)
 
@@ -83,6 +87,7 @@ Command.stream(fn, tag)
 # The function's final return value dispatches AsyncResult(tag=tag, value=result).
 ```
 
+<!-- test: test_command_stream -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -117,10 +122,12 @@ thread and queue -- see [DIY patterns](#diy-patterns) below.
 tag. The runtime tracks running threads by tag and terminates the
 associated work. If the task has already completed, this is a no-op.
 
+<!-- test: test_command_cancel -- keep this code block in sync with the test -->
 ```python
 Command.cancel(tag)
 ```
 
+<!-- test: test_command_cancel -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -138,10 +145,12 @@ def update(self, model, event):
 immediately dispatches `mapper(value)` through `update()` without spawning
 a thread. Useful for lifting a pure value into the command pipeline.
 
+<!-- test: test_command_done -- keep this code block in sync with the test -->
 ```python
 Command.done(value, mapper)
 ```
 
+<!-- test: test_command_done -- keep this code block in sync with the test -->
 ```python
 from plushie.commands import Command
 from plushie.events import Click
@@ -156,6 +165,7 @@ def update(self, model, event):
 
 `Command.exit()` terminates the application.
 
+<!-- test: test_command_exit -- keep this code block in sync with the test -->
 ```python
 Command.exit()
 ```
@@ -164,6 +174,7 @@ Command.exit()
 
 ##### Focus
 
+<!-- test: test_command_focus, test_command_focus_next, test_command_focus_previous -- keep this code block in sync with the test -->
 ```python
 Command.focus(widget_id)           # Focus a text input
 Command.focus_next()               # Focus next focusable widget
@@ -172,6 +183,7 @@ Command.focus_previous()           # Focus previous focusable widget
 
 Example:
 
+<!-- test: test_command_focus -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -185,6 +197,7 @@ def update(self, model, event):
 
 ##### Text operations
 
+<!-- test: test_command_select_all, test_command_select_range, test_command_move_cursor_to, test_command_move_cursor_to_front, test_command_move_cursor_to_end -- keep this code block in sync with the test -->
 ```python
 Command.select_all(widget_id)                       # Select all text
 Command.move_cursor_to_front(widget_id)              # Cursor to start
@@ -195,6 +208,7 @@ Command.select_range(widget_id, start, end)          # Select character range
 
 Example:
 
+<!-- test: test_command_select_range -- keep this code block in sync with the test -->
 ```python
 from plushie.commands import Command
 from plushie.events import Click
@@ -207,6 +221,7 @@ def update(self, model, event):
 
 ##### Scroll operations
 
+<!-- test: test_command_scroll_to, test_command_snap_to, test_command_snap_to_end, test_command_scroll_by -- keep this code block in sync with the test -->
 ```python
 Command.scroll_to(widget_id, offset_y)   # Scroll to absolute vertical position
 Command.snap_to(widget_id, x, y)         # Snap scroll to absolute offset
@@ -216,6 +231,7 @@ Command.scroll_by(widget_id, x, y)       # Scroll by relative delta
 
 Example:
 
+<!-- test: test_command_snap_to_end -- keep this code block in sync with the test -->
 ```python
 from plushie.commands import Command
 from plushie.events import Click
@@ -228,18 +244,21 @@ def update(self, model, event):
 
 ##### Accessibility
 
+<!-- test: test_command_announce -- keep this code block in sync with the test -->
 ```python
 Command.announce(text)           # Announce text to screen readers
 ```
 
 ##### Font loading
 
+<!-- test: test_command_load_font -- keep this code block in sync with the test -->
 ```python
 Command.load_font(data)          # Load a font at runtime from raw TTF/OTF bytes
 ```
 
 ##### Renderer queries
 
+<!-- test: test_command_tree_hash_query, test_command_find_focused_query, test_command_list_images_query -- keep this code block in sync with the test -->
 ```python
 Command.tree_hash_query(tag)        # SHA-256 hash of the renderer's current tree
 Command.find_focused_query(tag)     # Which widget currently has keyboard focus
@@ -255,6 +274,7 @@ There is no `open_window` command. To open a window, add a `window` node to
 the tree returned by `view()`. To close one, remove it or use
 `close_window()`.
 
+<!-- test: test_command_close_window, test_command_resize_window, test_command_move_window, test_command_maximize_window, test_command_minimize_window, test_command_set_window_mode, test_command_toggle_maximize, test_command_toggle_decorations, test_command_gain_focus, test_command_set_window_level, test_command_drag_window, test_command_drag_resize_window, test_command_request_user_attention, test_command_screenshot_window, test_command_set_resizable, test_command_set_min_max_size, test_command_mouse_passthrough, test_command_show_system_menu, test_command_set_icon, test_command_set_resize_increments, test_command_allow_automatic_tabbing -- keep this code block in sync with the test -->
 ```python
 Command.close_window(window_id)                            # Close a window
 Command.resize_window(window_id, width, height)            # Resize
@@ -285,6 +305,7 @@ Command.allow_automatic_tabbing(enabled)                   # Enable/disable macO
 
 Example:
 
+<!-- test: test_command_set_window_mode, test_command_set_window_level -- keep this code block in sync with the test -->
 ```python
 from plushie.commands import Command
 from plushie.events import Click
@@ -315,6 +336,7 @@ These go through the effect/window_op system. Results arrive in `update()`
 as `EffectResult(request_id=window_id, status="ok", result=data)` where
 `window_id` is the string ID of the window and `data` varies by query type.
 
+<!-- test: test_command_get_window_size, test_command_get_window_position, test_command_get_mode, test_command_get_scale_factor, test_command_is_maximized, test_command_is_minimized, test_command_raw_id, test_command_monitor_size -- keep this code block in sync with the test -->
 ```python
 Command.get_window_size(window_id, tag)
 # Result: EffectResult(request_id=window_id, status="ok", result={"width": w, "height": h})
@@ -346,6 +368,7 @@ Command.monitor_size(window_id, tag)
 
 Example:
 
+<!-- test: test_command_get_window_size -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -372,6 +395,7 @@ System-level queries use a different transport path. Results arrive as
 dedicated event dataclasses where the **tag** (stringified) identifies
 the response.
 
+<!-- test: test_command_get_system_theme, test_command_get_system_info -- keep this code block in sync with the test -->
 ```python
 Command.get_system_theme(tag)
 # Result: SystemTheme(tag=tag_string, theme=mode)
@@ -388,6 +412,7 @@ Command.get_system_info(tag)
 **Important:** The `tag` arrives as a **string** in `update()`, even if you
 pass a non-string value. Match on the string.
 
+<!-- test: test_command_get_system_theme -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -406,6 +431,7 @@ def update(self, model, event):
 In-memory images can be created, updated, and deleted at runtime. The
 `Image` widget references them via `{"handle": "name"}` as its source.
 
+<!-- test: test_command_create_image, test_command_create_image_rgba, test_command_update_image, test_command_update_image_rgba, test_command_delete_image, test_command_clear_images -- keep this code block in sync with the test -->
 ```python
 Command.create_image(handle, data)                         # From PNG/JPEG bytes
 Command.create_image_rgba(handle, width, height, pixels)   # From raw RGBA pixels
@@ -417,6 +443,7 @@ Command.clear_images()                                     # Delete all in-memor
 
 Example:
 
+<!-- test: test_command_create_image, test_command_task -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from pathlib import Path
@@ -436,6 +463,7 @@ def update(self, model, event):
 
 Commands for manipulating panes in a `pane_grid` widget.
 
+<!-- test: test_command_pane_split, test_command_pane_close, test_command_pane_swap, test_command_pane_maximize, test_command_pane_restore -- keep this code block in sync with the test -->
 ```python
 Command.pane_split(pane_grid_id, pane, axis, new_pane_id)  # Split a pane
 Command.pane_close(pane_grid_id, pane)                     # Close a pane
@@ -446,6 +474,7 @@ Command.pane_restore(pane_grid_id)                         # Restore from maximi
 
 Example:
 
+<!-- test: test_command_pane_split -- keep this code block in sync with the test -->
 ```python
 from plushie.commands import Command
 from plushie.events import Click
@@ -458,10 +487,12 @@ def update(self, model, event):
 
 #### Timers
 
+<!-- test: test_command_send_after -- keep this code block in sync with the test -->
 ```python
 Command.send_after(delay_ms, event)  # Deliver event to update after delay
 ```
 
+<!-- test: test_command_send_after -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -480,6 +511,7 @@ def update(self, model, event):
 
 #### Batch
 
+<!-- test: test_command_batch -- keep this code block in sync with the test -->
 ```python
 Command.batch([
     Command.focus("name_input"),
@@ -497,6 +529,7 @@ Push data directly to a native Rust extension widget without triggering the
 view/diff/patch cycle. Used for high-frequency data like terminal output or
 streaming log lines.
 
+<!-- test: test_command_extension_command, test_command_extension_commands -- keep this code block in sync with the test -->
 ```python
 # Single command
 Command.extension_command("term-1", "write", {"data": output})
@@ -514,6 +547,7 @@ widgets without an extension handler.
 
 #### Animation
 
+<!-- test: test_command_advance_frame -- keep this code block in sync with the test -->
 ```python
 Command.advance_frame(timestamp)  # Advance the animation clock (test/headless only)
 ```
@@ -539,6 +573,7 @@ The model is updated and `view()` is re-rendered between each step. This
 is actually more powerful than iced's chaining because you get full model
 updates and UI refreshes at every link in the chain, not just at the end.
 
+<!-- test: test_chaining_via_update_cycle -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -596,6 +631,7 @@ Commands are not side effects in `update`. They are descriptions of side
 effects that the runtime executes after `update` returns. This keeps
 `update` testable:
 
+<!-- test: test_update_returns_inspectable_command -- keep this code block in sync with the test -->
 ```python
 from plushie.events import Click
 
@@ -694,6 +730,7 @@ appear in the event. Renderer events arrive as their own dataclasses like
 
 ### The subscribe callback
 
+<!-- test: test_subscription_every, test_subscription_on_key_press -- keep this code block in sync with the test -->
 ```python
 from plushie.subscriptions import Subscription
 
@@ -721,6 +758,7 @@ it.
 
 #### Time
 
+<!-- test: test_subscription_every -- keep this code block in sync with the test -->
 ```python
 Subscription.every(interval_ms, tag)
 # Delivers: TimerTick(tag=tag, timestamp=ts) every interval_ms
@@ -728,6 +766,7 @@ Subscription.every(interval_ms, tag)
 
 #### Keyboard
 
+<!-- test: test_subscription_on_key_press, test_subscription_on_key_release, test_subscription_on_modifiers_changed -- keep this code block in sync with the test -->
 ```python
 Subscription.on_key_press(tag)
 # Delivers: KeyPress(key=..., modifiers=..., ...)
@@ -746,6 +785,7 @@ Subscription.on_modifiers_changed(tag)
 
 #### Window lifecycle
 
+<!-- test: test_subscription_on_window_close, test_subscription_on_window_open, test_subscription_on_window_resize, test_subscription_on_window_focus, test_subscription_on_window_unfocus, test_subscription_on_window_move, test_subscription_on_window_event -- keep this code block in sync with the test -->
 ```python
 Subscription.on_window_close(tag)
 # Delivers: WindowCloseRequested(window_id=wid)
@@ -771,6 +811,7 @@ Subscription.on_window_event(tag)
 
 #### Mouse
 
+<!-- test: test_subscription_on_mouse_move, test_subscription_on_mouse_button, test_subscription_on_mouse_scroll -- keep this code block in sync with the test -->
 ```python
 Subscription.on_mouse_move(tag)
 # Delivers: MouseMove(x=x, y=y)
@@ -784,6 +825,7 @@ Subscription.on_mouse_scroll(tag)
 
 #### Touch
 
+<!-- test: test_subscription_on_touch -- keep this code block in sync with the test -->
 ```python
 Subscription.on_touch(tag)
 # Delivers: TouchPress(finger_id=fid, x=x, y=y)
@@ -794,6 +836,7 @@ Subscription.on_touch(tag)
 
 #### IME (Input Method Editor)
 
+<!-- test: test_subscription_on_ime -- keep this code block in sync with the test -->
 ```python
 Subscription.on_ime(tag)
 # Delivers: ImeOpen()
@@ -804,6 +847,7 @@ Subscription.on_ime(tag)
 
 #### System
 
+<!-- test: test_subscription_on_theme_change, test_subscription_on_animation_frame, test_subscription_on_file_drop -- keep this code block in sync with the test -->
 ```python
 Subscription.on_theme_change(tag)
 # Delivers: ThemeChanged(theme=mode)  (mode is "light" or "dark")
@@ -819,6 +863,7 @@ Subscription.on_file_drop(tag)
 
 #### Catch-all
 
+<!-- test: test_subscription_on_event -- keep this code block in sync with the test -->
 ```python
 Subscription.on_event(tag)
 # Receives all renderer events. Dataclass type varies by event family.
@@ -847,6 +892,7 @@ Supported on: `Slider`, `VerticalSlider`, `Canvas`, `MouseArea`, `Sensor`,
 
 Renderer subscriptions accept a `max_rate` keyword argument:
 
+<!-- test: test_subscription_max_rate -- keep this code block in sync with the test -->
 ```python
 # Rate-limit mouse moves to 30 events per second:
 Subscription.on_mouse_move("mouse", max_rate=30)
@@ -877,6 +923,7 @@ Omit for unlimited (current default behavior).
 Subscriptions are declarative. You do not start or stop them imperatively.
 You return a list from `subscribe()`, and the runtime manages the rest:
 
+<!-- test: test_subscription_lifecycle_declarative -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command

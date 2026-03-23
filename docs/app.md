@@ -28,6 +28,7 @@ class MyApp(App[M]):
 Returns the initial model, optionally with commands. Called once when the
 runtime starts.
 
+<!-- test: TestInitBareModel, TestInitWithCommand -- keep this code block in sync with the test -->
 ```python
 def init(self) -> Model:
     return Model(
@@ -50,6 +51,7 @@ does not inspect or modify the model -- it is fully owned by the app.
 Receives the current model and an event, returns the next model --
 optionally with commands.
 
+<!-- test: TestUpdateModelChange, TestUpdateCommandReturn -- keep this code block in sync with the test -->
 ```python
 from plushie.events import Click, Input, Submit
 from plushie.commands import Command
@@ -97,6 +99,7 @@ Events are frozen dataclasses under `plushie.events`. Common types:
 
 Receives the current model, returns a UI tree.
 
+<!-- test: TestViewTreeStructure -- keep this code block in sync with the test -->
 ```python
 from plushie import ui
 
@@ -170,6 +173,7 @@ Returns a list of active subscriptions based on the current model. Called
 after every `update`. The runtime diffs the list and starts/stops
 subscriptions automatically.
 
+<!-- test: TestSubscribe -- keep this code block in sync with the test -->
 ```python
 from plushie.subscriptions import Subscription
 
@@ -200,6 +204,7 @@ def handle_renderer_exit(self, model: Model, reason: object) -> Model:
 Called when windows are opened, including at startup and after renderer
 restart. Default: empty dict (renderer defaults).
 
+<!-- test: TestWindowConfig -- keep this code block in sync with the test -->
 ```python
 def window_config(self, model: Model) -> dict[str, Any]:
     return {
@@ -217,6 +222,7 @@ def window_config(self, model: Model) -> dict[str, Any]:
 Called once at startup to provide application-level settings to the
 renderer. Returns a dict.
 
+<!-- test: TestSettings -- keep this code block in sync with the test -->
 ```python
 def settings(self) -> dict[str, Any]:
     return {
@@ -314,6 +320,7 @@ is open; if it disappears, the window closes.
 `view()` returns a list of window nodes (or a single window node for
 single-window apps):
 
+<!-- test: TestMultiWindowViewList -- keep this code block in sync with the test -->
 ```python
 def view(self, model: Model) -> list[dict[str, Any]]:
     windows = [
@@ -374,6 +381,7 @@ ui.window(
 Properties are set when the window first appears. To change properties
 after creation, use window commands:
 
+<!-- test: TestWindowEvents.test_set_window_mode_command -- keep this code block in sync with the test -->
 ```python
 def update(self, model: Model, event: object) -> tuple[Model, Command]:
     match event:
@@ -386,6 +394,7 @@ def update(self, model: Model, event: object) -> tuple[Model, Command]:
 Window events include the window ID so your app knows which window they
 came from:
 
+<!-- test: TestWindowEvents -- keep this code block in sync with the test -->
 ```python
 from plushie.events import WindowCloseRequested, WindowResized, WindowFocused
 
@@ -481,6 +490,7 @@ unfocused windows, track the active window for keyboard shortcuts).
 
 ### Example: dialog window
 
+<!-- test: TestDialogWindow -- keep this code block in sync with the test -->
 ```python
 from plushie.events import Click
 

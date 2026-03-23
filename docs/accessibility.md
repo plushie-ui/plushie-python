@@ -171,6 +171,7 @@ All fields are optional -- only include what you need.
 
 ### Using the a11y prop
 
+<!-- test: test_heading_with_level, test_icon_button_label, test_landmark_region, test_live_region_polite, test_hidden_from_at, test_expanded_state, test_required_form_field -- keep this code block in sync with the test -->
 ```python
 from plushie import ui
 
@@ -260,6 +261,7 @@ ui.button("do_thing", "")
 Screen reader users navigate by headings. Use the `a11y` prop to mark
 section titles:
 
+<!-- test: test_heading_hierarchy_in_view -- keep this code block in sync with the test -->
 ```python
 def view(model):
     return ui.window("main", title="MyApp", children=[
@@ -283,6 +285,7 @@ def view(model):
 Landmarks let screen reader users jump between major sections. Wrap
 significant regions in containers with landmark roles:
 
+<!-- test: test_navigation_landmark, test_region_landmark, test_search_landmark -- keep this code block in sync with the test -->
 ```python
 ui.column(children=[
     ui.container("nav", a11y={"role": "navigation", "label": "Main navigation"},
@@ -375,6 +378,7 @@ another widget by ID using `labelled_by`, `described_by`, and
 `error_message`. The renderer resolves these to accesskit node references
 so the screen reader follows the relationship automatically.
 
+<!-- test: test_labelled_by, test_normalize_resolves_a11y_refs_in_scope -- keep this code block in sync with the test -->
 ```python
 ui.column(spacing=12, children=[
     ui.text("form_heading", "Create account",
@@ -413,6 +417,7 @@ label in sync if you change the visible text.
 
 Decorative elements that add no information should be hidden from AT:
 
+<!-- test: test_rule_hidden, test_image_hidden, test_image_alt_text -- keep this code block in sync with the test -->
 ```python
 # Decorative dividers
 ui.rule(a11y={"hidden": True})
@@ -498,6 +503,7 @@ announces each shape individually with no positional context.
 When building custom widgets with canvas or other primitives, use `toggled`,
 `selected`, `value`, and `orientation` to expose their state to AT users:
 
+<!-- test: test_switch_a11y, test_meter_a11y -- keep this code block in sync with the test -->
 ```python
 # Custom toggle switch built with canvas
 ui.canvas("dark-mode-switch", layers={...},
@@ -528,6 +534,7 @@ Use `position_in_set` / `size_of_set` when building composite widgets
 from primitives (custom lists, tab bars, radio groups). Without these,
 screen readers cannot announce position context like "Item 3 of 7".
 
+<!-- test: test_tab_position_in_set, test_has_popup_menu, test_disabled_override -- keep this code block in sync with the test -->
 ```python
 # Custom tab bar
 ui.row(children=[
@@ -568,6 +575,7 @@ ui.button("submit", "Submit",
 
 For disclosure widgets, toggleable panels, and dropdown menus:
 
+<!-- test: test_expanded_button, test_collapsed_button -- keep this code block in sync with the test -->
 ```python
 def view(model):
     return ui.column(children=[
@@ -602,6 +610,7 @@ An accessible label string for visual content widgets.
 | `qr_code` | `alt` | `str` |
 | `canvas` | `alt` | `str` |
 
+<!-- test: test_image_alt, test_svg_alt -- keep this code block in sync with the test -->
 ```python
 ui.image("logo", "/images/logo.png", alt="Company logo")
 ui.svg("icon", "/icons/search.svg", alt="Search")
@@ -619,6 +628,7 @@ An accessible label for interactive widgets without a visible text label.
 | `vertical_slider` | `label` | `str` |
 | `progress_bar` | `label` | `str` |
 
+<!-- test: test_slider_label, test_progress_bar_label -- keep this code block in sync with the test -->
 ```python
 ui.slider("volume", (0, 100), model.volume, label="Volume")
 ui.vertical_slider("brightness", (0, 100), model.brightness, label="Brightness")
@@ -637,6 +647,7 @@ information after the label.
 | `qr_code` | `description` | `str` |
 | `canvas` | `description` | `str` |
 
+<!-- test: test_image_description -- keep this code block in sync with the test -->
 ```python
 ui.image("photo", path, alt="Team photo",
          description="The engineering team at the 2025 offsite")
@@ -654,6 +665,7 @@ A boolean that hides visual content from AT entirely. Shorthand for
 | `image` | `decorative` | `bool` |
 | `svg` | `decorative` | `bool` |
 
+<!-- test: test_image_decorative_prop, test_svg_decorative_prop -- keep this code block in sync with the test -->
 ```python
 ui.image("divider", "/images/decorative-line.png", decorative=True)
 ui.svg("flourish", "/icons/flourish.svg", decorative=True)

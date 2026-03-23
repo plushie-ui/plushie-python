@@ -185,6 +185,7 @@ Discrete events like clicks and key presses are never rate-limited.
 
 Set `default_event_rate` in your app's `settings()` method:
 
+<!-- test: test_settings_returns_event_rate -- keep this code block in sync with the test -->
 ```python
 class MyApp(App):
     def settings(self):
@@ -193,6 +194,7 @@ class MyApp(App):
 
 For a monitoring dashboard:
 
+<!-- test: test_dashboard_lower_rate -- keep this code block in sync with the test -->
 ```python
 class Dashboard(App):
     def settings(self):
@@ -203,6 +205,7 @@ class Dashboard(App):
 
 Override the global rate for specific event sources:
 
+<!-- test: test_mouse_move_rate, test_animation_frame_rate, test_capture_only_zero_rate -- keep this code block in sync with the test -->
 ```python
 from plushie.subscriptions import Subscription
 
@@ -218,6 +221,7 @@ def subscribe(self, model):
 
 Override the rate on individual widgets:
 
+<!-- test: test_slider_event_rate, test_slider_different_rates -- keep this code block in sync with the test -->
 ```python
 ui.slider("volume", (0, 100), model.volume, event_rate=15)
 ui.slider("seek", (0, model.duration), model.position, event_rate=60)
@@ -251,6 +255,7 @@ methods (socket file wrappers, pipes, custom stream objects). It runs a
 reader thread that decodes frames and provides a thread-safe `send()` for
 outbound messages.
 
+<!-- test: test_adapter_accepts_file_like_objects -- keep this code block in sync with the test -->
 ```python
 import socket
 from plushie.transport import IoStreamAdapter
@@ -353,6 +358,7 @@ python -m plushie build --wasm
 Raw byte streams (SSH channels, raw sockets) need message boundaries.
 The `plushie.framing` module handles this:
 
+<!-- test: test_encode_decode_round_trip -- keep this code block in sync with the test -->
 ```python
 from plushie.framing import MsgpackFraming, JsonFraming
 

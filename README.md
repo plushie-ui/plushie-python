@@ -8,6 +8,8 @@ on Linux, macOS, and Windows. Rendering is powered by
 [iced](https://github.com/iced-rs/iced), a cross-platform GUI library
 for Rust, which plushie drives as a precompiled binary behind the scenes.
 
+<!-- test: test_readme_counter_init, test_readme_counter_increment, test_readme_counter_decrement, test_readme_counter_unknown_event, test_readme_counter_view_structure, test_readme_counter_view_after_increment -- keep this code block in sync with tests/docs/test_readme.py -->
+
 ```python
 from dataclasses import dataclass, replace
 

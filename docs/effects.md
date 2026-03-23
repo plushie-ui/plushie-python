@@ -19,6 +19,7 @@ renderer (decide whether to execute it). Keep the renderer dumb.
 
 ### Python side
 
+<!-- test: test_file_open, test_effect_id_extractable -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie import effects
@@ -89,6 +90,7 @@ renderer is running on a platform that does not support the operation.
 
 ### File dialogs
 
+<!-- test: test_file_open, test_file_open_with_directory, test_file_open_multiple, test_file_save, test_directory_select, test_directory_select_multiple -- keep this code block in sync with the test -->
 ```python
 from plushie import effects
 
@@ -121,6 +123,7 @@ effects.directory_select_multiple(title="Select folders")
 
 ### Clipboard
 
+<!-- test: test_clipboard_read, test_clipboard_write, test_clipboard_read_html, test_clipboard_write_html, test_clipboard_clear, test_clipboard_read_primary, test_clipboard_write_primary -- keep this code block in sync with the test -->
 ```python
 from plushie import effects
 
@@ -142,6 +145,7 @@ effects.clipboard_write_primary("Selected text")
 
 ### Notifications
 
+<!-- test: test_notification -- keep this code block in sync with the test -->
 ```python
 from plushie import effects
 
@@ -172,6 +176,7 @@ The transport does not need to change. Unknown effect kinds return
 For effects not yet wrapped in a convenience function, use the generic
 `request()` function:
 
+<!-- test: test_raw_request -- keep this code block in sync with the test -->
 ```python
 from plushie import effects
 

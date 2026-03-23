@@ -28,6 +28,7 @@ views.
 
 ### Code
 
+<!-- test: test_view_contains_tab_buttons, test_clicking_tab_changes_active -- keep this code block in sync with the test -->
 ```python
 @dataclass(frozen=True, slots=True)
 class TabModel:
@@ -116,6 +117,7 @@ that highlight on hover. The selected item has an accent background.
 
 ### Code
 
+<!-- test: test_view_contains_nav_buttons, test_clicking_nav_changes_page -- keep this code block in sync with the test -->
 ```python
 @dataclass(frozen=True, slots=True)
 class SidebarModel:
@@ -325,6 +327,7 @@ container that dims the background.
 
 ### Code
 
+<!-- test: test_open_modal_shows_overlay, test_confirm_closes_and_sets_flag, test_cancel_closes_without_confirm -- keep this code block in sync with the test -->
 ```python
 @dataclass(frozen=True, slots=True)
 class ModalModel:
@@ -427,6 +430,7 @@ styled container.
 
 ### Code
 
+<!-- test: test_card_has_correct_structure, test_card_contains_title_and_body, test_card_border_and_shadow -- keep this code block in sync with the test -->
 ```python
 @dataclass(frozen=True, slots=True)
 class CardModel:

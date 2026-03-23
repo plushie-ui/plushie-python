@@ -14,6 +14,7 @@ needed.
 
 ### Testing `update()`
 
+<!-- test: test_adding_a_todo_appends_and_clears_input -- keep this code block in sync with the test -->
 ```python
 from plushie.events import Click
 
@@ -33,6 +34,7 @@ Commands are plain `Command` dataclasses. Inspect `type` and `payload`
 to verify what `update()` asked the runtime to do, without executing
 anything.
 
+<!-- test: test_submitting_todo_returns_focus_command, test_save_triggers_async_task -- keep this code block in sync with the test -->
 ```python
 from plushie.events import Submit, Click
 
@@ -56,6 +58,7 @@ def test_save_triggers_async_task():
 
 ### Testing `view()`
 
+<!-- test: test_view_shows_todo_count -- keep this code block in sync with the test -->
 ```python
 from plushie.tree import normalize, find, text_of
 
@@ -75,6 +78,7 @@ def test_view_shows_todo_count():
 
 ### Testing `init()`
 
+<!-- test: test_init_returns_valid_initial_state -- keep this code block in sync with the test -->
 ```python
 def test_init_returns_valid_initial_state():
     app = MyApp()
@@ -88,6 +92,7 @@ def test_init_returns_valid_initial_state():
 
 `plushie.tree` provides helpers for querying view trees directly:
 
+<!-- test: test_find_by_id, test_exists, test_ids, test_find_all_by_predicate -- keep this code block in sync with the test -->
 ```python
 from plushie.tree import find, ids, find_all, exists
 
@@ -575,6 +580,7 @@ Widget ops (focus, scroll), window ops, and timers are silently skipped on
 mock because they require a renderer. Test the command shape at the
 unit test level instead:
 
+<!-- test: test_clicking_fetch_starts_async_load -- keep this code block in sync with the test -->
 ```python
 def test_clicking_fetch_starts_async_load():
     app = MyApp()

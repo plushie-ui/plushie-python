@@ -42,6 +42,7 @@ When the renderer emits an event for a widget, the wire ID is the full
 scoped path (e.g. `"sidebar/form/save"`). The protocol decode layer
 splits it into a local `id` and a `scope` tuple:
 
+<!-- test: test_click_scope_structure -- keep this code block in sync with the test -->
 ```python
 Click(id="save", scope=("form", "sidebar"))
 ```
@@ -49,6 +50,7 @@ Click(id="save", scope=("form", "sidebar"))
 The `scope` tuple is in **reverse order** -- nearest parent first. This
 design optimises the common case of matching on the immediate parent:
 
+<!-- test: test_scope_match_local_id_only, test_scope_match_immediate_parent, test_scope_match_dynamic_list_binding -- keep this code block in sync with the test -->
 ```python
 from plushie.events import Click, Toggle
 
@@ -71,6 +73,7 @@ def update(self, model, event):
 
 Use `plushie.events.target()` to get the full forward-order path:
 
+<!-- test: test_target_reconstructs_full_path -- keep this code block in sync with the test -->
 ```python
 from plushie.events import Click, target
 
@@ -96,6 +99,7 @@ and do not carry scope.
 `tree.find()` and `tree.exists()` support both full scoped paths and
 local IDs:
 
+<!-- test: test_find_by_full_scoped_path, test_find_falls_back_to_local_id -- keep this code block in sync with the test -->
 ```python
 from plushie.tree import find, exists
 
@@ -133,6 +137,7 @@ When rendering a list of items, wrap each item in a named container
 a scope for the item's children, giving each instance unique IDs
 without manual prefixing.
 
+<!-- test: test_dynamic_list_scoping -- keep this code block in sync with the test -->
 ```python
 def view(self, model):
     return ui.column(
@@ -151,6 +156,7 @@ This produces IDs like `"todo_list/item_1/done"` and
 `"todo_list/item_2/delete"`. In `update()`, bind the item ID
 from the scope:
 
+<!-- test: test_dynamic_list_scope_matching -- keep this code block in sync with the test -->
 ```python
 def update(self, model, event):
     match event:
@@ -168,6 +174,7 @@ same pattern works if the list is moved to a different part of the tree.
 
 The reversed scope tuple is designed for ergonomic pattern matching:
 
+<!-- test: test_depth_agnostic_match, test_exact_depth_match, test_no_scope_match -- keep this code block in sync with the test -->
 ```python
 match event:
     # Depth-agnostic: works whether "search" is at root or deeply nested

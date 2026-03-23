@@ -9,6 +9,8 @@ dynamic lists, scoped IDs, commands, and conditional rendering.
 Start with a frozen dataclass that tracks a list of todos and the
 current input text.
 
+<!-- test: test_tutorial_step1_init, test_tutorial_step1_view -- keep this code block in sync with tests/docs/test_tutorial.py -->
+
 ```python
 from __future__ import annotations
 
@@ -66,6 +68,8 @@ in place: `init` sets up state, `view` renders it.
 Add a text input that updates the model on every keystroke, and a
 submit handler that creates a todo when the user presses Enter.
 
+<!-- test: test_tutorial_step2_input_updates_model, test_tutorial_step2_submit_creates_todo, test_tutorial_step2_empty_submit_does_nothing -- keep this code block in sync with tests/docs/test_tutorial.py -->
+
 ```python
 def update(self, model: Model, event: object) -> Model:
     match event:
@@ -86,6 +90,8 @@ def update(self, model: Model, event: object) -> Model:
 ```
 
 And the view:
+
+<!-- test: test_tutorial_step2_view_has_text_input -- keep this code block in sync with tests/docs/test_tutorial.py -->
 
 ```python
 def view(self, model: Model) -> dict[str, Any]:
@@ -118,6 +124,8 @@ Each todo needs its own row with a checkbox and a delete button.
 We wrap each item in a named container using the todo's ID. This
 creates a **scope** -- children get unique IDs automatically without
 manual prefixing.
+
+<!-- test: test_tutorial_step3_view_renders_todo_list, test_tutorial_step3_todo_row_structure -- keep this code block in sync with tests/docs/test_tutorial.py -->
 
 ```python
 def view(self, model: Model) -> dict[str, Any]:
@@ -169,6 +177,8 @@ When the checkbox or delete button is clicked, the event carries the
 local `id` and a `scope` tuple with the todo's container ID as the
 immediate parent. Pattern match on both:
 
+<!-- test: test_tutorial_step4_toggle, test_tutorial_step4_delete -- keep this code block in sync with tests/docs/test_tutorial.py -->
+
 ```python
 case Toggle(id="toggle", scope=(item_id, *_)):
     items = tuple(
@@ -190,6 +200,8 @@ later move the list into a sidebar or tab, the pattern still works.
 
 After submitting a todo, the text input loses focus. Let's refocus
 it automatically using `Command.focus()`:
+
+<!-- test: test_tutorial_step5_submit_returns_focus_command -- keep this code block in sync with tests/docs/test_tutorial.py -->
 
 ```python
 from plushie.commands import Command
@@ -216,6 +228,8 @@ is inside the `id="app"` column, so its full path is
 Add filter controls that toggle between all, active, and completed
 todos. We use radio buttons grouped by the same `id`:
 
+<!-- test: test_tutorial_step6_filter_select -- keep this code block in sync with tests/docs/test_tutorial.py -->
+
 ```python
 from plushie.events import Select
 
@@ -225,6 +239,8 @@ case Select(id="filter", value=v):
 ```
 
 Add the filter radios and apply the filter in the view:
+
+<!-- test: test_tutorial_step6_view_has_filter_radios, test_tutorial_step6_view_filters_todos, test_tutorial_step6_visible_items_helper -- keep this code block in sync with tests/docs/test_tutorial.py -->
 
 ```python
 def view(self, model: Model) -> dict[str, Any]:
@@ -280,6 +296,8 @@ The full source is in
 [`examples/todo.py`](https://github.com/plushie-ui/plushie-python/blob/main/examples/todo.py)
 with tests in
 [`tests/integration/test_todo.py`](https://github.com/plushie-ui/plushie-python/blob/main/tests/integration/test_todo.py).
+
+<!-- test: test_tutorial_complete_app_init, test_tutorial_complete_app_full_workflow -- keep this code block in sync with tests/docs/test_tutorial.py -->
 
 ```python
 from __future__ import annotations

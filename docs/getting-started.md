@@ -41,6 +41,8 @@ This fetches a precompiled binary for your platform and places it in
 
 Create `counter.py`:
 
+<!-- test: test_getting_started_counter_init, test_getting_started_counter_increment, test_getting_started_counter_decrement, test_getting_started_counter_unknown_event, test_getting_started_counter_view, test_getting_started_counter_view_after_increments -- keep this code block in sync with tests/docs/test_getting_started.py -->
+
 ```python
 from dataclasses import dataclass, replace
 
@@ -198,6 +200,8 @@ polling if watchfiles is not installed.
 
 For simple apps or quick prototypes, a Flask-like decorator API is
 available:
+
+<!-- test: test_getting_started_decorator_init, test_getting_started_decorator_increment, test_getting_started_decorator_unknown_event, test_getting_started_decorator_view -- keep this code block in sync with tests/docs/test_getting_started.py -->
 
 ```python
 import plushie
