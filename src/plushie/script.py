@@ -20,7 +20,7 @@ Supported instructions:
 - ``move "selector"`` or ``move "x,y"``
 - ``wait N`` (milliseconds)
 
-Reference: ``~/projects/toddy-elixir/docs/testing.md`` "Script-based testing".
+Reference: ``~/projects/plushie-elixir/docs/testing.md`` "Script-based testing".
 """
 
 from __future__ import annotations

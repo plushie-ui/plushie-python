@@ -53,6 +53,7 @@ Usage::
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -84,12 +85,12 @@ class Command:
         return Command(type="none", payload={})
 
     @staticmethod
-    def task(fn: Any, tag: str) -> Command:
+    def task(fn: Callable[[], Any], tag: str) -> Command:
         """Run *fn* in a background thread.  Result arrives as ``AsyncResult(tag=tag)``."""
         return Command(type="task", payload={"fn": fn, "tag": tag})
 
     @staticmethod
-    def stream(fn: Any, tag: str) -> Command:
+    def stream(fn: Callable[[Callable[[Any], None]], Any], tag: str) -> Command:
         """Run *fn* with an emit callback.  Each emit produces ``StreamChunk(tag=tag)``."""
         return Command(type="stream", payload={"fn": fn, "tag": tag})
 
@@ -99,7 +100,7 @@ class Command:
         return Command(type="cancel", payload={"tag": tag})
 
     @staticmethod
-    def done(value: Any, mapper: Any) -> Command:
+    def done(value: Any, mapper: Callable[[Any], Any]) -> Command:
         """Deliver an already-resolved *value* through ``update`` via *mapper*."""
         return Command(type="done", payload={"value": value, "mapper": mapper})
 

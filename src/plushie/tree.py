@@ -14,7 +14,7 @@ Tree nodes are plain dicts with the shape::
 
     {"id": "btn", "type": "button", "props": {"label": "Click"}, "children": []}
 
-Reference: toddy-elixir ``lib/plushie/tree.ex`` for the exact
+Reference: plushie-elixir ``lib/plushie/tree.ex`` for the exact
 diff algorithm and normalization rules.
 """
 

@@ -5,7 +5,7 @@ snapshot -> main loop (receive -> update -> commands -> view -> diff ->
 patch -> sync subs -> sync windows).
 
 This module is the Python equivalent of
-``toddy-elixir/lib/plushie/runtime.ex`` and its submodules
+``plushie-elixir/lib/plushie/runtime.ex`` and its submodules
 (commands.ex, subscriptions.ex, windows.ex).
 
 Usage::
