@@ -36,10 +36,10 @@ GITHUB_RELEASE_URL = "https://github.com/plushie-ui/plushie-renderer/releases/do
 WASM_ARCHIVE_NAME = "plushie-renderer-wasm.tar.gz"
 """Filename of the WASM renderer archive on GitHub releases."""
 
-WASM_JS_NAME = "plushie_wasm.js"
+WASM_JS_NAME = "plushie_renderer_wasm.js"
 """JS entry point filename inside the WASM bundle."""
 
-WASM_BG_NAME = "plushie_wasm_bg.wasm"
+WASM_BG_NAME = "plushie_renderer_wasm_bg.wasm"
 """Background WASM binary filename inside the WASM bundle."""
 
 
@@ -534,7 +534,7 @@ def download_wasm(
     """Download the WASM renderer bundle from GitHub releases.
 
     Downloads ``plushie-renderer-wasm.tar.gz``, verifies its SHA-256 checksum,
-    then extracts ``plushie_wasm.js`` and ``plushie_wasm_bg.wasm`` into
+    then extracts ``plushie_renderer_wasm.js`` and ``plushie_renderer_wasm_bg.wasm`` into
     the standard WASM directory.
 
     Args:
@@ -695,8 +695,8 @@ def build_wasm(
 def resolve_wasm() -> tuple[Path, Path]:
     """Resolve paths to the WASM renderer JS and WASM files.
 
-    Checks the standard WASM directory for ``plushie_wasm.js`` and
-    ``plushie_wasm_bg.wasm``.
+    Checks the standard WASM directory for ``plushie_renderer_wasm.js`` and
+    ``plushie_renderer_wasm_bg.wasm``.
 
     Returns:
         Tuple of ``(js_path, wasm_path)``.
