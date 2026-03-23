@@ -961,6 +961,12 @@ false, the runtime stops it. No explicit cleanup needed.
 Subscriptions that require the renderer (everything except timers) are
 paused during renderer restart and resumed once the renderer is back.
 
+### Demo: sparkline-dashboard
+
+The [sparkline-dashboard demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/sparkline-dashboard)
+uses timer subscriptions to poll simulated metrics and extension
+commands to push data to Rust-rendered sparkline charts in real time.
+
 ## Application settings
 
 The `settings()` callback configures the renderer. Notable settings

@@ -398,6 +398,13 @@ PLUSHIE_TEST_BACKEND=windowed pytest        # real windows (needs display)
 ```
 
 
+## Demo: collab
+
+The [collab demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/collab)
+demonstrates all transport modes in one app -- native desktop, exec mode,
+shared-state WebSocket, and SSH. Multiple clients share a single counter
+and notes in real time.
+
 ## Next steps
 
 - [Getting started](getting-started.md) -- setup, first app

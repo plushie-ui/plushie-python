@@ -193,3 +193,9 @@ code paths.
 If your app needs something that is purely internal (start a timer, schedule
 a follow-up event, batch multiple updates), that is handled in the Python
 runtime, not as an effect. Effects always involve the renderer or the OS.
+
+## Demo: data-explorer
+
+The [data-explorer demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/data-explorer)
+uses file dialogs (`file_open`) to let users open CSV, JSON, and
+Parquet files, and async commands to load them without blocking the UI.

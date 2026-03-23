@@ -160,3 +160,13 @@ python -m plushie download --wasm
 This downloads `plushie_wasm.js` and `plushie_wasm_bg.wasm` to
 the standard WASM directory. See `plushie.binary.resolve_wasm()`
 for programmatic resolution.
+
+
+## Demo: data-explorer
+
+The [data-explorer demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/data-explorer)
+is a complete standalone desktop app bundled with PyInstaller. It
+opens CSV/JSON/Parquet files via native file dialogs, displays them
+in a sortable table with search and pagination, and ships as a
+single executable. See its `build_standalone.sh` and
+`DataExplorer.spec` for the PyInstaller configuration.
