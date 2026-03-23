@@ -244,6 +244,7 @@ def group(
     pressed_style: dict[str, Any] | None = None,
     focus_style: dict[str, Any] | None = None,
     show_focus_ring: bool | None = None,
+    focus_ring_radius: float | None = None,
     a11y: dict[str, Any] | None = None,
     focusable: bool | None = None,
 ) -> Shape:
@@ -299,6 +300,7 @@ def group(
         ("pressed_style", pressed_style),
         ("focus_style", focus_style),
         ("show_focus_ring", show_focus_ring),
+        ("focus_ring_radius", focus_ring_radius),
         ("a11y", a11y),
         ("focusable", focusable),
     ]:
@@ -344,6 +346,7 @@ def interactive(
     pressed_style: dict[str, Any] | None = None,
     focus_style: dict[str, Any] | None = None,
     show_focus_ring: bool | None = None,
+    focus_ring_radius: float | None = None,
     tooltip: str | None = None,
     a11y: dict[str, Any] | None = None,
     hit_rect: dict[str, Any] | None = None,
@@ -368,6 +371,7 @@ def interactive(
         ("pressed_style", pressed_style),
         ("focus_style", focus_style),
         ("show_focus_ring", show_focus_ring),
+        ("focus_ring_radius", focus_ring_radius),
         ("tooltip", tooltip),
         ("a11y", a11y),
         ("hit_rect", hit_rect),
