@@ -435,17 +435,14 @@ class AppFixture[M]:
         """
         self._interact("paste", selector, payload={"text": text})
 
-    def sort(self, selector: str, column: str, direction: str = "asc") -> None:
+    def sort(self, selector: str, column: str) -> None:
         """Sort a table column.
 
         Args:
             selector: Widget selector.
             column: Column identifier.
-            direction: Sort direction (``"asc"`` or ``"desc"``).
         """
-        self._interact(
-            "sort", selector, payload={"column": column, "direction": direction}
-        )
+        self._interact("sort", selector, payload={"column": column})
 
     def canvas_press(
         self, selector: str, x: float, y: float, button: str = "left"
@@ -614,6 +611,115 @@ class AppFixture[M]:
         if raw is None:
             return None
         return Element(node=raw)
+
+    # -------------------------------------------------------------------
+    # Convenience assertions
+    # -------------------------------------------------------------------
+
+    def assert_text(self, selector: str, expected: str) -> None:
+        """Assert that the text of the selected element matches ``expected``.
+
+        Shows the actual text on failure so the caller doesn't have to
+        dig for it.
+
+        Args:
+            selector: Widget selector.
+            expected: The expected text string.
+
+        Raises:
+            AssertionError: If the element is not found or text differs.
+        """
+        actual = self.text(selector)
+        if actual is None:
+            available = _available_ids(self._tree)
+            raise AssertionError(
+                f"assert_text({selector!r}): element not found or has no text. "
+                f"Available IDs: {available}"
+            )
+        if actual != expected:
+            raise AssertionError(
+                f"assert_text({selector!r}): expected {expected!r}, got {actual!r}"
+            )
+
+    def assert_exists(self, selector: str) -> None:
+        """Assert that an element matching ``selector`` exists.
+
+        Shows available IDs on failure to help diagnose typos.
+
+        Args:
+            selector: Widget selector.
+
+        Raises:
+            AssertionError: If the element is not found.
+        """
+        if not self.exists(selector):
+            available = _available_ids(self._tree)
+            raise AssertionError(
+                f"assert_exists({selector!r}): element not found. "
+                f"Available IDs: {available}"
+            )
+
+    def assert_not_exists(self, selector: str) -> None:
+        """Assert that no element matches ``selector``.
+
+        Args:
+            selector: Widget selector.
+
+        Raises:
+            AssertionError: If the element exists.
+        """
+        if self.exists(selector):
+            raise AssertionError(
+                f"assert_not_exists({selector!r}): element unexpectedly exists"
+            )
+
+    def assert_model(self, expected: object) -> None:
+        """Assert that the current model equals ``expected``.
+
+        Shows the actual model on failure.
+
+        Args:
+            expected: The expected model value.
+
+        Raises:
+            AssertionError: If the model does not equal ``expected``.
+        """
+        actual = self._model
+        if actual != expected:
+            raise AssertionError(f"assert_model: expected {expected!r}, got {actual!r}")
+
+    def save_screenshot(self, name: str) -> Path:
+        """Save a screenshot PNG to ``test/screenshots/``.
+
+        Requests a screenshot from the renderer and writes the raw
+        PNG data to disk. Returns the path to the saved file.
+
+        Args:
+            name: Base name for the screenshot file (without extension).
+
+        Returns:
+            The ``Path`` to the saved PNG file.
+
+        Raises:
+            RuntimeError: If the backend does not return screenshot data.
+        """
+        resp = self._pool.screenshot(self._session_id, name)
+        data = resp.get("data")
+        if not data:
+            raise RuntimeError(
+                f"save_screenshot({name!r}): backend did not return screenshot data"
+            )
+
+        out_dir = Path("test") / "screenshots"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{name}.png"
+        if isinstance(data, str):
+            import base64
+
+            out_path.write_bytes(base64.b64decode(data))
+        else:
+            out_path.write_bytes(data)
+        return out_path
 
     # -------------------------------------------------------------------
     # Regression helpers

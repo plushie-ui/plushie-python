@@ -1,14 +1,15 @@
 """Tests for the plushie testing framework (non-binary parts).
 
 Tests Element, fixture command processing, pool session management,
-selector resolution, and key parsing without requiring the plushie
-binary.
+selector resolution, key parsing, and assertion helpers without
+requiring the plushie binary.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -16,6 +17,7 @@ from plushie.commands import Command
 from plushie.events import AsyncResult, StreamChunk
 from plushie.testing.element import Element, ElementNotFoundError
 from plushie.testing.fixture import (
+    AppFixture,
     _parse_key,
     _process_commands,
     _resolve_selector,
@@ -359,3 +361,158 @@ class TestParseKey:
     def test_unknown_modifier_ignored(self) -> None:
         result = _parse_key("meta+a")
         assert result == {"key": "a", "modifiers": {}}
+
+
+# ---------------------------------------------------------------------------
+# Assertion helper tests
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SimpleModel:
+    name: str = "world"
+
+
+class SimpleApp:
+    """Minimal app for testing assertion helpers."""
+
+    def init(self) -> SimpleModel:
+        return SimpleModel()
+
+    def update(self, model: SimpleModel, event: object) -> SimpleModel:
+        return model
+
+    def view(self, model: SimpleModel) -> dict[str, Any]:
+        return {
+            "id": "main",
+            "type": "window",
+            "props": {},
+            "children": [
+                {
+                    "id": "greeting",
+                    "type": "text",
+                    "props": {"content": f"Hello, {model.name}!"},
+                    "children": [],
+                },
+                {
+                    "id": "btn",
+                    "type": "button",
+                    "props": {"label": "Click"},
+                    "children": [],
+                },
+            ],
+        }
+
+    def subscribe(self, model: SimpleModel) -> list[Any]:
+        return []
+
+    def settings(self) -> dict[str, Any]:
+        return {}
+
+
+def _make_fixture() -> AppFixture[SimpleModel]:
+    """Build an AppFixture backed by a stub pool (no binary).
+
+    The mock pool's query_find resolves #id selectors against a
+    hard-coded set of known nodes so that exists/find work without
+    a real renderer.
+    """
+    known_nodes: dict[str, dict[str, Any]] = {
+        "greeting": {
+            "id": "greeting",
+            "type": "text",
+            "props": {"content": "Hello, world!"},
+            "children": [],
+        },
+        "btn": {
+            "id": "btn",
+            "type": "button",
+            "props": {"label": "Click"},
+            "children": [],
+        },
+    }
+
+    def fake_query_find(
+        _session_id: str, selector: Any, **_kw: Any
+    ) -> dict[str, Any] | None:
+        if isinstance(selector, str) and selector.startswith("#"):
+            return known_nodes.get(selector[1:])
+        if isinstance(selector, dict) and selector.get("by") == "id":
+            return known_nodes.get(selector["value"])
+        return None
+
+    pool = MagicMock()
+    pool.register.return_value = "test-session-1"
+    pool.send_settings = MagicMock()
+    pool.send_snapshot = MagicMock()
+    pool.unregister = MagicMock()
+    pool.query_find.side_effect = fake_query_find
+    fixture = AppFixture(SimpleApp(), pool)  # type: ignore[arg-type]
+    return fixture
+
+
+class TestAssertText:
+    def test_passes_when_text_matches(self) -> None:
+        with _make_fixture() as app:
+            app.assert_text("#greeting", "Hello, world!")
+
+    def test_fails_when_text_differs(self) -> None:
+        with (
+            _make_fixture() as app,
+            pytest.raises(AssertionError, match=r"expected.*'Goodbye'.*got.*'Hello"),
+        ):
+            app.assert_text("#greeting", "Goodbye")
+
+    def test_fails_when_element_not_found(self) -> None:
+        with (
+            _make_fixture() as app,
+            pytest.raises(AssertionError, match="not found or has no text"),
+        ):
+            app.assert_text("#missing", "anything")
+
+
+class TestAssertExists:
+    def test_passes_when_element_exists(self) -> None:
+        with _make_fixture() as app:
+            app.assert_exists("#greeting")
+
+    def test_fails_when_element_missing(self) -> None:
+        with (
+            _make_fixture() as app,
+            pytest.raises(AssertionError, match="element not found"),
+        ):
+            app.assert_exists("#nope")
+
+
+class TestAssertNotExists:
+    def test_passes_when_element_missing(self) -> None:
+        with _make_fixture() as app:
+            app.assert_not_exists("#nope")
+
+    def test_fails_when_element_exists(self) -> None:
+        with (
+            _make_fixture() as app,
+            pytest.raises(AssertionError, match="unexpectedly exists"),
+        ):
+            app.assert_not_exists("#greeting")
+
+
+class TestAssertModel:
+    def test_passes_when_model_matches(self) -> None:
+        with _make_fixture() as app:
+            app.assert_model(SimpleModel())
+
+    def test_fails_when_model_differs(self) -> None:
+        with (
+            _make_fixture() as app,
+            pytest.raises(AssertionError, match=r"expected.*name='other'"),
+        ):
+            app.assert_model(SimpleModel(name="other"))
+
+
+class TestSaveScreenshot:
+    def test_raises_when_no_data(self) -> None:
+        with _make_fixture() as app:
+            app._pool.screenshot.return_value = {"hash": "abc123"}
+            with pytest.raises(RuntimeError, match="did not return screenshot data"):
+                app.save_screenshot("test_shot")

@@ -50,6 +50,7 @@ from plushie.events import (
     AsyncResult,
     Click,
     EffectResult,
+    Event,
     Input,
     KeyPress,
     Select,
@@ -62,8 +63,7 @@ from plushie.events import (
 from plushie.runtime import RuntimeHandle
 from plushie.subscriptions import Subscription
 
-# Re-export Event as the union type (Any -- events are open-ended)
-type Event = Any
+# Re-exported from events.py as the union of all event types.
 
 
 def run(
