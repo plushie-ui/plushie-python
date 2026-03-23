@@ -150,12 +150,13 @@ def test_add_and_complete_todo(app):
     app.type_text("#new-todo", "Buy milk")
     app.submit("#new-todo")
 
-    app.assert_text("#todo-1/done", "Buy milk")
     app.assert_exists("#todo-1")
+    assert app.model.items[0].text == "Buy milk"
 
     app.toggle("#todo-1/done")
-    app.click("#filter-done")
+    assert app.model.items[0].done is True
 
+    app.select("#filter", "done")
     app.assert_not_exists("#todo-1")
 ```
 
