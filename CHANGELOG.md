@@ -2,37 +2,138 @@
 
 ## v0.1.0 -- 2026-03-23
 
-Initial release of the plushie Python SDK.
+Initial release of the plushie Python SDK. Full feature parity with
+the plushie-elixir SDK, verified by cross-SDK audit.
 
-### Added
+### Framework
 
-- Elm architecture framework: `App` base class with `init`, `update`,
-  `view`, and `subscribe` callbacks
-- Decorator-based app builder via `create_app()`
-- Wire protocol: MessagePack (length-prefixed) and JSON (newline-delimited)
-  with auto-detection
-- Connection management with renderer crash recovery and exponential backoff
-- Tree normalization with auto-IDs, scoped IDs, and a11y reference resolution
-- Tree diffing with four patch operations: `replace_node`, `update_props`,
-  `insert_child`, `remove_child`
-- Command system: `task`, `stream`, `cancel`, `send_after`, `focus`,
-  `scroll`, `batch`, `exit`, and more
-- Subscription lifecycle diffing (timers, key/mouse/window events)
-- Effect system: file dialogs, clipboard, notifications with request tracking
-- Type system: `Border`, `Shadow`, `Gradient`, `Font`, `StyleMap`, `Theme`,
-  `A11y` with wire serialization via `to_wire()` methods
-- Widget builder functions for all widget types (containers, interactive,
-  display) via `plushie.ui`
-- Canvas shape builders via `plushie.canvas`
-- Event dataclasses for all event families (widget, key, mouse, touch,
-  IME, window, canvas, timer, async, stream, effect, system)
-- Testing framework: `AppFixture` with synchronous command processing,
-  `SessionPool` for test parallelism, pytest plugin
-- Three test backends: mock, headless, windowed
-- Extension system for custom widgets (pure Python and native Rust)
-- State management utilities: path-based state, animation, routing,
-  selection, undo/redo, data query pipeline
-- Binary resolution, download, and platform detection
-- Dev server with file watching and live reload
-- CLI: `run`, `connect`, `download`, `build`, `inspect`, `script`, `replay`
-- Script-based testing with `.plushie` test scripts
+- Elm architecture: `App` base class with `init`, `update`, `view`,
+  `subscribe`, `settings`, `window_config`, and `handle_renderer_exit`
+- Decorator-based app builder via `create_app()` for quick prototypes
+- Runtime event loop with tree diffing, command processing,
+  subscription lifecycle management, and window sync
+- Renderer crash recovery with exponential backoff (5 attempts)
+- Daemon mode for persistent server-side apps
+- Event coalescing for high-frequency events
+- Thread-safe external event injection via `runtime.inject()`
+- `run()` (blocking) and `start()` (background thread) entry points
+
+### Wire protocol
+
+- MessagePack (4-byte length-prefixed) and JSON (newline-delimited)
+- Auto-detection from first byte
+- All 17 outbound and 9 inbound message types
+- SHA-256 checksum verification on all downloads
+- Binary version pinned to renderer v0.4.1
+
+### Widgets and UI
+
+- 38 widget builder functions via `plushie.ui`
+- Canvas shape builders via `plushie.canvas` (rect, circle, line,
+  path, text, image, svg, group, layer, interactive)
+- Type system: `Border`, `Shadow`, `Gradient`, `Font`, `StyleMap`,
+  `Theme` (22 built-in), `A11y` (24 fields), `Color` (148 CSS names)
+- Automatic wire serialization via `to_wire()` during tree normalization
+
+### Events
+
+- ~75 frozen dataclasses (one per wire event family)
+- ~200 key name constants
+- Scoped ID splitting with tuple-based scope matching
+- Union types for pattern matching
+
+### Commands and subscriptions
+
+- All command types: task, stream, cancel, done, send_after, focus,
+  scroll, select, window ops, window queries, image ops, extension
+  commands, pane operations, batch, exit
+- 20 subscription types with key-based diffing and max_rate support
+
+### Effects
+
+- All 13 platform effects: file dialogs (open, save, directory),
+  clipboard (read, write, HTML, primary, clear), notifications
+
+### State helpers
+
+- Animation (8 easing curves, interpolation, lifecycle)
+- Selection (single, multi, range modes)
+- UndoStack (with time-window coalescing)
+- Data query pipeline (filter, search, sort, paginate, group)
+- Route (navigation stack)
+- State (revision tracking with transactions)
+
+### Testing
+
+- `AppFixture` with all 17 interact actions and synchronous command
+  processing through the real plushie binary
+- `SessionPool` for test session multiplexing
+- Three backends: mock, headless, windowed
+- Assertion helpers: `assert_text`, `assert_exists`, `assert_not_exists`,
+  `assert_model`
+- Accessibility queries: `find_by_role`, `find_by_label`, `find_focused`
+- Golden file regression: `assert_tree_hash`, `assert_screenshot`,
+  `save_screenshot`
+- Interaction type validation with helpful error messages
+- pytest plugin with auto pool lifecycle
+
+### Extensions
+
+- Composite extensions (pure Python functions, no Rust)
+- Native extensions: `ExtensionDef`, `PropDef`, `CommandDef`, `ParamDef`
+- `build_node()` and `build_command()` for wire-compatible output
+- `validate()` and `validate_all()` with collision detection
+- Cargo workspace and main.rs generation
+- `pyproject.toml` `[tool.plushie]` configuration
+
+### Transports
+
+- Spawn mode (default, Python manages renderer subprocess)
+- Stdio mode (`StdioConnection` for `plushie --exec`)
+- Custom transports: `IoStreamAdapter`, `WebSocketAdapter`
+- `Connection.from_iostream()` for SSH, TCP, WebSocket bridges
+- Env var whitelisting for renderer subprocess security
+
+### Binary management
+
+- 5-step resolution: env var, custom build, downloaded, bundled, PATH
+- Platform detection (linux/darwin/windows, x86_64/aarch64)
+- Download with SHA-256 checksum verification and `--force` flag
+- WASM renderer download and build support
+- Stock and extension binary builds from source
+- Rust version check (>= 1.92.0)
+- Bundled binary support for PyInstaller, Nuitka, Briefcase
+
+### CLI
+
+- `run` -- run apps with `--mode`, `--json`, `--watch`, `--daemon`
+- `connect` -- stdio transport for remote rendering
+- `download` -- native binary and WASM with `--force`, `--bin`, `--wasm`
+- `build` -- stock and extension builds with `--release`, `--verbose`
+- `inspect` -- print initial UI tree as JSON
+- `script` -- run `.plushie` test scripts
+- `replay` -- replay scripts with real windows
+
+### Documentation
+
+- 17 guides matching plushie-elixir coverage
+- mkdocs-material site with link checking
+- 164 HTML test markers linking doc code blocks to 354 tests
+- Doc test marker verification script
+
+### Examples
+
+- 9 example apps: counter, clock, todo, notes, shortcuts, async_fetch,
+  color_picker, catalog, rate_plushie
+- 3 reusable widget modules: color_picker_widget, star_rating,
+  theme_toggle
+- Integration tests for all examples
+
+### Tooling
+
+- GitHub Actions CI: lint, typecheck, test-mock, test-headless, docs
+- Preflight script mirroring CI (7 checks)
+- 100% docstring coverage via interrogate
+- pyright type checking on src, tests, and examples
+- pytest-cov for coverage measurement
+- ruff for formatting and linting
