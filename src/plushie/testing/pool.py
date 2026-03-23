@@ -253,7 +253,7 @@ class SessionPool:
     def query_find(
         self,
         session_id: str,
-        selector: str,
+        selector: str | dict[str, str],
         *,
         timeout: float = 10.0,
     ) -> dict[str, Any] | None:
@@ -261,7 +261,8 @@ class SessionPool:
 
         Args:
             session_id: Target session.
-            selector: Selector string (``"#id"`` or ``"text content"``).
+            selector: Selector string (``"#id"`` or ``"text content"``)
+                or a raw selector dict (``{"by": "role", "value": "button"}``).
             timeout: Maximum seconds to wait.
 
         Returns:

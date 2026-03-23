@@ -566,6 +566,55 @@ class AppFixture[M]:
         """
         return self.query(selector) is not None
 
+    def find_by_role(self, role: str) -> Element | None:
+        """Find an element by its accessible role.
+
+        Checks ``props.a11y.role`` first, then falls back to the
+        widget type name (e.g. ``"button"`` matches buttons without
+        an explicit a11y role).
+
+        Args:
+            role: The role string to search for.
+
+        Returns:
+            The first matching ``Element``, or ``None``.
+        """
+        sel = {"by": "role", "value": role}
+        raw = self._pool.query_find(self._session_id, sel)
+        if raw is None:
+            return None
+        return Element(node=raw)
+
+    def find_by_label(self, label: str) -> Element | None:
+        """Find an element by its accessible label.
+
+        Checks ``props.a11y.label`` first, then falls back to
+        ``props.label`` and ``props.content``.
+
+        Args:
+            label: The label text to search for.
+
+        Returns:
+            The first matching ``Element``, or ``None``.
+        """
+        sel = {"by": "label", "value": label}
+        raw = self._pool.query_find(self._session_id, sel)
+        if raw is None:
+            return None
+        return Element(node=raw)
+
+    def find_focused(self) -> Element | None:
+        """Find the currently focused element.
+
+        Returns:
+            The focused ``Element``, or ``None`` if nothing is focused.
+        """
+        sel = {"by": "focused"}
+        raw = self._pool.query_find(self._session_id, sel)
+        if raw is None:
+            return None
+        return Element(node=raw)
+
     # -------------------------------------------------------------------
     # Regression helpers
     # -------------------------------------------------------------------

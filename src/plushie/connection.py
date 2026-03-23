@@ -585,21 +585,23 @@ class Connection:
 
     def query_find(
         self,
-        selector: str,
+        selector: str | dict[str, str],
         *,
         timeout: float = 10.0,
     ) -> dict[str, Any] | None:
         """Query the renderer for a widget by selector.
 
         Args:
-            selector: Selector string (``"#id"`` or ``"text content"``).
+            selector: Selector string (``"#id"`` or ``"text content"``)
+                or a raw selector dict (``{"by": "role", "value": "button"}``).
             timeout: Maximum seconds to wait for the response.
 
         Returns:
             The node dict if found, or ``None``.
         """
         rid = _next_request_id()
-        msg = query_msg(rid, "find", encode_selector(selector), session=self._session)
+        sel = selector if isinstance(selector, dict) else encode_selector(selector)
+        msg = query_msg(rid, "find", sel, session=self._session)
         self._send_request(msg, rid)
         resp = self._wait_response(rid, timeout=timeout)
         return resp.get("data")

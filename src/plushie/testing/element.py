@@ -67,6 +67,25 @@ class Element:
                 return val
         return None
 
+    def a11y(self) -> dict[str, Any]:
+        """Return the accessibility props dict.
+
+        Returns an empty dict if no ``a11y`` key is present.
+        """
+        return self.props.get("a11y", {})
+
+    def inferred_role(self) -> str:
+        """Return the accessible role, inferring from widget type if not explicit.
+
+        Checks ``props.a11y.role`` first. If absent, falls back to
+        the widget ``type`` field (e.g. ``"button"`` -> ``"button"``).
+        """
+        a11y = self.a11y()
+        role = a11y.get("role")
+        if isinstance(role, str) and role:
+            return role
+        return self.type
+
 
 class ElementNotFoundError(Exception):
     """Raised when a query expected to find an element returns nothing."""
