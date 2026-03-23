@@ -30,7 +30,7 @@ from pathlib import Path
 
 logger = logging.getLogger("plushie")
 
-GITHUB_RELEASE_URL = "https://github.com/plushie-ui/plushie/releases/download"
+GITHUB_RELEASE_URL = "https://github.com/plushie-ui/plushie-renderer/releases/download"
 """Base URL for GitHub release asset downloads."""
 
 WASM_ARCHIVE_NAME = "plushie-wasm.tar.gz"
@@ -189,7 +189,7 @@ def detect_arch() -> str:
 def download_name(*, os_name: str | None = None, arch: str | None = None) -> str:
     """Return the platform-specific binary asset name for downloads.
 
-    Format: ``plushie-{os}-{arch}`` (e.g. ``plushie-linux-x86_64``).
+    Format: ``plushie-renderer-{os}-{arch}`` (e.g. ``plushie-renderer-linux-x86_64``).
     On Windows the ``.exe`` extension is appended.
 
     Args:
@@ -202,7 +202,7 @@ def download_name(*, os_name: str | None = None, arch: str | None = None) -> str
     os_val = os_name or detect_os()
     arch_val = arch or detect_arch()
     ext = ".exe" if os_val == "windows" else ""
-    return f"plushie-{os_val}-{arch_val}{ext}"
+    return f"plushie-renderer-{os_val}-{arch_val}{ext}"
 
 
 # ---------------------------------------------------------------------------
