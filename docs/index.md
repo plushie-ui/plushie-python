@@ -99,4 +99,4 @@ python -m plushie run counter:Counter
 - [GitHub](https://github.com/plushie-ui/plushie-python)
 - [Changelog](https://github.com/plushie-ui/plushie-python/blob/main/CHANGELOG.md)
 - [Elixir SDK](https://github.com/plushie-ui/plushie-elixir)
-- [Renderer (Rust)](https://github.com/plushie-ui/plushie)
+- [Renderer (Rust)](https://github.com/plushie-ui/plushie-renderer)

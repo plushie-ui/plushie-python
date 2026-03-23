@@ -312,7 +312,7 @@ def generate_cargo_toml(
 ) -> str:
     """Generate a Cargo.toml workspace for a custom binary build.
 
-    Produces the Cargo workspace manifest that includes plushie-core
+    Produces the Cargo workspace manifest that includes plushie-ext
     and all extension crates as path dependencies.  This is the Python
     equivalent of ``mix plushie.build``'s Cargo generation.
 
@@ -325,7 +325,7 @@ def generate_cargo_toml(
         build_dir: The directory where the Cargo.toml will be written.
             Crate paths are resolved relative to this.
         source_path: Path to the plushie Rust source checkout. If
-            provided, plushie-core is referenced as a local path
+            provided, plushie-ext is referenced as a local path
             dependency. Otherwise uses the git repository.
 
     Returns:
@@ -343,18 +343,20 @@ def generate_cargo_toml(
 
     deps_block = "\n".join(deps)
 
-    # plushie dependencies: plushie-core (extensions API) + plushie (run fn)
+    # plushie dependencies: plushie-ext (extensions API) + plushie-renderer (run fn)
     if source_path:
         abs_src = os.path.abspath(source_path)
         abs_build = os.path.abspath(build_dir)
-        core_rel = os.path.relpath(os.path.join(abs_src, "plushie-core"), abs_build)
-        runner_rel = os.path.relpath(os.path.join(abs_src, "plushie"), abs_build)
-        core_dep = f'plushie-core = {{ path = "{core_rel}" }}'
-        runner_dep = f'plushie = {{ path = "{runner_rel}" }}'
+        core_rel = os.path.relpath(os.path.join(abs_src, "plushie-ext"), abs_build)
+        runner_rel = os.path.relpath(
+            os.path.join(abs_src, "plushie-renderer"), abs_build
+        )
+        core_dep = f'plushie-ext = {{ path = "{core_rel}" }}'
+        runner_dep = f'plushie-renderer = {{ path = "{runner_rel}" }}'
     else:
-        git = "https://github.com/plushie-ui/plushie.git"
-        core_dep = f'plushie-core = {{ git = "{git}" }}'
-        runner_dep = f'plushie = {{ git = "{git}" }}'
+        git = "https://github.com/plushie-ui/plushie-renderer.git"
+        core_dep = f'plushie-ext = {{ git = "{git}" }}'
+        runner_dep = f'plushie-renderer = {{ git = "{git}" }}'
 
     # Use underscores for the Cargo package name (Cargo convention)
     package_name = binary_name.replace("-", "_")
@@ -394,12 +396,12 @@ def generate_main_rs(extensions: list[ExtensionDef]) -> str:
     registrations_block = "\n".join(registrations)
 
     return f"""\
-use plushie_core::app::PlushieAppBuilder;
+use plushie_ext::app::PlushieAppBuilder;
 
-fn main() -> plushie_core::iced::Result {{
+fn main() -> plushie_ext::iced::Result {{
     let builder = PlushieAppBuilder::new()
 {registrations_block};
-    plushie::run(builder)
+    plushie_renderer::run(builder)
 }}
 """
 

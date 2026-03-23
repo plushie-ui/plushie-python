@@ -28,10 +28,10 @@ from examples.widgets.star_rating import render as star_render
 from examples.widgets.theme_toggle import render as toggle_render
 from plushie import ui
 from plushie.events import (
-    CanvasShapeClick,
-    CanvasShapeEnter,
-    CanvasShapeFocused,
-    CanvasShapeLeave,
+    CanvasElementClick,
+    CanvasElementEnter,
+    CanvasElementFocused,
+    CanvasElementLeave,
     Click,
     Input,
     Submit,
@@ -164,25 +164,29 @@ class RatePlushie(plushie.App[Model]):
     def update(self, model: Model, event: object) -> Model:
         match event:
             # Star rating interactions
-            case CanvasShapeClick(id="stars", shape_id=sid) if sid.startswith("star-"):
+            case CanvasElementClick(id="stars", element_id=sid) if sid.startswith(
+                "star-"
+            ):
                 n = int(sid.removeprefix("star-"))
                 return replace(model, rating=n + 1)
 
-            case CanvasShapeEnter(id="stars", shape_id=sid) if sid.startswith("star-"):
+            case CanvasElementEnter(id="stars", element_id=sid) if sid.startswith(
+                "star-"
+            ):
                 n = int(sid.removeprefix("star-"))
                 return replace(model, hover_star=n + 1)
 
-            case CanvasShapeLeave(id="stars"):
+            case CanvasElementLeave(id="stars"):
                 return replace(model, hover_star=None)
 
-            case CanvasShapeFocused(id="stars", shape_id=sid) if sid.startswith(
+            case CanvasElementFocused(id="stars", element_id=sid) if sid.startswith(
                 "star-"
             ):
                 n = int(sid.removeprefix("star-"))
                 return replace(model, focused_star=n)
 
             # Theme toggle
-            case CanvasShapeClick(id="theme-toggle"):
+            case CanvasElementClick(id="theme-toggle"):
                 target = 1.0 if model.toggle_target == 0.0 else 0.0
                 return replace(model, toggle_target=target)
 

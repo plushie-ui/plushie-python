@@ -339,7 +339,7 @@ class TestResolveBundled:
 
     def test_pyinstaller_meipass(self, tmp_path: Path) -> None:
         """Finds binary in PyInstaller's _MEIPASS directory."""
-        binary = tmp_path / "plushie"
+        binary = tmp_path / "plushie-renderer"
         binary.write_bytes(b"\x7fELF" + b"\x00" * 100)
 
         with mock_patch.object(
@@ -347,7 +347,7 @@ class TestResolveBundled:
         ):
             result = _resolve_bundled()
             assert result is not None
-            assert result.endswith("plushie")
+            assert result.endswith("plushie-renderer")
 
     def test_no_bundled(self) -> None:
         """Returns None when no bundled binary exists."""
@@ -370,7 +370,7 @@ class TestResolveBundled:
 
     def test_adjacent_to_file(self, tmp_path: Path) -> None:
         """Finds binary adjacent to __file__ when it's a native binary."""
-        binary = tmp_path / "plushie"
+        binary = tmp_path / "plushie-renderer"
         binary.write_bytes(b"\x7fELF" + b"\x00" * 100)
 
         import sys
@@ -384,7 +384,7 @@ class TestResolveBundled:
             with mock_patch("plushie.binary.__file__", str(tmp_path / "binary.py")):
                 result = _resolve_bundled()
                 assert result is not None
-                assert result.endswith("plushie")
+                assert result.endswith("plushie-renderer")
         finally:
             if had_meipass:
                 sys._MEIPASS = old_meipass  # type: ignore[attr-defined]

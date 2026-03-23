@@ -21,7 +21,7 @@ An extension has two halves:
 1. **Python side:** define the widget's props, commands, and (for native
    widgets) the Rust crate and constructor using `ExtensionDef`.
 
-2. **Rust side:** implement the `WidgetExtension` trait from `plushie-core`.
+2. **Rust side:** implement the `WidgetExtension` trait from `plushie-ext`.
    This receives tree nodes from Python and returns `iced::Element`s for
    rendering.
 
@@ -64,7 +64,7 @@ This gives you:
 
 ```rust
 // native/my_sparkline/src/lib.rs
-use plushie_core::prelude::*;
+use plushie_ext::prelude::*;
 
 pub struct SparklineExtension;
 
@@ -88,7 +88,7 @@ configuration) or run the renderer binary directly. The `PlushieAppBuilder`
 chains `.extension()` calls in the generated `main.rs`:
 
 ```rust
-plushie::run(
+plushie_renderer::run(
     PlushieAppBuilder::new()
         .extension(my_sparkline::SparklineExtension::new())
 )
@@ -526,12 +526,12 @@ def test_build_command_creates_extension_command():
 
 ### Rust-side tests
 
-Test pure logic functions using `plushie_core::testing`:
+Test pure logic functions using `plushie_ext::testing`:
 
 ```rust
 #[cfg(test)]
 mod tests {
-    use plushie_core::testing::*;
+    use plushie_ext::testing::*;
     use super::*;
 
     #[test]
@@ -637,7 +637,7 @@ via `Widget::state()` or `canvas::Program`), and a `GenerationCounter` in
 `ExtensionCaches` tracks when your data changes.
 
 ```rust
-use plushie_core::prelude::*;
+use plushie_ext::prelude::*;
 use iced::widget::canvas;
 
 /// Stored in ExtensionCaches (Send + Sync).
@@ -751,12 +751,12 @@ you what happened.
 | `canvas_release` | `data.x`, `data.y`, `data.button` |
 | `canvas_move` | `data.x`, `data.y` |
 | `canvas_scroll` | `data.x`, `data.y`, `data.delta_x`, `data.delta_y` |
-| `canvas_shape_enter` | `data.shape_id`, `data.x`, `data.y` |
-| `canvas_shape_leave` | `data.shape_id` |
-| `canvas_shape_click` | `data.shape_id`, `data.x`, `data.y`, `data.button` |
-| `canvas_shape_drag` | `data.shape_id`, `data.x`, `data.y`, `data.delta_x`, `data.delta_y` |
-| `canvas_shape_drag_end` | `data.shape_id`, `data.x`, `data.y` |
-| `canvas_shape_focused` | `data.shape_id` |
+| `canvas_element_enter` | `data.element_id`, `data.x`, `data.y` |
+| `canvas_element_leave` | `data.element_id` |
+| `canvas_element_click` | `data.element_id`, `data.x`, `data.y`, `data.button` |
+| `canvas_element_drag` | `data.element_id`, `data.x`, `data.y`, `data.delta_x`, `data.delta_y` |
+| `canvas_element_drag_end` | `data.element_id`, `data.x`, `data.y` |
+| `canvas_element_focused` | `data.element_id` |
 
 ### MouseArea events (node ID in `id` field)
 
@@ -895,7 +895,7 @@ use iced::advanced::widget::{self, Widget};
 use iced::advanced::{layout, mouse, renderer, Clipboard, Layout, Shell};
 use iced::event;
 use iced::{Element, Length, Rectangle, Size, Theme};
-use plushie_core::prelude::*;
+use plushie_ext::prelude::*;
 
 struct MyWidget<'a> {
     node_id: String,
@@ -986,7 +986,7 @@ The Widget trait is part of plushie-iced, not the Python SDK.
 
 ## Prop helpers reference
 
-The `plushie_core::prop_helpers` module (re-exported via `prelude::*`) provides
+The `plushie_ext::prop_helpers` module (re-exported via `prelude::*`) provides
 typed accessors for reading props from `TreeNode`. Use these instead of
 manually traversing `serde_json::Value`:
 
@@ -1198,7 +1198,7 @@ def clear(node_id: str) -> Command:
 
 ```rust
 // native/my_sparkline/src/lib.rs
-use plushie_core::prelude::*;
+use plushie_ext::prelude::*;
 
 pub struct SparklineExtension;
 

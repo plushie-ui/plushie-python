@@ -15,8 +15,8 @@ from plushie.events import (
     MouseAreaMove, MouseAreaScroll,
     # Canvas events
     CanvasPress, CanvasRelease, CanvasMove, CanvasScroll,
-    CanvasShapeClick, CanvasShapeDrag, CanvasShapeDragEnd,
-    CanvasShapeEnter, CanvasShapeLeave, CanvasShapeFocused,
+    CanvasElementClick, CanvasElementDrag, CanvasElementDragEnd,
+    CanvasElementEnter, CanvasElementLeave, CanvasElementFocused,
     # Sensor / PaneGrid events
     SensorResize, PaneResized, PaneDragged, PaneClicked,
     # Keyboard events
@@ -399,32 +399,32 @@ def update(self, model, event):
 
 When a canvas contains shapes with an `interactive` field, the renderer
 handles hit testing locally and emits semantic shape events. These arrive
-as dedicated `CanvasShape*` dataclasses. The `id` is the canvas widget
-ID; `shape_id` identifies the shape.
+as dedicated `CanvasElement*` dataclasses. The `id` is the canvas widget
+ID; `element_id` identifies the shape.
 
 ```python
 from plushie.events import (
-    CanvasShapeEnter, CanvasShapeLeave, CanvasShapeClick,
-    CanvasShapeDrag, CanvasShapeDragEnd, CanvasShapeFocused,
+    CanvasElementEnter, CanvasElementLeave, CanvasElementClick,
+    CanvasElementDrag, CanvasElementDragEnd, CanvasElementFocused,
 )
 
 # Cursor entered a shape's bounds
-CanvasShapeEnter(id="chart", shape_id="bar-jan", x=15.0, y=70.0)
+CanvasElementEnter(id="chart", element_id="bar-jan", x=15.0, y=70.0)
 
 # Cursor left a shape's bounds
-CanvasShapeLeave(id="chart", shape_id="bar-jan")
+CanvasElementLeave(id="chart", element_id="bar-jan")
 
 # Click on a shape
-CanvasShapeClick(id="chart", shape_id="bar-jan", x=15.0, y=70.0, button="left")
+CanvasElementClick(id="chart", element_id="bar-jan", x=15.0, y=70.0, button="left")
 
 # Drag on a draggable shape (rate-limited by event_rate)
-CanvasShapeDrag(id="chart", shape_id="handle", x=50.0, y=80.0, delta_x=2.0, delta_y=-1.0)
+CanvasElementDrag(id="chart", element_id="handle", x=50.0, y=80.0, delta_x=2.0, delta_y=-1.0)
 
 # Drag ended
-CanvasShapeDragEnd(id="chart", shape_id="handle", x=52.0, y=79.0)
+CanvasElementDragEnd(id="chart", element_id="handle", x=52.0, y=79.0)
 
 # Shape received keyboard focus (Tab/Arrow navigation)
-CanvasShapeFocused(id="chart", shape_id="bar-jan")
+CanvasElementFocused(id="chart", element_id="bar-jan")
 ```
 
 Hover styles, pressed styles, cursors, and tooltips on shapes are
@@ -432,15 +432,15 @@ handled by the renderer locally -- no round-trip needed. Shape events
 give the host semantic actions (clicks, drags, focus changes) instead
 of raw coordinates.
 
-<!-- test: TestCanvasShapeClickMatch -- keep this code block in sync with the test -->
+<!-- test: TestCanvasElementClickMatch -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
-from plushie.events import CanvasShapeClick
+from plushie.events import CanvasElementClick
 
 def update(self, model, event):
     match event:
-        case CanvasShapeClick(id="chart", shape_id=shape_id):
-            return replace(model, selected_bar=shape_id)
+        case CanvasElementClick(id="chart", element_id=element_id):
+            return replace(model, selected_bar=element_id)
 ```
 
 ### Sensor events

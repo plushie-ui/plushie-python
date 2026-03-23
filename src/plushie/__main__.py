@@ -282,9 +282,11 @@ def _cmd_build(args: argparse.Namespace) -> None:
             raise SystemExit(1)
 
         # Build stock binary from source
-        plushie_crate = os.path.join(source, "plushie")
+        plushie_crate = os.path.join(source, "plushie-renderer")
         if not os.path.isdir(plushie_crate):
-            print(f"plushie crate not found at {plushie_crate}", file=sys.stderr)
+            print(
+                f"plushie-renderer crate not found at {plushie_crate}", file=sys.stderr
+            )
             raise SystemExit(1)
 
         cargo_args = ["cargo", "build"]
@@ -310,7 +312,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
         from plushie.binary import download_dir, download_name
 
         bin_ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
-        built = os.path.join(source, "target", profile, f"plushie{bin_ext}")
+        built = os.path.join(source, "target", profile, f"plushie-renderer{bin_ext}")
         if not os.path.isfile(built):
             print(
                 f"build succeeded but binary not found at {built}",
@@ -344,7 +346,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
     build_dir = "_plushie_build"
     os.makedirs(os.path.join(build_dir, "src"), exist_ok=True)
 
-    # Resolve source_path for local plushie-core dependency
+    # Resolve source_path for local plushie-ext dependency
     source = os.environ.get("PLUSHIE_SOURCE_PATH") or pyproject_cfg.get("source_path")
 
     cargo_toml = generate_cargo_toml(

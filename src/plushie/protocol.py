@@ -6,7 +6,7 @@ or ``JsonFraming.encode``. The ``decode_message`` function converts
 an inbound dict (already deserialized by the framing layer) into
 the appropriate event dataclass from ``plushie.events``.
 
-Reference: ``~/projects/plushie/docs/protocol.md`` for every message
+Reference: ``~/projects/plushie-renderer/docs/protocol.md`` for every message
 type, field, and value.
 """
 
@@ -18,18 +18,24 @@ from plushie.events import (
     AllWindowsClosed,
     AnimationFrame,
     Announce,
+    CanvasBlurred,
+    CanvasElementBlurred,
+    CanvasElementClick,
+    CanvasElementDrag,
+    CanvasElementDragEnd,
+    CanvasElementEnter,
+    CanvasElementFocused,
+    CanvasElementLeave,
+    CanvasFocused,
+    CanvasGroupBlurred,
+    CanvasGroupFocused,
     CanvasMove,
     CanvasPress,
     CanvasRelease,
     CanvasScroll,
-    CanvasShapeClick,
-    CanvasShapeDrag,
-    CanvasShapeDragEnd,
-    CanvasShapeEnter,
-    CanvasShapeFocused,
-    CanvasShapeLeave,
     Click,
     Close,
+    Diagnostic,
     DuplicateNodeIds,
     EffectResult,
     FileDropped,
@@ -664,12 +670,18 @@ def decode_message(
     | CanvasRelease
     | CanvasMove
     | CanvasScroll
-    | CanvasShapeEnter
-    | CanvasShapeLeave
-    | CanvasShapeClick
-    | CanvasShapeDrag
-    | CanvasShapeDragEnd
-    | CanvasShapeFocused
+    | CanvasElementEnter
+    | CanvasElementLeave
+    | CanvasElementClick
+    | CanvasElementDrag
+    | CanvasElementDragEnd
+    | CanvasElementFocused
+    | CanvasElementBlurred
+    | CanvasFocused
+    | CanvasBlurred
+    | CanvasGroupFocused
+    | CanvasGroupBlurred
+    | Diagnostic
     | SensorResize
     | PaneResized
     | PaneDragged
@@ -940,33 +952,33 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    # ------- Canvas shape events (scoped) -------
+    # ------- Canvas element events (scoped) -------
 
-    if family == "canvas_shape_enter":
+    if family == "canvas_element_enter":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasShapeEnter(
+        return CanvasElementEnter(
             id=local_id,
-            shape_id=str(data.get("shape_id", "")),
+            element_id=str(data.get("element_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             captured=captured,
             scope=scope,
         )
 
-    if family == "canvas_shape_leave":
+    if family == "canvas_element_leave":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasShapeLeave(
+        return CanvasElementLeave(
             id=local_id,
-            shape_id=str(data.get("shape_id", "")),
+            element_id=str(data.get("element_id", "")),
             captured=captured,
             scope=scope,
         )
 
-    if family == "canvas_shape_click":
+    if family == "canvas_element_click":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasShapeClick(
+        return CanvasElementClick(
             id=local_id,
-            shape_id=str(data.get("shape_id", "")),
+            element_id=str(data.get("element_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             button=str(data.get("button", "left")),
@@ -974,11 +986,11 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    if family == "canvas_shape_drag":
+    if family == "canvas_element_drag":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasShapeDrag(
+        return CanvasElementDrag(
             id=local_id,
-            shape_id=str(data.get("shape_id", "")),
+            element_id=str(data.get("element_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             delta_x=float(data.get("delta_x", 0)),
@@ -987,24 +999,71 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    if family == "canvas_shape_drag_end":
+    if family == "canvas_element_drag_end":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasShapeDragEnd(
+        return CanvasElementDragEnd(
             id=local_id,
-            shape_id=str(data.get("shape_id", "")),
+            element_id=str(data.get("element_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             captured=captured,
             scope=scope,
         )
 
-    if family == "canvas_shape_focused":
+    if family == "canvas_element_focused":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasShapeFocused(
+        return CanvasElementFocused(
             id=local_id,
-            shape_id=str(data.get("shape_id", "")),
+            element_id=str(data.get("element_id", "")),
             captured=captured,
             scope=scope,
+        )
+
+    if family == "canvas_element_blurred":
+        local_id, scope = split_scoped_id(wire_id)
+        return CanvasElementBlurred(
+            id=local_id,
+            element_id=str(data.get("element_id", "")),
+            captured=captured,
+            scope=scope,
+        )
+
+    # ------- Canvas lifecycle events (scoped, no coordinates) -------
+
+    if family == "canvas_focused":
+        local_id, scope = split_scoped_id(wire_id)
+        return CanvasFocused(id=local_id, scope=scope)
+
+    if family == "canvas_blurred":
+        local_id, scope = split_scoped_id(wire_id)
+        return CanvasBlurred(id=local_id, scope=scope)
+
+    # ------- Canvas group events (scoped) -------
+
+    if family == "canvas_group_focused":
+        local_id, scope = split_scoped_id(wire_id)
+        return CanvasGroupFocused(
+            id=local_id,
+            group_id=str(data.get("group_id", "")),
+            scope=scope,
+        )
+
+    if family == "canvas_group_blurred":
+        local_id, scope = split_scoped_id(wire_id)
+        return CanvasGroupBlurred(
+            id=local_id,
+            group_id=str(data.get("group_id", "")),
+            scope=scope,
+        )
+
+    # ------- Diagnostic -------
+
+    if family == "diagnostic":
+        return Diagnostic(
+            level=str(data.get("level", "warning")),
+            element_id=str(data.get("element_id", "")),
+            code=str(data.get("code", "")),
+            message=str(data.get("message", "")),
         )
 
     # ------- Sensor events (scoped) -------

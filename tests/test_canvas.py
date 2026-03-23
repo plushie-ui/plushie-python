@@ -157,15 +157,68 @@ class TestGroup:
         assert g["type"] == "group"
         assert len(g["children"]) == 2
 
-    def test_with_offset(self) -> None:
+    def test_with_xy_desugar(self) -> None:
         g = canvas.group(canvas.rect(0, 0, 10, 10), x=50, y=100)
-        assert g["x"] == 50
-        assert g["y"] == 100
+        assert "transforms" in g
+        assert g["transforms"][0] == {"type": "translate", "x": 50, "y": 100}
+        assert "x" not in g or g.get("x") is None  # x/y not top-level
 
     def test_flattens_lists(self) -> None:
         shapes = [canvas.rect(0, 0, 10, 10), canvas.circle(5, 5, 3)]
         g = canvas.group(shapes)
         assert len(g["children"]) == 2
+
+    def test_with_id(self) -> None:
+        g = canvas.group("my-group", canvas.rect(0, 0, 10, 10), on_click=True)
+        assert g["id"] == "my-group"
+        assert g["on_click"] is True
+        assert len(g["children"]) == 1
+
+    def test_with_transforms(self) -> None:
+        t = [canvas.translate(10, 20), canvas.rotate(0.5)]
+        g = canvas.group(canvas.rect(0, 0, 10, 10), transforms=t)
+        assert g["transforms"] == t
+
+    def test_with_clip(self) -> None:
+        c = canvas.clip(0, 0, 100, 100)
+        g = canvas.group(canvas.rect(0, 0, 200, 200), clip=c)
+        assert g["clip"] == {"x": 0, "y": 0, "w": 100, "h": 100}
+
+    def test_xy_prepends_to_transforms(self) -> None:
+        t = [canvas.rotate(0.5)]
+        g = canvas.group(canvas.rect(0, 0, 10, 10), transforms=t, x=50, y=100)
+        assert len(g["transforms"]) == 2
+        assert g["transforms"][0] == {"type": "translate", "x": 50, "y": 100}
+        assert g["transforms"][1] == {"type": "rotate", "angle": 0.5}
+
+    def test_interactive_fields_top_level(self) -> None:
+        g = canvas.group(
+            "btn",
+            canvas.rect(0, 0, 80, 40),
+            on_click=True,
+            on_hover=True,
+            cursor="pointer",
+            a11y={"role": "button"},
+            focusable=True,
+            focus_style={"stroke": "#3b82f6"},
+            show_focus_ring=False,
+        )
+        assert g["id"] == "btn"
+        assert g["on_click"] is True
+        assert g["on_hover"] is True
+        assert g["cursor"] == "pointer"
+        assert g["a11y"] == {"role": "button"}
+        assert g["focusable"] is True
+        assert g["focus_style"] == {"stroke": "#3b82f6"}
+        assert g["show_focus_ring"] is False
+        assert "interactive" not in g
+
+    def test_none_fields_omitted(self) -> None:
+        g = canvas.group(canvas.rect(0, 0, 10, 10))
+        assert "id" not in g
+        assert "transforms" not in g
+        assert "clip" not in g
+        assert "on_click" not in g
 
 
 class TestLayer:
@@ -199,22 +252,31 @@ class TestLayer:
 
 
 class TestInteractive:
-    def test_basic(self) -> None:
+    def test_leaf_wrapped_in_group(self) -> None:
         shape = canvas.rect(0, 0, 100, 40, fill="#3498db")
-        wrapped = canvas.interactive(shape, id="btn", on_click=True, cursor="pointer")
-        # Original shape fields preserved
-        assert wrapped["type"] == "rect"
-        assert wrapped["fill"] == "#3498db"
-        # Interactive metadata attached
-        assert wrapped["interactive"]["id"] == "btn"
-        assert wrapped["interactive"]["on_click"] is True
-        assert wrapped["interactive"]["cursor"] == "pointer"
+        wrapped = canvas.interactive(shape, "btn", on_click=True, cursor="pointer")
+        # Must be a group wrapping the original shape
+        assert wrapped["type"] == "group"
+        assert wrapped["id"] == "btn"
+        assert wrapped["on_click"] is True
+        assert wrapped["cursor"] == "pointer"
+        assert len(wrapped["children"]) == 1
+        assert wrapped["children"][0]["type"] == "rect"
+        assert wrapped["children"][0]["fill"] == "#3498db"
+
+    def test_group_merged(self) -> None:
+        g = canvas.group(canvas.rect(0, 0, 10, 10), canvas.circle(5, 5, 3))
+        wrapped = canvas.interactive(g, "grp", on_click=True)
+        assert wrapped["type"] == "group"
+        assert wrapped["id"] == "grp"
+        assert wrapped["on_click"] is True
+        assert len(wrapped["children"]) == 2
 
     def test_all_fields(self) -> None:
         shape = canvas.circle(50, 50, 20)
         wrapped = canvas.interactive(
             shape,
-            id="drag_handle",
+            "drag_handle",
             on_click=True,
             on_hover=True,
             draggable=True,
@@ -223,29 +285,42 @@ class TestInteractive:
             cursor="grab",
             hover_style={"fill": "#fff"},
             pressed_style={"fill": "#ccc"},
+            focus_style={"stroke": "#3b82f6"},
+            show_focus_ring=False,
             tooltip="Drag me",
             a11y={"role": "slider"},
             hit_rect={"x": -5, "y": -5, "w": 50, "h": 50},
+            focusable=True,
         )
-        i = wrapped["interactive"]
-        assert i["id"] == "drag_handle"
-        assert i["on_click"] is True
-        assert i["on_hover"] is True
-        assert i["draggable"] is True
-        assert i["drag_axis"] == "x"
-        assert i["drag_bounds"] == {"x": 0, "y": 0, "w": 200, "h": 100}
-        assert i["cursor"] == "grab"
-        assert i["hover_style"] == {"fill": "#fff"}
-        assert i["pressed_style"] == {"fill": "#ccc"}
-        assert i["tooltip"] == "Drag me"
-        assert i["a11y"] == {"role": "slider"}
-        assert i["hit_rect"] == {"x": -5, "y": -5, "w": 50, "h": 50}
+        assert wrapped["type"] == "group"
+        assert wrapped["id"] == "drag_handle"
+        assert wrapped["on_click"] is True
+        assert wrapped["on_hover"] is True
+        assert wrapped["draggable"] is True
+        assert wrapped["drag_axis"] == "x"
+        assert wrapped["drag_bounds"] == {"x": 0, "y": 0, "w": 200, "h": 100}
+        assert wrapped["cursor"] == "grab"
+        assert wrapped["hover_style"] == {"fill": "#fff"}
+        assert wrapped["pressed_style"] == {"fill": "#ccc"}
+        assert wrapped["focus_style"] == {"stroke": "#3b82f6"}
+        assert wrapped["show_focus_ring"] is False
+        assert wrapped["tooltip"] == "Drag me"
+        assert wrapped["a11y"] == {"role": "slider"}
+        assert wrapped["hit_rect"] == {"x": -5, "y": -5, "w": 50, "h": 50}
+        assert wrapped["focusable"] is True
 
     def test_none_fields_omitted(self) -> None:
         shape = canvas.rect(0, 0, 10, 10)
-        wrapped = canvas.interactive(shape, id="x")
-        i = wrapped["interactive"]
-        assert i == {"id": "x"}
+        wrapped = canvas.interactive(shape, "x")
+        assert wrapped["id"] == "x"
+        # Only id and type/children should be present
+        assert "on_click" not in wrapped
+        assert "cursor" not in wrapped
+
+    def test_no_nested_interactive(self) -> None:
+        shape = canvas.rect(0, 0, 10, 10)
+        wrapped = canvas.interactive(shape, "x", on_click=True)
+        assert "interactive" not in wrapped
 
 
 # ---------------------------------------------------------------------------
@@ -290,17 +365,11 @@ class TestPathCommands:
 
 
 # ---------------------------------------------------------------------------
-# Transform commands
+# Transform value objects
 # ---------------------------------------------------------------------------
 
 
-class TestTransformCommands:
-    def test_push_transform(self) -> None:
-        assert canvas.push_transform() == {"type": "push_transform"}
-
-    def test_pop_transform(self) -> None:
-        assert canvas.pop_transform() == {"type": "pop_transform"}
-
+class TestTransformValues:
     def test_translate(self) -> None:
         assert canvas.translate(100, 200) == {
             "type": "translate",
@@ -314,21 +383,20 @@ class TestTransformCommands:
     def test_scale(self) -> None:
         assert canvas.scale(2.0, 3.0) == {"type": "scale", "x": 2.0, "y": 3.0}
 
+    def test_scale_uniform(self) -> None:
+        assert canvas.scale_uniform(2.0) == {"type": "scale", "factor": 2.0}
+
 
 # ---------------------------------------------------------------------------
-# Clipping commands
+# Clip value object
 # ---------------------------------------------------------------------------
 
 
-class TestClipCommands:
-    def test_push_clip(self) -> None:
-        assert canvas.push_clip(10, 20, 100, 80) == {
-            "type": "push_clip",
+class TestClipValue:
+    def test_clip(self) -> None:
+        assert canvas.clip(10, 20, 100, 80) == {
             "x": 10,
             "y": 20,
             "w": 100,
             "h": 80,
         }
-
-    def test_pop_clip(self) -> None:
-        assert canvas.pop_clip() == {"type": "pop_clip"}

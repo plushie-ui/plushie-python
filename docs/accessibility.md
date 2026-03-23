@@ -470,17 +470,15 @@ ui.canvas("color-picker", width=200, height=100,
     layers={"options": [
         {
             "type": "group",
-            "x": 0, "y": i * 32,
-            "interactive": {
-                "id": f"color-{i}",
-                "on_click": True,
-                "a11y": {
-                    "role": "radio",
-                    "label": color.name,
-                    "selected": color == model.selected,
-                    "position_in_set": i + 1,
-                    "size_of_set": len(colors),
-                },
+            "transforms": [{"type": "translate", "x": 0, "y": i * 32}],
+            "id": f"color-{i}",
+            "on_click": True,
+            "a11y": {
+                "role": "radio",
+                "label": color.name,
+                "selected": color == model.selected,
+                "position_in_set": i + 1,
+                "size_of_set": len(colors),
             },
             "children": [
                 {"type": "rect", "x": 0, "y": 0, "w": 200, "h": 32,

@@ -9,15 +9,17 @@ canvas_svg.
 
 Structure: group (groups children), layer (named layer of shapes).
 
-Interactive: interactive(shape, ...) wraps a shape with click/hover/drag
-behavior.
+Interactive: interactive(shape, id, ...) wraps a shape as a group with
+click/hover/drag behavior. The renderer only recognizes interactive
+fields on group nodes.
 
 Path commands: move_to, line_to, bezier_to, quadratic_to, arc, arc_to,
 ellipse, rounded_rect, close.
 
-Transforms: push_transform, pop_transform, translate, rotate, scale.
+Transforms: translate, rotate, scale, scale_uniform -- value objects for
+the group ``transforms`` list.
 
-Clipping: push_clip, pop_clip.
+Clipping: clip(x, y, w, h) -- value object for the group ``clip`` field.
 
 Stroke helper: stroke(color, width, ...).
 """
@@ -123,18 +125,7 @@ def rect(
     radius: float | None = None,
     opacity: float | None = None,
 ) -> Shape:
-    """Rectangle shape.
-
-    Args:
-        x: X position.
-        y: Y position.
-        w: Width.
-        h: Height.
-        fill: Fill color (hex string) or gradient dict.
-        stroke: Stroke descriptor (from ``stroke()``).
-        radius: Corner radius.
-        opacity: Opacity (0.0 to 1.0).
-    """
+    """Rectangle shape."""
     return _shape(
         "rect",
         x=x,
@@ -158,16 +149,7 @@ def circle(
     stroke: dict[str, Any] | None = None,
     opacity: float | None = None,
 ) -> Shape:
-    """Circle shape.
-
-    Args:
-        x: Center X position.
-        y: Center Y position.
-        r: Radius.
-        fill: Fill color or gradient.
-        stroke: Stroke descriptor.
-        opacity: Opacity (0.0 to 1.0).
-    """
+    """Circle shape."""
     return _shape("circle", x=x, y=y, r=r, fill=fill, stroke=stroke, opacity=opacity)
 
 
@@ -181,16 +163,7 @@ def line(
     stroke: dict[str, Any] | None = None,
     opacity: float | None = None,
 ) -> Shape:
-    """Line shape.
-
-    Args:
-        x1: Start X.
-        y1: Start Y.
-        x2: End X.
-        y2: End Y.
-        stroke: Stroke descriptor.
-        opacity: Opacity (0.0 to 1.0).
-    """
+    """Line shape."""
     return _shape("line", x1=x1, y1=y1, x2=x2, y2=y2, stroke=stroke, opacity=opacity)
 
 
@@ -202,14 +175,7 @@ def path(
     stroke: dict[str, Any] | None = None,
     opacity: float | None = None,
 ) -> Shape:
-    """Arbitrary path shape built from path commands.
-
-    Args:
-        commands: List of path commands (from ``move_to``, ``line_to``, etc.).
-        fill: Fill color or gradient.
-        stroke: Stroke descriptor.
-        opacity: Opacity (0.0 to 1.0).
-    """
+    """Arbitrary path shape built from path commands."""
     return _shape("path", commands=commands, fill=fill, stroke=stroke, opacity=opacity)
 
 
@@ -226,19 +192,7 @@ def canvas_text(
     align_y: str | None = None,
     opacity: float | None = None,
 ) -> Shape:
-    """Canvas text shape.
-
-    Args:
-        x: X position.
-        y: Y position.
-        content: Text string.
-        fill: Text fill color.
-        size: Font size in pixels.
-        font: Font specification.
-        align_x: Horizontal alignment (``"left"``, ``"center"``, ``"right"``).
-        align_y: Vertical alignment (``"top"``, ``"center"``, ``"bottom"``).
-        opacity: Opacity (0.0 to 1.0).
-    """
+    """Canvas text shape."""
     return _shape(
         "text",
         x=x,
@@ -254,46 +208,16 @@ def canvas_text(
 
 
 def canvas_image(
-    source: str,
-    x: float,
-    y: float,
-    w: float,
-    h: float,
-    /,
-    **kwargs: Any,
+    source: str, x: float, y: float, w: float, h: float, /, **kwargs: Any
 ) -> Shape:
-    """Canvas image shape.
-
-    Args:
-        source: Path to image file.
-        x: X position.
-        y: Y position.
-        w: Width.
-        h: Height.
-        **kwargs: Additional props (opacity, etc.).
-    """
+    """Canvas image shape."""
     return _shape("image", source=source, x=x, y=y, w=w, h=h, **kwargs)
 
 
 def canvas_svg(
-    source: str,
-    x: float,
-    y: float,
-    w: float,
-    h: float,
-    /,
-    **kwargs: Any,
+    source: str, x: float, y: float, w: float, h: float, /, **kwargs: Any
 ) -> Shape:
-    """Canvas SVG shape.
-
-    Args:
-        source: Path to SVG file.
-        x: X position.
-        y: Y position.
-        w: Width.
-        h: Height.
-        **kwargs: Additional props (color, opacity, etc.).
-    """
+    """Canvas SVG shape."""
     return _shape("svg", source=source, x=x, y=y, w=w, h=h, **kwargs)
 
 
@@ -303,19 +227,43 @@ def canvas_svg(
 
 
 def group(
-    *children: Any,
+    *args: Any,
+    transforms: list[dict[str, Any]] | None = None,
+    clip: dict[str, Any] | None = None,
     x: float | None = None,
     y: float | None = None,
+    on_click: bool | None = None,
+    on_hover: bool | None = None,
+    draggable: bool | None = None,
+    drag_axis: str | None = None,
+    drag_bounds: dict[str, Any] | None = None,
+    cursor: str | None = None,
+    hit_rect: dict[str, Any] | None = None,
+    tooltip: str | None = None,
+    hover_style: dict[str, Any] | None = None,
+    pressed_style: dict[str, Any] | None = None,
+    focus_style: dict[str, Any] | None = None,
+    show_focus_ring: bool | None = None,
+    a11y: dict[str, Any] | None = None,
+    focusable: bool | None = None,
 ) -> Shape:
-    """Group of shapes, optionally positioned.
+    """Group of shapes with optional transforms, clip, and interactivity.
 
-    Args:
-        *children: Shape dicts or lists of shapes (flattened one level).
-        x: Group X offset.
-        y: Group Y offset.
+    The first positional arg may be a string ``id`` (making the group
+    interactive). Remaining positional args are children.
+    If ``x`` or ``y`` kwargs are present, they desugar to a leading
+    translate in the transforms list.
     """
+    id_val: str | None = None
+    children_args: tuple[Any, ...]
+    if args and isinstance(args[0], str):
+        id_val = args[0]
+        children_args = args[1:]
+    else:
+        children_args = args
+
     flat: list[Shape] = []
-    for child in children:
+    for child in children_args:
         if isinstance(child, dict):
             flat.append(child)
         elif isinstance(child, (list, tuple)):
@@ -325,23 +273,43 @@ def group(
                 flat.extend(child)
             except TypeError:
                 flat.append(child)
-    return _shape("group", children=flat, x=x, y=y)
+
+    xforms = list(transforms) if transforms else []
+    if x is not None or y is not None:
+        xforms.insert(0, translate(x or 0.0, y or 0.0))
+
+    result: dict[str, Any] = {"type": "group", "children": flat}
+    if xforms:
+        result["transforms"] = xforms
+    if clip is not None:
+        result["clip"] = clip
+    if id_val is not None:
+        result["id"] = id_val
+
+    for key, val in [
+        ("on_click", on_click),
+        ("on_hover", on_hover),
+        ("draggable", draggable),
+        ("drag_axis", drag_axis),
+        ("drag_bounds", drag_bounds),
+        ("cursor", cursor),
+        ("hit_rect", hit_rect),
+        ("tooltip", tooltip),
+        ("hover_style", hover_style),
+        ("pressed_style", pressed_style),
+        ("focus_style", focus_style),
+        ("show_focus_ring", show_focus_ring),
+        ("a11y", a11y),
+        ("focusable", focusable),
+    ]:
+        if val is not None:
+            result[key] = val
+
+    return result
 
 
 def layer(name: str, *children: Any) -> tuple[str, list[Shape]]:
-    """Named layer of shapes for canvas ``layers`` prop.
-
-    Returns a ``(name, shapes)`` tuple suitable for building a layers dict::
-
-        canvas("chart", layers=dict([
-            layer("bg", rect(0, 0, 100, 100, fill="#eee")),
-            layer("data", *bars),
-        ]))
-
-    Args:
-        name: Layer name.
-        *children: Shape dicts or lists of shapes (flattened one level).
-    """
+    """Named layer of shapes for canvas ``layers`` prop."""
     flat: list[Shape] = []
     for child in children:
         if isinstance(child, dict):
@@ -363,9 +331,9 @@ def layer(name: str, *children: Any) -> tuple[str, list[Shape]]:
 
 def interactive(
     shape: Shape,
+    id: str,
     /,
     *,
-    id: str,
     on_click: bool | None = None,
     on_hover: bool | None = None,
     draggable: bool | None = None,
@@ -374,52 +342,44 @@ def interactive(
     cursor: str | None = None,
     hover_style: dict[str, Any] | None = None,
     pressed_style: dict[str, Any] | None = None,
+    focus_style: dict[str, Any] | None = None,
+    show_focus_ring: bool | None = None,
     tooltip: str | None = None,
     a11y: dict[str, Any] | None = None,
     hit_rect: dict[str, Any] | None = None,
+    focusable: bool | None = None,
 ) -> Shape:
-    """Wrap a shape with interactive hit-test and event handling.
+    """Make a shape interactive by wrapping it in a group.
 
-    Args:
-        shape: The shape to make interactive.
-        id: Interactive element identifier (required).
-        on_click: Enable click events.
-        on_hover: Enable hover events.
-        draggable: Enable drag events.
-        drag_axis: Constrain drag to axis (``"x"`` or ``"y"``).
-        drag_bounds: Drag boundary constraints.
-        cursor: Cursor style on hover.
-        hover_style: Style overrides on hover.
-        pressed_style: Style overrides when pressed.
-        tooltip: Tooltip text.
-        a11y: Accessibility metadata.
-        hit_rect: Custom hit rectangle.
+    The renderer only recognizes interactive fields on group nodes.
+    If the shape is already a group, interactive fields are merged
+    directly into it. If it is a leaf shape, it is wrapped as the
+    sole child of a new group.
     """
-    interactive_data: dict[str, Any] = {"id": id}
-    if on_click is not None:
-        interactive_data["on_click"] = on_click
-    if on_hover is not None:
-        interactive_data["on_hover"] = on_hover
-    if draggable is not None:
-        interactive_data["draggable"] = draggable
-    if drag_axis is not None:
-        interactive_data["drag_axis"] = drag_axis
-    if drag_bounds is not None:
-        interactive_data["drag_bounds"] = drag_bounds
-    if cursor is not None:
-        interactive_data["cursor"] = cursor
-    if hover_style is not None:
-        interactive_data["hover_style"] = hover_style
-    if pressed_style is not None:
-        interactive_data["pressed_style"] = pressed_style
-    if tooltip is not None:
-        interactive_data["tooltip"] = tooltip
-    if a11y is not None:
-        interactive_data["a11y"] = a11y
-    if hit_rect is not None:
-        interactive_data["hit_rect"] = hit_rect
+    opts: dict[str, Any] = {"id": id}
+    for key, val in [
+        ("on_click", on_click),
+        ("on_hover", on_hover),
+        ("draggable", draggable),
+        ("drag_axis", drag_axis),
+        ("drag_bounds", drag_bounds),
+        ("cursor", cursor),
+        ("hover_style", hover_style),
+        ("pressed_style", pressed_style),
+        ("focus_style", focus_style),
+        ("show_focus_ring", show_focus_ring),
+        ("tooltip", tooltip),
+        ("a11y", a11y),
+        ("hit_rect", hit_rect),
+        ("focusable", focusable),
+    ]:
+        if val is not None:
+            opts[key] = val
 
-    return {**shape, "interactive": interactive_data}
+    if shape.get("type") == "group":
+        return {**shape, **opts}
+
+    return {"type": "group", **opts, "children": [shape]}
 
 
 # ---------------------------------------------------------------------------
@@ -438,12 +398,7 @@ def line_to(x: float, y: float) -> list[Any]:
 
 
 def bezier_to(
-    cp1x: float,
-    cp1y: float,
-    cp2x: float,
-    cp2y: float,
-    x: float,
-    y: float,
+    cp1x: float, cp1y: float, cp2x: float, cp2y: float, x: float, y: float
 ) -> list[Any]:
     """Cubic bezier curve path command."""
     return ["bezier_to", cp1x, cp1y, cp2x, cp2y, x, y]
@@ -455,23 +410,13 @@ def quadratic_to(cpx: float, cpy: float, x: float, y: float) -> list[Any]:
 
 
 def arc(
-    cx: float,
-    cy: float,
-    r: float,
-    start_angle: float,
-    end_angle: float,
+    cx: float, cy: float, r: float, start_angle: float, end_angle: float
 ) -> list[Any]:
-    """Arc path command (center, radius, start and end angles in radians)."""
+    """Arc path command."""
     return ["arc", cx, cy, r, start_angle, end_angle]
 
 
-def arc_to(
-    x1: float,
-    y1: float,
-    x2: float,
-    y2: float,
-    radius: float,
-) -> list[Any]:
+def arc_to(x1: float, y1: float, x2: float, y2: float, radius: float) -> list[Any]:
     """Tangent arc path command."""
     return ["arc_to", x1, y1, x2, y2, radius]
 
@@ -500,48 +445,38 @@ def close() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Transform commands
+# Transform value objects
 # ---------------------------------------------------------------------------
 
 
-def push_transform() -> Shape:
-    """Push (save) the current transform state."""
-    return {"type": "push_transform"}
-
-
-def pop_transform() -> Shape:
-    """Pop (restore) the previously saved transform state."""
-    return {"type": "pop_transform"}
-
-
-def translate(x: float, y: float) -> Shape:
-    """Translate the coordinate origin."""
+def translate(x: float, y: float) -> dict[str, Any]:
+    """Translate transform value for the group ``transforms`` list."""
     return {"type": "translate", "x": x, "y": y}
 
 
-def rotate(angle: float) -> Shape:
-    """Rotate the coordinate system (angle in radians)."""
+def rotate(angle: float) -> dict[str, Any]:
+    """Rotate transform value (angle in radians)."""
     return {"type": "rotate", "angle": angle}
 
 
-def scale(x: float, y: float) -> Shape:
-    """Scale the coordinate system."""
+def scale(x: float, y: float) -> dict[str, Any]:
+    """Non-uniform scale transform value."""
     return {"type": "scale", "x": x, "y": y}
 
 
+def scale_uniform(factor: float) -> dict[str, Any]:
+    """Uniform scale transform value."""
+    return {"type": "scale", "factor": factor}
+
+
 # ---------------------------------------------------------------------------
-# Clipping commands
+# Clip value object
 # ---------------------------------------------------------------------------
 
 
-def push_clip(x: float, y: float, w: float, h: float) -> Shape:
-    """Push a clipping rectangle."""
-    return {"type": "push_clip", "x": x, "y": y, "w": w, "h": h}
-
-
-def pop_clip() -> Shape:
-    """Pop the most recent clipping rectangle."""
-    return {"type": "pop_clip"}
+def clip(x: float, y: float, w: float, h: float) -> dict[str, Any]:
+    """Clip rectangle value for the group ``clip`` field."""
+    return {"x": x, "y": y, "w": w, "h": h}
 
 
 # ---------------------------------------------------------------------------
@@ -549,7 +484,6 @@ def pop_clip() -> Shape:
 # ---------------------------------------------------------------------------
 
 __all__ = [
-    # Type
     "Shape",
     "arc",
     "arc_to",
@@ -558,32 +492,23 @@ __all__ = [
     "canvas_svg",
     "canvas_text",
     "circle",
+    "clip",
     "close",
     "ellipse",
-    # Structure
     "group",
-    # Interactive
     "interactive",
     "layer",
     "line",
     "line_to",
     "linear_gradient",
-    # Path commands
     "move_to",
     "path",
-    "pop_clip",
-    "pop_transform",
-    # Clipping
-    "push_clip",
-    # Transforms
-    "push_transform",
     "quadratic_to",
-    # Basic shapes
     "rect",
     "rotate",
     "rounded_rect",
     "scale",
-    # Helpers
+    "scale_uniform",
     "stroke",
     "translate",
 ]

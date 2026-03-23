@@ -9,18 +9,24 @@ from plushie.events import (
     AnimationFrame,
     Announce,
     AsyncResult,
+    CanvasBlurred,
+    CanvasElementBlurred,
+    CanvasElementClick,
+    CanvasElementDrag,
+    CanvasElementDragEnd,
+    CanvasElementEnter,
+    CanvasElementFocused,
+    CanvasElementLeave,
+    CanvasFocused,
+    CanvasGroupBlurred,
+    CanvasGroupFocused,
     CanvasMove,
     CanvasPress,
     CanvasRelease,
     CanvasScroll,
-    CanvasShapeClick,
-    CanvasShapeDrag,
-    CanvasShapeDragEnd,
-    CanvasShapeEnter,
-    CanvasShapeFocused,
-    CanvasShapeLeave,
     Click,
     Close,
+    Diagnostic,
     DuplicateNodeIds,
     EffectResult,
     FileDropped,
@@ -299,38 +305,38 @@ class TestCanvasEvents:
 
 
 # ---------------------------------------------------------------------------
-# Canvas shape events
+# Canvas element events
 # ---------------------------------------------------------------------------
 
 
-class TestCanvasShapeEvents:
-    """Construct every canvas shape event type."""
+class TestCanvasElementEvents:
+    """Construct every canvas element event type."""
 
     def test_enter(self) -> None:
-        e = CanvasShapeEnter(id="canvas", shape_id="bar-1", x=10.0, y=20.0)
-        assert e.shape_id == "bar-1"
+        e = CanvasElementEnter(id="canvas", element_id="bar-1", x=10.0, y=20.0)
+        assert e.element_id == "bar-1"
         assert e.captured is False
 
     def test_leave(self) -> None:
-        e = CanvasShapeLeave(id="canvas", shape_id="bar-1", captured=True)
+        e = CanvasElementLeave(id="canvas", element_id="bar-1", captured=True)
         assert e.captured is True
 
     def test_click(self) -> None:
-        e = CanvasShapeClick(
-            id="canvas", shape_id="bar-1", x=10.0, y=20.0, button="left"
+        e = CanvasElementClick(
+            id="canvas", element_id="bar-1", x=10.0, y=20.0, button="left"
         )
         assert e.button == "left"
 
     def test_click_keyboard(self) -> None:
-        e = CanvasShapeClick(
-            id="canvas", shape_id="star", x=50.0, y=50.0, button="keyboard"
+        e = CanvasElementClick(
+            id="canvas", element_id="star", x=50.0, y=50.0, button="keyboard"
         )
         assert e.button == "keyboard"
 
     def test_drag(self) -> None:
-        e = CanvasShapeDrag(
+        e = CanvasElementDrag(
             id="canvas",
-            shape_id="handle",
+            element_id="handle",
             x=100.0,
             y=200.0,
             delta_x=5.0,
@@ -340,12 +346,66 @@ class TestCanvasShapeEvents:
         assert e.delta_y == -3.0
 
     def test_drag_end(self) -> None:
-        e = CanvasShapeDragEnd(id="canvas", shape_id="handle", x=105.0, y=197.0)
+        e = CanvasElementDragEnd(id="canvas", element_id="handle", x=105.0, y=197.0)
         assert e.x == 105.0
 
     def test_focused(self) -> None:
-        e = CanvasShapeFocused(id="canvas", shape_id="bar-1")
+        e = CanvasElementFocused(id="canvas", element_id="bar-1")
         assert e.captured is False
+
+    def test_blurred(self) -> None:
+        e = CanvasElementBlurred(id="canvas", element_id="bar-1")
+        assert e.captured is False
+
+
+# ---------------------------------------------------------------------------
+# Canvas lifecycle events
+# ---------------------------------------------------------------------------
+
+
+class TestCanvasLifecycleEvents:
+    def test_canvas_focused(self) -> None:
+        e = CanvasFocused(id="canvas")
+        assert e.id == "canvas"
+        assert e.scope == ()
+
+    def test_canvas_blurred(self) -> None:
+        e = CanvasBlurred(id="canvas", scope=("panel",))
+        assert e.scope == ("panel",)
+
+
+# ---------------------------------------------------------------------------
+# Canvas group events
+# ---------------------------------------------------------------------------
+
+
+class TestCanvasGroupEvents:
+    def test_group_focused(self) -> None:
+        e = CanvasGroupFocused(id="canvas", group_id="toolbar")
+        assert e.group_id == "toolbar"
+
+    def test_group_blurred(self) -> None:
+        e = CanvasGroupBlurred(id="canvas", group_id="toolbar")
+        assert e.group_id == "toolbar"
+
+
+# ---------------------------------------------------------------------------
+# Diagnostic event
+# ---------------------------------------------------------------------------
+
+
+class TestDiagnosticEvent:
+    def test_construction(self) -> None:
+        e = Diagnostic(
+            level="warning",
+            element_id="star-0",
+            code="MISSING_A11Y",
+            message="Interactive element has no a11y label",
+        )
+        assert e.level == "warning"
+        assert e.element_id == "star-0"
+        assert e.code == "MISSING_A11Y"
+        assert e.message == "Interactive element has no a11y label"
 
 
 # ---------------------------------------------------------------------------

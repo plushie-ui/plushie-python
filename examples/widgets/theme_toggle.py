@@ -10,7 +10,7 @@ Usage::
 
     ThemeToggle.render("my-toggle", model.toggle_progress)
 
-Events: ``CanvasShapeClick`` with shape_id ``"switch"``.
+Events: ``CanvasElementClick`` with element_id ``"switch"``.
 Drive ``progress`` from 0.0 (light) to 1.0 (dark) with a timer.
 """
 
@@ -42,21 +42,20 @@ def render(id: str, progress: float) -> dict[str, Any]:
             # Thumb circle
             c.circle(thumb_x, TRACK_H / 2, THUMB_R, fill="#ffffff"),
             # Face drawn with transforms (rotates during transition)
-            c.push_transform(),
-            c.translate(thumb_x, TRACK_H / 2),
-            c.rotate(rotation),
-            # Left eye
-            c.circle(-3.5, -3, 2, fill=face_color),
-            # Right eye
-            c.circle(3.5, -3, 2, fill=face_color),
-            # Mouth (smile drawn as a path)
-            c.path(
-                _smile_path(),
-                stroke=c.stroke(face_color, 2),
+            c.group(
+                # Left eye
+                c.circle(-3.5, -3, 2, fill=face_color),
+                # Right eye
+                c.circle(3.5, -3, 2, fill=face_color),
+                # Mouth (smile drawn as a path)
+                c.path(
+                    _smile_path(),
+                    stroke=c.stroke(face_color, 2),
+                ),
+                transforms=[c.translate(thumb_x, TRACK_H / 2), c.rotate(rotation)],
             ),
-            c.pop_transform(),
         ),
-        id="switch",
+        "switch",
         on_click=True,
         cursor="pointer",
         hit_rect={"x": 0, "y": 0, "w": TRACK_W, "h": TRACK_H},

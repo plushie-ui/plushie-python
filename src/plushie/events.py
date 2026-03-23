@@ -507,20 +507,20 @@ class CanvasScroll:
 
 
 @dataclass(frozen=True, slots=True)
-class CanvasShapeEnter:
-    """Mouse entered an interactive canvas shape's bounds.
+class CanvasElementEnter:
+    """Mouse entered an interactive canvas element's bounds.
 
-    Wire family: ``canvas_shape_enter``.
+    Wire family: ``canvas_element_enter``.
 
     Attributes:
-        shape_id: The interactive shape's identifier within the canvas.
+        element_id: The interactive element's identifier within the canvas.
         x: Horizontal cursor position.
         y: Vertical cursor position.
         captured: Whether a subscription already consumed this event.
     """
 
     id: str
-    shape_id: str
+    element_id: str
     x: float
     y: float
     captured: bool = False
@@ -528,30 +528,30 @@ class CanvasShapeEnter:
 
 
 @dataclass(frozen=True, slots=True)
-class CanvasShapeLeave:
-    """Mouse left an interactive canvas shape's bounds.
+class CanvasElementLeave:
+    """Mouse left an interactive canvas element's bounds.
 
-    Wire family: ``canvas_shape_leave``.
+    Wire family: ``canvas_element_leave``.
 
     Attributes:
-        shape_id: The interactive shape's identifier within the canvas.
+        element_id: The interactive element's identifier within the canvas.
         captured: Whether a subscription already consumed this event.
     """
 
     id: str
-    shape_id: str
+    element_id: str
     captured: bool = False
     scope: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
-class CanvasShapeClick:
-    """An interactive canvas shape was clicked.
+class CanvasElementClick:
+    """An interactive canvas element was clicked.
 
-    Wire family: ``canvas_shape_click``.
+    Wire family: ``canvas_element_click``.
 
     Attributes:
-        shape_id: The interactive shape's identifier within the canvas.
+        element_id: The interactive element's identifier within the canvas.
         x: Horizontal click position.
         y: Vertical click position.
         button: The mouse button name, or ``"keyboard"`` when activated
@@ -560,7 +560,7 @@ class CanvasShapeClick:
     """
 
     id: str
-    shape_id: str
+    element_id: str
     x: float
     y: float
     button: str
@@ -569,13 +569,13 @@ class CanvasShapeClick:
 
 
 @dataclass(frozen=True, slots=True)
-class CanvasShapeDrag:
-    """An interactive canvas shape is being dragged.
+class CanvasElementDrag:
+    """An interactive canvas element is being dragged.
 
-    Wire family: ``canvas_shape_drag``.
+    Wire family: ``canvas_element_drag``.
 
     Attributes:
-        shape_id: The interactive shape's identifier within the canvas.
+        element_id: The interactive element's identifier within the canvas.
         x: Current horizontal drag position.
         y: Current vertical drag position.
         delta_x: Horizontal movement since last drag event.
@@ -584,7 +584,7 @@ class CanvasShapeDrag:
     """
 
     id: str
-    shape_id: str
+    element_id: str
     x: float
     y: float
     delta_x: float
@@ -594,20 +594,20 @@ class CanvasShapeDrag:
 
 
 @dataclass(frozen=True, slots=True)
-class CanvasShapeDragEnd:
-    """Drag ended on an interactive canvas shape.
+class CanvasElementDragEnd:
+    """Drag ended on an interactive canvas element.
 
-    Wire family: ``canvas_shape_drag_end``.
+    Wire family: ``canvas_element_drag_end``.
 
     Attributes:
-        shape_id: The interactive shape's identifier within the canvas.
+        element_id: The interactive element's identifier within the canvas.
         x: Final horizontal position.
         y: Final vertical position.
         captured: Whether a subscription already consumed this event.
     """
 
     id: str
-    shape_id: str
+    element_id: str
     x: float
     y: float
     captured: bool = False
@@ -615,20 +615,108 @@ class CanvasShapeDragEnd:
 
 
 @dataclass(frozen=True, slots=True)
-class CanvasShapeFocused:
-    """An interactive canvas shape received keyboard focus.
+class CanvasElementFocused:
+    """An interactive canvas element received keyboard focus.
 
-    Wire family: ``canvas_shape_focused``.
+    Wire family: ``canvas_element_focused``.
 
     Attributes:
-        shape_id: The interactive shape's identifier within the canvas.
+        element_id: The interactive element's identifier within the canvas.
         captured: Whether a subscription already consumed this event.
     """
 
     id: str
-    shape_id: str
+    element_id: str
     captured: bool = False
     scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CanvasElementBlurred:
+    """An interactive canvas element lost keyboard focus.
+
+    Wire family: ``canvas_element_blurred``.
+
+    Attributes:
+        element_id: The interactive element's identifier within the canvas.
+        captured: Whether a subscription already consumed this event.
+    """
+
+    id: str
+    element_id: str
+    captured: bool = False
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CanvasFocused:
+    """The canvas widget gained iced focus (no coordinates).
+
+    Wire family: ``canvas_focused``.
+    """
+
+    id: str
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CanvasBlurred:
+    """The canvas widget lost iced focus (no coordinates).
+
+    Wire family: ``canvas_blurred``.
+    """
+
+    id: str
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CanvasGroupFocused:
+    """A focusable group within the canvas was entered.
+
+    Wire family: ``canvas_group_focused``.
+
+    Attributes:
+        group_id: The focusable group's identifier within the canvas.
+    """
+
+    id: str
+    group_id: str
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CanvasGroupBlurred:
+    """A focusable group within the canvas was exited.
+
+    Wire family: ``canvas_group_blurred``.
+
+    Attributes:
+        group_id: The focusable group's identifier within the canvas.
+    """
+
+    id: str
+    group_id: str
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class Diagnostic:
+    """Validation warning from the renderer.
+
+    Wire family: ``diagnostic``.
+
+    Attributes:
+        level: Severity level (e.g. ``"warning"``).
+        element_id: The element that triggered the diagnostic.
+        code: Machine-readable diagnostic code.
+        message: Human-readable diagnostic message.
+    """
+
+    level: str
+    element_id: str
+    code: str
+    message: str
 
 
 # ---------------------------------------------------------------------------
@@ -1510,12 +1598,17 @@ def target(
     | CanvasRelease
     | CanvasMove
     | CanvasScroll
-    | CanvasShapeEnter
-    | CanvasShapeLeave
-    | CanvasShapeClick
-    | CanvasShapeDrag
-    | CanvasShapeDragEnd
-    | CanvasShapeFocused
+    | CanvasElementEnter
+    | CanvasElementLeave
+    | CanvasElementClick
+    | CanvasElementDrag
+    | CanvasElementDragEnd
+    | CanvasElementFocused
+    | CanvasElementBlurred
+    | CanvasFocused
+    | CanvasBlurred
+    | CanvasGroupFocused
+    | CanvasGroupBlurred
     | SensorResize
     | PaneResized
     | PaneDragged
@@ -1585,15 +1678,22 @@ type MouseAreaEvent = (
 type CanvasEvent = CanvasPress | CanvasRelease | CanvasMove | CanvasScroll
 """Union of all raw canvas events."""
 
-type CanvasShapeEvent = (
-    CanvasShapeEnter
-    | CanvasShapeLeave
-    | CanvasShapeClick
-    | CanvasShapeDrag
-    | CanvasShapeDragEnd
-    | CanvasShapeFocused
+type CanvasElementEvent = (
+    CanvasElementEnter
+    | CanvasElementLeave
+    | CanvasElementClick
+    | CanvasElementDrag
+    | CanvasElementDragEnd
+    | CanvasElementFocused
+    | CanvasElementBlurred
 )
-"""Union of all interactive canvas shape events."""
+"""Union of all interactive canvas element events."""
+
+type CanvasLifecycleEvent = CanvasFocused | CanvasBlurred
+"""Union of canvas focus lifecycle events (no coordinates)."""
+
+type CanvasGroupEvent = CanvasGroupFocused | CanvasGroupBlurred
+"""Union of canvas group focus events."""
 
 type PaneEvent = PaneResized | PaneDragged | PaneClicked | PaneFocusCycle
 """Union of all pane_grid events."""
@@ -1651,7 +1751,10 @@ type Event = (
     ScopedWidgetEvent
     | MouseAreaEvent
     | CanvasEvent
-    | CanvasShapeEvent
+    | CanvasElementEvent
+    | CanvasLifecycleEvent
+    | CanvasGroupEvent
+    | Diagnostic
     | SensorResize
     | PaneEvent
     | KeyEvent
@@ -1680,24 +1783,35 @@ __all__ = [
     "Announce",
     # Runtime events
     "AsyncResult",
+    # Canvas lifecycle events
+    "CanvasBlurred",
+    # Canvas element events
+    "CanvasElementBlurred",
+    "CanvasElementClick",
+    "CanvasElementDrag",
+    "CanvasElementDragEnd",
+    "CanvasElementEnter",
+    "CanvasElementEvent",
+    "CanvasElementFocused",
+    "CanvasElementLeave",
     # Union types
     "CanvasEvent",
+    "CanvasFocused",
+    # Canvas group events
+    "CanvasGroupBlurred",
+    "CanvasGroupEvent",
+    "CanvasGroupFocused",
+    "CanvasLifecycleEvent",
     # Canvas events
     "CanvasMove",
     "CanvasPress",
     "CanvasRelease",
     "CanvasScroll",
-    # Canvas shape events
-    "CanvasShapeClick",
-    "CanvasShapeDrag",
-    "CanvasShapeDragEnd",
-    "CanvasShapeEnter",
-    "CanvasShapeEvent",
-    "CanvasShapeFocused",
-    "CanvasShapeLeave",
     # Widget events
     "Click",
     "Close",
+    # Diagnostic
+    "Diagnostic",
     "DuplicateNodeIds",
     # Effect
     "EffectResult",

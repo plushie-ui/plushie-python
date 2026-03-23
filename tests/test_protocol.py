@@ -6,18 +6,24 @@ from plushie.events import (
     AllWindowsClosed,
     AnimationFrame,
     Announce,
+    CanvasBlurred,
+    CanvasElementBlurred,
+    CanvasElementClick,
+    CanvasElementDrag,
+    CanvasElementDragEnd,
+    CanvasElementEnter,
+    CanvasElementFocused,
+    CanvasElementLeave,
+    CanvasFocused,
+    CanvasGroupBlurred,
+    CanvasGroupFocused,
     CanvasMove,
     CanvasPress,
     CanvasRelease,
     CanvasScroll,
-    CanvasShapeClick,
-    CanvasShapeDrag,
-    CanvasShapeDragEnd,
-    CanvasShapeEnter,
-    CanvasShapeFocused,
-    CanvasShapeLeave,
     Click,
     Close,
+    Diagnostic,
     DuplicateNodeIds,
     EffectResult,
     FileDropped,
@@ -694,45 +700,45 @@ class TestDecodeCanvasEvents:
         assert result.delta_y == -5
 
 
-class TestDecodeCanvasShapeEvents:
-    def test_shape_enter(self) -> None:
+class TestDecodeCanvasElementEvents:
+    def test_element_enter(self) -> None:
         raw = {
             "type": "event",
-            "family": "canvas_shape_enter",
+            "family": "canvas_element_enter",
             "id": "canvas1",
-            "data": {"shape_id": "bar1", "x": 10, "y": 20},
+            "data": {"element_id": "bar1", "x": 10, "y": 20},
         }
         result = decode_message(raw)
-        assert isinstance(result, CanvasShapeEnter)
-        assert result.shape_id == "bar1"
+        assert isinstance(result, CanvasElementEnter)
+        assert result.element_id == "bar1"
 
-    def test_shape_leave(self) -> None:
+    def test_element_leave(self) -> None:
         raw = {
             "type": "event",
-            "family": "canvas_shape_leave",
+            "family": "canvas_element_leave",
             "id": "canvas1",
-            "data": {"shape_id": "bar1"},
+            "data": {"element_id": "bar1"},
         }
-        assert isinstance(decode_message(raw), CanvasShapeLeave)
+        assert isinstance(decode_message(raw), CanvasElementLeave)
 
-    def test_shape_click(self) -> None:
+    def test_element_click(self) -> None:
         raw = {
             "type": "event",
-            "family": "canvas_shape_click",
+            "family": "canvas_element_click",
             "id": "canvas1",
-            "data": {"shape_id": "bar1", "x": 15, "y": 25, "button": "keyboard"},
+            "data": {"element_id": "bar1", "x": 15, "y": 25, "button": "keyboard"},
         }
         result = decode_message(raw)
-        assert isinstance(result, CanvasShapeClick)
+        assert isinstance(result, CanvasElementClick)
         assert result.button == "keyboard"
 
-    def test_shape_drag(self) -> None:
+    def test_element_drag(self) -> None:
         raw = {
             "type": "event",
-            "family": "canvas_shape_drag",
+            "family": "canvas_element_drag",
             "id": "canvas1",
             "data": {
-                "shape_id": "node1",
+                "element_id": "node1",
                 "x": 100,
                 "y": 200,
                 "delta_x": 5,
@@ -740,26 +746,95 @@ class TestDecodeCanvasShapeEvents:
             },
         }
         result = decode_message(raw)
-        assert isinstance(result, CanvasShapeDrag)
+        assert isinstance(result, CanvasElementDrag)
         assert result.delta_x == 5
 
-    def test_shape_drag_end(self) -> None:
+    def test_element_drag_end(self) -> None:
         raw = {
             "type": "event",
-            "family": "canvas_shape_drag_end",
+            "family": "canvas_element_drag_end",
             "id": "canvas1",
-            "data": {"shape_id": "node1", "x": 105, "y": 197},
+            "data": {"element_id": "node1", "x": 105, "y": 197},
         }
-        assert isinstance(decode_message(raw), CanvasShapeDragEnd)
+        assert isinstance(decode_message(raw), CanvasElementDragEnd)
 
-    def test_shape_focused(self) -> None:
+    def test_element_focused(self) -> None:
         raw = {
             "type": "event",
-            "family": "canvas_shape_focused",
+            "family": "canvas_element_focused",
             "id": "canvas1",
-            "data": {"shape_id": "bar1"},
+            "data": {"element_id": "bar1"},
         }
-        assert isinstance(decode_message(raw), CanvasShapeFocused)
+        assert isinstance(decode_message(raw), CanvasElementFocused)
+
+    def test_element_blurred(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "canvas_element_blurred",
+            "id": "canvas1",
+            "data": {"element_id": "bar1"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, CanvasElementBlurred)
+        assert result.element_id == "bar1"
+
+
+class TestDecodeCanvasLifecycleEvents:
+    def test_canvas_focused(self) -> None:
+        raw = {"type": "event", "family": "canvas_focused", "id": "canvas1"}
+        result = decode_message(raw)
+        assert isinstance(result, CanvasFocused)
+        assert result.id == "canvas1"
+
+    def test_canvas_blurred(self) -> None:
+        raw = {"type": "event", "family": "canvas_blurred", "id": "canvas1"}
+        result = decode_message(raw)
+        assert isinstance(result, CanvasBlurred)
+        assert result.id == "canvas1"
+
+
+class TestDecodeCanvasGroupEvents:
+    def test_group_focused(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "canvas_group_focused",
+            "id": "canvas1",
+            "data": {"group_id": "toolbar"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, CanvasGroupFocused)
+        assert result.group_id == "toolbar"
+
+    def test_group_blurred(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "canvas_group_blurred",
+            "id": "canvas1",
+            "data": {"group_id": "toolbar"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, CanvasGroupBlurred)
+        assert result.group_id == "toolbar"
+
+
+class TestDecodeDiagnostic:
+    def test_diagnostic(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "diagnostic",
+            "id": "",
+            "data": {
+                "level": "warning",
+                "element_id": "star-0",
+                "code": "MISSING_A11Y",
+                "message": "Interactive element has no a11y label",
+            },
+        }
+        result = decode_message(raw)
+        assert isinstance(result, Diagnostic)
+        assert result.level == "warning"
+        assert result.element_id == "star-0"
+        assert result.code == "MISSING_A11Y"
 
 
 class TestDecodeSensorEvents:

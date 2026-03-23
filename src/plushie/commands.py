@@ -252,6 +252,18 @@ class Command:
         return Command(type="widget_op", payload={"op": "clear_images"})
 
     @staticmethod
+    def focus_element(canvas_id: str, element_id: str) -> Command:
+        """Move keyboard focus to a canvas element identified by *element_id*."""
+        return Command(
+            type="widget_op",
+            payload={
+                "op": "focus_element",
+                "target": canvas_id,
+                "element_id": element_id,
+            },
+        )
+
+    @staticmethod
     def pane_split(
         pane_grid_id: str,
         pane_id: Any,

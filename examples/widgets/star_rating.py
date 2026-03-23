@@ -18,9 +18,9 @@ Usage::
 
 Events:
 
-- ``CanvasShapeClick`` with shape_id ``"star-0"`` through ``"star-4"``
-- ``CanvasShapeEnter``/``CanvasShapeLeave`` for hover
-- ``CanvasShapeFocused`` with shape_id for keyboard focus
+- ``CanvasElementClick`` with element_id ``"star-0"`` through ``"star-4"``
+- ``CanvasElementEnter``/``CanvasElementLeave`` for hover
+- ``CanvasElementFocused`` with element_id for keyboard focus
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ def render(
 
             interactive_star = c.interactive(
                 c.group(*group_children, x=cx, y=cy),
-                id=f"star-{i}",
+                f"star-{i}",
                 on_click=True,
                 on_hover=True,
                 cursor="pointer",

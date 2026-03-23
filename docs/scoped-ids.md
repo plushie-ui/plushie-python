@@ -88,7 +88,7 @@ target(event)
 
 - `Click`, `Input`, `Submit`, `Toggle`, `Select`, `Slide`, `SlideRelease`
 - `Scroll`, `Paste`, `Sort`, `Open`, `Close`
-- `CanvasShapeClick`, `CanvasShapeHover`, `CanvasShapePress`, `CanvasShapeRelease`
+- `CanvasElementClick`, `CanvasElementEnter`, `CanvasElementClick`, `CanvasElementDragEnd`
 - `MouseAreaPress`, `MouseAreaRelease`, `MouseAreaMove`, `MouseAreaEnter`, `MouseAreaExit`
 - `PaneResize`, `PaneDrag`
 - `SensorResize`
@@ -220,7 +220,7 @@ All scoped event dataclasses include scope in their `repr` output:
 ```
 Click(id='save', scope=('form', 'sidebar'))
 Input(id='email', value='test@example.com', scope=('form',))
-CanvasShapeClick(id='panel', shape_id='drawing', x=42, y=100, scope=())
+CanvasElementClick(id='panel', element_id='drawing', x=42, y=100, scope=())
 SensorResize(id='measure', width=800.0, height=600.0, scope=('content',))
 ```
 

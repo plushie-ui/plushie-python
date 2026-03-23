@@ -334,7 +334,11 @@ def _resolve_bundled() -> str | None:
     Returns:
         Absolute path to the binary if found, ``None`` otherwise.
     """
-    binary_name = "plushie.exe" if sys.platform in ("win32", "cygwin") else "plushie"
+    binary_name = (
+        "plushie-renderer.exe"
+        if sys.platform in ("win32", "cygwin")
+        else "plushie-renderer"
+    )
 
     # PyInstaller: frozen apps unpack data to sys._MEIPASS
     meipass = getattr(sys, "_MEIPASS", None)

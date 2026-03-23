@@ -816,7 +816,7 @@ feedback and focus ring locally. The host only sees click events.
 #### Code
 
 ```python
-from plushie.events import CanvasShapeClick
+from plushie.events import CanvasElementClick
 
 @dataclass(frozen=True, slots=True)
 class ToggleModel:
@@ -828,7 +828,7 @@ class ToggleApp(plushie.App[ToggleModel]):
 
     def update(self, model, event):
         match event:
-            case CanvasShapeClick(id="toggle", shape_id="switch"):
+            case CanvasElementClick(id="toggle", element_id="switch"):
                 return replace(model, dark_mode=not model.dark_mode)
             case _:
                 return model
@@ -843,12 +843,10 @@ class ToggleApp(plushie.App[ToggleModel]):
                     "switch": [
                         {
                             "type": "group",
-                            "interactive": {
-                                "id": "switch",
-                                "on_click": True,
-                                "cursor": "pointer",
-                                "a11y": {"role": "switch", "label": "Dark mode", "toggled": on},
-                            },
+                            "id": "switch",
+                            "on_click": True,
+                            "cursor": "pointer",
+                            "a11y": {"role": "switch", "label": "Dark mode", "toggled": on},
                             "children": [
                                 {"type": "rect", "x": 0, "y": 0, "w": 52, "h": 28,
                                  "fill": "#4CAF50" if on else "#ccc", "radius": 14},
@@ -866,9 +864,9 @@ class ToggleApp(plushie.App[ToggleModel]):
 
 The canvas accepts a `layers` dict mapping layer names to lists of shapes.
 Each layer contains shapes -- here a single group with a rounded rect
-background and a circle knob. The `interactive` dict inside the
-group enables click events, sets the pointer cursor, and provides a11y
-metadata. On click, the host toggles `dark_mode` and the view
+background and a circle knob. The `id`, `on_click`, `cursor`, and `a11y`
+fields on the group enable click events, set the pointer cursor, and
+provide a11y metadata. On click, the host toggles `dark_mode` and the view
 re-renders with new positions and colours.
 
 Screen reader: "Dark mode, switch, on." Keyboard: Tab focuses the
@@ -882,7 +880,7 @@ has a tooltip, and announces its position in the set.
 #### Code
 
 ```python
-from plushie.events import CanvasShapeClick
+from plushie.events import CanvasElementClick
 
 @dataclass(frozen=True, slots=True)
 class ChartModel:
@@ -901,8 +899,8 @@ class ChartApp(plushie.App[ChartModel]):
 
     def update(self, model, event):
         match event:
-            case CanvasShapeClick(id="chart", shape_id=shape_id):
-                return replace(model, selected=shape_id)
+            case CanvasElementClick(id="chart", element_id=element_id):
+                return replace(model, selected=element_id)
             case _:
                 return model
 
@@ -919,19 +917,17 @@ class ChartApp(plushie.App[ChartModel]):
 
             bars.append({
                 "type": "group",
-                "x": bar_x, "y": bar_y,
-                "interactive": {
-                    "id": f"bar-{i}",
-                    "on_click": True,
-                    "on_hover": True,
-                    "cursor": "pointer",
-                    "tooltip": f"{bar['month']}: {bar['value']} units",
-                    "a11y": {
-                        "role": "button",
-                        "label": f"{bar['month']}: {bar['value']} units",
-                        "position_in_set": i + 1,
-                        "size_of_set": count,
-                    },
+                "transforms": [{"type": "translate", "x": bar_x, "y": bar_y}],
+                "id": f"bar-{i}",
+                "on_click": True,
+                "on_hover": True,
+                "cursor": "pointer",
+                "tooltip": f"{bar['month']}: {bar['value']} units",
+                "a11y": {
+                    "role": "button",
+                    "label": f"{bar['month']}: {bar['value']} units",
+                    "position_in_set": i + 1,
+                    "size_of_set": count,
                 },
                 "children": [
                     {"type": "rect", "x": 0, "y": 0, "w": bar_w, "h": bar_h,
