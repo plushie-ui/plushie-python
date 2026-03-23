@@ -5,6 +5,15 @@ render arbitrary Rust-native widgets (iced widgets, custom
 `iced::advanced::Widget` implementations, third-party crates) while keeping
 your app's state and logic in Python.
 
+For complete working examples with Rust extensions, see the
+[plushie-demos](https://github.com/plushie-ui/plushie-demos/tree/main/python)
+repository:
+
+- [gauge-demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/gauge-demo)
+  -- native gauge widget with extension commands (`set_value`, `animate_to`)
+- [sparkline-dashboard](https://github.com/plushie-ui/plushie-demos/tree/main/python/sparkline-dashboard)
+  -- render-only canvas sparkline with timer-driven live data
+
 ## Quick start
 
 An extension has two halves:

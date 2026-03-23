@@ -63,7 +63,10 @@ python -m plushie run counter:Counter
 
 This is one of [9 examples](examples/) included in the repo, from a
 minimal counter to a full widget catalog. Edit them while the GUI is
-running and see changes instantly.
+running and see changes instantly. For complete project demos,
+including native Rust extensions, see the
+[plushie-demos](https://github.com/plushie-ui/plushie-demos/tree/main/python)
+repository.
 
 ## Getting started
 
@@ -249,6 +252,7 @@ platform-specific libraries:
 | Python SDK | [github.com/plushie-ui/plushie-python](https://github.com/plushie-ui/plushie-python) |
 | Elixir SDK | [github.com/plushie-ui/plushie-elixir](https://github.com/plushie-ui/plushie-elixir) |
 | Renderer | [github.com/plushie-ui/plushie](https://github.com/plushie-ui/plushie) |
+| Demo projects | [github.com/plushie-ui/plushie-demos](https://github.com/plushie-ui/plushie-demos) |
 
 ## License
 
