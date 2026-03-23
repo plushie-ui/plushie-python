@@ -870,6 +870,99 @@ re-renders with new positions and colours.
 Screen reader: "Dark mode, switch, on." Keyboard: Tab focuses the
 canvas, Enter/Space toggles.
 
+### Canvas-only: chart with clickable data points
+
+Multiple interactive groups inside a canvas. Each bar is focusable,
+has a tooltip, and announces its position in the set.
+
+#### Code
+
+```python
+from plushie.events import CanvasShapeClick
+
+@dataclass(frozen=True, slots=True)
+class ChartModel:
+    selected: str | None = None
+
+DATA = [
+    {"month": "Jan", "value": 120, "color": "#3498db"},
+    {"month": "Feb", "value": 85, "color": "#2ecc71"},
+    {"month": "Mar", "value": 200, "color": "#e74c3c"},
+    {"month": "Apr", "value": 150, "color": "#f39c12"},
+]
+
+class ChartApp(plushie.App[ChartModel]):
+    def init(self):
+        return ChartModel()
+
+    def update(self, model, event):
+        match event:
+            case CanvasShapeClick(id="chart", shape_id=shape_id):
+                return replace(model, selected=shape_id)
+            case _:
+                return model
+
+    def view(self, model):
+        bar_w = 60
+        chart_h = 220
+        count = len(DATA)
+
+        bars = []
+        for i, bar in enumerate(DATA):
+            bar_h = bar["value"]
+            bar_x = i * (bar_w + 20)
+            bar_y = chart_h - bar_h
+
+            bars.append({
+                "type": "group",
+                "x": bar_x, "y": bar_y,
+                "interactive": {
+                    "id": f"bar-{i}",
+                    "on_click": True,
+                    "on_hover": True,
+                    "cursor": "pointer",
+                    "tooltip": f"{bar['month']}: {bar['value']} units",
+                    "a11y": {
+                        "role": "button",
+                        "label": f"{bar['month']}: {bar['value']} units",
+                        "position_in_set": i + 1,
+                        "size_of_set": count,
+                    },
+                },
+                "children": [
+                    {"type": "rect", "x": 0, "y": 0, "w": bar_w, "h": bar_h,
+                     "fill": bar["color"]},
+                    {"type": "text", "x": bar_w // 2, "y": -12,
+                     "content": str(bar["value"]), "fill": "#666",
+                     "align_x": "center"},
+                ],
+            })
+
+        return ui.window("main", title="Chart Demo",
+            ui.column(
+                ui.canvas("chart",
+                    width=count * (bar_w + 20), height=chart_h,
+                    event_rate=30,
+                    layers={"bars": bars},
+                ),
+                *(
+                    [ui.text("selection", f"Selected: {model.selected}")]
+                    if model.selected else []
+                ),
+                padding=24, spacing=16,
+            ),
+        )
+```
+
+#### How it works
+
+Each bar is a `group` containing a rect and a label. The `interactive`
+field enables click and hover events, sets a pointer cursor, and
+provides a tooltip. The `position_in_set` and `size_of_set` fields
+let screen readers announce "Jan: 120 units, button, 1 of 4." Arrow
+keys navigate between bars. `event_rate=30` throttles hover events
+to 30fps.
+
 ### Canvas + built-in: custom styled text input
 
 Stack a canvas behind a `text_input` to draw a custom background. The

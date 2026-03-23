@@ -312,7 +312,7 @@ def subscribe(self, model):
 
 def update(self, model, event):
     match event:
-        case ThemeChanged(mode=mode):
+        case ThemeChanged(theme=mode):
             # mode is "light" or "dark"
             return replace(model, preferred_theme=mode)
 ```

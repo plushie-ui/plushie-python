@@ -238,7 +238,7 @@ if __name__ == "__main__":
 ## Next steps
 
 - [Tutorial: building a todo app](tutorial.md) -- step-by-step guide
-- Browse the [examples](examples/) for patterns
+- Browse the [examples](https://github.com/plushie-ui/plushie-python/tree/main/examples) for patterns
 - [App](app.md) -- full callback API
 - [Layout](layout.md) -- sizing and positioning widgets
 - [Commands](commands.md) -- async work, file dialogs, effects

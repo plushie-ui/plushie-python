@@ -447,12 +447,106 @@ See the [Unit testing](#json-tree-snapshots) section above.
   every backend. Use liberally.
 
 - **`assert_screenshot`** -- after bumping iced, changing the renderer,
-  modifying themes, or any change that affects visual output. Only meaningful
-  on headless and windowed backends. Include alongside `assert_tree_hash` for
-  critical views.
+  modifying themes, or any change that affects visual output. Produces
+  meaningful assertions on the headless and windowed backends (no-op on
+  mock). Include alongside `assert_tree_hash` for critical views.
 
 - **JSON tree snapshots** -- for unit tests of `view()` output. No framework
   overhead. Good for documenting what a view produces for a given model state.
+
+
+## Script-based testing
+
+`.plushie` scripts provide a declarative format for describing interaction
+sequences. The format is a superset of iced's `.ice` test scripts -- the
+core instructions (`click`, `type`, `expect`, `snapshot`) use the same
+syntax. Plushie adds `assert_text`, `assert_model`, `screenshot`, `wait`, and
+a header section for app configuration.
+
+### The `.plushie` format
+
+A `.plushie` file has a header and an instruction section separated by
+`-----`:
+
+```
+app: my_app:MyApp.Counter
+viewport: 800x600
+theme: dark
+backend: mock
+-----
+click "#increment"
+click "#increment"
+expect "Count: 2"
+tree_hash "counter-at-2"
+screenshot "counter-pixels"
+assert_text "#count" "2"
+wait 500
+```
+
+#### Header fields
+
+| Field | Required | Default | Description |
+|---|---|---|---|
+| `app` | Yes | -- | Module path implementing `plushie.App` |
+| `viewport` | No | `800x600` | Viewport size as `WxH` |
+| `theme` | No | `dark` | Theme name |
+| `backend` | No | `mock` | Backend: `mock`, `headless`, or `windowed` |
+
+Lines starting with `#` are comments (in both header and body sections).
+
+#### Instructions
+
+| Instruction | Syntax | Mock support | Description |
+|---|---|---|---|
+| `click` | `click "selector"` | Yes | Click a widget |
+| `type` | `type "selector" "text"` | Yes | Type text into a widget |
+| `type` (key) | `type enter` | Yes | Send a special key (press + release). Supports modifiers: `type ctrl+s` |
+| `expect` | `expect "text"` | Yes | Assert text appears somewhere in the tree |
+| `tree_hash` | `tree_hash "name"` | Yes | Capture and assert a structural tree hash |
+| `screenshot` | `screenshot "name"` | No-op on mock | Capture and assert a pixel screenshot |
+| `assert_text` | `assert_text "selector" "text"` | Yes | Assert widget has specific text |
+| `assert_model` | `assert_model "expression"` | Yes | Assert expression appears in inspected model (substring match) |
+| `press` | `press key` | Yes | Press a key down. Supports modifiers: `press ctrl+s` |
+| `release` | `release key` | Yes | Release a key. Supports modifiers: `release ctrl+s` |
+| `move` | `move "selector"` | No-op | Move mouse to a widget (requires widget bounds) |
+| `move` (coords) | `move "x,y"` | Yes | Move mouse to pixel coordinates |
+| `wait` | `wait 500` | Ignored (except replay) | Pause N milliseconds |
+
+### Running scripts
+
+```bash
+python -m plushie script
+
+# Run specific scripts
+python -m plushie script tests/scripts/counter.plushie tests/scripts/todo.plushie
+```
+
+### Replaying scripts
+
+```bash
+python -m plushie replay tests/scripts/counter.plushie
+```
+
+Replay mode forces the `windowed` backend and respects `wait` timings, so you
+see interactions happen in real time with real windows. Useful for debugging
+visual issues, demos, and onboarding.
+
+
+## Wire format in test backends
+
+The headless and windowed backends communicate with the renderer using the same
+wire protocol as the production connection. By default, both use MessagePack
+(4-byte length-prefix framing). JSON is available for debugging:
+
+```python
+# Pass format when creating a connection manually
+from plushie.connection import Connection
+
+conn = Connection(MyApp, format="json")
+```
+
+The mock backend does not use a wire protocol (pure Python, no renderer
+process), so the format option has no effect on it.
 
 
 ## Testing async workflows
@@ -734,12 +828,16 @@ with the extension compiled in.
 
 ## Known limitations
 
+- Script instruction `move` (move cursor to a widget by selector) is a
+  no-op. It requires widget bounds from layout, which only the renderer knows.
 - `move_to` on the mock backend dispatches cursor events but has no spatial
   layout info. Mouse area enter/exit events will not fire.
 - Pixel screenshots are only available on the headless and windowed backends
   (mock returns stubs).
 - Headless screenshots use software rendering (tiny-skia) and may not match
   GPU output pixel-for-pixel.
+- Script `assert_model` uses substring matching against the inspected model.
+  Use specific substrings or use pytest assertions for precise model checks.
 - The `CommandProcessor` executes task/stream/batch commands synchronously
   in all test backends. Timing and concurrency bugs will not surface in mock
   tests. Use headless or windowed backends for concurrency-sensitive tests.

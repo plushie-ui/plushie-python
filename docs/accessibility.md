@@ -448,6 +448,51 @@ ui.canvas("drawing",
     a11y={"role": "image", "label": f"Drawing canvas, {len(shapes)} shapes"})
 ```
 
+### Interactive canvas shapes
+
+When a canvas contains shapes with the `interactive` field, each
+shape becomes a separate accessible node. The canvas widget itself
+is the container; individual shapes are focusable children. Tab and
+Arrow keys navigate between shapes. Enter/Space activates the focused
+shape.
+
+This is how you build accessible custom widgets from canvas
+primitives. Without interactive shapes, a canvas is a single opaque
+"image" node to screen readers.
+
+```python
+ui.canvas("color-picker", width=200, height=100,
+    layers={"options": [
+        {
+            "type": "group",
+            "x": 0, "y": i * 32,
+            "interactive": {
+                "id": f"color-{i}",
+                "on_click": True,
+                "a11y": {
+                    "role": "radio",
+                    "label": color.name,
+                    "selected": color == model.selected,
+                    "position_in_set": i + 1,
+                    "size_of_set": len(colors),
+                },
+            },
+            "children": [
+                {"type": "rect", "x": 0, "y": 0, "w": 200, "h": 32,
+                 "fill": color.hex},
+            ],
+        }
+        for i, color in enumerate(colors)
+    ]},
+)
+```
+
+Screen reader: "Red, radio button, 1 of 5, selected."
+
+The `position_in_set` and `size_of_set` fields tell screen readers
+where each shape sits in the group. Without them, the reader
+announces each shape individually with no positional context.
+
 ### Custom widgets with state
 
 When building custom widgets with canvas or other primitives, use `toggled`,
@@ -769,3 +814,46 @@ python -m plushie run my_app:MyApp
 
 Tab between widgets. The screen reader should announce roles, labels, and
 state (checked, disabled, expanded, etc.).
+
+
+## Architecture details
+
+For contributors working on the accessibility internals:
+
+### iced fork (`v0.14.0-a11y-accesskit` branch)
+
+The iced fork adds native accessibility support. Key additions:
+
+- **`Accessible` trait** -- widgets implement this to report their role,
+  label, and state to accesskit. Most built-in widgets already implement it.
+- **`TreeBuilder`** in `iced_winit` -- walks the widget tree via `operate()`,
+  collecting `Accessible` metadata and building an accesskit `TreeUpdate`.
+- **Per-window adapters** -- each window gets an accesskit adapter connecting
+  to the platform's AT layer.
+- **AT action routing** -- AT actions are translated to native iced events,
+  which the renderer maps to plushie wire events.
+
+### A11yOverride wrapper widget
+
+`a11y_widget.rs` in plushie contains two wrapper widgets:
+
+- **`A11yOverride`** -- wraps any iced `Element` and intercepts `operate()`
+  to apply Python-side overrides from the `a11y` prop (role, label,
+  description, live, expanded, required, level, busy, invalid, modal,
+  read_only, mnemonic, toggled, selected, value, orientation, labelled_by,
+  described_by, error_message).
+- **`HiddenInterceptor`** -- wraps an `Element` and suppresses it from the
+  accessibility tree when `hidden: True` is set.
+
+These wrappers are applied automatically by the renderer when building the
+iced widget tree from plushie's UI tree. No manual wrapping is needed from
+Python.
+
+### Renderer integration
+
+When the renderer builds the iced widget tree from a plushie snapshot or
+patch, it checks each node's `a11y` prop. If present (and not just
+`hidden: True`), the rendered widget is wrapped in `A11yOverride`. If
+`hidden: True`, it is wrapped in `HiddenInterceptor`. Nodes without an
+`a11y` prop are rendered as-is -- iced's native `Accessible` trait provides
+their baseline accessibility semantics.

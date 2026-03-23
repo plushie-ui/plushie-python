@@ -203,13 +203,13 @@ case Submit(id="new-todo", value=v) if v.strip():
         input_value="",
         next_id=model.next_id + 1,
     )
-    return new_model, Command.focus("new-todo")
+    return new_model, Command.focus("app/new-todo")
 ```
 
 Return a `(model, command)` tuple from `update` to schedule a side
-effect. Commands always use the full scoped path, but since
-`"new-todo"` is not inside a named container in this case, its local
-ID is also its full path.
+effect. Commands always use the full scoped path -- the text input
+is inside the `id="app"` column, so its full path is
+`"app/new-todo"`.
 
 ## Step 6: filtering
 
@@ -279,7 +279,7 @@ functions that return `ui.*` node dicts.
 The full source is in
 [`examples/todo.py`](https://github.com/plushie-ui/plushie-python/blob/main/examples/todo.py)
 with tests in
-[`tests/examples/test_todo.py`](https://github.com/plushie-ui/plushie-python/blob/main/tests/examples/test_todo.py).
+[`tests/integration/test_todo.py`](https://github.com/plushie-ui/plushie-python/blob/main/tests/integration/test_todo.py).
 
 ```python
 from __future__ import annotations
@@ -346,7 +346,7 @@ class TodoApp(plushie.App[Model]):
                     input_value="",
                     next_id=model.next_id + 1,
                 )
-                return new_model, Command.focus("new-todo")
+                return new_model, Command.focus("app/new-todo")
 
             case Toggle(id="toggle", scope=(item_id, *_)):
                 items = tuple(

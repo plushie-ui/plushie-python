@@ -544,6 +544,279 @@ The `ExtensionDispatcher` wraps all mutable extension calls in
 
 A bug in one extension cannot crash the renderer or affect other extensions.
 
+**Note:** `render()` panics ARE caught via `catch_unwind` in
+`widgets::render()`. When a render panic is caught, the extension is
+marked as "poisoned" and subsequent renders skip it, returning a red
+error placeholder text until `clear_poisoned()` is called (typically on
+the next `Snapshot` message).
+
+
+## ExtensionCaches
+
+`ExtensionCaches` is type-erased storage keyed by `(namespace, key)` pairs.
+The namespace is typically your extension's `config_key()`, and the key is
+the node ID. This is the primary mechanism for persisting state between
+`prepare`/`render`/`handle_event`/`handle_command` calls.
+
+Key methods:
+
+| Method | Signature | Notes |
+|---|---|---|
+| `get::<T>(ns, key)` | `-> Option<&T>` | Immutable access |
+| `get_mut::<T>(ns, key)` | `-> Option<&mut T>` | Mutable access |
+| `get_or_insert::<T>(ns, key, default_fn)` | `-> &mut T` | Initialize if absent. Replaces on type mismatch. |
+| `insert::<T>(ns, key, value)` | `-> ()` | Overwrites existing |
+| `remove(ns, key)` | `-> bool` | Returns whether key existed |
+| `contains(ns, key)` | `-> bool` | |
+| `remove_namespace(ns)` | `-> ()` | Remove all entries for a namespace |
+
+Common keying patterns:
+
+- **Per-node state:** `caches.get::<MyState>(self.config_key(), &node.id)`
+- **Per-node sub-keys:** `caches.get::<GenerationCounter>(self.config_key(), &format!("{}:gen", node.id))`
+- **Global extension state:** `caches.get::<GlobalConfig>(self.config_key(), "_global")`
+
+The type parameter `T` must be `Send + Sync + 'static`. This is why
+`canvas::Cache` (which is `!Send + !Sync`) cannot be stored here.
+
+
+## canvas::Cache and GenerationCounter
+
+`iced::widget::canvas::Cache` is `!Send + !Sync`. This means it cannot be
+stored in `ExtensionCaches` (which requires `Send + Sync + 'static`). This
+is a fundamental constraint of iced's rendering architecture, not a bug.
+
+### The pattern
+
+Instead of storing `canvas::Cache` in `ExtensionCaches`, use iced's built-in
+tree state mechanism. The cache lives in your `Program::State` (initialized
+via `Widget::state()` or `canvas::Program`), and a `GenerationCounter` in
+`ExtensionCaches` tracks when your data changes.
+
+```rust
+use plushie_core::prelude::*;
+use iced::widget::canvas;
+
+/// Stored in ExtensionCaches (Send + Sync).
+struct SparklineData {
+    samples: Vec<f32>,
+    generation: GenerationCounter,
+}
+
+/// Stored in canvas Program::State (not Send, not Sync -- iced manages it).
+struct SparklineState {
+    last_generation: u64,
+    cache: canvas::Cache,
+}
+```
+
+In `prepare` or `handle_command`, bump the generation when data changes:
+
+```rust
+fn handle_command(&mut self, node_id: &str, op: &str, payload: &Value, caches: &mut ExtensionCaches) -> Vec<OutgoingEvent> {
+    if op == "push" {
+        if let Some(data) = caches.get_mut::<SparklineData>(self.config_key(), node_id) {
+            data.samples.push(payload.as_f64().unwrap_or(0.0) as f32);
+            data.generation.bump();  // signal that a redraw is needed
+        }
+    }
+    vec![]
+}
+```
+
+In `draw`, compare generations to decide whether to clear the cache:
+
+```rust
+impl canvas::Program<Message> for SparklineProgram<'_> {
+    type State = SparklineState;
+
+    fn draw(
+        &self,
+        state: &Self::State,
+        renderer: &iced::Renderer,
+        _theme: &Theme,
+        bounds: iced::Rectangle,
+        _cursor: iced::mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        if state.last_generation != self.current_generation {
+            state.cache.clear();
+        }
+
+        let geometry = state.cache.draw(renderer, bounds.size(), |frame| {
+            // Draw your content here
+        });
+
+        vec![geometry]
+    }
+}
+```
+
+### Why GenerationCounter instead of content hashing
+
+`GenerationCounter` is a simple `u64` counter. Incrementing it is O(1) and
+comparing two values is a single integer comparison. Content hashing is
+more expensive and harder to get right. The counter approach is the
+recommended pattern.
+
+`GenerationCounter` implements `Send + Sync + Clone` and stores cleanly in
+`ExtensionCaches`. Create it with `GenerationCounter::new()` (starts at 0),
+call `.bump()` to increment, and `.get()` to read the current value.
+
+
+## WidgetEnv fields
+
+`WidgetEnv` (and the underlying `RenderCtx`) provides access to:
+
+- `env.theme` -- the current iced `Theme`
+- `env.window_id` -- the window ID (`&str`) this render pass is for
+- `env.scale_factor` -- DPI scale factor (`f32`) for the current window
+
+Extensions doing DPI-aware rendering or per-window adaptation can use
+`window_id` and `scale_factor` directly.
+
+
+## Event family reference
+
+Every event sent over the wire carries a `family` string that identifies
+what kind of interaction produced it. Extension authors need to know these
+strings when implementing `handle_event` -- the `family` parameter tells
+you what happened.
+
+### Widget events (node ID in `id` field)
+
+| Family | Source widget | Data fields |
+|---|---|---|
+| `click` | button | -- |
+| `input` | text_input, text_editor | `value`: new text |
+| `submit` | text_input | `value`: current text |
+| `toggle` | checkbox, toggler | `value`: bool |
+| `slide` | slider, vertical_slider | `value`: f64 |
+| `slide_release` | slider, vertical_slider | `value`: f64 |
+| `select` | pick_list, combo_box, radio | `value`: selected string |
+| `open` | pick_list, combo_box | -- |
+| `close` | pick_list, combo_box | -- |
+| `paste` | text_input | `value`: pasted text |
+| `option_hovered` | combo_box | `value`: hovered option |
+| `sort` | table | `data.column`: column key |
+| `scroll` | scrollable | `data`: absolute/relative offsets, bounds, content size |
+
+### Canvas events (node ID in `id` field)
+
+| Family | Data fields |
+|---|---|
+| `canvas_press` | `data.x`, `data.y`, `data.button` |
+| `canvas_release` | `data.x`, `data.y`, `data.button` |
+| `canvas_move` | `data.x`, `data.y` |
+| `canvas_scroll` | `data.x`, `data.y`, `data.delta_x`, `data.delta_y` |
+| `canvas_shape_enter` | `data.shape_id`, `data.x`, `data.y` |
+| `canvas_shape_leave` | `data.shape_id` |
+| `canvas_shape_click` | `data.shape_id`, `data.x`, `data.y`, `data.button` |
+| `canvas_shape_drag` | `data.shape_id`, `data.x`, `data.y`, `data.delta_x`, `data.delta_y` |
+| `canvas_shape_drag_end` | `data.shape_id`, `data.x`, `data.y` |
+| `canvas_shape_focused` | `data.shape_id` |
+
+### MouseArea events (node ID in `id` field)
+
+| Family | Data fields |
+|---|---|
+| `mouse_right_press` | -- |
+| `mouse_right_release` | -- |
+| `mouse_middle_press` | -- |
+| `mouse_middle_release` | -- |
+| `mouse_double_click` | -- |
+| `mouse_enter` | -- |
+| `mouse_exit` | -- |
+| `mouse_move` | `data.x`, `data.y` |
+| `mouse_scroll` | `data.delta_x`, `data.delta_y` |
+
+### Sensor events (node ID in `id` field)
+
+| Family | Data fields |
+|---|---|
+| `sensor_resize` | `data.width`, `data.height` |
+
+### PaneGrid events (grid ID in `id` field)
+
+| Family | Data fields |
+|---|---|
+| `pane_resized` | `data.split`, `data.ratio` |
+| `pane_dragged` | `data.pane`, `data.target` |
+| `pane_clicked` | `data.pane` |
+
+### Subscription events (subscription tag in `tag` field, empty `id`)
+
+| Family | Data fields |
+|---|---|
+| `key_press` | `modifiers`, `data.key`, `data.modified_key`, `data.physical_key`, `data.location`, `data.text`, `data.repeat` |
+| `key_release` | `modifiers`, `data.key`, `data.modified_key`, `data.physical_key`, `data.location` |
+| `modifiers_changed` | `data.shift`, `data.ctrl`, `data.alt`, `data.logo`, `data.command` |
+| `cursor_moved` | `data.x`, `data.y` |
+| `cursor_entered` | -- |
+| `cursor_left` | -- |
+| `button_pressed` | `data.button` |
+| `button_released` | `data.button` |
+| `wheel_scrolled` | `data.delta_x`, `data.delta_y`, `data.unit` |
+| `finger_pressed` | `data.id`, `data.x`, `data.y` |
+| `finger_moved` | `data.id`, `data.x`, `data.y` |
+| `finger_lifted` | `data.id`, `data.x`, `data.y` |
+| `finger_lost` | `data.id`, `data.x`, `data.y` |
+| `ime_opened` | -- |
+| `ime_preedit` | `data.text`, `data.cursor` |
+| `ime_commit` | `data.text` |
+| `ime_closed` | -- |
+| `animation_frame` | `data.timestamp_millis` |
+| `theme_changed` | `data.mode` |
+
+### Window events (subscription tag in `tag` field)
+
+| Family | Data fields |
+|---|---|
+| `window_opened` | `data.window_id`, `data.position` |
+| `window_closed` | `data.window_id` |
+| `window_close_requested` | `data.window_id` |
+| `window_moved` | `data.window_id`, `data.x`, `data.y` |
+| `window_resized` | `data.window_id`, `data.width`, `data.height` |
+| `window_focused` | `data.window_id` |
+| `window_unfocused` | `data.window_id` |
+| `window_rescaled` | `data.window_id`, `data.scale_factor` |
+| `file_hovered` | `data.window_id`, `data.path` |
+| `file_dropped` | `data.window_id`, `data.path` |
+| `files_hovered_left` | `data.window_id` |
+
+
+## Prop helpers reference
+
+The `plushie_core::prop_helpers` module (re-exported via `prelude::*`) provides
+typed accessors for reading props from `TreeNode`. Use these instead of
+manually traversing `serde_json::Value`:
+
+| Helper | Return type | Notes |
+|---|---|---|
+| `prop_str(node, key)` | `Option<String>` | |
+| `prop_f32(node, key)` | `Option<f32>` | Accepts numbers and numeric strings |
+| `prop_f64(node, key)` | `Option<f64>` | Accepts numbers and numeric strings |
+| `prop_u32(node, key)` | `Option<u32>` | Rejects negative values |
+| `prop_u64(node, key)` | `Option<u64>` | Rejects negative values |
+| `prop_usize(node, key)` | `Option<usize>` | Via `prop_u64` |
+| `prop_i64(node, key)` | `Option<i64>` | Signed integers |
+| `prop_bool(node, key)` | `Option<bool>` | |
+| `prop_bool_default(node, key, default)` | `bool` | Returns default when absent |
+| `prop_length(node, key, fallback)` | `Length` | Parses "fill", "shrink", numbers, `{fill_portion: n}` |
+| `prop_range_f32(node)` | `RangeInclusive<f32>` | Reads `range` prop as `[min, max]`, defaults to `0.0..=100.0` |
+| `prop_range_f64(node)` | `RangeInclusive<f64>` | Same as above, f64 |
+| `prop_color(node, key)` | `Option<iced::Color>` | Parses `#RRGGBB` / `#RRGGBBAA` hex strings |
+| `prop_f32_array(node, key)` | `Option<Vec<f32>>` | Array of numbers |
+| `prop_horizontal_alignment(node, key)` | `alignment::Horizontal` | "left"/"center"/"right", defaults Left |
+| `prop_vertical_alignment(node, key)` | `alignment::Vertical` | "top"/"center"/"bottom", defaults Top |
+| `prop_content_fit(node)` | `Option<ContentFit>` | Reads `content_fit` prop |
+| `prop_padding(node, key)` | `Padding` | Public padding prop helper |
+| `node.prop_str(key)` | `Option<String>` | Method on `TreeNode` |
+| `node.prop_f32(key)` | `Option<f32>` | Method on `TreeNode` |
+| `node.prop_bool(key)` | `Option<bool>` | Method on `TreeNode` |
+| `node.prop_color(key)` | `Option<Color>` | Method on `TreeNode` |
+| `node.prop_padding(key)` | `Padding` | Method on `TreeNode` |
+| `node.props()` | `Option<&Map>` | Access the props object directly |
+
 
 ## Publishing widget packages
 
@@ -578,7 +851,7 @@ my_widget/
     pyproject.toml
 ```
 
-### Native packages (Elixir + Rust)
+### Native packages (Python + Rust)
 
 Native packages include both Python definitions (`ExtensionDef`) and a Rust
 crate. Consumers need a Rust toolchain to build the custom renderer binary.

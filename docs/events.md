@@ -5,20 +5,39 @@ event family has its own class in `plushie.events`.
 
 ```python
 from plushie.events import (
+    # Widget events
     Click, Input, Submit, Toggle, Select, Slide, SlideRelease,
     Scroll, Paste, Sort, Open, Close, OptionHovered, KeyBinding,
-    MouseAreaEnter, MouseAreaMove, MouseAreaScroll,
-    CanvasPress, CanvasMove, CanvasScroll,
-    CanvasShapeClick, CanvasShapeDrag, CanvasShapeEnter,
-    SensorResize, PaneResized, PaneClicked,
+    # Mouse area events
+    MouseAreaRightPress, MouseAreaRightRelease,
+    MouseAreaMiddlePress, MouseAreaMiddleRelease,
+    MouseAreaDoubleClick, MouseAreaEnter, MouseAreaExit,
+    MouseAreaMove, MouseAreaScroll,
+    # Canvas events
+    CanvasPress, CanvasRelease, CanvasMove, CanvasScroll,
+    CanvasShapeClick, CanvasShapeDrag, CanvasShapeDragEnd,
+    CanvasShapeEnter, CanvasShapeLeave, CanvasShapeFocused,
+    # Sensor / PaneGrid events
+    SensorResize, PaneResized, PaneDragged, PaneClicked,
+    # Keyboard events
     KeyPress, KeyRelease, ModifiersChanged,
-    MouseMove, MouseButtonPress, MouseWheel,
-    TouchPress, TouchMove,
+    # Mouse events (global)
+    MouseMove, MouseEnter, MouseLeave,
+    MouseButtonPress, MouseButtonRelease, MouseWheel,
+    # Touch events
+    TouchPress, TouchMove, TouchLift, TouchLost,
+    # IME events
     ImeOpen, ImePreedit, ImeCommit, ImeClose,
-    WindowCloseRequested, WindowResized, WindowOpen, WindowFocused,
+    # Window events
+    WindowCloseRequested, WindowOpen, WindowClosed, WindowMoved,
+    WindowResized, WindowFocused, WindowUnfocused, WindowRescaled,
     FileHovered, FileDropped, FilesHoveredLeft,
+    # System events
     AnimationFrame, ThemeChanged,
+    # Timer / Async / Stream / Effect events
     TimerTick, AsyncResult, StreamChunk, EffectResult,
+    # Accessibility
+    A11yAction,
 )
 ```
 
@@ -634,8 +653,11 @@ Delivered when modifier key state changes (subscription-driven).
 from plushie.events import ModifiersChanged
 from plushie.types import KeyModifiers
 
-ModifiersChanged(modifiers=KeyModifiers(shift=True))
+ModifiersChanged(modifiers=KeyModifiers(shift=True), captured=False)
 ```
+
+The `captured` field indicates whether modifier state was captured by a
+text input widget.
 
 ```python
 from dataclasses import replace
@@ -736,10 +758,13 @@ Delivered when an async command completes.
 ```python
 from plushie.events import AsyncResult
 
-AsyncResult(tag="data_loaded", value=result)
+AsyncResult(tag="data_loaded", value=result, error=None)
+AsyncResult(tag="data_loaded", value=None, error=reason)
 ```
 
-Where `tag` is the string you passed to `Command.task()`.
+Where `tag` is the string you passed to `Command.task()`. On success,
+`value` holds the return value and `error` is `None`. On failure,
+`error` holds the exception and `value` is `None`.
 
 ```python
 from dataclasses import replace
@@ -750,8 +775,10 @@ def update(self, model, event):
     match event:
         case Click(id="fetch"):
             return replace(model, loading=True), Command.task(fetch_data, "data_loaded")
-        case AsyncResult(tag="data_loaded", value=body):
+        case AsyncResult(tag="data_loaded", value=body) if body is not None:
             return replace(model, loading=False, data=body)
+        case AsyncResult(tag="data_loaded", error=err) if err is not None:
+            return replace(model, loading=False, error=str(err))
 ```
 
 ## Stream events
@@ -796,6 +823,35 @@ def update(self, model, event):
 ```
 
 See [effects.md](effects.md).
+
+## Accessibility action
+
+```python
+from plushie.events import A11yAction
+
+A11yAction(id="volume", action="Increment")
+```
+
+Generated when an assistive technology triggers a non-standard action on a
+widget. Standard AT actions are mapped to normal events: Click/Default
+becomes `Click(id=id)`, SetValue becomes `Input(id=id, value=value)`.
+This event catches everything else.
+
+The `action` is a string representation of the accesskit action (e.g.
+`"ScrollDown"`, `"Increment"`, `"Decrement"`).
+
+```python
+from dataclasses import replace
+from plushie.events import A11yAction
+
+def update(self, model, event):
+    match event:
+        case A11yAction(id="volume", action="Increment"):
+            return replace(model, volume=min(model.volume + 5, 100))
+```
+
+Note: This event is only generated when the renderer is built with the
+`a11y` feature flag.
 
 ## Catch-all
 

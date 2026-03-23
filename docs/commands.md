@@ -108,6 +108,9 @@ def update(self, model, event):
             return replace(model, importing=False, data=rows)
 ```
 
+This is convenience sugar. You can achieve the same thing with a bare
+thread and queue -- see [DIY patterns](#diy-patterns) below.
+
 #### Cancelling async work
 
 `Command.cancel()` cancels a running `task` or `stream` command by its
@@ -222,6 +225,28 @@ def update(self, model, event):
         case Click(id="scroll_bottom"):
             return model, Command.snap_to_end("chat_log")
 ```
+
+##### Accessibility
+
+```python
+Command.announce(text)           # Announce text to screen readers
+```
+
+##### Font loading
+
+```python
+Command.load_font(data)          # Load a font at runtime from raw TTF/OTF bytes
+```
+
+##### Renderer queries
+
+```python
+Command.tree_hash_query(tag)        # SHA-256 hash of the renderer's current tree
+Command.find_focused_query(tag)     # Which widget currently has keyboard focus
+Command.list_images_query(tag)      # List all registered image handles
+```
+
+Results arrive as system events in `update()`.
 
 #### Window management
 
@@ -387,6 +412,7 @@ Command.create_image_rgba(handle, width, height, pixels)   # From raw RGBA pixel
 Command.update_image(handle, data)                         # Update with PNG/JPEG
 Command.update_image_rgba(handle, width, height, pixels)   # Update with raw RGBA
 Command.delete_image(handle)                               # Remove in-memory image
+Command.clear_images()                                     # Delete all in-memory images
 ```
 
 Example:
@@ -486,6 +512,15 @@ Extension commands are only meaningful for widgets backed by a
 `WidgetExtension` Rust implementation. They are silently ignored for
 widgets without an extension handler.
 
+#### Animation
+
+```python
+Command.advance_frame(timestamp)  # Advance the animation clock (test/headless only)
+```
+
+The `timestamp` is monotonic milliseconds. Used for stepping through
+animations deterministically in tests.
+
 #### No-op
 
 When `update` returns a bare model (not a tuple), the runtime treats it as
@@ -570,6 +605,51 @@ new_model, cmd = result
 assert new_model["loading"] is True
 assert cmd.type == "task"
 ```
+
+### DIY patterns
+
+The `Command` class is convenience sugar, not a requirement. Python
+already has all the concurrency primitives you need. Some users will
+prefer the direct approach, and that is perfectly fine.
+
+#### Streaming with bare threads
+
+The runtime accepts events from any thread via its event queue. You
+can send events directly from a worker thread:
+
+```python
+import threading
+from dataclasses import replace
+from plushie.commands import Command
+
+def update(self, model, event):
+    match event:
+        case Click(id="import"):
+            runtime = self._runtime  # reference to the runtime's event queue
+
+            def do_import():
+                for n, line in enumerate(open("big.csv"), 1):
+                    row = parse_row(line)
+                    runtime.dispatch(("import_progress", n, row))
+                runtime.dispatch("import_done")
+
+            threading.Thread(target=do_import, daemon=True).start()
+            return replace(model, importing=True)
+
+        case ("import_progress", n, row):
+            return replace(model, rows_imported=n, data=[*model.data, row])
+
+        case "import_done":
+            return replace(model, importing=False)
+```
+
+#### When to use which
+
+Use `Command.task()` and `Command.stream()` when you want the runtime
+to manage thread lifecycle and deliver results through the standard
+`AsyncResult`/`StreamChunk` convention. Use bare threads when you need
+more control over message shapes, or when the command abstraction feels
+like overhead for your use case.
 
 ## Subscriptions
 
