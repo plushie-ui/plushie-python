@@ -338,15 +338,25 @@ def _cmd_build(args: argparse.Namespace) -> None:
     # binary_name resolution: --name flag > pyproject.toml build_name > default
     binary_name = args.name or pyproject_cfg.get("build_name") or "plushie-custom"
 
-    # Generate build files
-    build_dir = os.path.join("build", binary_name)
-    os.makedirs(os.path.join(build_dir, "runner", "src"), exist_ok=True)
+    # Generate build files -- workspace at _plushie_build/ in the project root.
+    # Must be at the project root level so extension crates (e.g. native/gauge/)
+    # are hierarchically below the workspace root, which Cargo requires.
+    build_dir = "_plushie_build"
+    os.makedirs(os.path.join(build_dir, "src"), exist_ok=True)
 
-    cargo_toml = generate_cargo_toml(extensions, binary_name=binary_name)
+    # Resolve source_path for local plushie-core dependency
+    source = os.environ.get("PLUSHIE_SOURCE_PATH") or pyproject_cfg.get("source_path")
+
+    cargo_toml = generate_cargo_toml(
+        extensions,
+        binary_name=binary_name,
+        build_dir=build_dir,
+        source_path=source,
+    )
     main_rs = generate_main_rs(extensions)
 
     cargo_path = os.path.join(build_dir, "Cargo.toml")
-    main_path = os.path.join(build_dir, "runner", "src", "main.rs")
+    main_path = os.path.join(build_dir, "src", "main.rs")
 
     with open(cargo_path, "w") as f:
         f.write(cargo_toml)

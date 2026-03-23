@@ -368,12 +368,24 @@ class TestGenerateCargoToml:
         assert "my_gauge" in toml
         assert "my_sparkline" in toml
 
-    def test_workspace_structure(self) -> None:
+    def test_package_structure(self) -> None:
         toml = generate_cargo_toml([_gauge_def()])
-        assert "[workspace]" in toml
-        assert "members" in toml
-        assert "runner/src/main.rs" in toml
+        assert "[package]" in toml
+        assert "src/main.rs" in toml
         assert "plushie-core" in toml
+        assert "plushie =" in toml  # runner crate dep
+
+    def test_source_path_local_deps(self) -> None:
+        toml = generate_cargo_toml(
+            [_gauge_def()], source_path="/tmp/plushie", build_dir="/tmp/build"
+        )
+        assert "plushie-core = { path =" in toml
+        assert "plushie = { path =" in toml
+        assert "git" not in toml
+
+    def test_no_source_path_git_deps(self) -> None:
+        toml = generate_cargo_toml([_gauge_def()])
+        assert "plushie-ui/plushie.git" in toml
 
 
 # -- main.rs generation ------------------------------------------------------
@@ -385,7 +397,7 @@ class TestGenerateMainRs:
         assert "my_gauge::GaugeExtension::new()" in rs
         assert "PlushieAppBuilder::new()" in rs
         assert ".extension(" in rs
-        assert "fn main() -> iced::Result" in rs
+        assert "fn main() -> plushie_core::iced::Result" in rs
 
     def test_multiple_extensions(self) -> None:
         rs = generate_main_rs([_gauge_def(), _sparkline_def()])

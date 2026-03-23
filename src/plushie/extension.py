@@ -306,6 +306,9 @@ def build_command(
 def generate_cargo_toml(
     extensions: list[ExtensionDef],
     binary_name: str = "plushie-custom",
+    *,
+    build_dir: str = ".",
+    source_path: str | None = None,
 ) -> str:
     """Generate a Cargo.toml workspace for a custom binary build.
 
@@ -313,44 +316,62 @@ def generate_cargo_toml(
     and all extension crates as path dependencies.  This is the Python
     equivalent of ``mix plushie.build``'s Cargo generation.
 
+    Crate paths are made relative to ``build_dir`` so the generated
+    Cargo.toml works from the build output directory.
+
     Args:
         extensions: Extension definitions to include.
         binary_name: Name for the output binary.
+        build_dir: The directory where the Cargo.toml will be written.
+            Crate paths are resolved relative to this.
+        source_path: Path to the plushie Rust source checkout. If
+            provided, plushie-core is referenced as a local path
+            dependency. Otherwise uses the git repository.
 
     Returns:
         The Cargo.toml content as a string.
     """
-    members = [f'    "{ext.rust_crate}"' for ext in extensions]
-    members_block = ",\n".join(members)
+    import os
 
     deps = []
     for ext in extensions:
-        # Derive crate name from the last path segment.
+        # Make crate path relative to build_dir
+        abs_crate = os.path.abspath(ext.rust_crate)
+        rel_crate = os.path.relpath(abs_crate, os.path.abspath(build_dir))
         crate_name = ext.rust_crate.rsplit("/", maxsplit=1)[-1]
-        deps.append(f'{crate_name} = {{ path = "{ext.rust_crate}" }}')
+        deps.append(f'{crate_name} = {{ path = "{rel_crate}" }}')
+
     deps_block = "\n".join(deps)
 
+    # plushie dependencies: plushie-core (extensions API) + plushie (run fn)
+    if source_path:
+        abs_src = os.path.abspath(source_path)
+        abs_build = os.path.abspath(build_dir)
+        core_rel = os.path.relpath(os.path.join(abs_src, "plushie-core"), abs_build)
+        runner_rel = os.path.relpath(os.path.join(abs_src, "plushie"), abs_build)
+        core_dep = f'plushie-core = {{ path = "{core_rel}" }}'
+        runner_dep = f'plushie = {{ path = "{runner_rel}" }}'
+    else:
+        git = "https://github.com/plushie-ui/plushie.git"
+        core_dep = f'plushie-core = {{ git = "{git}" }}'
+        runner_dep = f'plushie = {{ git = "{git}" }}'
+
+    # Use underscores for the Cargo package name (Cargo convention)
+    package_name = binary_name.replace("-", "_")
+
     return f"""\
-[workspace]
-members = [
-{members_block}
-]
-resolver = "2"
-
-[workspace.package]
-edition = "2024"
-
 [package]
-name = "{binary_name}"
+name = "{package_name}"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
 name = "{binary_name}"
-path = "runner/src/main.rs"
+path = "src/main.rs"
 
 [dependencies]
-plushie-core = {{ git = "https://github.com/nicklasxyz/plushie.git" }}
+{core_dep}
+{runner_dep}
 {deps_block}
 """
 
@@ -375,7 +396,7 @@ def generate_main_rs(extensions: list[ExtensionDef]) -> str:
     return f"""\
 use plushie_core::app::PlushieAppBuilder;
 
-fn main() -> iced::Result {{
+fn main() -> plushie_core::iced::Result {{
     let builder = PlushieAppBuilder::new()
 {registrations_block};
     plushie::run(builder)
