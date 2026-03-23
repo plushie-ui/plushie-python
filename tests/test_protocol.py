@@ -1364,11 +1364,13 @@ class TestDecodeScopedIdSplitting:
     def test_single_scope(self) -> None:
         raw = {"type": "event", "family": "click", "id": "form/save"}
         result = decode_message(raw)
+        assert isinstance(result, Click)
         assert result.id == "save"
         assert result.scope == ("form",)
 
     def test_deep_scope(self) -> None:
         raw = {"type": "event", "family": "click", "id": "app/form/section/save"}
         result = decode_message(raw)
+        assert isinstance(result, Click)
         assert result.id == "save"
         assert result.scope == ("section", "form", "app")

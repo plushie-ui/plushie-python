@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import ClassVar
 
 from plushie.subscriptions import Subscription
+
+type _SubFactory = Callable[..., Subscription]
 
 
 class TestEvery:
@@ -32,7 +35,7 @@ class TestEvery:
 class TestRendererSubscriptions:
     """Test all renderer subscription factory methods."""
 
-    FACTORIES: ClassVar[list[tuple[str, object]]] = [
+    FACTORIES: ClassVar[list[tuple[str, _SubFactory]]] = [
         ("on_key_press", Subscription.on_key_press),
         ("on_key_release", Subscription.on_key_release),
         ("on_modifiers_changed", Subscription.on_modifiers_changed),

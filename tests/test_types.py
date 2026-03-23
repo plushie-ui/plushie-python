@@ -15,6 +15,7 @@ from plushie.types import (
     HelloInfo,
     KeyModifiers,
     Shadow,
+    StatusOverride,
     StyleMap,
     Theme,
     _to_pascal,
@@ -335,7 +336,7 @@ class TestStyleMap:
         assert s.shadow is sh
 
     def test_with_hovered(self) -> None:
-        override: dict[str, str | None] = {"background": "#cc0000"}
+        override: StatusOverride = {"background": "#cc0000"}
         s = StyleMap().with_hovered(override)
         assert s.hovered == {"background": "#cc0000"}
 
@@ -666,7 +667,9 @@ class TestStyleMapToWire:
         g = Gradient.linear(90, [(0.0, "#000000"), (1.0, "#ffffff")])
         s = StyleMap().with_background(g)
         wire = s.to_wire()
-        assert wire["background"]["type"] == "linear"
+        bg = wire["background"]
+        assert isinstance(bg, dict)
+        assert bg["type"] == "linear"
 
     def test_nested_border_shadow(self) -> None:
         b = Border(color="#000000", width=1, radius=4)
@@ -674,13 +677,17 @@ class TestStyleMapToWire:
         s = StyleMap().with_border(b).with_shadow(sh)
         wire = s.to_wire()
         assert wire["border"] == {"color": "#000000", "width": 1, "radius": 4}
-        assert wire["shadow"]["offset"] == [2.0, 2.0]
+        shadow = wire["shadow"]
+        assert isinstance(shadow, dict)
+        assert shadow["offset"] == [2.0, 2.0]
 
     def test_status_override_with_border(self) -> None:
         b = Border(color="#0000ff", width=2)
         s = StyleMap().with_focused({"border": b})
         wire = s.to_wire()
-        assert wire["focused"]["border"] == {
+        focused = wire["focused"]
+        assert isinstance(focused, dict)
+        assert focused["border"] == {
             "color": "#0000ff",
             "width": 2,
             "radius": 0,
@@ -711,6 +718,7 @@ class TestThemeToWire:
     def test_custom_with_base(self) -> None:
         t = Theme.custom("Nord+", base="nord", primary="#88c0d0")
         wire = t.to_wire()
+        assert isinstance(wire, dict)
         assert wire["base"] == "nord"
 
 

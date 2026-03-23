@@ -10,10 +10,12 @@ echo "==> ruff check"
 ruff check src tests examples
 
 echo "==> pyright"
-pyright src
+pyright src tests examples
 
 echo "==> pytest"
 pytest
 
 echo ""
 echo "All checks passed."
+echo ""
+echo "Optional: run 'pytest --cov' for coverage report."

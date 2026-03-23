@@ -513,6 +513,6 @@ class TestAssertModel:
 class TestSaveScreenshot:
     def test_raises_when_no_data(self) -> None:
         with _make_fixture() as app:
-            app._pool.screenshot.return_value = {"hash": "abc123"}
+            app._pool.screenshot.return_value = {"hash": "abc123"}  # type: ignore[union-attr]
             with pytest.raises(RuntimeError, match="did not return screenshot data"):
                 app.save_screenshot("test_shot")

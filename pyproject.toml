@@ -28,6 +28,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "pytest-cov>=6.0",
     "ruff>=0.9",
     "pyright>=1.1",
 ]
@@ -67,7 +68,7 @@ pythonVersion = "3.12"
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
-include = ["src"]
+include = ["src", "tests", "examples"]
 exclude = ["**/__pycache__"]
 
 [tool.pytest.ini_options]
@@ -87,3 +88,15 @@ plushie = "plushie.testing.plugin"
 
 [project.scripts]
 plushie = "plushie.__main__:main"
+
+[tool.coverage.run]
+source = ["plushie"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "\\.\\.\\.",
+]
