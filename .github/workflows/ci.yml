@@ -89,3 +89,31 @@ jobs:
         run: pytest
         env:
           PLUSHIE_TEST_BACKEND: headless
+
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-docs-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-docs-
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Build docs (strict)
+        run: mkdocs build --strict
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: mkdocs gh-deploy --force

@@ -39,6 +39,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Documentation build
+site/
+
 # Test snapshots (generated, not tracked)
 tests/snapshots/
 tests/screenshots/
