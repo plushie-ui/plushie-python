@@ -588,7 +588,7 @@ def build_wasm(
     """Build the WASM renderer from source using wasm-pack.
 
     Requires ``wasm-pack`` to be installed and the plushie Rust source
-    checkout to contain a ``plushie-wasm`` crate directory.
+    checkout to contain a ``plushie-renderer-wasm`` crate directory.
 
     Args:
         source_path: Path to the plushie Rust source checkout. If
@@ -622,17 +622,17 @@ def build_wasm(
             "Set PLUSHIE_SOURCE_PATH or pass source_path= argument."
         )
 
-    wasm_crate = os.path.join(src, "plushie-wasm")
+    wasm_crate = os.path.join(src, "plushie-renderer-wasm")
     if not os.path.isdir(wasm_crate):
         raise RuntimeError(
-            f"plushie-wasm crate not found at {wasm_crate}.\n\n"
+            f"plushie-renderer-wasm crate not found at {wasm_crate}.\n\n"
             f"The WASM build requires the plushie source checkout to "
-            f"include the plushie-wasm crate directory."
+            f"include the plushie-renderer-wasm crate directory."
         )
 
     profile = "--release" if release else "--dev"
     logger.info(
-        "building plushie-wasm%s from %s",
+        "building plushie-renderer-wasm%s from %s",
         " (release)" if release else "",
         wasm_crate,
     )

@@ -234,7 +234,11 @@ todos. We use radio buttons grouped by the same `id`:
 from plushie.events import Select
 
 # Inside update:
-case Select(id="filter", value=v):
+case Click(id="filter-all"):
+                return replace(model, filter="all")
+            case Click(id="filter-active"):
+                return replace(model, filter="active")
+            case Click(id="filter-done"):
     return replace(model, filter=v)
 ```
 
@@ -377,7 +381,11 @@ class TodoApp(plushie.App[Model]):
                 items = tuple(item for item in model.items if item.id != item_id)
                 return replace(model, items=items)
 
-            case Select(id="filter", value=v):
+            case Click(id="filter-all"):
+                return replace(model, filter="all")
+            case Click(id="filter-active"):
+                return replace(model, filter="active")
+            case Click(id="filter-done"):
                 return replace(model, filter=v)
 
             case _:
