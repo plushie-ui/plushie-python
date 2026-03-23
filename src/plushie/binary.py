@@ -59,6 +59,9 @@ class ChecksumError(RuntimeError):
     """Raised when SHA-256 verification of a downloaded artifact fails."""
 
 
+BINARY_VERSION = "0.4.1"
+"""Default plushie binary version. Matches the renderer protocol this SDK was built against."""
+
 MIN_RUST_VERSION = (1, 92, 0)
 """Minimum required Rust toolchain version for building from source."""
 
@@ -453,7 +456,7 @@ def download(version: str | None = None, *, force: bool = False) -> str:
 
     Args:
         version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
-            downloads the latest release.
+            uses ``BINARY_VERSION`` (the pinned default for this SDK).
         force: Re-download even if the binary already exists.
 
     Returns:
@@ -465,12 +468,8 @@ def download(version: str | None = None, *, force: bool = False) -> str:
         urllib.error.URLError: On network errors.
     """
     name = download_name()
-    tag = f"v{version}" if version else "latest"
-
-    if tag == "latest":
-        url = f"{GITHUB_RELEASE_URL}/latest/{name}"
-    else:
-        url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
+    tag = f"v{version or BINARY_VERSION}"
+    url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
 
     dest_dir = download_dir()
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -517,7 +516,7 @@ def download_wasm(version: str | None = None, *, force: bool = False) -> str:
 
     Args:
         version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
-            downloads the latest release.
+            uses ``BINARY_VERSION`` (the pinned default for this SDK).
         force: Re-download even if WASM files already exist.
 
     Returns:
@@ -528,12 +527,8 @@ def download_wasm(version: str | None = None, *, force: bool = False) -> str:
         ChecksumError: On checksum mismatch or unavailable checksum.
     """
     archive_name = wasm_download_name()
-    tag = f"v{version}" if version else "latest"
-
-    if tag == "latest":
-        url = f"{GITHUB_RELEASE_URL}/latest/{archive_name}"
-    else:
-        url = f"{GITHUB_RELEASE_URL}/{tag}/{archive_name}"
+    tag = f"v{version or BINARY_VERSION}"
+    url = f"{GITHUB_RELEASE_URL}/{tag}/{archive_name}"
 
     dest_dir = wasm_dir()
     js_path = dest_dir / WASM_JS_NAME
@@ -707,6 +702,7 @@ def resolve_wasm() -> tuple[Path, Path]:
 # ---------------------------------------------------------------------------
 
 __all__ = [
+    "BINARY_VERSION",
     "GITHUB_RELEASE_URL",
     "MIN_RUST_VERSION",
     "WASM_ARCHIVE_NAME",

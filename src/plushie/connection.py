@@ -237,6 +237,7 @@ class Connection:
 
     @session.setter
     def session(self, value: str) -> None:
+        """Set the default session identifier for outbound messages."""
         self._session = value
 
     @property
@@ -927,6 +928,7 @@ class StdioConnection:
 
     @session.setter
     def session(self, value: str) -> None:
+        """Set the default session identifier."""
         self._session = value
 
     def __enter__(self) -> StdioConnection:

@@ -507,7 +507,7 @@ def _build_parser() -> argparse.ArgumentParser:
     download_parser.add_argument(
         "--version",
         default=None,
-        help="version to download (default: latest)",
+        help="version to download (default: pinned BINARY_VERSION)",
     )
     download_parser.add_argument(
         "--bin",

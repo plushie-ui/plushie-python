@@ -495,11 +495,15 @@ def text_editor(id: str, content: str, /, **kwargs: Any) -> Node:
 
 
 @overload
-def text(content: str, /, **kwargs: Any) -> Node: ...
+def text(content: str, /, **kwargs: Any) -> Node:
+    """Create a text widget with auto-generated ID."""
+    ...
 
 
 @overload
-def text(id: str, content: str, /, **kwargs: Any) -> Node: ...
+def text(id: str, content: str, /, **kwargs: Any) -> Node:
+    """Create a text widget with an explicit ID."""
+    ...
 
 
 def text(*args: Any, **kwargs: Any) -> Node:
@@ -529,11 +533,15 @@ def text(*args: Any, **kwargs: Any) -> Node:
 
 
 @overload
-def markdown(content: str, /, **kwargs: Any) -> Node: ...
+def markdown(content: str, /, **kwargs: Any) -> Node:
+    """Create a markdown widget with auto-generated ID."""
+    ...
 
 
 @overload
-def markdown(id: str, content: str, /, **kwargs: Any) -> Node: ...
+def markdown(id: str, content: str, /, **kwargs: Any) -> Node:
+    """Create a markdown widget with an explicit ID."""
+    ...
 
 
 def markdown(*args: Any, **kwargs: Any) -> Node:
@@ -562,15 +570,17 @@ def markdown(*args: Any, **kwargs: Any) -> Node:
 
 
 @overload
-def progress_bar(
-    range: tuple[float, float], value: float, /, **kwargs: Any
-) -> Node: ...
+def progress_bar(range: tuple[float, float], value: float, /, **kwargs: Any) -> Node:
+    """Create a progress bar with auto-generated ID."""
+    ...
 
 
 @overload
 def progress_bar(
     id: str, range: tuple[float, float], value: float, /, **kwargs: Any
-) -> Node: ...
+) -> Node:
+    """Create a progress bar with an explicit ID."""
+    ...
 
 
 def progress_bar(*args: Any, **kwargs: Any) -> Node:

@@ -186,3 +186,41 @@ test in `tests/docs/` to confirm the docs stay accurate.
 4. PRs require all CI checks to pass (lint, type check, tests on
    mock and headless backends).
 5. Keep PRs focused -- one logical change per PR.
+
+## Releasing
+
+Steps to publish a new release:
+
+1. **Version bump.** Update `__version__` in `src/plushie/__init__.py`
+   and `version` in `pyproject.toml`. These must match.
+
+2. **Binary version.** If this release targets a new renderer version,
+   update `BINARY_VERSION` in `src/plushie/binary.py`.
+
+3. **Changelog.** Add an entry for the new version in `CHANGELOG.md`.
+
+4. **Verify.** Run `./preflight` and confirm all checks pass.
+
+5. **Tag.**
+
+   ```bash
+   git tag v0.1.0
+   ```
+
+6. **Build.**
+
+   ```bash
+   python -m build
+   ```
+
+7. **Check.**
+
+   ```bash
+   twine check dist/*
+   ```
+
+8. **Upload.**
+
+   ```bash
+   twine upload dist/*
+   ```
