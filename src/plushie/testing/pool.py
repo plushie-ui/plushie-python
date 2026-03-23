@@ -7,7 +7,7 @@ and routes inbound responses by the ``session`` field.
 
 Usage::
 
-    pool = SessionPool(mode="mock", max_sessions=8)
+    pool = SessionPool(mode="mock", max_sessions=32)
     pool.start()
 
     session_id = pool.register()
@@ -51,7 +51,7 @@ class SessionPool:
         self,
         *,
         mode: str = "mock",
-        max_sessions: int = 8,
+        max_sessions: int = 32,
         binary_path: str | None = None,
     ) -> None:
         self._mode = mode

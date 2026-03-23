@@ -24,6 +24,8 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+from plushie.types import A11y, Border, Font, Gradient, Shadow, StyleMap, Theme
+
 logger = logging.getLogger("plushie")
 
 # ---------------------------------------------------------------------------
@@ -133,8 +135,10 @@ def _normalize_with_scope(node: Node, scope: str, index: int) -> Node:
     # propagate their scoped ID as the child scope.
     child_scope = scope if is_auto or node_type == "window" else scoped_id
 
-    # Normalize props (resolve a11y ID refs relative to scope)
-    normalized_props = _resolve_a11y_id_refs(dict(props), scope)
+    # Encode dataclass prop values to wire-compatible dicts/values,
+    # then resolve a11y ID refs relative to scope.
+    encoded_props = _encode_props(dict(props))
+    normalized_props = _resolve_a11y_id_refs(encoded_props, scope)
 
     # Normalize children
     normalized_children = _normalize_children(children, child_scope)
@@ -172,6 +176,28 @@ def _check_duplicate_ids(children: list[Node]) -> None:
             "Duplicate sibling IDs detected during normalize: %s",
             unique_dupes,
         )
+
+
+_WIRE_TYPES = (StyleMap, Border, Shadow, Font, Gradient, A11y, Theme)
+
+
+def _encode_prop_value(value: Any) -> Any:
+    """Convert a known dataclass type to its wire-compatible representation.
+
+    Recognized types: StyleMap, Border, Shadow, Font, Gradient, A11y, Theme.
+    Tuples are converted to lists (wire format uses arrays).
+    Other values pass through unchanged.
+    """
+    if isinstance(value, _WIRE_TYPES):
+        return value.to_wire()
+    if isinstance(value, tuple):
+        return list(value)
+    return value
+
+
+def _encode_props(props: dict[str, Any]) -> dict[str, Any]:
+    """Encode all prop values, converting dataclass types to wire dicts."""
+    return {k: _encode_prop_value(v) for k, v in props.items()}
 
 
 def _resolve_a11y_id_refs(props: dict[str, Any], scope: str) -> dict[str, Any]:

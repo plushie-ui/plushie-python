@@ -17,6 +17,7 @@ from plushie.types import (
     Shadow,
     StyleMap,
     Theme,
+    _to_pascal,
 )
 
 # ---------------------------------------------------------------------------
@@ -569,3 +570,161 @@ class TestHelloInfo:
         )
         with pytest.raises(AttributeError):
             h.protocol = 2  # type: ignore[misc]
+
+
+# ---------------------------------------------------------------------------
+# Wire encoding: to_wire()
+# ---------------------------------------------------------------------------
+
+
+class TestToPascal:
+    def test_single_word(self) -> None:
+        assert _to_pascal("normal") == "Normal"
+
+    def test_multi_word(self) -> None:
+        assert _to_pascal("semi_bold") == "SemiBold"
+
+    def test_three_words(self) -> None:
+        assert _to_pascal("ultra_condensed") == "UltraCondensed"
+
+
+class TestBorderToWire:
+    def test_defaults(self) -> None:
+        assert Border().to_wire() == {"color": None, "width": 0, "radius": 0}
+
+    def test_full(self) -> None:
+        b = Border(color="#ff0000", width=2, radius=8)
+        assert b.to_wire() == {"color": "#ff0000", "width": 2, "radius": 8}
+
+    def test_per_corner_radius(self) -> None:
+        corners = Border.radius_corners(8, 8, 0, 0)
+        b = Border(radius=corners)
+        wire = b.to_wire()
+        assert wire["radius"] == corners
+
+
+class TestShadowToWire:
+    def test_defaults(self) -> None:
+        wire = Shadow().to_wire()
+        assert wire == {"color": "#000000", "offset": [0, 0], "blur_radius": 0}
+
+    def test_offset_is_list(self) -> None:
+        s = Shadow(offset=(4.0, 2.0))
+        wire = s.to_wire()
+        assert wire["offset"] == [4.0, 2.0]
+        assert isinstance(wire["offset"], list)
+
+
+class TestGradientToWire:
+    def test_linear(self) -> None:
+        g = Gradient.linear(90, [(0.0, "#ff0000"), (1.0, "#0000ff")])
+        wire = g.to_wire()
+        assert wire["type"] == "linear"
+        assert wire["angle"] == 90
+        assert wire["stops"] == [
+            {"offset": 0.0, "color": "#ff0000"},
+            {"offset": 1.0, "color": "#0000ff"},
+        ]
+
+
+class TestFontToWire:
+    def test_empty(self) -> None:
+        assert Font().to_wire() == {}
+
+    def test_family_only(self) -> None:
+        assert Font(family="Inter").to_wire() == {"family": "Inter"}
+
+    def test_weight_pascal_case(self) -> None:
+        f = Font(weight="semi_bold")
+        assert f.to_wire() == {"weight": "SemiBold"}
+
+    def test_all_fields(self) -> None:
+        f = Font(
+            family="Fira Code",
+            weight="bold",
+            style="italic",
+            stretch="ultra_condensed",
+        )
+        wire = f.to_wire()
+        assert wire == {
+            "family": "Fira Code",
+            "weight": "Bold",
+            "style": "Italic",
+            "stretch": "UltraCondensed",
+        }
+
+
+class TestStyleMapToWire:
+    def test_empty(self) -> None:
+        assert StyleMap().to_wire() == {}
+
+    def test_background_color(self) -> None:
+        s = StyleMap().with_background("#ff0000")
+        assert s.to_wire() == {"background": "#ff0000"}
+
+    def test_background_gradient(self) -> None:
+        g = Gradient.linear(90, [(0.0, "#000000"), (1.0, "#ffffff")])
+        s = StyleMap().with_background(g)
+        wire = s.to_wire()
+        assert wire["background"]["type"] == "linear"
+
+    def test_nested_border_shadow(self) -> None:
+        b = Border(color="#000000", width=1, radius=4)
+        sh = Shadow(offset=(2.0, 2.0), blur_radius=6.0)
+        s = StyleMap().with_border(b).with_shadow(sh)
+        wire = s.to_wire()
+        assert wire["border"] == {"color": "#000000", "width": 1, "radius": 4}
+        assert wire["shadow"]["offset"] == [2.0, 2.0]
+
+    def test_status_override_with_border(self) -> None:
+        b = Border(color="#0000ff", width=2)
+        s = StyleMap().with_focused({"border": b})
+        wire = s.to_wire()
+        assert wire["focused"]["border"] == {
+            "color": "#0000ff",
+            "width": 2,
+            "radius": 0,
+        }
+
+    def test_status_override_plain_values(self) -> None:
+        s = StyleMap().with_hovered({"background": "#cc0000"})
+        wire = s.to_wire()
+        assert wire["hovered"] == {"background": "#cc0000"}
+
+    def test_base_field(self) -> None:
+        s = StyleMap().with_base("primary")
+        wire = s.to_wire()
+        assert wire["base"] == "primary"
+
+
+class TestThemeToWire:
+    def test_builtin(self) -> None:
+        assert Theme.builtin("dark").to_wire() == "dark"
+
+    def test_custom(self) -> None:
+        t = Theme.custom("My Theme", primary="#7aa2f7")
+        wire = t.to_wire()
+        assert isinstance(wire, dict)
+        assert wire["name"] == "My Theme"
+        assert wire["primary"] == "#7aa2f7"
+
+    def test_custom_with_base(self) -> None:
+        t = Theme.custom("Nord+", base="nord", primary="#88c0d0")
+        wire = t.to_wire()
+        assert wire["base"] == "nord"
+
+
+class TestA11yToWire:
+    def test_empty(self) -> None:
+        assert A11y().to_wire() == {}
+
+    def test_partial(self) -> None:
+        a = A11y(role="button", label="Submit")
+        wire = a.to_wire()
+        assert wire == {"role": "button", "label": "Submit"}
+
+    def test_excludes_none(self) -> None:
+        a = A11y(label="test")
+        wire = a.to_wire()
+        assert "role" not in wire
+        assert "hidden" not in wire

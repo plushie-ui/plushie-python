@@ -6,6 +6,7 @@ import logging
 
 import pytest
 
+from plushie.framing import MsgpackFraming
 from plushie.tree import (
     diff,
     exists,
@@ -14,6 +15,15 @@ from plushie.tree import (
     ids,
     normalize,
     text_of,
+)
+from plushie.types import (
+    A11y,
+    Border,
+    Font,
+    Gradient,
+    Shadow,
+    StyleMap,
+    Theme,
 )
 
 # ---------------------------------------------------------------------------
@@ -946,3 +956,190 @@ class TestTextOf:
     def test_empty_props(self) -> None:
         node = _node("x", "container")
         assert text_of(node) is None
+
+
+# ===========================================================================
+# Prop encoding during normalize
+# ===========================================================================
+
+
+class TestNormalizePropEncoding:
+    """Dataclass prop values are converted to wire-compatible dicts."""
+
+    def test_border_encoded(self) -> None:
+        node = {
+            "id": "box",
+            "type": "container",
+            "props": {"border": Border(color="#ff0000", width=2, radius=8)},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["border"] == {
+            "color": "#ff0000",
+            "width": 2,
+            "radius": 8,
+        }
+
+    def test_shadow_encoded(self) -> None:
+        node = {
+            "id": "box",
+            "type": "container",
+            "props": {"shadow": Shadow(offset=(4.0, 2.0), blur_radius=6.0)},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["shadow"]["offset"] == [4.0, 2.0]
+
+    def test_font_encoded(self) -> None:
+        node = {
+            "id": "t",
+            "type": "text",
+            "props": {"font": Font(family="Inter", weight="bold")},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["font"] == {"family": "Inter", "weight": "Bold"}
+
+    def test_gradient_encoded(self) -> None:
+        g = Gradient.linear(90, [(0.0, "#ff0000"), (1.0, "#0000ff")])
+        node = {
+            "id": "box",
+            "type": "container",
+            "props": {"background": g},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["background"]["type"] == "linear"
+        assert result["props"]["background"]["angle"] == 90
+
+    def test_style_map_encoded(self) -> None:
+        style = (
+            StyleMap()
+            .with_background("#ff0000")
+            .with_border(Border(color="#000000", width=1))
+        )
+        node = {
+            "id": "btn",
+            "type": "button",
+            "props": {"label": "Go", "style": style},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["style"]["background"] == "#ff0000"
+        assert result["props"]["style"]["border"]["width"] == 1
+
+    def test_a11y_dataclass_encoded(self) -> None:
+        node = {
+            "id": "btn",
+            "type": "button",
+            "props": {"a11y": A11y(role="button", label="Submit")},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["a11y"] == {"role": "button", "label": "Submit"}
+
+    def test_theme_builtin_encoded(self) -> None:
+        node = {
+            "id": "main",
+            "type": "window",
+            "props": {"theme": Theme.builtin("dark")},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["theme"] == "dark"
+
+    def test_theme_custom_encoded(self) -> None:
+        t = Theme.custom("My Theme", primary="#7aa2f7")
+        node = {
+            "id": "main",
+            "type": "window",
+            "props": {"theme": t},
+            "children": [],
+        }
+        result = normalize(node)
+        assert isinstance(result["props"]["theme"], dict)
+        assert result["props"]["theme"]["name"] == "My Theme"
+
+    def test_tuple_converted_to_list(self) -> None:
+        node = {
+            "id": "w",
+            "type": "window",
+            "props": {"size": (800, 600)},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["size"] == [800, 600]
+
+    def test_plain_props_unchanged(self) -> None:
+        node = {
+            "id": "t",
+            "type": "text",
+            "props": {"content": "hello", "size": 16},
+            "children": [],
+        }
+        result = normalize(node)
+        assert result["props"]["content"] == "hello"
+        assert result["props"]["size"] == 16
+
+
+class TestNormalizePropEncodingRoundTrip:
+    """Encoded props survive msgpack serialization."""
+
+    def test_style_map_through_framing(self) -> None:
+        style = (
+            StyleMap()
+            .with_background("#ff0000")
+            .with_border(Border(color="#000000", width=1, radius=4))
+            .with_shadow(Shadow(offset=(2.0, 2.0), blur_radius=6.0))
+        )
+        node = {
+            "id": "btn",
+            "type": "button",
+            "props": {"label": "Go", "style": style},
+            "children": [],
+        }
+        tree = normalize(node)
+        msg = {"type": "snapshot", "tree": tree}
+        framed = MsgpackFraming.encode(msg)
+        framing = MsgpackFraming()
+        decoded = framing.feed(framed)
+        assert len(decoded) == 1
+        rt_props = decoded[0]["tree"]["props"]
+        assert rt_props["style"]["background"] == "#ff0000"
+        assert rt_props["style"]["border"]["radius"] == 4
+        assert rt_props["style"]["shadow"]["offset"] == [2.0, 2.0]
+
+    def test_gradient_through_framing(self) -> None:
+        g = Gradient.linear(45, [(0.0, "#ff0000"), (1.0, "blue")])
+        node = {
+            "id": "box",
+            "type": "container",
+            "props": {"background": g},
+            "children": [],
+        }
+        tree = normalize(node)
+        msg = {"type": "snapshot", "tree": tree}
+        framed = MsgpackFraming.encode(msg)
+        framing = MsgpackFraming()
+        decoded = framing.feed(framed)
+        bg = decoded[0]["tree"]["props"]["background"]
+        assert bg["type"] == "linear"
+        assert bg["angle"] == 45
+        assert len(bg["stops"]) == 2
+
+    def test_a11y_through_framing(self) -> None:
+        node = {
+            "id": "h",
+            "type": "text",
+            "props": {"a11y": A11y(role="heading", level=1)},
+            "children": [],
+        }
+        tree = normalize(node)
+        msg = {"type": "snapshot", "tree": tree}
+        framed = MsgpackFraming.encode(msg)
+        framing = MsgpackFraming()
+        decoded = framing.feed(framed)
+        a11y = decoded[0]["tree"]["props"]["a11y"]
+        assert a11y["role"] == "heading"
+        assert a11y["level"] == 1
+        assert "hidden" not in a11y

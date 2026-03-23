@@ -341,6 +341,33 @@ class Colors:
 
 
 # ---------------------------------------------------------------------------
+# Wire encoding helpers
+# ---------------------------------------------------------------------------
+
+
+def _to_pascal(value: str) -> str:
+    """Convert an underscore-separated string to PascalCase.
+
+    >>> _to_pascal("semi_bold")
+    'SemiBold'
+    >>> _to_pascal("normal")
+    'Normal'
+    """
+    return "".join(part.capitalize() for part in value.split("_"))
+
+
+def _encode_status_override(override: dict[str, object]) -> dict[str, object]:
+    """Encode a status override dict, converting nested dataclass values."""
+    result: dict[str, object] = {}
+    for key, value in override.items():
+        if hasattr(value, "to_wire"):
+            result[key] = value.to_wire()  # type: ignore[union-attr]
+        else:
+            result[key] = value
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Border
 # ---------------------------------------------------------------------------
 
@@ -382,6 +409,17 @@ class Border:
             "bottom_left": bottom_left,
         }
 
+    def to_wire(self) -> dict[str, object]:
+        """Convert to wire-compatible dict.
+
+        Wire format: ``{"color": hex, "width": n, "radius": n_or_dict}``.
+        """
+        return {
+            "color": self.color,
+            "width": self.width,
+            "radius": self.radius,
+        }
+
 
 # ---------------------------------------------------------------------------
 # Shadow
@@ -398,6 +436,17 @@ class Shadow:
     color: str = "#000000"
     offset: tuple[float, float] = (0, 0)
     blur_radius: float = 0
+
+    def to_wire(self) -> dict[str, object]:
+        """Convert to wire-compatible dict.
+
+        Wire format: ``{"color": hex, "offset": [x, y], "blur_radius": n}``.
+        """
+        return {
+            "color": self.color,
+            "offset": list(self.offset),
+            "blur_radius": self.blur_radius,
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -441,6 +490,19 @@ class Gradient:
         for offset, color in stops:
             normalized.append((offset, Colors.cast(color)))
         return Gradient(angle=angle, stops=tuple(normalized))
+
+    def to_wire(self) -> dict[str, object]:
+        """Convert to wire-compatible dict.
+
+        Wire format: ``{"type": "linear", "angle": n, "stops": [{"offset": n, "color": hex}, ...]}``.
+        """
+        return {
+            "type": "linear",
+            "angle": self.angle,
+            "stops": [
+                {"offset": offset, "color": color} for offset, color in self.stops
+            ],
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -491,6 +553,23 @@ class Font:
     weight: FontWeight | None = None
     style: FontStyle | None = None
     stretch: FontStretch | None = None
+
+    def to_wire(self) -> dict[str, str]:
+        """Convert to wire-compatible dict with non-None fields only.
+
+        Weight, style, and stretch are encoded as PascalCase strings
+        (e.g. ``"semi_bold"`` becomes ``"SemiBold"``).
+        """
+        result: dict[str, str] = {}
+        if self.family is not None:
+            result["family"] = self.family
+        if self.weight is not None:
+            result["weight"] = _to_pascal(self.weight)
+        if self.style is not None:
+            result["style"] = _to_pascal(self.style)
+        if self.stretch is not None:
+            result["stretch"] = _to_pascal(self.stretch)
+        return result
 
 
 # ---------------------------------------------------------------------------
@@ -566,6 +645,33 @@ class StyleMap:
     def with_focused(self, override: StatusOverride) -> StyleMap:
         """Return a new StyleMap with the given focused state override."""
         return replace(self, focused=override)
+
+    def to_wire(self) -> dict[str, object]:
+        """Convert to wire-compatible dict with non-None fields only.
+
+        Nested Border, Shadow, and Gradient values within the StyleMap and
+        its status overrides are recursively converted.
+        """
+        result: dict[str, object] = {}
+        if self.base is not None:
+            result["base"] = self.base
+        if self.background is not None:
+            result["background"] = (
+                self.background.to_wire()
+                if isinstance(self.background, Gradient)
+                else self.background
+            )
+        if self.text_color is not None:
+            result["text_color"] = self.text_color
+        if self.border is not None:
+            result["border"] = self.border.to_wire()
+        if self.shadow is not None:
+            result["shadow"] = self.shadow.to_wire()
+        for key in ("hovered", "pressed", "disabled", "focused"):
+            override = getattr(self, key)
+            if override is not None:
+                result[key] = _encode_status_override(override)
+        return result
 
 
 # ---------------------------------------------------------------------------
@@ -646,6 +752,18 @@ class Theme:
         Theme(name='dark', palette=None)
         """
         return Theme(name=name)
+
+    def to_wire(self) -> str | dict[str, object]:
+        """Convert to wire-compatible value.
+
+        Built-in themes encode as a plain name string.
+        Custom themes encode as a dict with name and palette fields.
+        """
+        if self.palette is None:
+            return self.name
+        result: dict[str, object] = {"name": self.name}
+        result.update(self.palette)
+        return result
 
     @staticmethod
     def custom(
@@ -800,6 +918,16 @@ class A11y:
     position_in_set: int | None = None
     size_of_set: int | None = None
     has_popup: A11yHasPopup | None = None
+
+    def to_wire(self) -> dict[str, object]:
+        """Convert to wire-compatible dict with non-None fields only."""
+        import dataclasses
+
+        return {
+            f.name: getattr(self, f.name)
+            for f in dataclasses.fields(self)
+            if getattr(self, f.name) is not None
+        }
 
 
 # ---------------------------------------------------------------------------
