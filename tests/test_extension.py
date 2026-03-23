@@ -383,9 +383,10 @@ class TestGenerateCargoToml:
         assert "plushie-renderer = { path =" in toml
         assert "git" not in toml
 
-    def test_no_source_path_git_deps(self) -> None:
+    def test_no_source_path_crates_io_deps(self) -> None:
         toml = generate_cargo_toml([_gauge_def()])
-        assert "plushie-ui/plushie-renderer.git" in toml
+        assert 'plushie-ext = "0.5"' in toml
+        assert 'plushie-renderer = "0.5"' in toml
 
 
 # -- main.rs generation ------------------------------------------------------

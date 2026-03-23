@@ -354,9 +354,8 @@ def generate_cargo_toml(
         core_dep = f'plushie-ext = {{ path = "{core_rel}" }}'
         runner_dep = f'plushie-renderer = {{ path = "{runner_rel}" }}'
     else:
-        git = "https://github.com/plushie-ui/plushie-renderer.git"
-        core_dep = f'plushie-ext = {{ git = "{git}" }}'
-        runner_dep = f'plushie-renderer = {{ git = "{git}" }}'
+        core_dep = 'plushie-ext = "0.5"'
+        runner_dep = 'plushie-renderer = "0.5"'
 
     # Use underscores for the Cargo package name (Cargo convention)
     package_name = binary_name.replace("-", "_")
