@@ -28,7 +28,7 @@ views.
 
 ### Code
 
-<!-- test: test_view_contains_tab_buttons, test_clicking_tab_changes_active -- keep this code block in sync with the test -->
+<!-- test: test_view_contains_tab_buttons, test_clicking_tab_changes_active, test_unrelated_click_ignored, test_active_tab_style_has_border, test_inactive_tab_style_has_hovered, TestStyleMapUsage -- keep this code block in sync with the test -->
 ```python
 @dataclass(frozen=True, slots=True)
 class TabModel:
@@ -327,7 +327,7 @@ container that dims the background.
 
 ### Code
 
-<!-- test: test_open_modal_shows_overlay, test_confirm_closes_and_sets_flag, test_cancel_closes_without_confirm -- keep this code block in sync with the test -->
+<!-- test: test_open_modal_shows_overlay, test_closed_modal_hides_overlay, test_confirm_closes_and_sets_flag, test_cancel_closes_without_confirm -- keep this code block in sync with the test -->
 ```python
 @dataclass(frozen=True, slots=True)
 class ModalModel:

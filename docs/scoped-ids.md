@@ -7,6 +7,8 @@ construct long prefixed strings.
 
 ## How it works
 
+<!-- test: test_normalize_builds_scoped_ids, test_auto_id_containers_do_not_scope, test_window_nodes_do_not_scope, test_slash_in_user_id_raises -- keep this code block in sync with the test -->
+
 When `tree.normalize()` processes a node with an explicit (non-auto) ID,
 it pushes that ID onto a scope chain. All descendant nodes have their
 IDs prefixed with the scope path, joined by `/`.
@@ -73,7 +75,7 @@ def update(self, model, event):
 
 Use `plushie.events.target()` to get the full forward-order path:
 
-<!-- test: test_target_reconstructs_full_path -- keep this code block in sync with the test -->
+<!-- test: test_target_reconstructs_full_path, test_target_unscoped -- keep this code block in sync with the test -->
 ```python
 from plushie.events import Click, target
 
@@ -99,7 +101,7 @@ and do not carry scope.
 `tree.find()` and `tree.exists()` support both full scoped paths and
 local IDs:
 
-<!-- test: test_find_by_full_scoped_path, test_find_falls_back_to_local_id -- keep this code block in sync with the test -->
+<!-- test: test_find_by_full_scoped_path, test_find_falls_back_to_local_id, test_exists_with_scoped_path -- keep this code block in sync with the test -->
 ```python
 from plushie.tree import find, exists
 

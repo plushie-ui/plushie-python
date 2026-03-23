@@ -171,7 +171,7 @@ All fields are optional -- only include what you need.
 
 ### Using the a11y prop
 
-<!-- test: test_heading_with_level, test_icon_button_label, test_landmark_region, test_live_region_polite, test_hidden_from_at, test_expanded_state, test_required_form_field -- keep this code block in sync with the test -->
+<!-- test: test_heading_with_level, test_heading_level_2, test_icon_button_label, test_landmark_region, test_live_region_polite, test_hidden_from_at, test_expanded_state, test_required_form_field -- keep this code block in sync with the test -->
 ```python
 from plushie import ui
 

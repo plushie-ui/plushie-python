@@ -48,6 +48,7 @@ widget interactions to event dataclasses using the node's `id`.
 
 ### Click
 
+<!-- test: TestClickConstruct -- keep this code block in sync with the test -->
 ```python
 Click(id="save")
 ```
@@ -671,6 +672,7 @@ def update(self, model, event):
 
 Delivered when modifier key state changes (subscription-driven).
 
+<!-- test: TestKeyModifiersConstruct -- keep this code block in sync with the test -->
 ```python
 from plushie.events import ModifiersChanged
 from plushie.types import KeyModifiers
@@ -698,6 +700,7 @@ def update(self, model, event):
 Delivered when window subscriptions are active or for lifecycle events
 on windows the app manages.
 
+<!-- test: TestWindowResizedMatch, TestWindowFocusedMatch -- keep this code block in sync with the test -->
 ```python
 from plushie.events import (
     WindowCloseRequested, WindowOpen, WindowClosed, WindowMoved,
@@ -753,6 +756,7 @@ def update(self, model, event):
 
 ## System events
 
+<!-- test: TestAnimationFrameConstruct, TestThemeChangedConstruct -- keep this code block in sync with the test -->
 ```python
 from plushie.events import AnimationFrame, ThemeChanged
 
@@ -768,6 +772,7 @@ switches. The `theme` field holds `"light"` or `"dark"`.
 
 Delivered by timer subscriptions.
 
+<!-- test: TestTimerTickMatch -- keep this code block in sync with the test -->
 ```python
 from plushie.events import TimerTick
 
@@ -811,6 +816,7 @@ def update(self, model, event):
 
 Delivered when a streaming command emits an intermediate value.
 
+<!-- test: TestStreamChunkMatch -- keep this code block in sync with the test -->
 ```python
 from plushie.events import StreamChunk, AsyncResult
 
@@ -884,6 +890,7 @@ Note: This event is only generated when the renderer is built with the
 
 Always include a catch-all clause:
 
+<!-- test: TestCatchAll -- keep this code block in sync with the test -->
 ```python
 def update(self, model, event):
     match event:

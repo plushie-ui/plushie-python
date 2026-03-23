@@ -9,11 +9,17 @@ ruff format --check src tests examples
 echo "==> ruff check"
 ruff check src tests examples
 
+echo "==> interrogate"
+interrogate src/plushie/
+
 echo "==> pyright"
 pyright src tests examples
 
 echo "==> pytest"
 pytest
+
+echo "==> verify doc tests"
+python scripts/verify_doc_tests.py
 
 echo "==> mkdocs build --strict"
 mkdocs build --strict --quiet

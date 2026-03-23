@@ -32,6 +32,12 @@ jobs:
       - name: Lint
         run: ruff check src tests examples
 
+      - name: Docstring coverage
+        run: interrogate src/plushie/
+
+      - name: Verify doc test markers
+        run: python scripts/verify_doc_tests.py
+
       - name: Type check
         run: pyright src tests examples
 

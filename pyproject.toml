@@ -38,6 +38,8 @@ dev = [
     "mkdocs>=1.6",
     "mkdocs-material>=9.0",
     "mkdocstrings[python]>=0.24",
+    "mkdocs-htmlproofer-plugin>=1.5",
+    "interrogate>=1.7",
     "build>=1.0",
     "twine>=6.0",
 ]
@@ -104,6 +106,16 @@ plushie = "plushie.testing.plugin"
 
 [project.scripts]
 plushie = "plushie.__main__:main"
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = true
+ignore-semiprivate = true
+ignore-private = true
+ignore-module = false
+fail-under = 95
+exclude = ["tests", "examples"]
 
 [tool.coverage.run]
 source = ["plushie"]

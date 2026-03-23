@@ -19,7 +19,7 @@ renderer (decide whether to execute it). Keep the renderer dumb.
 
 ### Python side
 
-<!-- test: test_file_open, test_effect_id_extractable -- keep this code block in sync with the test -->
+<!-- test: test_file_open, test_effect_id_extractable, test_effect_id_auto_generated, test_all_effects_return_command_type -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie import effects

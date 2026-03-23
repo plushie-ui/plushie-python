@@ -59,7 +59,7 @@ Unknown names fall back to `dark`.
 
 Built-in theme name constants are available in `plushie.types`:
 
-<!-- test: test_builtin_theme_constants -- keep this code block in sync with the test -->
+<!-- test: test_builtin_theme_constants, test_theme_builtin_to_wire -- keep this code block in sync with the test -->
 ```python
 from plushie.types import THEME_CATPPUCCIN_MOCHA, BUILTIN_THEMES
 ```
@@ -68,7 +68,7 @@ from plushie.types import THEME_CATPPUCCIN_MOCHA, BUILTIN_THEMES
 
 Custom themes are defined by providing a palette:
 
-<!-- test: test_theme_custom -- keep this code block in sync with the test -->
+<!-- test: test_theme_custom, test_theme_custom_to_wire -- keep this code block in sync with the test -->
 ```python
 from plushie.types import Theme
 
@@ -210,7 +210,7 @@ writing Rust. They work on all 13 styleable widgets: button, container,
 text_input, text_editor, checkbox, radio, toggler, pick_list, progress_bar,
 rule, slider, vertical_slider, and tooltip.
 
-<!-- test: test_style_map_builder_pattern -- keep this code block in sync with the test -->
+<!-- test: test_style_map_builder_pattern, test_style_map_to_wire, test_style_map_immutable -- keep this code block in sync with the test -->
 ```python
 from plushie.types import StyleMap, Border, Shadow
 
@@ -230,6 +230,8 @@ ui.container("card", style=card_style,
 
 ### Style map fields
 
+<!-- test: test_border_construction, test_border_to_wire, test_shadow_construction, test_shadow_to_wire -- keep this section in sync with the test -->
+
 - `background` -- hex color for the widget background
 - `text_color` -- hex color for text
 - `border` -- a `Border` dataclass (color, width, radius)
@@ -241,7 +243,7 @@ Style maps support interaction state overrides. Each override is a
 partial style dict that is merged on top of the base when the widget
 enters that state:
 
-<!-- test: test_style_map_status_overrides -- keep this code block in sync with the test -->
+<!-- test: test_style_map_status_overrides, test_style_map_with_status_override_to_wire -- keep this code block in sync with the test -->
 ```python
 nav_item_style = (
     StyleMap()

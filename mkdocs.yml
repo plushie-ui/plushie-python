@@ -44,6 +44,11 @@ plugins:
       handlers:
         python:
           paths: [src]
+  - htmlproofer:
+      raise_error: true
+      raise_error_excludes:
+        404: ["*"]
+      validate_external_urls: false
 
 nav:
   - Home: index.md

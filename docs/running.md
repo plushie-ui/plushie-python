@@ -358,7 +358,7 @@ python -m plushie build --wasm
 Raw byte streams (SSH channels, raw sockets) need message boundaries.
 The `plushie.framing` module handles this:
 
-<!-- test: test_encode_decode_round_trip -- keep this code block in sync with the test -->
+<!-- test: test_encode_decode_round_trip, TestJsonFraming, TestMsgpackFraming -- keep this code block in sync with the test -->
 ```python
 from plushie.framing import MsgpackFraming, JsonFraming
 

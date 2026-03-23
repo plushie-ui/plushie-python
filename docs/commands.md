@@ -557,6 +557,8 @@ animations deterministically in tests.
 
 #### No-op
 
+<!-- test: test_command_none -- keep this section in sync with the test -->
+
 When `update` returns a bare model (not a tuple), the runtime treats it as
 `(model, Command.none())`. You never need to write `Command.none()`
 explicitly.
@@ -892,7 +894,7 @@ Supported on: `Slider`, `VerticalSlider`, `Canvas`, `MouseArea`, `Sensor`,
 
 Renderer subscriptions accept a `max_rate` keyword argument:
 
-<!-- test: test_subscription_max_rate -- keep this code block in sync with the test -->
+<!-- test: test_subscription_max_rate, test_subscription_every_no_max_rate -- keep this code block in sync with the test -->
 ```python
 # Rate-limit mouse moves to 30 events per second:
 Subscription.on_mouse_move("mouse", max_rate=30)
@@ -923,7 +925,7 @@ Omit for unlimited (current default behavior).
 Subscriptions are declarative. You do not start or stop them imperatively.
 You return a list from `subscribe()`, and the runtime manages the rest:
 
-<!-- test: test_subscription_lifecycle_declarative -- keep this code block in sync with the test -->
+<!-- test: test_subscription_lifecycle_declarative, test_subscription_key_identity -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
