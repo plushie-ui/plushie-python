@@ -33,7 +33,7 @@ logger = logging.getLogger("plushie")
 GITHUB_RELEASE_URL = "https://github.com/plushie-ui/plushie-renderer/releases/download"
 """Base URL for GitHub release asset downloads."""
 
-WASM_ARCHIVE_NAME = "plushie-wasm.tar.gz"
+WASM_ARCHIVE_NAME = "plushie-renderer-wasm.tar.gz"
 """Filename of the WASM renderer archive on GitHub releases."""
 
 WASM_JS_NAME = "plushie_wasm.js"
@@ -251,7 +251,7 @@ def wasm_download_name() -> str:
     """Return the WASM archive filename for downloads.
 
     Returns:
-        ``"plushie-wasm.tar.gz"``.
+        ``"plushie-renderer-wasm.tar.gz"``.
     """
     return WASM_ARCHIVE_NAME
 
@@ -514,7 +514,7 @@ def download(version: str | None = None, *, force: bool = False) -> str:
 def download_wasm(version: str | None = None, *, force: bool = False) -> str:
     """Download the WASM renderer bundle from GitHub releases.
 
-    Downloads ``plushie-wasm.tar.gz``, verifies its SHA-256 checksum,
+    Downloads ``plushie-renderer-wasm.tar.gz``, verifies its SHA-256 checksum,
     then extracts ``plushie_wasm.js`` and ``plushie_wasm_bg.wasm`` into
     the standard WASM directory.
 
