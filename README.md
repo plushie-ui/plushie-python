@@ -212,8 +212,9 @@ Guides are in [`docs/`](docs/):
 - [Scoped IDs](docs/scoped-ids.md) -- hierarchical ID namespacing
 - [Testing](docs/testing.md) -- three-backend test framework and pixel regression
 - [Accessibility](docs/accessibility.md) -- accesskit integration, a11y props
-- [Extensions](docs/extensions.md) -- custom widgets, publishing packages
+- [Extensions](docs/extensions.md) -- custom widgets, Rust extensions, publishing packages
 - [Running](docs/running.md) -- remote rendering, transports, deployment
+- [CLI reference](docs/cli.md) -- all commands and flags
 - [Standalone executables](docs/standalone.md) -- PyInstaller, Nuitka, Briefcase
 
 ## Development
