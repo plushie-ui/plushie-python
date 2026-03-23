@@ -92,13 +92,15 @@ def _cmd_run(args: argparse.Namespace) -> None:
     if use_json:
         conn_opts["json"] = True
 
+    daemon = getattr(args, "daemon", False)
+
     if watch:
         from plushie.dev_server import DevServer
 
         dev = DevServer(args.app, mode=mode, **conn_opts)
         dev.run()
     else:
-        plushie.run(app_class, mode=mode, **conn_opts)
+        plushie.run(app_class, mode=mode, daemon=daemon, **conn_opts)
 
 
 def _cmd_connect(args: argparse.Namespace) -> None:
@@ -120,17 +122,26 @@ def _cmd_connect(args: argparse.Namespace) -> None:
 def _cmd_download(args: argparse.Namespace) -> None:
     """Handle the ``download`` command."""
     version = args.version
+    force = args.force
 
-    if args.wasm:
-        from plushie.binary import download_wasm
+    want_bin = getattr(args, "bin", False)
+    want_wasm = args.wasm
 
-        path = download_wasm(version=version)
-        print(f"downloaded WASM bundle: {path}")
-    else:
+    # No explicit target means bin only (backward compatible)
+    if not want_bin and not want_wasm:
+        want_bin = True
+
+    if want_bin:
         from plushie.binary import download
 
-        path = download(version=version)
+        path = download(version=version, force=force)
         print(f"downloaded: {path}")
+
+    if want_wasm:
+        from plushie.binary import download_wasm
+
+        path = download_wasm(version=version, force=force)
+        print(f"downloaded WASM bundle: {path}")
 
 
 def _cmd_build(args: argparse.Namespace) -> None:
@@ -138,13 +149,28 @@ def _cmd_build(args: argparse.Namespace) -> None:
     import os
     import subprocess
 
-    if args.wasm:
+    from plushie.binary import check_rust_version
+
+    release = args.release
+
+    want_bin = getattr(args, "bin", False)
+    want_wasm = args.wasm
+
+    # No explicit target means bin only (backward compatible)
+    if not want_bin and not want_wasm:
+        want_bin = True
+
+    if want_wasm:
         from plushie.binary import build_wasm
 
         source = os.environ.get("PLUSHIE_SOURCE_PATH")
-        path = build_wasm(source_path=source)
+        path = build_wasm(source_path=source, release=release)
         print(f"built WASM renderer: {path}")
+
+    if not want_bin:
         return
+
+    check_rust_version()
 
     from plushie.extension import ExtensionDef, generate_cargo_toml, generate_main_rs
 
@@ -210,17 +236,32 @@ def _cmd_build(args: argparse.Namespace) -> None:
     print(f"generated: {main_path}")
 
     # Run cargo build
-    print("building...")
+    cargo_args = ["cargo", "build"]
+    if release:
+        cargo_args.append("--release")
+    profile = "release" if release else "debug"
+    verbose = getattr(args, "verbose", False)
+
+    print(f"building{' (release)' if release else ''}...")
     result = subprocess.run(
-        ["cargo", "build", "--release"],
+        cargo_args,
         cwd=build_dir,
+        capture_output=not verbose,
         check=False,
     )
     if result.returncode != 0:
+        # Always show output on failure
+        if not verbose and result.stdout:
+            sys.stdout.buffer.write(result.stdout)
+        if not verbose and result.stderr:
+            sys.stderr.buffer.write(result.stderr)
         print("build failed", file=sys.stderr)
         raise SystemExit(result.returncode)
 
-    print(f"built: {build_dir}/target/release/{binary_name}")
+    if verbose and result.stdout:
+        sys.stdout.buffer.write(result.stdout)
+
+    print(f"built: {build_dir}/target/{profile}/{binary_name}")
 
 
 def _cmd_inspect(args: argparse.Namespace) -> None:
@@ -310,6 +351,11 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="enable file watching for live reload",
     )
+    run_parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help="keep running after all windows close",
+    )
 
     # connect
     connect_parser = subparsers.add_parser(
@@ -329,9 +375,19 @@ def _build_parser() -> argparse.ArgumentParser:
         help="version to download (default: latest)",
     )
     download_parser.add_argument(
+        "--bin",
+        action="store_true",
+        help="download native binary (default when no target specified)",
+    )
+    download_parser.add_argument(
         "--wasm",
         action="store_true",
-        help="download WASM renderer bundle instead of native binary",
+        help="download WASM renderer bundle",
+    )
+    download_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="re-download even if files already exist",
     )
 
     # build
@@ -350,9 +406,24 @@ def _build_parser() -> argparse.ArgumentParser:
         help="output binary name (default: plushie-custom)",
     )
     build_parser.add_argument(
+        "--bin",
+        action="store_true",
+        help="build native binary (default when no target specified)",
+    )
+    build_parser.add_argument(
         "--wasm",
         action="store_true",
         help="build WASM renderer from source via wasm-pack",
+    )
+    build_parser.add_argument(
+        "--release",
+        action="store_true",
+        help="build with optimizations (default: debug)",
+    )
+    build_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="print full cargo output on successful builds",
     )
 
     # inspect

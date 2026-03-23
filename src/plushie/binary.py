@@ -13,9 +13,11 @@ Platform detection identifies os (linux/darwin/windows) and arch
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import platform
+import re
 import shutil
 import stat
 import subprocess
@@ -50,6 +52,93 @@ class PlushieNotFoundError(FileNotFoundError):
 
 class WasmNotFoundError(FileNotFoundError):
     """Raised when the WASM renderer files cannot be resolved."""
+
+
+class ChecksumError(RuntimeError):
+    """Raised when SHA-256 verification of a downloaded artifact fails."""
+
+
+MIN_RUST_VERSION = (1, 92, 0)
+"""Minimum required Rust toolchain version for building from source."""
+
+
+# ---------------------------------------------------------------------------
+# Checksum verification
+# ---------------------------------------------------------------------------
+
+
+def _verify_checksum(file_path: Path, checksum_url: str) -> None:
+    """Fetch ``{url}.sha256`` and verify the file's SHA-256 digest.
+
+    Downloads the checksum file from *checksum_url*, computes the SHA-256
+    of *file_path*, and compares the two. On mismatch or if the checksum
+    file cannot be fetched, deletes *file_path* and raises.
+
+    Args:
+        file_path: Local file to verify.
+        checksum_url: URL to the ``.sha256`` sidecar file.
+
+    Raises:
+        ChecksumError: On mismatch or if the checksum file is unavailable.
+    """
+    try:
+        with urllib.request.urlopen(checksum_url) as resp:
+            body = resp.read().decode("utf-8").strip()
+    except (urllib.error.URLError, OSError) as exc:
+        file_path.unlink(missing_ok=True)
+        raise ChecksumError(
+            f"SHA-256 checksum file could not be downloaded ({exc}). "
+            f"Refusing to use unverified artifact. URL: {checksum_url}"
+        ) from exc
+
+    expected = body.split()[0].lower()
+    actual = hashlib.sha256(file_path.read_bytes()).hexdigest()
+
+    if actual != expected:
+        file_path.unlink(missing_ok=True)
+        raise ChecksumError(f"Checksum mismatch! Expected {expected}, got {actual}")
+
+    logger.info("checksum verified for %s", file_path)
+
+
+# ---------------------------------------------------------------------------
+# Rust version check
+# ---------------------------------------------------------------------------
+
+
+def check_rust_version() -> None:
+    """Verify that ``rustc`` is installed and meets the minimum version.
+
+    Raises:
+        RuntimeError: If rustc is not found or the version is too old.
+    """
+    min_str = ".".join(str(v) for v in MIN_RUST_VERSION)
+
+    try:
+        result = subprocess.run(
+            ["rustc", "--version"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError(
+            f"rustc not found. Install Rust {min_str}+ via https://rustup.rs"
+        ) from exc
+
+    match = re.search(r"rustc (\d+)\.(\d+)\.(\d+)", result.stdout)
+    if not match:
+        raise RuntimeError(
+            f"could not parse rustc version from: {result.stdout.strip()}"
+        )
+
+    version = (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+    if version < MIN_RUST_VERSION:
+        version_str = ".".join(str(v) for v in version)
+        raise RuntimeError(
+            f"rustc {version_str} detected, but plushie requires >= {min_str}. "
+            f"Upgrade with `rustup update`."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -315,21 +404,24 @@ def resolve() -> str:
 # ---------------------------------------------------------------------------
 
 
-def download(version: str | None = None) -> str:
+def download(version: str | None = None, *, force: bool = False) -> str:
     """Download a precompiled plushie binary from GitHub releases.
 
     The binary is saved to the standard download directory and made
-    executable on Unix systems.
+    executable on Unix systems. After download, the SHA-256 checksum
+    is verified against the sidecar ``.sha256`` file on GitHub.
 
     Args:
         version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
             downloads the latest release.
+        force: Re-download even if the binary already exists.
 
     Returns:
         Path to the downloaded binary.
 
     Raises:
         RuntimeError: On download failure or unsupported platform.
+        ChecksumError: On checksum mismatch or unavailable checksum.
         urllib.error.URLError: On network errors.
     """
     name = download_name()
@@ -343,6 +435,12 @@ def download(version: str | None = None) -> str:
     dest_dir = download_dir()
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / name
+
+    if dest.is_file() and not force:
+        logger.info(
+            "binary already exists at %s -- use force=True to re-download", dest
+        )
+        return str(dest)
 
     logger.info("downloading plushie binary from %s", url)
 
@@ -359,6 +457,8 @@ def download(version: str | None = None) -> str:
         st = dest.stat()
         dest.chmod(st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
+    _verify_checksum(dest, f"{url}.sha256")
+
     logger.info("plushie binary saved to %s", dest)
     return str(dest)
 
@@ -368,21 +468,24 @@ def download(version: str | None = None) -> str:
 # ---------------------------------------------------------------------------
 
 
-def download_wasm(version: str | None = None) -> str:
+def download_wasm(version: str | None = None, *, force: bool = False) -> str:
     """Download the WASM renderer bundle from GitHub releases.
 
-    Downloads ``plushie-wasm.tar.gz`` and extracts ``plushie_wasm.js``
-    and ``plushie_wasm_bg.wasm`` into the standard WASM directory.
+    Downloads ``plushie-wasm.tar.gz``, verifies its SHA-256 checksum,
+    then extracts ``plushie_wasm.js`` and ``plushie_wasm_bg.wasm`` into
+    the standard WASM directory.
 
     Args:
         version: Release version tag (e.g. ``"0.4.0"``). If ``None``,
             downloads the latest release.
+        force: Re-download even if WASM files already exist.
 
     Returns:
         Path to the WASM directory containing the extracted files.
 
     Raises:
         RuntimeError: On download failure or extraction error.
+        ChecksumError: On checksum mismatch or unavailable checksum.
     """
     archive_name = wasm_download_name()
     tag = f"v{version}" if version else "latest"
@@ -393,6 +496,16 @@ def download_wasm(version: str | None = None) -> str:
         url = f"{GITHUB_RELEASE_URL}/{tag}/{archive_name}"
 
     dest_dir = wasm_dir()
+    js_path = dest_dir / WASM_JS_NAME
+    wasm_path = dest_dir / WASM_BG_NAME
+
+    if js_path.is_file() and wasm_path.is_file() and not force:
+        logger.info(
+            "WASM files already exist in %s -- use force=True to re-download",
+            dest_dir,
+        )
+        return str(dest_dir)
+
     dest_dir.mkdir(parents=True, exist_ok=True)
     tarball = dest_dir / archive_name
 
@@ -407,6 +520,8 @@ def download_wasm(version: str | None = None) -> str:
             f"To build from source instead:\n"
             f"  python -m plushie build --wasm"
         ) from exc
+
+    _verify_checksum(tarball, f"{url}.sha256")
 
     # Extract and clean up tarball
     try:
@@ -426,7 +541,11 @@ def download_wasm(version: str | None = None) -> str:
 # ---------------------------------------------------------------------------
 
 
-def build_wasm(source_path: str | None = None) -> str:
+def build_wasm(
+    source_path: str | None = None,
+    *,
+    release: bool = False,
+) -> str:
     """Build the WASM renderer from source using wasm-pack.
 
     Requires ``wasm-pack`` to be installed and the plushie Rust source
@@ -435,6 +554,7 @@ def build_wasm(source_path: str | None = None) -> str:
     Args:
         source_path: Path to the plushie Rust source checkout. If
             ``None``, reads from ``PLUSHIE_SOURCE_PATH`` env var.
+        release: Build with optimizations. Default is debug build.
 
     Returns:
         Path to the WASM output directory.
@@ -471,10 +591,15 @@ def build_wasm(source_path: str | None = None) -> str:
             f"include the plushie-wasm crate directory."
         )
 
-    logger.info("building plushie-wasm from %s", wasm_crate)
+    profile = "--release" if release else "--dev"
+    logger.info(
+        "building plushie-wasm%s from %s",
+        " (release)" if release else "",
+        wasm_crate,
+    )
 
     result = subprocess.run(
-        ["wasm-pack", "build", "--target", "web", "--release"],
+        ["wasm-pack", "build", "--target", "web", profile],
         cwd=wasm_crate,
         capture_output=True,
         text=True,
@@ -543,12 +668,15 @@ def resolve_wasm() -> tuple[Path, Path]:
 
 __all__ = [
     "GITHUB_RELEASE_URL",
+    "MIN_RUST_VERSION",
     "WASM_ARCHIVE_NAME",
     "WASM_BG_NAME",
     "WASM_JS_NAME",
+    "ChecksumError",
     "PlushieNotFoundError",
     "WasmNotFoundError",
     "build_wasm",
+    "check_rust_version",
     "detect_arch",
     "detect_os",
     "download",
