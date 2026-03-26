@@ -94,8 +94,9 @@ class ColorPickerWidget(CanvasWidgetDef):
             case CanvasRelease():
                 return EventAction.update_state({**state, "drag": "none"})
 
-            case CanvasElementKeyPress(element_id=eid, key=key):
-                return _handle_key(eid, key, state)
+            case CanvasElementKeyPress(element_id=eid, key=key, modifiers=mods):
+                shift = bool(mods.get("shift", False))
+                return _handle_key(eid, key, shift, state)
 
             case _:
                 return EventAction.consumed()
@@ -134,21 +135,24 @@ class ColorPickerWidget(CanvasWidgetDef):
 # -- Keyboard ----------------------------------------------------------------
 
 
-def _handle_key(element_id: str, key: str, state: dict[str, Any]) -> EventActionResult:
+def _handle_key(
+    element_id: str, key: str, shift: bool, state: dict[str, Any]
+) -> EventActionResult:
     if element_id == "hue-cursor":
-        return _handle_hue_key(key, state)
+        return _handle_hue_key(key, shift, state)
     elif element_id == "sv-cursor":
-        return _handle_sv_key(key, state)
+        return _handle_sv_key(key, shift, state)
     return EventAction.consumed()
 
 
-def _handle_hue_key(key: str, state: dict[str, Any]) -> EventActionResult:
+def _handle_hue_key(key: str, shift: bool, state: dict[str, Any]) -> EventActionResult:
     hue = state["hue"]
+    step = COARSE_STEP if shift else FINE_STEP
 
     if key in ("ArrowRight", "ArrowUp"):
-        new_hue = _fmod(hue + FINE_STEP, 360.0)
+        new_hue = _fmod(hue + step, 360.0)
     elif key in ("ArrowLeft", "ArrowDown"):
-        new_hue = _fmod(hue - FINE_STEP + 360.0, 360.0)
+        new_hue = _fmod(hue - step + 360.0, 360.0)
     elif key == "PageUp":
         new_hue = _fmod(hue + COARSE_STEP, 360.0)
     elif key == "PageDown":
@@ -166,18 +170,19 @@ def _handle_hue_key(key: str, state: dict[str, Any]) -> EventActionResult:
     return EventAction.consumed()
 
 
-def _handle_sv_key(key: str, state: dict[str, Any]) -> EventActionResult:
+def _handle_sv_key(key: str, shift: bool, state: dict[str, Any]) -> EventActionResult:
     s = state["saturation"]
     v = state["value"]
+    step = SV_COARSE_STEP if shift else SV_FINE_STEP
 
     if key == "ArrowRight":
-        s = _clamp(s + SV_FINE_STEP, 0.0, 1.0)
+        s = _clamp(s + step, 0.0, 1.0)
     elif key == "ArrowLeft":
-        s = _clamp(s - SV_FINE_STEP, 0.0, 1.0)
+        s = _clamp(s - step, 0.0, 1.0)
     elif key == "ArrowUp":
-        v = _clamp(v + SV_FINE_STEP, 0.0, 1.0)
+        v = _clamp(v + step, 0.0, 1.0)
     elif key == "ArrowDown":
-        v = _clamp(v - SV_FINE_STEP, 0.0, 1.0)
+        v = _clamp(v - step, 0.0, 1.0)
     elif key == "PageUp":
         v = _clamp(v + SV_COARSE_STEP, 0.0, 1.0)
     elif key == "PageDown":

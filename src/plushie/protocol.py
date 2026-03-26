@@ -1081,19 +1081,23 @@ def _decode_event(msg: dict[str, Any]) -> Any:
 
     if family == "canvas_element_key_press":
         local_id, scope = split_scoped_id(wire_id)
+        mods = data.get("modifiers", {})
         return CanvasElementKeyPress(
             id=local_id,
             element_id=str(data.get("element_id", "")),
             key=str(data.get("key", "")),
+            modifiers=mods if isinstance(mods, dict) else {},
             scope=scope,
         )
 
     if family == "canvas_element_key_release":
         local_id, scope = split_scoped_id(wire_id)
+        mods = data.get("modifiers", {})
         return CanvasElementKeyRelease(
             id=local_id,
             element_id=str(data.get("element_id", "")),
             key=str(data.get("key", "")),
+            modifiers=mods if isinstance(mods, dict) else {},
             scope=scope,
         )
 

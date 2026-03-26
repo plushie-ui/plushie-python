@@ -25,7 +25,7 @@ EffectResult) are generated Python-side.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from plushie.types import KeyModifiers
@@ -657,11 +657,13 @@ class CanvasElementKeyPress:
     Attributes:
         element_id: The interactive element's identifier within the canvas.
         key: The logical key name (e.g. ``"ArrowRight"``, ``"Enter"``).
+        modifiers: Modifier state (string-keyed bool map from wire).
     """
 
     id: str
     element_id: str
     key: str
+    modifiers: dict[str, bool] = field(default_factory=dict)
     scope: tuple[str, ...] = ()
 
 
@@ -674,11 +676,13 @@ class CanvasElementKeyRelease:
     Attributes:
         element_id: The interactive element's identifier within the canvas.
         key: The logical key name.
+        modifiers: Modifier state (string-keyed bool map from wire).
     """
 
     id: str
     element_id: str
     key: str
+    modifiers: dict[str, bool] = field(default_factory=dict)
     scope: tuple[str, ...] = ()
 
 
