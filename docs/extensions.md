@@ -138,6 +138,77 @@ def view(model):
     ])
 ```
 
+### Canvas widgets -- canvas-based widgets with internal state
+
+Use `CanvasWidgetDef` for widgets that render via canvas shapes,
+manage their own internal state, and transform raw canvas events into
+semantic events. No Rust code needed.
+
+Canvas widgets have three capabilities that composite widgets do not:
+
+- **Internal state** -- initialized by `init()`, managed by the runtime.
+  The widget tree is the source of truth; state is keyed by scoped
+  widget ID.
+- **Event transformation** -- `handle_event()` intercepts events at the
+  widget's scope boundary before they reach `update()`. Raw canvas
+  events become semantic events that are indistinguishable from built-in
+  widget events.
+- **Widget-scoped subscriptions** -- `subscribe()` returns subscriptions
+  scoped to this widget instance. Timer events route to `handle_event()`,
+  not the app's `update()`.
+
+```python
+from plushie.canvas_widget import CanvasWidgetDef, EventAction, build
+
+class StarRating(CanvasWidgetDef):
+    def init(self):
+        return {"hover": None}
+
+    def handle_event(self, event, state):
+        match event:
+            case CanvasElementEnter(element_id=star_id):
+                return EventAction.update_state({**state, "hover": star_id})
+            case CanvasElementLeave():
+                return EventAction.update_state({**state, "hover": None})
+            case CanvasElementClick(element_id=star_id):
+                return EventAction.emit("select", star_id)
+            case _:
+                return EventAction.ignored(state)
+
+    def render(self, id, props, state):
+        return canvas(id, children=[...])
+
+# In your view:
+def view(model):
+    return build(StarRating(), "stars", {"rating": 3, "max": 5})
+```
+
+#### `handle_event` return values
+
+| Return | Effect |
+|--------|--------|
+| `EventAction.ignored(state)` | Event passes through to `update()` unchanged |
+| `EventAction.consumed(state)` | Event suppressed -- neither app nor other widgets see it |
+| `EventAction.update_state(state)` | Internal state updated, no output -- triggers re-render |
+| `EventAction.emit(kind, data)` | Emit a WidgetEvent; id/scope filled in by the runtime |
+
+#### Subscriptions
+
+Optional. Returns subscriptions scoped to this widget instance:
+
+```python
+def subscribe(self, props, state):
+    if state.get("animating"):
+        return [Subscription.every(16, "tick")]
+    return []
+```
+
+#### Lifecycle
+
+Internal state is initialized by `init()` when the widget first
+appears in the tree. When removed, its state is cleaned up. Multiple
+instances get independent state, keyed by scoped widget ID.
+
 ### Native extensions (Rust-backed)
 
 Use `ExtensionDef` for widgets rendered by a Rust crate. The definition

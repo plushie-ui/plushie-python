@@ -96,6 +96,39 @@ target(event)
 Subscription events (KeyPress, KeyRelease, MouseMove, etc.) are global
 and do not carry scope.
 
+## Canvas element scoped IDs
+
+Canvas elements participate in the same scoping mechanism as regular
+widgets. When a canvas element emits an event, the renderer uses
+`canvas_id/element_id` as the wire ID. The SDK splits this into
+`id=element_id, scope=(canvas_id, ...)`, making canvas elements
+look like regular widgets inside a container from the event
+perspective.
+
+```
+canvas("drawing")                ->  id: "drawing"
+  rect("bg", ...)              ->  id: "drawing/bg"
+  interactive("handle", ...)   ->  id: "drawing/handle"
+```
+
+Events from interactive canvas elements follow the same pattern:
+
+```python
+# Canvas element click arrives as:
+# CanvasElementClick(id="handle", scope=("drawing",), ...)
+
+# Match with scope context:
+case CanvasElementClick(id="handle", scope=("drawing", *_)):
+    ...  # handle in drawing canvas
+
+# Bind the canvas ID for dynamic canvases:
+case CanvasElementClick(id="handle", scope=(canvas_id, *_)):
+    handle_click(model, canvas_id)
+```
+
+This means canvas elements, canvas widgets, and regular widgets all
+use the same scoping and event dispatch model.
+
 ## Tree search
 
 `tree.find()` and `tree.exists()` support both full scoped paths and

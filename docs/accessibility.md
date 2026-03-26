@@ -150,7 +150,7 @@ semantics.
 | `expanded` | `bool` | Expanded/collapsed state (menus, disclosures) |
 | `required` | `bool` | Mark form field as required |
 | `level` | `int` | Heading level (1-6, only meaningful with `"heading"` role) |
-| `busy` | `bool` | Loading/processing state (AT announces when done) |
+| `busy` | `bool` | Suppresses AT announcements until cleared (auto-managed by sliders during drag; set explicitly for custom continuous interactions) |
 | `invalid` | `bool` | Form validation failure |
 | `modal` | `bool` | Dialog is modal (AT restricts navigation to this container) |
 | `read_only` | `bool` | Can be read but not edited |
@@ -334,6 +334,29 @@ ui.text("counter", f"Count: {model.count}", a11y={"live": "polite"})
 **Tip:** Only mark the element that changes as live, not its parent
 container. Marking a large container as live causes the entire container's
 text to be re-announced on every change.
+
+### Busy state and continuous interactions
+
+When a value changes rapidly (e.g. during a slider drag or canvas
+interaction), setting `busy=True` on the node suppresses AT
+announcements until `busy` clears. AT then announces the final
+value once, avoiding a flood of intermediate announcements. This
+maps to WAI-ARIA `aria-busy`.
+
+**Built-in widgets handle this automatically.** Sliders set
+`busy=True` during drag and clear it on release. No SDK code
+needed.
+
+**For app-managed live regions** that reflect values from a
+continuous interaction (e.g. a text display showing a hex color
+while the user drags a canvas), set `busy` explicitly:
+
+```python
+text("hex", hex_value, a11y={"live": "polite", "busy": model.drag is not None})
+```
+
+When the drag ends, `busy` clears and the screen reader announces
+the final hex value.
 
 ### Forms
 
