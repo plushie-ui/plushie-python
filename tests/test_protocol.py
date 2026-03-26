@@ -105,7 +105,6 @@ from plushie.protocol import (
     parse_query_response,
     patch,
     query_msg,
-    register_effect_stub as register_effect_stub_msg,
     reset_msg,
     screenshot_msg,
     selector_by_id,
@@ -117,10 +116,15 @@ from plushie.protocol import (
     snapshot,
     subscribe_msg,
     tree_hash_msg,
-    unregister_effect_stub as unregister_effect_stub_msg,
     unsubscribe_msg,
     widget_op,
     window_op,
+)
+from plushie.protocol import (
+    register_effect_stub as register_effect_stub_msg,
+)
+from plushie.protocol import (
+    unregister_effect_stub as unregister_effect_stub_msg,
 )
 from plushie.types import HelloInfo
 

@@ -287,6 +287,9 @@ class Runtime:
         # Pending interact: (event, request_id)
         self._pending_interact: tuple[threading.Event, str] | None = None
 
+        # Canvas widget registry
+        self._canvas_widgets: dict[str, Any] = {}
+
         # Reader thread
         self._reader_thread: threading.Thread | None = None
 
@@ -592,6 +595,11 @@ class Runtime:
         if isinstance(event, EffectResult):
             self._cancel_pending_effect(event.request_id)
 
+        # Dispatch through canvas widget handlers
+        event, self._canvas_widgets = self._route_through_widgets(event)
+        if event is None:
+            return
+
         result = self._safe_update(app, model, event)
         if result is None:
             self._consecutive_errors += 1
@@ -608,9 +616,23 @@ class Runtime:
         new_tree = self._render_and_sync(new_model)
         self._tree = new_tree
 
-        # Sync subscriptions and windows
-        self._sync_subscriptions(new_model)
+        # Derive canvas widget registry from the new tree
+        from plushie.canvas_widget import collect_subscriptions, derive_registry
+
+        self._canvas_widgets = derive_registry(new_tree)
+        widget_subs = collect_subscriptions(self._canvas_widgets)
+
+        # Sync subscriptions (merge widget subs) and windows
+        self._sync_subscriptions(new_model, extra_subs=widget_subs)
         self._sync_windows(new_tree)
+
+    def _route_through_widgets(self, event: Any) -> tuple[Any | None, dict[str, Any]]:
+        """Dispatch event through canvas widget handler chain."""
+        if not self._canvas_widgets:
+            return event, self._canvas_widgets
+        from plushie.canvas_widget import dispatch_through_widgets
+
+        return dispatch_through_widgets(self._canvas_widgets, event)
 
     def _safe_update(
         self, app: App[Any], model: Any, event: Any
@@ -683,6 +705,10 @@ class Runtime:
         Used by interact_step where events are batched and a single
         snapshot follows after all events are processed.
         """
+        event, self._canvas_widgets = self._route_through_widgets(event)
+        if event is None:
+            return
+
         result = self._safe_update(self._app, self._model, event)
         if result is None:
             self._consecutive_errors += 1
@@ -1025,7 +1051,12 @@ class Runtime:
     # Subscription diffing
     # -------------------------------------------------------------------
 
-    def _sync_subscriptions(self, model: Any) -> None:
+    def _sync_subscriptions(
+        self,
+        model: Any,
+        *,
+        extra_subs: list[Subscription] | None = None,
+    ) -> None:
         """Synchronize subscriptions with the app's subscribe() output."""
         try:
             new_specs = self._app.subscribe(model)
@@ -1038,6 +1069,9 @@ class Runtime:
         except Exception:
             logger.exception("plushie runtime: subscribe() raised")
             new_specs = []
+
+        if extra_subs:
+            new_specs = [*new_specs, *extra_subs]
 
         new_by_key: dict[tuple[str, ...], Subscription] = {
             spec.key: spec for spec in new_specs

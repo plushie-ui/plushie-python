@@ -21,7 +21,9 @@ Usage::
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,6 +205,23 @@ class Subscription:
     def on_event(tag: str, *, max_rate: int | None = None) -> Subscription:
         """Subscribe to all renderer events (catch-all)."""
         return Subscription(kind="on_event", tag=tag, max_rate=max_rate)
+
+    # ------------------------------------------------------------------
+    # Tag transformation
+    # ------------------------------------------------------------------
+
+    def map_tag(self, mapper: Callable[[Any], Any]) -> Subscription:
+        """Return a new subscription with a transformed tag.
+
+        Used by the runtime to namespace canvas widget subscription tags
+        so timer events can be routed back to the correct widget.
+
+        Args:
+            mapper: Function that transforms the tag value.
+        """
+        from dataclasses import replace
+
+        return replace(self, tag=mapper(self.tag))
 
 
 __all__ = ["Subscription"]
