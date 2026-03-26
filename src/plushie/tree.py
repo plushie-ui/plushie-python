@@ -143,12 +143,19 @@ def _normalize_with_scope(node: Node, scope: str, index: int) -> Node:
     # Normalize children
     normalized_children = _normalize_children(children, child_scope)
 
-    return {
+    result: Node = {
         "id": scoped_id,
         "type": node_type,
         "props": normalized_props,
         "children": normalized_children,
     }
+
+    # Preserve meta if present -- never sent on the wire, not compared in diffs.
+    meta = node.get("meta")
+    if meta is not None:
+        result["meta"] = meta
+
+    return result
 
 
 def _normalize_children(children: list[Node], scope: str) -> list[Node]:

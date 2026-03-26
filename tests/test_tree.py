@@ -343,6 +343,49 @@ class TestNormalizeDuplicateIds:
         assert "Duplicate sibling IDs" in caplog.text
 
 
+class TestNormalizeMeta:
+    """Meta is preserved through normalize but excluded from diffs."""
+
+    def test_meta_preserved(self) -> None:
+        tree = {"id": "btn", "type": "button", "props": {}, "meta": {"custom": 42}}
+        result = normalize(tree)
+        assert result["meta"] == {"custom": 42}
+
+    def test_meta_none_not_set(self) -> None:
+        tree = {"id": "btn", "type": "button", "props": {}}
+        result = normalize(tree)
+        assert "meta" not in result
+
+    def test_meta_on_children(self) -> None:
+        tree = {
+            "id": "root",
+            "type": "container",
+            "props": {},
+            "children": [
+                {"id": "a", "type": "button", "props": {}, "meta": {"tag": "one"}},
+            ],
+        }
+        result = normalize(tree)
+        assert result["children"][0]["meta"] == {"tag": "one"}
+
+    def test_meta_ignored_in_diff(self) -> None:
+        old = {
+            "id": "root",
+            "type": "container",
+            "props": {},
+            "children": [],
+            "meta": {"version": 1},
+        }
+        new = {
+            "id": "root",
+            "type": "container",
+            "props": {},
+            "children": [],
+            "meta": {"version": 2},
+        }
+        assert diff(normalize(old), normalize(new)) == []
+
+
 # ===========================================================================
 # Diff
 # ===========================================================================
