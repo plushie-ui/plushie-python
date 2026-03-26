@@ -116,8 +116,9 @@ class App[M](ABC):
         ``antialiasing``, ``vsync``, ``scale_factor``, ``theme``,
         ``fonts``, ``default_event_rate``, ``extension_config``.
 
-        The ``extension_config`` key accepts a dict that is forwarded
-        to the renderer and made available to native widget extensions.
+        The ``extension_config`` key accepts a dict keyed by extension
+        widget type. It is forwarded to the renderer and made available
+        to native widget extensions.
 
         Default: empty dict (renderer defaults).
         """

@@ -1485,6 +1485,35 @@ class DuplicateNodeIds:
 
 
 @dataclass(frozen=True, slots=True)
+class ExtensionCommandError:
+    """Renderer error for an ``extension_command``.
+
+    Wire family: ``error`` with ``id = "extension_command"``.
+
+    Attributes:
+        reason: Machine-readable error reason.
+        node_id: Target widget node ID when known.
+        op: Command operation name when known.
+        extension: Extension widget type when known.
+        message: Human-readable error text.
+    """
+
+    reason: str
+    node_id: str | None = None
+    op: str | None = None
+    extension: str | None = None
+    message: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RendererError:
+    """A renderer-side error event that is not a typed protocol error."""
+
+    id: str
+    data: Any
+
+
+@dataclass(frozen=True, slots=True)
 class Announce:
     """Request the system screen reader to announce text.
 
@@ -1783,6 +1812,8 @@ type SystemEvent = (
     | ImageList
     | FocusedWidget
     | TreeHash
+    | ExtensionCommandError
+    | RendererError
 )
 """Union of all system/query response events."""
 
@@ -1857,6 +1888,8 @@ __all__ = [
     # Diagnostic
     "Diagnostic",
     "DuplicateNodeIds",
+    "ExtensionCommandError",
+    "RendererError",
     # Effect
     "EffectResult",
     # Helper types

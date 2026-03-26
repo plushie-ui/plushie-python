@@ -34,7 +34,10 @@ from plushie.connection import (
     ConnectionError,
     _decode_events_list,
     _next_request_id,
+    _normalize_expected_extensions,
+    _validate_required_extensions,
 )
+from plushie.extension import ExtensionDef
 from plushie.protocol import PROTOCOL_VERSION, decode_message
 from plushie.types import HelloInfo
 
@@ -83,6 +86,29 @@ class TestDetectOS:
             mock_sys.platform = "freebsd12"
             with pytest.raises(RuntimeError, match="unsupported platform"):
                 detect_os()
+
+
+class TestHelloExtensionValidation:
+    def test_missing_required_extension_raises(self) -> None:
+        hello = HelloInfo(
+            protocol=PROTOCOL_VERSION,
+            version="0.5.0",
+            name="plushie",
+            mode="mock",
+            backend="none",
+            transport="spawn",
+            extensions=(),
+        )
+        expected = (
+            ExtensionDef(
+                kind="gauge",
+                rust_crate="native/gauge",
+                rust_constructor="gauge::Gauge::new()",
+            ),
+        )
+
+        with pytest.raises(ConnectionError, match="missing required extensions"):
+            _validate_required_extensions(hello, _normalize_expected_extensions(expected))
 
 
 class TestDetectArch:

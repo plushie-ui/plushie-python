@@ -39,6 +39,7 @@ from plushie.events import (
     Close,
     Diagnostic,
     DuplicateNodeIds,
+    ExtensionCommandError,
     EffectResult,
     FileDropped,
     FileHovered,
@@ -79,6 +80,7 @@ from plushie.events import (
     Scroll,
     ScrollData,
     Select,
+    RendererError,
     SensorResize,
     Slide,
     SlideRelease,
@@ -1390,8 +1392,15 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         error_id = wire_id
         if error_id == "duplicate_node_ids":
             return DuplicateNodeIds(details=data)
-        # Generic error -- return as dict
-        return msg
+        if error_id == "extension_command":
+            return ExtensionCommandError(
+                reason=str(data.get("reason", "")),
+                node_id=str(data["node_id"]) if data.get("node_id") is not None else None,
+                op=str(data["op"]) if data.get("op") is not None else None,
+                extension=str(data["extension"]) if data.get("extension") is not None else None,
+                message=str(data["message"]) if data.get("message") is not None else None,
+            )
+        return RendererError(id=error_id, data=data)
 
     if family == "announce":
         return Announce(text=str(data.get("text", "")))

@@ -27,6 +27,8 @@ from plushie.events import (
     Close,
     Diagnostic,
     DuplicateNodeIds,
+    ExtensionCommandError,
+    RendererError,
     EffectResult,
     FileDropped,
     FileHovered,
@@ -1368,6 +1370,26 @@ class TestDecodeErrorAndAnnounce:
         result = decode_message(raw)
         assert isinstance(result, Announce)
         assert result.text == "Item saved"
+
+    def test_extension_command_error(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "error",
+            "id": "extension_command",
+            "data": {
+                "kind": "extension_command",
+                "reason": "unknown_node",
+                "node_id": "g1",
+                "op": "set_value",
+                "message": "no extension handles node `g1`",
+            },
+        }
+        result = decode_message(raw)
+        assert isinstance(result, ExtensionCommandError)
+        assert result.reason == "unknown_node"
+        assert result.node_id == "g1"
+        assert result.op == "set_value"
+        assert result.message == "no extension handles node `g1`"
 
 
 class TestDecodeOpQueryResponse:
