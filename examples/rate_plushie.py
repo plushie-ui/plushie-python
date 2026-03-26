@@ -4,14 +4,12 @@ Demonstrates custom canvas widgets (StarRating, ThemeToggle) composed
 with styled containers. The "Dark humor" toggle animates a face emoji
 and flips the entire page theme.
 
-Features:
+The review form showcases form validation with:
 
-- Custom canvas widgets as reusable modules (star_rating, theme_toggle)
-- Interactive canvas shapes with click/hover/focus events
-- Timer-based animation via subscriptions (16ms frame rate)
-- Theme interpolation between light and dark palettes
-- Review form with text input, text editor, and submit
-- Container styling with border, padding, background
+- Per-field error state tracked in the model
+- Visual error styling via ``StyleMap`` (border + background tint)
+- Accessible error wiring via ``a11y`` (required, invalid, error_message)
+- Validate-on-submit with clear-on-change for responsive UX
 
 Run::
 
@@ -20,24 +18,15 @@ Run::
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 import plushie
-from examples.widgets.star_rating import render as star_render
-from examples.widgets.theme_toggle import render as toggle_render
+from examples.widgets.star_rating import StarRating
+from examples.widgets.theme_toggle import ThemeToggle
 from plushie import ui
-from plushie.events import (
-    CanvasElementClick,
-    CanvasElementEnter,
-    CanvasElementLeave,
-    Click,
-    Input,
-    Submit,
-    TimerTick,
-)
-from plushie.subscriptions import Subscription
-from plushie.types import Theme
+from plushie.events import Click, Input, Submit, WidgetEvent
+from plushie.types import Border, StyleMap, Theme
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,19 +74,31 @@ class Model:
     """Rate Plushie model."""
 
     rating: int = 0
-    hover_star: int | None = None
-    toggle_progress: float = 0.0
-    toggle_target: float = 0.0
+    dark_mode: bool = False
     reviews: tuple[Review, ...] = INITIAL_REVIEWS
     review_name: str = ""
     review_comment: str = ""
+    errors: dict[str, str] = field(default_factory=dict)
+
+
+def _validate_review(model: Model) -> dict[str, str]:
+    errors: dict[str, str] = {}
+    if not model.review_name.strip():
+        errors["name"] = "Name is required"
+    if not model.review_comment.strip():
+        errors["comment"] = "Review text is required"
+    if model.rating <= 0:
+        errors["rating"] = "Please select a rating"
+    return errors
 
 
 def _submit_review(model: Model) -> Model:
+    errors = _validate_review(model)
+    if errors:
+        return replace(model, errors=errors)
+
     name = model.review_name.strip()
     comment = model.review_comment.strip()
-    if not name or not comment or model.rating <= 0:
-        return model
     review = Review(stars=model.rating, user=name, time="just now", text=comment)
     return replace(
         model,
@@ -105,23 +106,8 @@ def _submit_review(model: Model) -> Model:
         review_name="",
         review_comment="",
         rating=0,
+        errors={},
     )
-
-
-def _approach(current: float, target: float, step: float) -> float:
-    if current < target:
-        return min(current + step, target)
-    if current > target:
-        return max(current - step, target)
-    return current
-
-
-def _smoothstep(t: float) -> float:
-    if t <= 0.0:
-        return 0.0
-    if t >= 1.0:
-        return 1.0
-    return t * t * (3 - 2 * t)
 
 
 def _fade(c1: tuple[int, int, int], c2: tuple[int, int, int], t: float) -> str:
@@ -141,6 +127,9 @@ class _Theme:
     text: str
     text_secondary: str
     text_muted: str
+    error_text: str
+    error_border: str
+    error_bg: str
 
 
 def _theme(p: float) -> _Theme:
@@ -151,6 +140,20 @@ def _theme(p: float) -> _Theme:
         text=_fade((26, 26, 26), (240, 240, 245), p),
         text_secondary=_fade((102, 102, 102), (153, 153, 187), p),
         text_muted=_fade((170, 170, 170), (85, 85, 119), p),
+        error_text=_fade((185, 28, 28), (255, 100, 100), p),
+        error_border=_fade((220, 38, 38), (255, 80, 80), p),
+        error_bg=_fade((254, 242, 242), (50, 20, 20), p),
+    )
+
+
+def _input_style(error: str | None, t: _Theme) -> Any:
+    if error is None:
+        return "default"
+    error_border = Border(color=t.error_border, width=2, radius=4)
+    return StyleMap(
+        border=error_border,
+        background=t.error_bg,
+        focused={"border": error_border},
     )
 
 
@@ -162,56 +165,35 @@ class RatePlushie(plushie.App[Model]):
 
     def update(self, model: Model, event: object) -> Model:
         match event:
-            # Star rating interactions
-            case CanvasElementClick(id="stars", element_id=sid) if sid.startswith(
-                "star-"
-            ):
-                n = int(sid.removeprefix("star-"))
-                return replace(model, rating=n + 1)
+            # Star rating emits :select with the number of stars.
+            case WidgetEvent(kind="select", id="stars", data=data):
+                stars = data.get("value", 0)
+                errors = {k: v for k, v in model.errors.items() if k != "rating"}
+                return replace(model, rating=stars, errors=errors)
 
-            case CanvasElementEnter(id="stars", element_id=sid) if sid.startswith(
-                "star-"
-            ):
-                n = int(sid.removeprefix("star-"))
-                return replace(model, hover_star=n + 1)
+            # Theme toggle emits :toggle with the new state.
+            case WidgetEvent(kind="toggle", id="theme-toggle", data=data):
+                return replace(model, dark_mode=data.get("value", False))
 
-            case CanvasElementLeave(id="stars"):
-                return replace(model, hover_star=None)
-
-            # Theme toggle
-            case CanvasElementClick(id="theme-toggle"):
-                target = 1.0 if model.toggle_target == 0.0 else 0.0
-                return replace(model, toggle_target=target)
-
-            # Review form
             case Input(id="review-name", value=v):
-                return replace(model, review_name=v)
+                errors = {k: val for k, val in model.errors.items() if k != "name"}
+                return replace(model, review_name=v, errors=errors)
             case Input(id="review-comment", value=v):
-                return replace(model, review_comment=v)
+                errors = {k: val for k, val in model.errors.items() if k != "comment"}
+                return replace(model, review_comment=v, errors=errors)
             case Click(id="submit-review"):
                 return _submit_review(model)
             case Submit(id="review-name"):
                 return _submit_review(model)
 
-            # Animation
-            case TimerTick(tag="animate"):
-                return replace(
-                    model,
-                    toggle_progress=_approach(
-                        model.toggle_progress, model.toggle_target, 0.06
-                    ),
-                )
-
             case _:
                 return model
 
-    def subscribe(self, model: Model) -> list[Subscription]:
-        if model.toggle_progress != model.toggle_target:
-            return [Subscription.every(16, "animate")]
+    def subscribe(self, model: Model) -> list[Any]:
         return []
 
     def view(self, model: Model) -> dict[str, Any]:
-        p = _smoothstep(model.toggle_progress)
+        p = 1.0 if model.dark_mode else 0.0
         t = _theme(p)
 
         page_theme = Theme.custom(
@@ -259,6 +241,24 @@ class RatePlushie(plushie.App[Model]):
 
 
 def _rating_card(model: Model, p: float, t: _Theme) -> dict[str, Any]:
+    stars_children: list[dict[str, Any]] = [
+        StarRating.build(
+            "stars",
+            props={"rating": model.rating, "theme_progress": p},
+        ),
+    ]
+    rating_error = model.errors.get("rating")
+    if rating_error:
+        stars_children.append(
+            ui.text(
+                "stars-error",
+                rating_error,
+                size=12,
+                color=t.error_text,
+                a11y={"role": "alert", "live": "polite"},
+            )
+        )
+
     return ui.container(
         "rating-card",
         ui.column(
@@ -268,14 +268,9 @@ def _rating_card(model: Model, p: float, t: _Theme) -> dict[str, Any]:
                 size=14,
                 color=t.text_secondary,
             ),
-            star_render(
-                "stars",
-                model.rating,
-                hover=model.hover_star,
-                theme_progress=p,
-            ),
+            ui.column(*stars_children, id="stars-group", spacing=4),
             ui.rule(),
-            _review_form(model),
+            _review_form(model, t),
             _theme_row(model, t),
             spacing=20,
             width="fill",
@@ -287,23 +282,65 @@ def _rating_card(model: Model, p: float, t: _Theme) -> dict[str, Any]:
     )
 
 
-def _review_form(model: Model) -> dict[str, Any]:
-    return ui.column(
+def _review_form(model: Model, t: _Theme) -> dict[str, Any]:
+    name_error = model.errors.get("name")
+    comment_error = model.errors.get("comment")
+
+    name_children: list[dict[str, Any]] = [
         ui.text_input(
             "review-name",
             model.review_name,
             placeholder="Your name",
-            width="fill",
-            a11y={"label": "Your name"},
+            on_submit=True,
+            style=_input_style(name_error, t),
+            a11y={
+                "label": "Your name",
+                "required": True,
+                "invalid": name_error is not None,
+                "error_message": "review-name-error" if name_error else None,
+            },
         ),
+    ]
+    if name_error:
+        name_children.append(
+            ui.text(
+                "review-name-error",
+                name_error,
+                size=12,
+                color=t.error_text,
+                a11y={"role": "alert", "live": "polite"},
+            )
+        )
+
+    comment_children: list[dict[str, Any]] = [
         ui.text_editor(
             "review-comment",
             model.review_comment,
             placeholder="Write your review...",
-            width="fill",
             height=80,
-            a11y={"label": "Review text"},
+            style=_input_style(comment_error, t),
+            a11y={
+                "label": "Review text",
+                "required": True,
+                "invalid": comment_error is not None,
+                "error_message": "review-comment-error" if comment_error else None,
+            },
         ),
+    ]
+    if comment_error:
+        comment_children.append(
+            ui.text(
+                "review-comment-error",
+                comment_error,
+                size=12,
+                color=t.error_text,
+                a11y={"role": "alert", "live": "polite"},
+            )
+        )
+
+    return ui.column(
+        ui.column(*name_children, id="name-field", spacing=4, width="fill"),
+        ui.column(*comment_children, id="comment-field", spacing=4, width="fill"),
         ui.button("submit-review", "Submit Review"),
         id="review-form",
         spacing=12,
@@ -315,7 +352,7 @@ def _theme_row(model: Model, t: _Theme) -> dict[str, Any]:
     return ui.row(
         ui.space(width="fill"),
         ui.text("toggle-label", "Dark humor", color=t.text_secondary),
-        toggle_render("theme-toggle", model.toggle_progress),
+        ThemeToggle.build("theme-toggle"),
         id="theme-row",
         align_y="center",
     )
@@ -334,12 +371,14 @@ def _reviews_list(reviews: tuple[Review, ...], p: float, t: _Theme) -> dict[str,
 def _review_card(review: Review, i: int, p: float, t: _Theme) -> dict[str, Any]:
     return ui.column(
         ui.row(
-            star_render(
+            StarRating.build(
                 f"rstars-{i}",
-                review.stars,
-                readonly=True,
-                scale=0.4,
-                theme_progress=p,
+                props={
+                    "rating": review.stars,
+                    "readonly": True,
+                    "scale": 0.4,
+                    "theme_progress": p,
+                },
             ),
             ui.text(f"rname-{i}", review.user, size=12, color=t.text_secondary),
             ui.space(width="fill"),
