@@ -166,8 +166,58 @@ def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
     return encode_selector(selector)
 
 
+def _build_key_lookup() -> dict[str, str]:
+    """Build a lowercase -> PascalCase lookup from the keys module.
+
+    Single-character keys are excluded since they pass through as
+    lowercase directly.
+    """
+    from plushie import keys as _keys
+
+    lookup: dict[str, str] = {}
+    for name in dir(_keys):
+        if name.startswith("_"):
+            continue
+        val = getattr(_keys, name)
+        if isinstance(val, str) and len(val) > 1:
+            lookup[val.lower()] = val
+    return lookup
+
+
+_NAMED_KEY_LOOKUP: dict[str, str] = _build_key_lookup()
+
+
+def _resolve_key_name(key_name: str) -> str:
+    """Resolve a key name to its canonical PascalCase form.
+
+    Single-character keys are lowercased (matching iced's logical key
+    format). Multi-character named keys are resolved case-insensitively
+    against the full key constant set.
+
+    Raises:
+        ValueError: If a multi-character key name is not recognized.
+    """
+    if len(key_name) == 1:
+        return key_name.lower()
+
+    resolved = _NAMED_KEY_LOOKUP.get(key_name.lower())
+    if resolved is not None:
+        return resolved
+
+    raise ValueError(
+        f"unknown key {key_name!r}. "
+        "Examples: Tab, ArrowRight, PageUp, Escape, Enter. "
+        "See plushie.keys for the full list"
+    )
+
+
 def _parse_key(key: str) -> dict[str, Any]:
-    """Parse a key string like ``"ctrl+s"`` into key + modifiers dict."""
+    """Parse a key string like ``"ctrl+s"`` into key + modifiers dict.
+
+    Key names are resolved case-insensitively: ``"escape"``, ``"Escape"``,
+    and ``"ESCAPE"`` all produce ``"Escape"``. Single-character keys are
+    lowercased (matching iced's logical key format).
+    """
     parts = key.split("+")
     key_name = parts[-1]
     mod_parts = parts[:-1]
@@ -178,7 +228,8 @@ def _parse_key(key: str) -> dict[str, Any]:
         if mod_lower in ("ctrl", "shift", "alt", "logo", "command"):
             modifiers[mod_lower] = True
 
-    return {"key": key_name, "modifiers": modifiers}
+    resolved = _resolve_key_name(key_name)
+    return {"key": resolved, "modifiers": modifiers}
 
 
 # ---------------------------------------------------------------------------

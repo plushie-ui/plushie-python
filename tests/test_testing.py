@@ -362,6 +362,30 @@ class TestParseKey:
         result = _parse_key("meta+a")
         assert result == {"key": "a", "modifiers": {}}
 
+    def test_case_insensitive_named_key(self) -> None:
+        assert _parse_key("escape")["key"] == "Escape"
+        assert _parse_key("ESCAPE")["key"] == "Escape"
+        assert _parse_key("Escape")["key"] == "Escape"
+
+    def test_case_insensitive_arrow_keys(self) -> None:
+        assert _parse_key("arrowup")["key"] == "ArrowUp"
+        assert _parse_key("ARROWUP")["key"] == "ArrowUp"
+        assert _parse_key("ArrowUp")["key"] == "ArrowUp"
+
+    def test_single_char_lowercased(self) -> None:
+        assert _parse_key("A")["key"] == "a"
+        assert _parse_key("a")["key"] == "a"
+        assert _parse_key("Z")["key"] == "z"
+
+    def test_modifier_with_case_insensitive_key(self) -> None:
+        result = _parse_key("ctrl+escape")
+        assert result["key"] == "Escape"
+        assert result["modifiers"]["ctrl"] is True
+
+    def test_unknown_named_key_raises(self) -> None:
+        with pytest.raises(ValueError, match="unknown key"):
+            _parse_key("NotARealKey")
+
 
 # ---------------------------------------------------------------------------
 # Assertion helper tests
