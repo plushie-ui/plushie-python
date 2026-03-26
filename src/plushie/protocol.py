@@ -490,6 +490,50 @@ def reset_msg(
     }
 
 
+def register_effect_stub(
+    kind: str,
+    response: Any,
+    *,
+    session: str = "",
+) -> dict[str, Any]:
+    """Build a register_effect_stub message.
+
+    Tells the renderer to return ``response`` immediately for any effect
+    of the given ``kind``, without executing the real effect.
+
+    Args:
+        kind: Effect kind (e.g. ``"file_open"``, ``"clipboard_read"``).
+        response: The canned response the renderer should return.
+        session: Session identifier.
+    """
+    return {
+        "type": "register_effect_stub",
+        "session": session,
+        "kind": kind,
+        "response": response,
+    }
+
+
+def unregister_effect_stub(
+    kind: str,
+    *,
+    session: str = "",
+) -> dict[str, Any]:
+    """Build an unregister_effect_stub message.
+
+    Removes a previously registered effect stub.
+
+    Args:
+        kind: Effect kind to unregister.
+        session: Session identifier.
+    """
+    return {
+        "type": "unregister_effect_stub",
+        "session": session,
+        "kind": kind,
+    }
+
+
 def advance_frame_msg(
     timestamp: int,
     *,
@@ -757,6 +801,9 @@ def decode_message(
 
     if msg_type == "event":
         return _decode_event(msg)
+
+    if msg_type in ("effect_stub_registered", "effect_stub_unregistered"):
+        return {"type": msg_type, "kind": msg.get("kind", "")}
 
     # Pass through other response types (query_response, interact_response,
     # interact_step, tree_hash_response, screenshot_response, reset_response)
@@ -1429,6 +1476,7 @@ __all__ = [
     "parse_query_response",
     "patch",
     "query_msg",
+    "register_effect_stub",
     "reset_msg",
     "screenshot_msg",
     "selector_by_id",
@@ -1440,6 +1488,7 @@ __all__ = [
     "snapshot",
     "subscribe_msg",
     "tree_hash_msg",
+    "unregister_effect_stub",
     "unsubscribe_msg",
     "widget_op",
     "window_op",

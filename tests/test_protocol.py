@@ -105,6 +105,7 @@ from plushie.protocol import (
     parse_query_response,
     patch,
     query_msg,
+    register_effect_stub as register_effect_stub_msg,
     reset_msg,
     screenshot_msg,
     selector_by_id,
@@ -116,6 +117,7 @@ from plushie.protocol import (
     snapshot,
     subscribe_msg,
     tree_hash_msg,
+    unregister_effect_stub as unregister_effect_stub_msg,
     unsubscribe_msg,
     widget_op,
     window_op,
@@ -313,6 +315,36 @@ class TestAdvanceFrameMsg:
         msg = advance_frame_msg(16000)
         assert msg["type"] == "advance_frame"
         assert msg["timestamp"] == 16000
+
+
+class TestEffectStubMessages:
+    def test_register_effect_stub(self) -> None:
+        msg = register_effect_stub_msg(
+            "file_open", {"status": "ok", "result": "/tmp/test.txt"}
+        )
+        assert msg["type"] == "register_effect_stub"
+        assert msg["kind"] == "file_open"
+        assert msg["response"]["status"] == "ok"
+        assert msg["session"] == ""
+
+    def test_unregister_effect_stub(self) -> None:
+        msg = unregister_effect_stub_msg("file_open")
+        assert msg["type"] == "unregister_effect_stub"
+        assert msg["kind"] == "file_open"
+
+    def test_decode_effect_stub_registered(self) -> None:
+        raw = {"type": "effect_stub_registered", "kind": "clipboard_read"}
+        result = decode_message(raw)
+        assert isinstance(result, dict)
+        assert result["type"] == "effect_stub_registered"
+        assert result["kind"] == "clipboard_read"
+
+    def test_decode_effect_stub_unregistered(self) -> None:
+        raw = {"type": "effect_stub_unregistered", "kind": "file_open"}
+        result = decode_message(raw)
+        assert isinstance(result, dict)
+        assert result["type"] == "effect_stub_unregistered"
+        assert result["kind"] == "file_open"
 
 
 # ===================================================================

@@ -44,6 +44,9 @@ from plushie.events import (
     StreamChunk,
     TimerTick,
 )
+from plushie.events import (
+    Diagnostic as _Diagnostic,
+)
 from plushie.protocol import (
     advance_frame_msg,
     effect_msg,
@@ -271,6 +274,19 @@ class Runtime:
         # Consecutive error count for rate-limited logging
         self._consecutive_errors: int = 0
 
+        # Effect stub ack tracking: kind -> Event to unblock callers
+        self._pending_stub_acks: dict[str, threading.Event] = {}
+
+        # Diagnostic accumulation
+        self._diagnostics: list[Any] = []
+        self._diagnostics_lock: threading.Lock = threading.Lock()
+
+        # Pending await_async callers: tag -> Event
+        self._pending_await_async: dict[str, threading.Event] = {}
+
+        # Pending interact: (event, request_id)
+        self._pending_interact: tuple[threading.Event, str] | None = None
+
         # Reader thread
         self._reader_thread: threading.Thread | None = None
 
@@ -313,6 +329,61 @@ class Runtime:
     def is_running(self) -> bool:
         """Whether the event loop is currently running."""
         return self._running
+
+    def register_effect_stub(
+        self, kind: str, response: Any, *, timeout: float = 5.0
+    ) -> None:
+        """Register an effect stub with the renderer.
+
+        The renderer will return ``response`` immediately for any effect
+        of the given ``kind``. Blocks until the renderer confirms.
+
+        Args:
+            kind: Effect kind (e.g. ``"file_open"``).
+            response: Canned response the renderer returns.
+            timeout: Maximum seconds to wait for ack.
+        """
+        from plushie.protocol import register_effect_stub
+
+        ack = threading.Event()
+        self._pending_stub_acks[kind] = ack
+        msg = register_effect_stub(kind, response, session=self._conn.session)
+        self._conn.send(msg)
+        if not ack.wait(timeout):
+            self._pending_stub_acks.pop(kind, None)
+            logger.warning("register_effect_stub(%r) timed out", kind)
+
+    def unregister_effect_stub(self, kind: str, *, timeout: float = 5.0) -> None:
+        """Remove a previously registered effect stub.
+
+        Blocks until the renderer confirms removal.
+
+        Args:
+            kind: Effect kind to remove.
+            timeout: Maximum seconds to wait for ack.
+        """
+        from plushie.protocol import unregister_effect_stub
+
+        ack = threading.Event()
+        self._pending_stub_acks[kind] = ack
+        msg = unregister_effect_stub(kind, session=self._conn.session)
+        self._conn.send(msg)
+        if not ack.wait(timeout):
+            self._pending_stub_acks.pop(kind, None)
+            logger.warning("unregister_effect_stub(%r) timed out", kind)
+
+    def get_diagnostics(self) -> list[Any]:
+        """Return and clear accumulated prop validation diagnostics.
+
+        The renderer emits diagnostic events when ``validate_props`` is
+        enabled. These are intercepted by the runtime (never delivered
+        to ``update()``) and accumulated. This atomically retrieves and
+        clears the list.
+        """
+        with self._diagnostics_lock:
+            result = list(self._diagnostics)
+            self._diagnostics.clear()
+        return result
 
     # -------------------------------------------------------------------
     # Initialization
@@ -383,6 +454,26 @@ class Runtime:
                     event.backend,
                     event.transport,
                 )
+                continue
+
+            # Diagnostic events -- intercept, never deliver to update()
+            if isinstance(event, _Diagnostic):
+                logger.warning(
+                    "plushie runtime: prop validation diagnostic: %s", event.message
+                )
+                with self._diagnostics_lock:
+                    self._diagnostics.append(event)
+                continue
+
+            # Effect stub ack -- unblock the waiting caller
+            if isinstance(event, dict) and event.get("type") in (
+                "effect_stub_registered",
+                "effect_stub_unregistered",
+            ):
+                kind = event.get("kind", "")
+                ack = self._pending_stub_acks.pop(kind, None)
+                if ack is not None:
+                    ack.set()
                 continue
 
             # AllWindowsClosed in non-daemon mode -> dispatch then stop
