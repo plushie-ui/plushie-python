@@ -385,6 +385,46 @@ class Runtime:
             self._diagnostics.clear()
         return result
 
+    def interact(
+        self,
+        action: str,
+        selector: str | None = None,
+        payload: dict[str, Any] | None = None,
+        *,
+        timeout: float = 30.0,
+    ) -> None:
+        """Simulate a user interaction through the runtime.
+
+        Sends an interact message to the renderer, then blocks until
+        the interact_response arrives. interact_step messages are
+        handled in the event loop using apply_event (update + commands,
+        no render per-step) followed by a single snapshot.
+
+        Thread-safe: can be called from any thread.
+
+        Args:
+            action: Interaction type (e.g. ``"click"``, ``"type_text"``).
+            selector: Target selector string.
+            payload: Action parameters.
+            timeout: Max seconds to wait for completion.
+        """
+        from plushie.protocol import encode_selector, interact_msg
+
+        rid = f"interact_{self._next_nonce()}"
+        sel: dict[str, str] | None = None
+        if selector is not None:
+            sel = encode_selector(selector)
+
+        done = threading.Event()
+        self._pending_interact = (done, rid)
+
+        msg = interact_msg(rid, action, sel, payload, session=self._conn.session)
+        self._conn.send(msg)
+
+        if not done.wait(timeout):
+            self._pending_interact = None
+            logger.warning("interact(%r) timed out after %.1fs", action, timeout)
+
     # -------------------------------------------------------------------
     # Initialization
     # -------------------------------------------------------------------
@@ -474,6 +514,18 @@ class Runtime:
                 ack = self._pending_stub_acks.pop(kind, None)
                 if ack is not None:
                     ack.set()
+                continue
+
+            # Interact step -- batch events with apply_event, then snapshot
+            if isinstance(event, dict) and event.get("type") == "interact_step":
+                self._flush_coalescables()
+                self._handle_interact_step(event.get("events", []))
+                continue
+
+            # Interact response -- final events, full update cycle, unblock caller
+            if isinstance(event, dict) and event.get("type") == "interact_response":
+                self._flush_coalescables()
+                self._handle_interact_response(event)
                 continue
 
             # AllWindowsClosed in non-daemon mode -> dispatch then stop
@@ -599,6 +651,80 @@ class Runtime:
                 self._conn.send_patch(ops)
 
         return new_tree
+
+    # -------------------------------------------------------------------
+    # Interact protocol
+    # -------------------------------------------------------------------
+
+    def _apply_event(self, event: Any) -> None:
+        """Update + commands only, no re-render.
+
+        Used by interact_step where events are batched and a single
+        snapshot follows after all events are processed.
+        """
+        result = self._safe_update(self._app, self._model, event)
+        if result is None:
+            self._consecutive_errors += 1
+            return
+
+        new_model, commands = result
+        self._model = new_model
+        self._consecutive_errors = 0
+        self._execute_commands(commands)
+
+    def _decode_interact_event(self, event_map: dict[str, Any]) -> Any:
+        """Decode a wire-format event from an interact_step/interact_response."""
+        from plushie.protocol import decode_message
+
+        # Wrap bare event data as a proper event message for the decoder
+        wrapped = {"type": "event", **event_map}
+        decoded = decode_message(wrapped)
+        if isinstance(decoded, dict):
+            return None  # unrecognized -- skip
+        return decoded
+
+    def _handle_interact_step(self, events: list[dict[str, Any]]) -> None:
+        """Process an interact_step batch.
+
+        Applies each event through update + commands without rendering,
+        then sends a single full snapshot back to the renderer.
+        """
+        for event_map in events:
+            decoded = self._decode_interact_event(event_map)
+            if decoded is not None:
+                self._apply_event(decoded)
+
+        # Re-render and send a full snapshot (not a patch)
+        new_tree = self._safe_view(self._model)
+        if new_tree is None:
+            new_tree = self._tree
+        self._tree = new_tree
+        if new_tree is not None:
+            self._conn.send_snapshot(new_tree)
+
+        self._sync_subscriptions(self._model)
+        self._sync_windows(new_tree)
+
+    def _handle_interact_response(self, msg: dict[str, Any]) -> None:
+        """Process an interact_response.
+
+        Final events get a full update cycle (update + render). Then
+        unblock the caller.
+        """
+        events = msg.get("events", [])
+        for event_map in events:
+            decoded = self._decode_interact_event(event_map)
+            if decoded is not None:
+                self._run_update(decoded)
+
+        # Unblock the waiting caller
+        rid = msg.get("id", "")
+        pending = self._pending_interact
+        if pending is not None:
+            done, expected_id = pending
+            if expected_id == rid:
+                self._pending_interact = None
+                done.set()
 
     # -------------------------------------------------------------------
     # Command execution
