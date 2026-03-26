@@ -385,6 +385,27 @@ class Runtime:
             self._diagnostics.clear()
         return result
 
+    def await_async(self, tag: str, *, timeout: float = 30.0) -> bool:
+        """Block until an async task with the given tag completes.
+
+        If the task is still running, blocks until it finishes (up to
+        ``timeout``). If the task has already completed or was never
+        started, returns immediately.
+
+        Args:
+            tag: The async task tag to wait for.
+            timeout: Maximum seconds to wait.
+
+        Returns:
+            ``True`` if the task completed, ``False`` if timed out.
+        """
+        if tag not in self._async_tasks:
+            return True
+
+        done = threading.Event()
+        self._pending_await_async[tag] = done
+        return done.wait(timeout)
+
     def interact(
         self,
         action: str,
@@ -910,6 +931,11 @@ class Runtime:
             self._run_update(AsyncResult(tag=tag, value=("error", str(exc))))
         else:
             self._run_update(AsyncResult(tag=tag, value=result))
+
+        # Notify any await_async callers
+        waiter = self._pending_await_async.pop(tag, None)
+        if waiter is not None:
+            waiter.set()
 
     def _handle_stream_value(self, tag: str, nonce: int, value: Any) -> None:
         """Handle a stream chunk, checking nonce for staleness."""
