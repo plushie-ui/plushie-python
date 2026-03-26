@@ -25,6 +25,8 @@ from plushie.events import (
     CanvasElementDragEnd,
     CanvasElementEnter,
     CanvasElementFocused,
+    CanvasElementKeyPress,
+    CanvasElementKeyRelease,
     CanvasElementLeave,
     CanvasFocused,
     CanvasGroupBlurred,
@@ -677,6 +679,8 @@ def decode_message(
     | CanvasElementDragEnd
     | CanvasElementFocused
     | CanvasElementBlurred
+    | CanvasElementKeyPress
+    | CanvasElementKeyRelease
     | CanvasFocused
     | CanvasBlurred
     | CanvasGroupFocused
@@ -1025,6 +1029,24 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             element_id=str(data.get("element_id", "")),
             captured=captured,
+            scope=scope,
+        )
+
+    if family == "canvas_element_key_press":
+        local_id, scope = split_scoped_id(wire_id)
+        return CanvasElementKeyPress(
+            id=local_id,
+            element_id=str(data.get("element_id", "")),
+            key=str(data.get("key", "")),
+            scope=scope,
+        )
+
+    if family == "canvas_element_key_release":
+        local_id, scope = split_scoped_id(wire_id)
+        return CanvasElementKeyRelease(
+            id=local_id,
+            element_id=str(data.get("element_id", "")),
+            key=str(data.get("key", "")),
             scope=scope,
         )
 

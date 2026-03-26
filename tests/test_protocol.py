@@ -13,6 +13,8 @@ from plushie.events import (
     CanvasElementDragEnd,
     CanvasElementEnter,
     CanvasElementFocused,
+    CanvasElementKeyPress,
+    CanvasElementKeyRelease,
     CanvasElementLeave,
     CanvasFocused,
     CanvasGroupBlurred,
@@ -777,6 +779,34 @@ class TestDecodeCanvasElementEvents:
         result = decode_message(raw)
         assert isinstance(result, CanvasElementBlurred)
         assert result.element_id == "bar1"
+
+    def test_element_key_press(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "canvas_element_key_press",
+            "id": "scope1/canvas1",
+            "data": {"element_id": "item1", "key": "ArrowRight"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, CanvasElementKeyPress)
+        assert result.id == "canvas1"
+        assert result.element_id == "item1"
+        assert result.key == "ArrowRight"
+        assert result.scope == ("scope1",)
+
+    def test_element_key_release(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "canvas_element_key_release",
+            "id": "canvas1",
+            "data": {"element_id": "item1", "key": "Enter"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, CanvasElementKeyRelease)
+        assert result.id == "canvas1"
+        assert result.element_id == "item1"
+        assert result.key == "Enter"
+        assert result.scope == ()
 
 
 class TestDecodeCanvasLifecycleEvents:

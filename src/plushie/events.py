@@ -649,6 +649,40 @@ class CanvasElementBlurred:
 
 
 @dataclass(frozen=True, slots=True)
+class CanvasElementKeyPress:
+    """A key was pressed while a canvas element has focus.
+
+    Wire family: ``canvas_element_key_press``.
+
+    Attributes:
+        element_id: The interactive element's identifier within the canvas.
+        key: The logical key name (e.g. ``"ArrowRight"``, ``"Enter"``).
+    """
+
+    id: str
+    element_id: str
+    key: str
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CanvasElementKeyRelease:
+    """A key was released while a canvas element has focus.
+
+    Wire family: ``canvas_element_key_release``.
+
+    Attributes:
+        element_id: The interactive element's identifier within the canvas.
+        key: The logical key name.
+    """
+
+    id: str
+    element_id: str
+    key: str
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class CanvasFocused:
     """The canvas widget gained iced focus (no coordinates).
 
@@ -1605,6 +1639,8 @@ def target(
     | CanvasElementDragEnd
     | CanvasElementFocused
     | CanvasElementBlurred
+    | CanvasElementKeyPress
+    | CanvasElementKeyRelease
     | CanvasFocused
     | CanvasBlurred
     | CanvasGroupFocused
@@ -1686,6 +1722,8 @@ type CanvasElementEvent = (
     | CanvasElementDragEnd
     | CanvasElementFocused
     | CanvasElementBlurred
+    | CanvasElementKeyPress
+    | CanvasElementKeyRelease
 )
 """Union of all interactive canvas element events."""
 
@@ -1793,6 +1831,8 @@ __all__ = [
     "CanvasElementEnter",
     "CanvasElementEvent",
     "CanvasElementFocused",
+    "CanvasElementKeyPress",
+    "CanvasElementKeyRelease",
     "CanvasElementLeave",
     # Union types
     "CanvasEvent",

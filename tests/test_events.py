@@ -16,6 +16,8 @@ from plushie.events import (
     CanvasElementDragEnd,
     CanvasElementEnter,
     CanvasElementFocused,
+    CanvasElementKeyPress,
+    CanvasElementKeyRelease,
     CanvasElementLeave,
     CanvasFocused,
     CanvasGroupBlurred,
@@ -356,6 +358,20 @@ class TestCanvasElementEvents:
     def test_blurred(self) -> None:
         e = CanvasElementBlurred(id="canvas", element_id="bar-1")
         assert e.captured is False
+
+    def test_key_press(self) -> None:
+        e = CanvasElementKeyPress(
+            id="canvas", element_id="item1", key="ArrowRight", scope=("form",)
+        )
+        assert e.element_id == "item1"
+        assert e.key == "ArrowRight"
+        assert e.scope == ("form",)
+
+    def test_key_release(self) -> None:
+        e = CanvasElementKeyRelease(id="canvas", element_id="item1", key="Enter")
+        assert e.element_id == "item1"
+        assert e.key == "Enter"
+        assert e.scope == ()
 
 
 # ---------------------------------------------------------------------------
