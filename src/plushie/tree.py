@@ -149,6 +149,7 @@ def _normalize_with_scope(
     if registry is not None and meta and "__canvas_widget__" in meta:
         try:
             from plushie.canvas_widget import render_placeholder
+
             result = render_placeholder(node, scoped_id, node_id, registry)
             if result is not None:
                 rendered_node, _entry = result

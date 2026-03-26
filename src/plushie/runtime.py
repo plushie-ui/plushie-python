@@ -598,6 +598,7 @@ class Runtime:
         # Route canvas widget timer events to the widget handler
         if isinstance(event, TimerTick) and self._canvas_widgets:
             from plushie.canvas_widget import maybe_handle_timer
+
             handled, routed_event, self._canvas_widgets = maybe_handle_timer(
                 self._canvas_widgets, event.tag
             )
