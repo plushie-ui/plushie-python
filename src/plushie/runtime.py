@@ -595,6 +595,21 @@ class Runtime:
         if isinstance(event, EffectResult):
             self._cancel_pending_effect(event.request_id)
 
+        # Route canvas widget timer events to the widget handler
+        if isinstance(event, TimerTick) and self._canvas_widgets:
+            from plushie.canvas_widget import maybe_handle_timer
+            handled, routed_event, self._canvas_widgets = maybe_handle_timer(
+                self._canvas_widgets, event.tag
+            )
+            if handled:
+                if routed_event is not None:
+                    event = routed_event
+                else:
+                    # Widget handled internally -- re-render for state changes
+                    self._render_and_sync(self._model)
+                    return
+            # If not handled, fall through to normal dispatch
+
         # Dispatch through canvas widget handlers
         event, self._canvas_widgets = self._route_through_widgets(event)
         if event is None:
@@ -673,7 +688,7 @@ class Runtime:
         """Call app.view() + normalize with error handling."""
         try:
             raw_tree = self._app.view(model)
-            return normalize(raw_tree)
+            return normalize(raw_tree, registry=self._canvas_widgets or None)
         except Exception:
             logger.exception("plushie runtime: view() raised")
             return None

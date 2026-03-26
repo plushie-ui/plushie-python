@@ -56,7 +56,11 @@ _A11Y_ID_REF_KEYS = ("labelled_by", "described_by", "error_message")
 # ---------------------------------------------------------------------------
 
 
-def normalize(tree: None | Node | list[Node]) -> Node:
+def normalize(
+    tree: None | Node | list[Node],
+    *,
+    registry: dict[str, Any] | None = None,
+) -> Node:
     """Normalize a UI tree into canonical node shape.
 
     Accepts:
@@ -64,6 +68,10 @@ def normalize(tree: None | Node | list[Node]) -> Node:
     - A single node dict -- normalizes and returns it.
     - A list of node dicts -- wraps in a root container (the root
       does not create a scope boundary).
+
+    Args:
+        registry: Canvas widget registry for placeholder rendering
+            during normalization.
 
     Every node in the result is guaranteed to have ``id``, ``type``,
     ``props``, and ``children`` keys. Auto-IDs are assigned to nodes
@@ -81,17 +89,18 @@ def normalize(tree: None | Node | list[Node]) -> Node:
         if len(tree) == 0:
             return _empty_container()
         if len(tree) == 1:
-            return _normalize_with_scope(tree[0], "", 0)
+            return _normalize_with_scope(tree[0], "", 0, registry=registry)
         return {
             "id": "root",
             "type": "container",
             "props": {},
             "children": [
-                _normalize_with_scope(child, "", i) for i, child in enumerate(tree)
+                _normalize_with_scope(child, "", i, registry=registry)
+                for i, child in enumerate(tree)
             ],
         }
 
-    return _normalize_with_scope(tree, "", 0)
+    return _normalize_with_scope(tree, "", 0, registry=registry)
 
 
 def _empty_container() -> Node:
@@ -104,13 +113,16 @@ def _empty_container() -> Node:
     }
 
 
-def _normalize_with_scope(node: Node, scope: str, index: int) -> Node:
+def _normalize_with_scope(
+    node: Node, scope: str, index: int, *, registry: dict[str, Any] | None = None
+) -> Node:
     """Normalize a single node with scope context.
 
     Args:
         node: Raw node dict (may have missing keys).
         scope: Current scope prefix (e.g. ``"sidebar/form"``).
         index: Child index within parent (for auto-ID generation).
+        registry: Canvas widget registry for placeholder rendering.
     """
     raw_id = node.get("id")
     node_type = node.get("type", "container")
@@ -131,6 +143,35 @@ def _normalize_with_scope(node: Node, scope: str, index: int) -> Node:
     # Apply scope prefix to this node's ID
     scoped_id = f"{scope}/{node_id}" if scope and not is_auto else node_id
 
+    # Canvas widget rendering: if this node is a placeholder, render it
+    # with stored state and normalize the output.
+    meta = node.get("meta")
+    if registry is not None and meta and "__canvas_widget__" in meta:
+        try:
+            from plushie.canvas_widget import render_placeholder
+            result = render_placeholder(node, scoped_id, node_id, registry)
+            if result is not None:
+                rendered_node, _entry = result
+                # Normalize rendered output. Pass empty scope since the
+                # rendered node's ID is already fully scoped.
+                child_scope = "" if rendered_node.get("type") == "window" else scoped_id
+                rendered_children = rendered_node.get("children") or []
+                normalized_children = [
+                    _normalize_with_scope(c, child_scope, i, registry=registry)
+                    for i, c in enumerate(rendered_children)
+                ]
+                rendered_props = _encode_props(dict(rendered_node.get("props") or {}))
+                normalized_props = _resolve_a11y_id_refs(rendered_props, scope)
+                return {
+                    "id": scoped_id,
+                    "type": rendered_node.get("type", "canvas"),
+                    "props": normalized_props,
+                    "children": normalized_children,
+                    "meta": rendered_node.get("meta", {}),
+                }
+        except Exception:
+            logger.exception("plushie: canvas widget render failed for %s", scoped_id)
+
     # Determine scope for children: named (non-auto) non-window nodes
     # propagate their scoped ID as the child scope.
     child_scope = scope if is_auto or node_type == "window" else scoped_id
@@ -141,7 +182,7 @@ def _normalize_with_scope(node: Node, scope: str, index: int) -> Node:
     normalized_props = _resolve_a11y_id_refs(encoded_props, scope)
 
     # Normalize children
-    normalized_children = _normalize_children(children, child_scope)
+    normalized_children = _normalize_children(children, child_scope, registry=registry)
 
     result: Node = {
         "id": scoped_id,
@@ -151,17 +192,19 @@ def _normalize_with_scope(node: Node, scope: str, index: int) -> Node:
     }
 
     # Preserve meta if present -- never sent on the wire, not compared in diffs.
-    meta = node.get("meta")
     if meta is not None:
         result["meta"] = meta
 
     return result
 
 
-def _normalize_children(children: list[Node], scope: str) -> list[Node]:
+def _normalize_children(
+    children: list[Node], scope: str, *, registry: dict[str, Any] | None = None
+) -> list[Node]:
     """Normalize a list of child nodes, checking for duplicate IDs."""
     normalized = [
-        _normalize_with_scope(child, scope, i) for i, child in enumerate(children)
+        _normalize_with_scope(child, scope, i, registry=registry)
+        for i, child in enumerate(children)
     ]
     _check_duplicate_ids(normalized)
     return normalized

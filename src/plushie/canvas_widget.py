@@ -217,6 +217,54 @@ class CanvasWidgetDef(ABC):
         }
 
 
+def render_placeholder(
+    node: dict[str, Any],
+    scoped_id: str,
+    local_id: str,
+    registry: dict[str, Any],
+) -> tuple[dict[str, Any], Any] | None:
+    """Render a canvas widget placeholder during normalization.
+
+    Args:
+        node: The placeholder node (has meta with __canvas_widget__).
+        scoped_id: The fully scoped ID for this node.
+        local_id: The local (pre-scoped) ID passed to render().
+        registry: Existing canvas widget registry for state lookup.
+
+    Returns:
+        (rendered_node, entry) or None if rendering fails.
+    """
+    meta = node.get("meta", {})
+    widget_cls = meta.get("__canvas_widget__")
+    widget_props = meta.get("__canvas_widget_props__", {})
+    if widget_cls is None:
+        return None
+
+    # Look up existing state or initialize
+    existing = registry.get(scoped_id)
+    if existing is not None:
+        state = existing.state
+    else:
+        instance = widget_cls()
+        state = instance.init()
+
+    # Render the widget
+    instance = widget_cls()
+    rendered = instance.render(local_id, widget_props, state)
+
+    # Attach metadata to the rendered node for registry derivation
+    entry = RegistryEntry(definition=instance, state=state, props=widget_props)
+    widget_meta = {
+        "__canvas_widget__": widget_cls,
+        "__canvas_widget_props__": widget_props,
+        "__canvas_widget_state__": state,
+    }
+    rendered_with_meta = dict(rendered)
+    rendered_with_meta["id"] = scoped_id
+    rendered_with_meta["meta"] = widget_meta
+    return rendered_with_meta, entry
+
+
 # ---------------------------------------------------------------------------
 # Registry: derive from tree, dispatch events
 # ---------------------------------------------------------------------------
@@ -507,4 +555,5 @@ __all__ = [
     "derive_registry",
     "dispatch_through_widgets",
     "maybe_handle_timer",
+    "render_placeholder",
 ]
