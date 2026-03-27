@@ -314,8 +314,8 @@ class TestWindowOps:
 
     def test_allow_automatic_tabbing(self) -> None:
         cmd = Command.allow_automatic_tabbing(True)
+        assert cmd.type == "system_op"
         assert cmd.payload["op"] == "allow_automatic_tabbing"
-        assert cmd.payload["window_id"] == "_global"
         assert cmd.payload["enabled"] is True
 
     def test_screenshot_window(self) -> None:
@@ -361,14 +361,15 @@ class TestWindowQueries:
 
     def test_get_system_theme(self) -> None:
         cmd = Command.get_system_theme("theme")
-        assert cmd.type == "window_query"
+        assert cmd.type == "system_query"
         assert cmd.payload["op"] == "get_system_theme"
-        assert cmd.payload["window_id"] == "_system"
+        assert cmd.payload["tag"] == "theme"
 
     def test_get_system_info(self) -> None:
         cmd = Command.get_system_info("info")
+        assert cmd.type == "system_query"
         assert cmd.payload["op"] == "get_system_info"
-        assert cmd.payload["window_id"] == "_system"
+        assert cmd.payload["tag"] == "info"
 
 
 class TestImageOps:

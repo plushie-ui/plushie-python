@@ -513,7 +513,7 @@ def test_command_get_system_theme():
     """Command.get_system_theme() queries the OS light/dark preference."""
     cmd = Command.get_system_theme("theme_detected")
 
-    assert cmd.type == "window_query"
+    assert cmd.type == "system_query"
     assert cmd.payload["op"] == "get_system_theme"
     assert cmd.payload["tag"] == "theme_detected"
 

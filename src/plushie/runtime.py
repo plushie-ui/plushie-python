@@ -54,11 +54,13 @@ from plushie.protocol import (
     extension_command,
     extension_commands,
     image_op,
+    system_op,
+    system_query,
     widget_op,
     window_op,
 )
 from plushie.subscriptions import Subscription
-from plushie.tree import Node, diff, normalize
+from plushie.tree import Node, diff, normalize_view
 from plushie.types import HelloInfo
 
 logger = logging.getLogger("plushie")
@@ -690,37 +692,10 @@ class Runtime:
         """Call app.view() + normalize with error handling."""
         try:
             raw_tree = self._app.view(model)
-            self._validate_root_windows(raw_tree)
-            return normalize(raw_tree, registry=self._canvas_widgets or None)
+            return normalize_view(raw_tree, registry=self._canvas_widgets or None)
         except Exception:
             logger.exception("plushie runtime: view() raised")
             return None
-
-    def _validate_root_windows(self, tree: Any) -> None:
-        """Require explicit window nodes at the top level."""
-        if tree is None:
-            return
-
-        if isinstance(tree, list):
-            for node in tree:
-                if not isinstance(node, dict) or node.get("type") != "window":
-                    got = (
-                        node.get("type")
-                        if isinstance(node, dict)
-                        else type(node).__name__
-                    )
-                    raise ValueError(
-                        "view() must return a window node or a list of window nodes at the top level, "
-                        f"got {got!r}"
-                    )
-            return
-
-        if not isinstance(tree, dict) or tree.get("type") != "window":
-            got = tree.get("type") if isinstance(tree, dict) else type(tree).__name__
-            raise ValueError(
-                "view() must return a window node or a list of window nodes at the top level, "
-                f"got {got!r}"
-            )
 
     def _render_and_sync(self, model: Any) -> Node | None:
         """Render view, diff against old tree, send snapshot or patch."""
@@ -895,6 +870,22 @@ class Runtime:
                 op_name, win_id, op_settings or None, session=self._conn.session
             )
             self._conn.send(msg)
+            return
+
+        if t == "system_op":
+            op_name = p.get("op", "")
+            op_settings = {k: v for k, v in p.items() if k != "op"}
+            self._conn.send(
+                system_op(op_name, op_settings or None, session=self._conn.session)
+            )
+            return
+
+        if t == "system_query":
+            op_name = p.get("op", "")
+            op_settings = {k: v for k, v in p.items() if k != "op"}
+            self._conn.send(
+                system_query(op_name, op_settings or None, session=self._conn.session)
+            )
             return
 
         if t == "image_op":

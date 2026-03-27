@@ -268,6 +268,36 @@ def window_op(
     return msg
 
 
+def system_op(
+    op: str,
+    op_settings: dict[str, Any] | None = None,
+    *,
+    session: str = "",
+) -> dict[str, Any]:
+    """Build a SystemOp message."""
+    return {
+        "type": "system_op",
+        "session": session,
+        "op": op,
+        "settings": op_settings if op_settings is not None else {},
+    }
+
+
+def system_query(
+    op: str,
+    op_settings: dict[str, Any] | None = None,
+    *,
+    session: str = "",
+) -> dict[str, Any]:
+    """Build a SystemQuery message."""
+    return {
+        "type": "system_query",
+        "session": session,
+        "op": op,
+        "settings": op_settings if op_settings is not None else {},
+    }
+
+
 def effect_msg(
     request_id: str,
     kind: str,
@@ -383,7 +413,7 @@ def extension_commands(
 def interact_msg(
     request_id: str,
     action: str,
-    selector: dict[str, str] | None = None,
+    selector: dict[str, Any] | None = None,
     payload: dict[str, Any] | None = None,
     *,
     session: str = "",
@@ -418,7 +448,7 @@ def interact_msg(
 def query_msg(
     request_id: str,
     target: str,
-    selector: dict[str, str] | None = None,
+    selector: dict[str, Any] | None = None,
     *,
     session: str = "",
 ) -> dict[str, Any]:
@@ -591,13 +621,16 @@ def encode_selector(selector: str) -> dict[str, str]:
     return {"by": "text", "value": selector}
 
 
-def selector_by_id(node_id: str) -> dict[str, str]:
+def selector_by_id(node_id: str, window_id: str | None = None) -> dict[str, str]:
     """Build a selector that finds a node by its exact ID.
 
     Args:
         node_id: The node ID to search for.
     """
-    return {"by": "id", "value": node_id}
+    selector = {"by": "id", "value": node_id}
+    if window_id is not None:
+        selector["window_id"] = window_id
+    return selector
 
 
 def selector_by_text(text: str) -> dict[str, str]:

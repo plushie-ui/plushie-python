@@ -1243,10 +1243,10 @@ class WindowOpen:
         scale_factor: DPI scale factor for the window's display.
     """
 
-    window_id: str
     width: float
     height: float
     scale_factor: float
+    window_id: str = ""
     position_x: float | None = None
     position_y: float | None = None
 
@@ -1261,7 +1261,7 @@ class WindowClosed:
         window_id: The closed window's identifier.
     """
 
-    window_id: str
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1275,7 +1275,7 @@ class WindowCloseRequested:
         window_id: The window that received the close request.
     """
 
-    window_id: str
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1290,9 +1290,9 @@ class WindowResized:
         height: New height in logical pixels.
     """
 
-    window_id: str
     width: float
     height: float
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1307,9 +1307,9 @@ class WindowMoved:
         y: New vertical position in logical pixels.
     """
 
-    window_id: str
     x: float
     y: float
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1322,7 +1322,7 @@ class WindowFocused:
         window_id: The focused window's identifier.
     """
 
-    window_id: str
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1335,7 +1335,7 @@ class WindowUnfocused:
         window_id: The unfocused window's identifier.
     """
 
-    window_id: str
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1349,8 +1349,8 @@ class WindowRescaled:
         scale_factor: The new DPI scale factor.
     """
 
-    window_id: str
     scale_factor: float
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1364,8 +1364,8 @@ class FileHovered:
         path: File system path of the hovered file.
     """
 
-    window_id: str
     path: str
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1379,8 +1379,8 @@ class FileDropped:
         path: File system path of the dropped file.
     """
 
-    window_id: str
     path: str
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1393,7 +1393,7 @@ class FilesHoveredLeft:
         window_id: The window the file drag left.
     """
 
-    window_id: str
+    window_id: str = ""
 
 
 # ---------------------------------------------------------------------------

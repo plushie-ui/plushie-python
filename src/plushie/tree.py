@@ -92,17 +92,41 @@ def normalize(
             return _normalize_with_scope(
                 tree[0], "", 0, window_id=None, registry=registry
             )
+        normalized_children = [
+            _normalize_with_scope(child, "", i, window_id=None, registry=registry)
+            for i, child in enumerate(tree)
+        ]
+        _check_duplicate_ids(normalized_children)
         return {
             "id": "root",
             "type": "container",
             "props": {},
-            "children": [
-                _normalize_with_scope(child, "", i, window_id=None, registry=registry)
-                for i, child in enumerate(tree)
-            ],
+            "children": normalized_children,
         }
 
     return _normalize_with_scope(tree, "", 0, window_id=None, registry=registry)
+
+
+def normalize_view(
+    tree: None | Node | list[Node],
+    *,
+    registry: Any = None,
+) -> Node:
+    """Normalize a top-level app view and require explicit windows."""
+    normalized = normalize(tree, registry=registry)
+
+    if normalized["type"] == "window":
+        return normalized
+
+    children = normalized.get("children", [])
+    if children and all(
+        isinstance(child, dict) and child.get("type") == "window" for child in children
+    ):
+        return normalized
+
+    raise ValueError(
+        "view() must return a window node or a root node whose direct children are window nodes"
+    )
 
 
 def _empty_container() -> Node:
@@ -234,7 +258,7 @@ def _normalize_children(
 
 
 def _check_duplicate_ids(children: list[Node]) -> None:
-    """Log a warning if sibling nodes have duplicate IDs."""
+    """Raise if sibling nodes have duplicate IDs."""
     seen: set[str] = set()
     dupes: list[str] = []
     for child in children:
@@ -245,9 +269,9 @@ def _check_duplicate_ids(children: list[Node]) -> None:
             seen.add(child_id)
     if dupes:
         unique_dupes = list(dict.fromkeys(dupes))
-        logger.error(
-            "Duplicate sibling IDs detected during normalize: %s",
-            unique_dupes,
+        raise ValueError(
+            "duplicate sibling IDs detected during normalize: "
+            + ", ".join(repr(dupe) for dupe in unique_dupes)
         )
 
 

@@ -327,9 +327,7 @@ class TestNormalizeA11yRefs:
 
 
 class TestNormalizeDuplicateIds:
-    def test_logs_warning_on_duplicate_sibling_ids(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_raises_on_duplicate_sibling_ids(self) -> None:
         tree = _node(
             "root",
             "container",
@@ -338,9 +336,11 @@ class TestNormalizeDuplicateIds:
                 _node("dup", "button"),
             ],
         )
-        with caplog.at_level(logging.ERROR, logger="plushie"):
+        with pytest.raises(
+            ValueError,
+            match="duplicate sibling IDs detected during normalize: 'root/dup'",
+        ):
             normalize(tree)
-        assert "Duplicate sibling IDs" in caplog.text
 
 
 class TestNormalizeMeta:

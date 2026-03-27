@@ -30,7 +30,7 @@ from plushie.events import AsyncResult, StreamChunk
 from plushie.protocol import encode_selector
 from plushie.testing.element import Element, ElementNotFoundError
 from plushie.testing.pool import SessionPool
-from plushie.tree import Node, diff, find, normalize, text_of
+from plushie.tree import Node, diff, normalize_view, text_of
 
 logger = logging.getLogger("plushie.testing")
 
@@ -143,6 +143,18 @@ def _process_commands(
 # ---------------------------------------------------------------------------
 
 
+def _parse_id_selector(selector: str) -> tuple[str | None, str] | None:
+    if not selector.startswith("#"):
+        return None
+
+    raw = selector[1:]
+    if "::" in raw:
+        window_id, widget_id = raw.split("::", 1)
+        return window_id, widget_id
+
+    return None, raw
+
+
 def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
     """Resolve a user selector to a wire selector dict.
 
@@ -156,14 +168,102 @@ def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
     Returns:
         Wire selector dict.
     """
-    if selector.startswith("#"):
-        local_id = selector[1:]
-        if "/" not in local_id and tree is not None:
-            node = find(tree, local_id)
-            if node is not None:
-                return {"by": "id", "value": node["id"]}
-        return {"by": "id", "value": local_id}
+    parsed = _parse_id_selector(selector)
+    if parsed is not None:
+        window_id, target_id = parsed
+        if tree is not None:
+            exact_matches = _find_exact_id_targets(tree, target_id)
+            if window_id is not None:
+                exact_matches = [
+                    match for match in exact_matches if match["window_id"] == window_id
+                ]
+            if len(exact_matches) == 1:
+                match = exact_matches[0]
+                return {
+                    "by": "id",
+                    "value": match["id"],
+                    "window_id": match["window_id"],
+                }
+            if "/" not in target_id:
+                local_matches = _find_local_id_targets(tree, target_id)
+                if window_id is not None:
+                    local_matches = [
+                        match
+                        for match in local_matches
+                        if match["window_id"] == window_id
+                    ]
+                if len(local_matches) == 1:
+                    match = local_matches[0]
+                    return {
+                        "by": "id",
+                        "value": match["id"],
+                        "window_id": match["window_id"],
+                    }
+                if len(local_matches) > 1:
+                    raise ValueError(
+                        f'selector "{selector}" is ambiguous across windows; prefix it with "#<window_id>::" or use the full scoped id'
+                    )
+            elif len(exact_matches) > 1:
+                raise ValueError(
+                    f'selector "{selector}" matches multiple windows; prefix it with "#<window_id>::"'
+                )
+
+        result = {"by": "id", "value": target_id}
+        if window_id is not None:
+            result["window_id"] = window_id
+        return result
     return encode_selector(selector)
+
+
+def _find_exact_id_targets(
+    tree: Node,
+    target_id: str,
+    current_window_id: str | None = None,
+) -> list[dict[str, str]]:
+    matches: list[dict[str, str]] = []
+    node_window_id = tree["id"] if tree.get("type") == "window" else current_window_id
+    if node_window_id is not None and tree.get("id") == target_id:
+        matches.append({"id": tree["id"], "window_id": node_window_id})
+    for child in tree.get("children", []):
+        matches.extend(_find_exact_id_targets(child, target_id, node_window_id))
+    return matches
+
+
+def _find_local_id_targets(
+    tree: Node,
+    target_id: str,
+    current_window_id: str | None = None,
+) -> list[dict[str, str]]:
+    matches: list[dict[str, str]] = []
+    node_window_id = tree["id"] if tree.get("type") == "window" else current_window_id
+    local_id = tree["id"].rsplit("/", 1)[-1]
+    if node_window_id is not None and local_id == target_id:
+        matches.append({"id": tree["id"], "window_id": node_window_id})
+    for child in tree.get("children", []):
+        matches.extend(_find_local_id_targets(child, target_id, node_window_id))
+    return matches
+
+
+def _find_node_by_id(tree: Node, target_id: str) -> Node | None:
+    if tree.get("id") == target_id:
+        return tree
+    for child in tree.get("children", []):
+        found = _find_node_by_id(child, target_id)
+        if found is not None:
+            return found
+    return None
+
+
+def _find_node_by_selector(tree: Node, selector: str) -> Node | None:
+    resolved = _resolve_selector(selector, tree)
+    if resolved.get("by") != "id":
+        return None
+
+    target_id = resolved.get("value")
+    if not isinstance(target_id, str):
+        return None
+
+    return _find_node_by_id(tree, target_id)
 
 
 def _build_key_lookup() -> dict[str, str]:
@@ -592,11 +692,9 @@ class AppFixture[M]:
         """
         # Try local tree first for speed
         if self._tree is not None:
-            target_id = selector[1:] if selector.startswith("#") else None
-            if target_id is not None:
-                node = find(self._tree, target_id)
-                if node is not None:
-                    return text_of(node)
+            node = _find_node_by_selector(self._tree, selector)
+            if node is not None:
+                return text_of(node)
         # Fall back to renderer query
         el = self.query(selector)
         if el is None:
@@ -878,7 +976,7 @@ class AppFixture[M]:
         """Call app.view() + normalize."""
         try:
             raw_tree = self._app.view(self._model)
-            return normalize(raw_tree)
+            return normalize_view(raw_tree)
         except Exception:
             logger.exception("app.view() raised during render")
             return None
@@ -985,10 +1083,7 @@ class AppFixture[M]:
         """Read the current text value of a widget from the local tree."""
         if self._tree is None:
             return ""
-        target_id = selector[1:] if selector.startswith("#") else None
-        if target_id is None:
-            return ""
-        node = find(self._tree, target_id)
+        node = _find_node_by_selector(self._tree, selector)
         if node is None:
             return ""
         props = node.get("props", {})
@@ -1014,10 +1109,7 @@ class AppFixture[M]:
         """
         if self._tree is None:
             return
-        target_id = selector[1:] if selector.startswith("#") else None
-        if target_id is None:
-            return
-        node = find(self._tree, target_id)
+        node = _find_node_by_selector(self._tree, selector)
         if node is None:
             return  # will fail later with ElementNotFoundError
         widget_type = node.get("type", "")
@@ -1039,10 +1131,7 @@ class AppFixture[M]:
         """Read the current toggle/check state from the local tree."""
         if self._tree is None:
             return False
-        target_id = selector[1:] if selector.startswith("#") else None
-        if target_id is None:
-            return False
-        node = find(self._tree, target_id)
+        node = _find_node_by_selector(self._tree, selector)
         if node is None:
             return False
         props = node.get("props", {})

@@ -302,11 +302,23 @@ class TestResolveSelector:
             "type": "container",
             "props": {},
             "children": [
-                {"id": "form/save", "type": "button", "props": {}, "children": []},
+                {
+                    "id": "main",
+                    "type": "window",
+                    "props": {},
+                    "children": [
+                        {
+                            "id": "form/save",
+                            "type": "button",
+                            "props": {},
+                            "children": [],
+                        },
+                    ],
+                },
             ],
         }
         result = _resolve_selector("#save", tree)
-        assert result == {"by": "id", "value": "form/save"}
+        assert result == {"by": "id", "value": "form/save", "window_id": "main"}
 
     def test_id_selector_with_slash(self) -> None:
         result = _resolve_selector("#form/save", None)

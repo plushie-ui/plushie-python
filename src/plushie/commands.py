@@ -535,10 +535,9 @@ class Command:
     def allow_automatic_tabbing(enabled: bool) -> Command:
         """Set whether the system can automatically organize windows into tabs (macOS)."""
         return Command(
-            type="window_op",
+            type="system_op",
             payload={
                 "op": "allow_automatic_tabbing",
-                "window_id": "_global",
                 "enabled": enabled,
             },
         )
@@ -623,16 +622,14 @@ class Command:
     def get_system_theme(tag: str) -> Command:
         """Query the OS light/dark theme preference.  Result arrives as a system event."""
         return Command(
-            type="window_query",
-            payload={"op": "get_system_theme", "window_id": "_system", "tag": tag},
+            type="system_query", payload={"op": "get_system_theme", "tag": tag}
         )
 
     @staticmethod
     def get_system_info(tag: str) -> Command:
         """Query system information (OS, CPU, memory, graphics)."""
         return Command(
-            type="window_query",
-            payload={"op": "get_system_info", "window_id": "_system", "tag": tag},
+            type="system_query", payload={"op": "get_system_info", "tag": tag}
         )
 
     # ------------------------------------------------------------------
