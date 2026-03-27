@@ -22,7 +22,7 @@ echo "==> verify doc tests"
 python scripts/verify_doc_tests.py
 
 echo "==> mkdocs build --strict"
-mkdocs build --strict --quiet
+NO_MKDOCS_2_WARNING=1 mkdocs build --strict --quiet
 
 echo ""
 echo "All checks passed."
