@@ -81,8 +81,7 @@ def _normalize_expected_extensions(
     if not expected:
         return ()
     return tuple(
-        ext.kind if isinstance(ext, ExtensionDef) else str(ext)
-        for ext in expected
+        ext.kind if isinstance(ext, ExtensionDef) else str(ext) for ext in expected
     )
 
 
@@ -135,7 +134,9 @@ class Connection:
         process: subprocess.Popen[bytes],
         *,
         session: str = "",
-        expected_extensions: list[str | ExtensionDef] | tuple[str | ExtensionDef, ...] | None = None,
+        expected_extensions: list[str | ExtensionDef]
+        | tuple[str | ExtensionDef, ...]
+        | None = None,
         _spawn_args: list[str] | None = None,
         _spawn_env: dict[str, str] | None = None,
     ) -> None:
@@ -168,7 +169,9 @@ class Connection:
         json: bool = False,
         max_sessions: int | None = None,
         session: str = "",
-        expected_extensions: list[str | ExtensionDef] | tuple[str | ExtensionDef, ...] | None = None,
+        expected_extensions: list[str | ExtensionDef]
+        | tuple[str | ExtensionDef, ...]
+        | None = None,
         extra_args: list[str] | None = None,
         env: dict[str, str] | None = None,
     ) -> Connection:
@@ -239,7 +242,9 @@ class Connection:
         adapter: Any,
         *,
         session: str = "",
-        expected_extensions: list[str | ExtensionDef] | tuple[str | ExtensionDef, ...] | None = None,
+        expected_extensions: list[str | ExtensionDef]
+        | tuple[str | ExtensionDef, ...]
+        | None = None,
     ) -> _IoStreamConnection:
         """Create a Connection-like object backed by an iostream adapter.
 
@@ -256,7 +261,9 @@ class Connection:
         Returns:
             A connection-like object wrapping the adapter.
         """
-        return _IoStreamConnection(adapter, session=session, expected_extensions=expected_extensions)
+        return _IoStreamConnection(
+            adapter, session=session, expected_extensions=expected_extensions
+        )
 
     @property
     def hello(self) -> HelloInfo | None:
@@ -1210,7 +1217,9 @@ class _IoStreamConnection:
         adapter: Any,
         *,
         session: str = "",
-        expected_extensions: list[str | ExtensionDef] | tuple[str | ExtensionDef, ...] | None = None,
+        expected_extensions: list[str | ExtensionDef]
+        | tuple[str | ExtensionDef, ...]
+        | None = None,
     ) -> None:
         self._adapter = adapter
         self._session = session

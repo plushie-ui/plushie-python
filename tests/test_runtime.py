@@ -226,16 +226,16 @@ class TestCoalesceKey:
         assert coalesce_key(event) == ("mouse_move",)
 
     def test_sensor_resize(self) -> None:
-        event = SensorResize(id="s1", width=100.0, height=200.0)
-        assert coalesce_key(event) == ("sensor_resize", "s1")
+        event = SensorResize(id="s1", window_id="main", width=100.0, height=200.0)
+        assert coalesce_key(event) == ("sensor_resize", "main", "s1")
 
     def test_different_sensors_different_keys(self) -> None:
-        e1 = SensorResize(id="s1", width=100.0, height=200.0)
-        e2 = SensorResize(id="s2", width=100.0, height=200.0)
+        e1 = SensorResize(id="s1", window_id="main", width=100.0, height=200.0)
+        e2 = SensorResize(id="s2", window_id="main", width=100.0, height=200.0)
         assert coalesce_key(e1) != coalesce_key(e2)
 
     def test_non_coalescable_returns_none(self) -> None:
-        assert coalesce_key(Click(id="btn")) is None
+        assert coalesce_key(Click(id="btn", window_id="main")) is None
         assert coalesce_key(AsyncResult(tag="t", value=1)) is None
         assert coalesce_key(TimerTick(tag="t", timestamp=0)) is None
 

@@ -108,7 +108,9 @@ class TestHelloExtensionValidation:
         )
 
         with pytest.raises(ConnectionError, match="missing required extensions"):
-            _validate_required_extensions(hello, _normalize_expected_extensions(expected))
+            _validate_required_extensions(
+                hello, _normalize_expected_extensions(expected)
+            )
 
 
 class TestDetectArch:
@@ -449,7 +451,7 @@ class TestDecodeEventsList:
         assert _decode_events_list([]) == []
 
     def test_click_event(self) -> None:
-        raw = [{"type": "event", "family": "click", "id": "btn1"}]
+        raw = [{"type": "event", "family": "click", "id": "btn1", "window_id": "main"}]
         events = _decode_events_list(raw)
         assert len(events) == 1
         from plushie.events import Click
@@ -459,8 +461,14 @@ class TestDecodeEventsList:
 
     def test_multiple_events(self) -> None:
         raw = [
-            {"type": "event", "family": "click", "id": "a"},
-            {"type": "event", "family": "input", "id": "b", "value": "hello"},
+            {"type": "event", "family": "click", "id": "a", "window_id": "main"},
+            {
+                "type": "event",
+                "family": "input",
+                "id": "b",
+                "value": "hello",
+                "window_id": "main",
+            },
         ]
         events = _decode_events_list(raw)
         assert len(events) == 2
@@ -589,15 +597,22 @@ class TestConnectionWithBinary:
             conn.send_settings({})
             conn.wait_hello(timeout=5.0)
             tree = {
-                "id": "root",
-                "type": "column",
-                "props": {},
+                "id": "main",
+                "type": "window",
+                "props": {"title": "Test"},
                 "children": [
                     {
-                        "id": "btn1",
-                        "type": "button",
-                        "props": {"label": "Click"},
-                        "children": [],
+                        "id": "root",
+                        "type": "column",
+                        "props": {},
+                        "children": [
+                            {
+                                "id": "btn1",
+                                "type": "button",
+                                "props": {"label": "Click"},
+                                "children": [],
+                            }
+                        ],
                     }
                 ],
             }

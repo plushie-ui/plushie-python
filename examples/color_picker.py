@@ -27,6 +27,7 @@ class Model:
     hue: float = 0.0
     saturation: float = 1.0
     value: float = 1.0
+    drag: str = "none"
 
 
 class ColorPicker(plushie.App[Model]):

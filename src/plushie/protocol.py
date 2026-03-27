@@ -39,8 +39,8 @@ from plushie.events import (
     Close,
     Diagnostic,
     DuplicateNodeIds,
-    ExtensionCommandError,
     EffectResult,
+    ExtensionCommandError,
     FileDropped,
     FileHovered,
     FilesHoveredLeft,
@@ -77,10 +77,10 @@ from plushie.events import (
     PaneFocusCycle,
     PaneResized,
     Paste,
+    RendererError,
     Scroll,
     ScrollData,
     Select,
-    RendererError,
     SensorResize,
     Slide,
     SlideRelease,
@@ -110,6 +110,19 @@ from plushie.types import HelloInfo, KeyModifiers
 
 PROTOCOL_VERSION: int = 1
 """Current protocol version."""
+
+
+def _strip_internal_meta(value: Any) -> Any:
+    """Remove runtime-only ``meta`` fields before sending data on the wire."""
+    if isinstance(value, dict):
+        return {
+            key: _strip_internal_meta(inner)
+            for key, inner in value.items()
+            if key != "meta"
+        }
+    if isinstance(value, list):
+        return [_strip_internal_meta(item) for item in value]
+    return value
 
 
 # ===================================================================
@@ -147,7 +160,7 @@ def snapshot(
         tree: The complete UI tree as a node dict.
         session: Session identifier.
     """
-    return {"type": "snapshot", "session": session, "tree": tree}
+    return {"type": "snapshot", "session": session, "tree": _strip_internal_meta(tree)}
 
 
 def patch(
@@ -162,7 +175,7 @@ def patch(
             insert_child, remove_child).
         session: Session identifier.
     """
-    return {"type": "patch", "session": session, "ops": ops}
+    return {"type": "patch", "session": session, "ops": _strip_internal_meta(ops)}
 
 
 def subscribe_msg(
@@ -830,6 +843,14 @@ def _parse_modifiers(raw: dict[str, Any] | None) -> KeyModifiers:
     )
 
 
+def _require_window_id(msg: dict[str, Any], context: str) -> str:
+    """Return the required window_id for a window-bound event."""
+    window_id = msg.get("window_id")
+    if not isinstance(window_id, str) or window_id == "":
+        raise ValueError(f"{context} is missing required window_id")
+    return window_id
+
+
 def _decode_event(msg: dict[str, Any]) -> Any:
     """Dispatch an event message on family."""
     family = msg.get("family", "")
@@ -843,31 +864,65 @@ def _decode_event(msg: dict[str, Any]) -> Any:
 
     if family == "click":
         local_id, scope = split_scoped_id(wire_id)
-        return Click(id=local_id, scope=scope)
+        return Click(
+            id=local_id,
+            window_id=_require_window_id(msg, 'widget event "click"'),
+            scope=scope,
+        )
 
     if family == "input":
         local_id, scope = split_scoped_id(wire_id)
-        return Input(id=local_id, value=str(value or ""), scope=scope)
+        return Input(
+            id=local_id,
+            value=str(value or ""),
+            window_id=_require_window_id(msg, 'widget event "input"'),
+            scope=scope,
+        )
 
     if family == "submit":
         local_id, scope = split_scoped_id(wire_id)
-        return Submit(id=local_id, value=str(value or ""), scope=scope)
+        return Submit(
+            id=local_id,
+            value=str(value or ""),
+            window_id=_require_window_id(msg, 'widget event "submit"'),
+            scope=scope,
+        )
 
     if family == "toggle":
         local_id, scope = split_scoped_id(wire_id)
-        return Toggle(id=local_id, value=bool(value), scope=scope)
+        return Toggle(
+            id=local_id,
+            value=bool(value),
+            window_id=_require_window_id(msg, 'widget event "toggle"'),
+            scope=scope,
+        )
 
     if family == "select":
         local_id, scope = split_scoped_id(wire_id)
-        return Select(id=local_id, value=str(value or ""), scope=scope)
+        return Select(
+            id=local_id,
+            value=str(value or ""),
+            window_id=_require_window_id(msg, 'widget event "select"'),
+            scope=scope,
+        )
 
     if family == "slide":
         local_id, scope = split_scoped_id(wire_id)
-        return Slide(id=local_id, value=float(value or 0), scope=scope)
+        return Slide(
+            id=local_id,
+            value=float(value or 0),
+            window_id=_require_window_id(msg, 'widget event "slide"'),
+            scope=scope,
+        )
 
     if family == "slide_release":
         local_id, scope = split_scoped_id(wire_id)
-        return SlideRelease(id=local_id, value=float(value or 0), scope=scope)
+        return SlideRelease(
+            id=local_id,
+            value=float(value or 0),
+            window_id=_require_window_id(msg, 'widget event "slide_release"'),
+            scope=scope,
+        )
 
     if family == "scroll":
         local_id, scope = split_scoped_id(wire_id)
@@ -881,28 +936,56 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             content_width=float(data.get("content_width", 0)),
             content_height=float(data.get("content_height", 0)),
         )
-        return Scroll(id=local_id, data=sd, scope=scope)
+        return Scroll(
+            id=local_id,
+            data=sd,
+            window_id=_require_window_id(msg, 'widget event "scroll"'),
+            scope=scope,
+        )
 
     if family == "paste":
         local_id, scope = split_scoped_id(wire_id)
-        return Paste(id=local_id, value=str(value or ""), scope=scope)
+        return Paste(
+            id=local_id,
+            value=str(value or ""),
+            window_id=_require_window_id(msg, 'widget event "paste"'),
+            scope=scope,
+        )
 
     if family == "sort":
         local_id, scope = split_scoped_id(wire_id)
         column = data.get("column", "") if isinstance(data, dict) else str(value or "")
-        return Sort(id=local_id, value=str(column), scope=scope)
+        return Sort(
+            id=local_id,
+            value=str(column),
+            window_id=_require_window_id(msg, 'widget event "sort"'),
+            scope=scope,
+        )
 
     if family == "open":
         local_id, scope = split_scoped_id(wire_id)
-        return Open(id=local_id, scope=scope)
+        return Open(
+            id=local_id,
+            window_id=_require_window_id(msg, 'widget event "open"'),
+            scope=scope,
+        )
 
     if family == "close":
         local_id, scope = split_scoped_id(wire_id)
-        return Close(id=local_id, scope=scope)
+        return Close(
+            id=local_id,
+            window_id=_require_window_id(msg, 'widget event "close"'),
+            scope=scope,
+        )
 
     if family == "option_hovered":
         local_id, scope = split_scoped_id(wire_id)
-        return OptionHovered(id=local_id, value=str(value or ""), scope=scope)
+        return OptionHovered(
+            id=local_id,
+            value=str(value or ""),
+            window_id=_require_window_id(msg, 'widget event "option_hovered"'),
+            scope=scope,
+        )
 
     if family == "key_binding":
         local_id, scope = split_scoped_id(wire_id)
@@ -913,37 +996,72 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             binding = data
         else:
             binding = str(value or "")
-        return KeyBinding(id=local_id, value=binding, scope=scope)
+        return KeyBinding(
+            id=local_id,
+            value=binding,
+            window_id=_require_window_id(msg, 'widget event "key_binding"'),
+            scope=scope,
+        )
 
     # ------- MouseArea events (scoped) -------
 
     if family == "mouse_right_press":
         local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaRightPress(id=local_id, scope=scope)
+        return MouseAreaRightPress(
+            id=local_id,
+            window_id=_require_window_id(msg, 'mouse area event "mouse_right_press"'),
+            scope=scope,
+        )
 
     if family == "mouse_right_release":
         local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaRightRelease(id=local_id, scope=scope)
+        return MouseAreaRightRelease(
+            id=local_id,
+            window_id=_require_window_id(msg, 'mouse area event "mouse_right_release"'),
+            scope=scope,
+        )
 
     if family == "mouse_middle_press":
         local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaMiddlePress(id=local_id, scope=scope)
+        return MouseAreaMiddlePress(
+            id=local_id,
+            window_id=_require_window_id(msg, 'mouse area event "mouse_middle_press"'),
+            scope=scope,
+        )
 
     if family == "mouse_middle_release":
         local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaMiddleRelease(id=local_id, scope=scope)
+        return MouseAreaMiddleRelease(
+            id=local_id,
+            window_id=_require_window_id(
+                msg, 'mouse area event "mouse_middle_release"'
+            ),
+            scope=scope,
+        )
 
     if family == "mouse_double_click":
         local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaDoubleClick(id=local_id, scope=scope)
+        return MouseAreaDoubleClick(
+            id=local_id,
+            window_id=_require_window_id(msg, 'mouse area event "mouse_double_click"'),
+            scope=scope,
+        )
 
     if family == "mouse_enter":
         local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaEnter(id=local_id, scope=scope)
+        return MouseAreaEnter(
+            id=local_id,
+            window_id=_require_window_id(msg, 'mouse area event "mouse_enter"'),
+            scope=scope,
+        )
 
     if family == "mouse_exit":
         local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaExit(id=local_id, scope=scope)
+        return MouseAreaExit(
+            id=local_id,
+            window_id=_require_window_id(msg, 'mouse area event "mouse_exit"'),
+            scope=scope,
+        )
 
     if family == "mouse_move":
         local_id, scope = split_scoped_id(wire_id)
@@ -951,6 +1069,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
+            window_id=_require_window_id(msg, 'mouse area event "mouse_move"'),
             scope=scope,
         )
 
@@ -960,6 +1079,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
+            window_id=_require_window_id(msg, 'mouse area event "mouse_scroll"'),
             scope=scope,
         )
 
@@ -972,6 +1092,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             button=str(data.get("button", "left")),
+            window_id=_require_window_id(msg, 'canvas event "canvas_press"'),
             scope=scope,
         )
 
@@ -982,6 +1103,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             button=str(data.get("button", "left")),
+            window_id=_require_window_id(msg, 'canvas event "canvas_release"'),
             scope=scope,
         )
 
@@ -991,6 +1113,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
+            window_id=_require_window_id(msg, 'canvas event "canvas_move"'),
             scope=scope,
         )
 
@@ -1002,6 +1125,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             y=float(data.get("y", 0)),
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
+            window_id=_require_window_id(msg, 'canvas event "canvas_scroll"'),
             scope=scope,
         )
 
@@ -1014,6 +1138,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             element_id=str(data.get("element_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
+            window_id=_require_window_id(msg, 'widget event "canvas_element_enter"'),
             captured=captured,
             scope=scope,
         )
@@ -1023,6 +1148,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return CanvasElementLeave(
             id=local_id,
             element_id=str(data.get("element_id", "")),
+            window_id=_require_window_id(msg, 'widget event "canvas_element_leave"'),
             captured=captured,
             scope=scope,
         )
@@ -1035,6 +1161,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             button=str(data.get("button", "left")),
+            window_id=_require_window_id(msg, 'widget event "canvas_element_click"'),
             captured=captured,
             scope=scope,
         )
@@ -1048,6 +1175,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             y=float(data.get("y", 0)),
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
+            window_id=_require_window_id(msg, 'widget event "canvas_element_drag"'),
             captured=captured,
             scope=scope,
         )
@@ -1059,6 +1187,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             element_id=str(data.get("element_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
+            window_id=_require_window_id(msg, 'widget event "canvas_element_drag_end"'),
             captured=captured,
             scope=scope,
         )
@@ -1068,6 +1197,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return CanvasElementFocused(
             id=local_id,
             element_id=str(data.get("element_id", "")),
+            window_id=_require_window_id(msg, 'widget event "canvas_element_focused"'),
             captured=captured,
             scope=scope,
         )
@@ -1077,6 +1207,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return CanvasElementBlurred(
             id=local_id,
             element_id=str(data.get("element_id", "")),
+            window_id=_require_window_id(msg, 'widget event "canvas_element_blurred"'),
             captured=captured,
             scope=scope,
         )
@@ -1089,6 +1220,9 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             element_id=str(data.get("element_id", "")),
             key=str(data.get("key", "")),
             modifiers=mods if isinstance(mods, dict) else {},
+            window_id=_require_window_id(
+                msg, 'widget event "canvas_element_key_press"'
+            ),
             scope=scope,
         )
 
@@ -1100,6 +1234,9 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             element_id=str(data.get("element_id", "")),
             key=str(data.get("key", "")),
             modifiers=mods if isinstance(mods, dict) else {},
+            window_id=_require_window_id(
+                msg, 'widget event "canvas_element_key_release"'
+            ),
             scope=scope,
         )
 
@@ -1107,11 +1244,19 @@ def _decode_event(msg: dict[str, Any]) -> Any:
 
     if family == "canvas_focused":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasFocused(id=local_id, scope=scope)
+        return CanvasFocused(
+            id=local_id,
+            window_id=_require_window_id(msg, 'widget event "canvas_focused"'),
+            scope=scope,
+        )
 
     if family == "canvas_blurred":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasBlurred(id=local_id, scope=scope)
+        return CanvasBlurred(
+            id=local_id,
+            window_id=_require_window_id(msg, 'widget event "canvas_blurred"'),
+            scope=scope,
+        )
 
     # ------- Canvas group events (scoped) -------
 
@@ -1120,6 +1265,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return CanvasGroupFocused(
             id=local_id,
             group_id=str(data.get("group_id", "")),
+            window_id=_require_window_id(msg, 'widget event "canvas_group_focused"'),
             scope=scope,
         )
 
@@ -1128,6 +1274,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return CanvasGroupBlurred(
             id=local_id,
             group_id=str(data.get("group_id", "")),
+            window_id=_require_window_id(msg, 'widget event "canvas_group_blurred"'),
             scope=scope,
         )
 
@@ -1149,6 +1296,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             width=float(data.get("width", 0)),
             height=float(data.get("height", 0)),
+            window_id=_require_window_id(msg, 'sensor event "sensor_resize"'),
             scope=scope,
         )
 
@@ -1160,6 +1308,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             split=data.get("split"),
             ratio=float(data.get("ratio", 0)),
+            window_id=_require_window_id(msg, 'pane event "pane_resized"'),
             scope=scope,
         )
 
@@ -1170,6 +1319,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             pane=data.get("pane"),
             target=data.get("target"),
             action=str(data.get("action", "")),
+            window_id=_require_window_id(msg, 'pane event "pane_dragged"'),
             region=data.get("region"),
             edge=data.get("edge"),
             scope=scope,
@@ -1180,6 +1330,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return PaneClicked(
             id=local_id,
             pane=data.get("pane"),
+            window_id=_require_window_id(msg, 'pane event "pane_clicked"'),
             scope=scope,
         )
 
@@ -1188,6 +1339,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return PaneFocusCycle(
             id=local_id,
             pane=data.get("pane"),
+            window_id=_require_window_id(msg, 'pane event "pane_focus_cycle"'),
             scope=scope,
         )
 
@@ -1395,10 +1547,16 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         if error_id == "extension_command":
             return ExtensionCommandError(
                 reason=str(data.get("reason", "")),
-                node_id=str(data["node_id"]) if data.get("node_id") is not None else None,
+                node_id=str(data["node_id"])
+                if data.get("node_id") is not None
+                else None,
                 op=str(data["op"]) if data.get("op") is not None else None,
-                extension=str(data["extension"]) if data.get("extension") is not None else None,
-                message=str(data["message"]) if data.get("message") is not None else None,
+                extension=str(data["extension"])
+                if data.get("extension") is not None
+                else None,
+                message=str(data["message"])
+                if data.get("message") is not None
+                else None,
             )
         return RendererError(id=error_id, data=data)
 
@@ -1416,6 +1574,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return WidgetEvent(
             kind=family,
             id=local_id,
+            window_id=_require_window_id(msg, f'widget event "{family}"'),
             value=value,
             data=data if data else None,
             scope=scope,

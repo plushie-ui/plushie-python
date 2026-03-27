@@ -59,7 +59,7 @@ _A11Y_ID_REF_KEYS = ("labelled_by", "described_by", "error_message")
 def normalize(
     tree: None | Node | list[Node],
     *,
-    registry: dict[str, Any] | None = None,
+    registry: Any = None,
 ) -> Node:
     """Normalize a UI tree into canonical node shape.
 
@@ -89,18 +89,20 @@ def normalize(
         if len(tree) == 0:
             return _empty_container()
         if len(tree) == 1:
-            return _normalize_with_scope(tree[0], "", 0, registry=registry)
+            return _normalize_with_scope(
+                tree[0], "", 0, window_id=None, registry=registry
+            )
         return {
             "id": "root",
             "type": "container",
             "props": {},
             "children": [
-                _normalize_with_scope(child, "", i, registry=registry)
+                _normalize_with_scope(child, "", i, window_id=None, registry=registry)
                 for i, child in enumerate(tree)
             ],
         }
 
-    return _normalize_with_scope(tree, "", 0, registry=registry)
+    return _normalize_with_scope(tree, "", 0, window_id=None, registry=registry)
 
 
 def _empty_container() -> Node:
@@ -114,7 +116,12 @@ def _empty_container() -> Node:
 
 
 def _normalize_with_scope(
-    node: Node, scope: str, index: int, *, registry: dict[str, Any] | None = None
+    node: Node,
+    scope: str,
+    index: int,
+    *,
+    window_id: str | None,
+    registry: Any = None,
 ) -> Node:
     """Normalize a single node with scope context.
 
@@ -132,6 +139,7 @@ def _normalize_with_scope(
     # Auto-ID for nodes without an explicit ID
     node_id = f"auto:{node_type}:{index}" if raw_id is None else str(raw_id)
     is_auto = node_id.startswith("auto:")
+    current_window_id = node_id if node_type == "window" else window_id
 
     # Validate: user-provided IDs must not contain "/"
     if not is_auto and "/" in node_id:
@@ -150,15 +158,23 @@ def _normalize_with_scope(
         try:
             from plushie.canvas_widget import render_placeholder
 
-            result = render_placeholder(node, scoped_id, node_id, registry)
-            if result is not None:
-                rendered_node, _entry = result
+            placeholder = render_placeholder(
+                node, current_window_id, scoped_id, node_id, registry
+            )
+            if placeholder is not None:
+                _key, rendered_node, _entry = placeholder
                 # Normalize rendered output. Pass empty scope since the
                 # rendered node's ID is already fully scoped.
                 child_scope = "" if rendered_node.get("type") == "window" else scoped_id
                 rendered_children = rendered_node.get("children") or []
                 normalized_children = [
-                    _normalize_with_scope(c, child_scope, i, registry=registry)
+                    _normalize_with_scope(
+                        c,
+                        child_scope,
+                        i,
+                        window_id=current_window_id,
+                        registry=registry,
+                    )
                     for i, c in enumerate(rendered_children)
                 ]
                 rendered_props = _encode_props(dict(rendered_node.get("props") or {}))
@@ -183,7 +199,9 @@ def _normalize_with_scope(
     normalized_props = _resolve_a11y_id_refs(encoded_props, scope)
 
     # Normalize children
-    normalized_children = _normalize_children(children, child_scope, registry=registry)
+    normalized_children = _normalize_children(
+        children, child_scope, window_id=current_window_id, registry=registry
+    )
 
     result: Node = {
         "id": scoped_id,
@@ -200,11 +218,15 @@ def _normalize_with_scope(
 
 
 def _normalize_children(
-    children: list[Node], scope: str, *, registry: dict[str, Any] | None = None
+    children: list[Node],
+    scope: str,
+    *,
+    window_id: str | None,
+    registry: Any = None,
 ) -> list[Node]:
     """Normalize a list of child nodes, checking for duplicate IDs."""
     normalized = [
-        _normalize_with_scope(child, scope, i, registry=registry)
+        _normalize_with_scope(child, scope, i, window_id=window_id, registry=registry)
         for i, child in enumerate(children)
     ]
     _check_duplicate_ids(normalized)

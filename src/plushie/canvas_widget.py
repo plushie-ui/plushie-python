@@ -217,22 +217,31 @@ class CanvasWidgetDef(ABC):
         }
 
 
+type WidgetKey = tuple[str, str]
+
+
+def _widget_key(window_id: str, widget_id: str) -> WidgetKey:
+    return (window_id, widget_id)
+
+
 def render_placeholder(
     node: dict[str, Any],
+    window_id: str | None,
     scoped_id: str,
     local_id: str,
-    registry: dict[str, Any],
-) -> tuple[dict[str, Any], Any] | None:
+    registry: WidgetRegistry,
+) -> tuple[WidgetKey, dict[str, Any], Any] | None:
     """Render a canvas widget placeholder during normalization.
 
     Args:
         node: The placeholder node (has meta with __canvas_widget__).
+        window_id: The containing window ID.
         scoped_id: The fully scoped ID for this node.
         local_id: The local (pre-scoped) ID passed to render().
         registry: Existing canvas widget registry for state lookup.
 
     Returns:
-        (rendered_node, entry) or None if rendering fails.
+        (key, rendered_node, entry) or None if rendering fails.
     """
     meta = node.get("meta", {})
     widget_cls = meta.get("__canvas_widget__")
@@ -240,13 +249,17 @@ def render_placeholder(
     if widget_cls is None:
         return None
 
+    if not window_id:
+        raise ValueError(f"canvas widget {local_id!r} must be rendered inside a window")
+
     # Look up existing state or initialize
-    existing = registry.get(scoped_id)
+    key = _widget_key(window_id, scoped_id)
+    existing = registry.get(key)
     if existing is not None:
         state = existing.state
     else:
         instance = widget_cls()
-        state = instance.init()
+        state = instance.init(widget_props)
 
     # Render the widget
     instance = widget_cls()
@@ -262,14 +275,14 @@ def render_placeholder(
     rendered_with_meta = dict(rendered)
     rendered_with_meta["id"] = scoped_id
     rendered_with_meta["meta"] = widget_meta
-    return rendered_with_meta, entry
+    return key, rendered_with_meta, entry
 
 
 # ---------------------------------------------------------------------------
 # Registry: derive from tree, dispatch events
 # ---------------------------------------------------------------------------
 
-type WidgetRegistry = dict[str, RegistryEntry]
+type WidgetRegistry = dict[WidgetKey, RegistryEntry]
 
 
 @dataclass(slots=True)
@@ -290,19 +303,25 @@ def derive_registry(tree: dict[str, Any] | None) -> WidgetRegistry:
     if tree is None:
         return {}
     registry: WidgetRegistry = {}
-    _collect_entries(tree, registry)
+    _collect_entries(tree, registry, None)
     return registry
 
 
 def _collect_entries(
     node: dict[str, Any],
     registry: WidgetRegistry,
+    window_id: str | None,
 ) -> None:
     """Recursively collect canvas widget entries from the tree."""
+    current_window_id = node.get("id") if node.get("type") == "window" else window_id
     meta = node.get("meta")
     if isinstance(meta, dict):
         widget_cls = meta.get("__canvas_widget__")
         if widget_cls is not None and isinstance(widget_cls, type):
+            if not current_window_id:
+                raise ValueError(
+                    f"canvas widget {node.get('id', '')!r} must be rendered inside a window"
+                )
             node_id = node.get("id", "")
             state = meta.get("__canvas_widget_state__", {})
             props = meta.get("__canvas_widget_props__", {})
@@ -310,13 +329,13 @@ def _collect_entries(
             # Initialize state for new widgets
             if not state and hasattr(instance, "init"):
                 state = instance.init(props)
-            registry[node_id] = RegistryEntry(
+            registry[_widget_key(str(current_window_id), str(node_id))] = RegistryEntry(
                 definition=instance, state=state, props=props
             )
 
     for child in node.get("children", []):
         if isinstance(child, dict):
-            _collect_entries(child, registry)
+            _collect_entries(child, registry, current_window_id)
 
 
 # ---------------------------------------------------------------------------
@@ -342,15 +361,18 @@ def dispatch_through_widgets(
 
     scope = getattr(event, "scope", None)
     event_id = getattr(event, "id", None)
+    window_id = getattr(event, "window_id", None)
 
     if scope is None or not isinstance(scope, tuple):
         return event, registry
 
-    chain = _build_handler_chain(registry, scope)
+    chain = _build_handler_chain(
+        registry, str(window_id) if isinstance(window_id, str) else None, scope
+    )
 
-    if not chain and event_id:
+    if not chain and event_id and isinstance(window_id, str):
         # Check if the event's target itself is a canvas widget
-        target_id = _scope_to_id(scope, event_id)
+        target_id = _widget_key(window_id, _scope_to_id(scope, event_id))
         entry = registry.get(target_id)
         if entry is not None:
             chain = [(target_id, entry)]
@@ -363,17 +385,18 @@ def dispatch_through_widgets(
 
 def _build_handler_chain(
     registry: WidgetRegistry,
+    window_id: str | None,
     scope: tuple[str, ...],
-) -> list[tuple[str, RegistryEntry]]:
+) -> list[tuple[WidgetKey, RegistryEntry]]:
     """Build handler chain from scope, innermost to outermost."""
-    if not scope:
+    if not scope or window_id is None:
         return []
 
     forward = list(reversed(scope))
-    chain: list[tuple[str, RegistryEntry]] = []
+    chain: list[tuple[WidgetKey, RegistryEntry]] = []
 
     for n in range(len(forward), 0, -1):
-        scoped_id = "/".join(forward[:n])
+        scoped_id = _widget_key(window_id, "/".join(forward[:n]))
         entry = registry.get(scoped_id)
         if entry is not None:
             chain.append((scoped_id, entry))
@@ -391,10 +414,10 @@ def _scope_to_id(scope: tuple[str, ...], local_id: str) -> str:
 def _walk_chain(
     registry: WidgetRegistry,
     event: Any,
-    chain: list[tuple[str, RegistryEntry]],
+    chain: list[tuple[WidgetKey, RegistryEntry]],
 ) -> tuple[Any | None, WidgetRegistry]:
     """Walk the handler chain, dispatching through each widget."""
-    for scoped_id, entry in chain:
+    for widget_key, entry in chain:
         try:
             action = entry.definition.handle_event(event, entry.state)
         except Exception:
@@ -402,7 +425,7 @@ def _walk_chain(
                 "canvas_widget %s.%s (%s) raised in handle_event",
                 type(entry.definition).__module__,
                 type(entry.definition).__name__,
-                scoped_id,
+                widget_key,
                 exc_info=True,
             )
             action = EventAction.ignored()
@@ -421,10 +444,13 @@ def _walk_chain(
             if action.state is not None:
                 entry.state = action.state
 
-            emit_id, emit_scope = _resolve_emit_identity(event, scoped_id)
+            emit_window_id, emit_id, emit_scope = _resolve_emit_identity(
+                event, widget_key
+            )
             emitted = WidgetEvent(
                 kind=action.kind,
                 id=emit_id,
+                window_id=emit_window_id,
                 value=action.data.get("value"),
                 data=action.data,
                 scope=emit_scope,
@@ -436,8 +462,8 @@ def _walk_chain(
 
 def _resolve_emit_identity(
     event: Any,
-    widget_id: str,
-) -> tuple[str, tuple[str, ...]]:
+    widget_key: WidgetKey,
+) -> tuple[str, str, tuple[str, ...]]:
     """Resolve the ID and scope for emitted events.
 
     For widget events (which carry scope), the canvas widget's ID is
@@ -448,14 +474,14 @@ def _resolve_emit_identity(
     event_id = getattr(event, "id", None)
 
     if isinstance(scope, tuple) and scope:
-        return scope[0], scope[1:]
+        return widget_key[0], scope[0], scope[1:]
 
     if isinstance(scope, tuple) and not scope and event_id:
-        return event_id, ()
+        return widget_key[0], event_id, ()
 
     # Timer or other non-widget event -- split the widget ID
-    local_id, parent_scope = split_scoped_id(widget_id)
-    return local_id, parent_scope
+    local_id, parent_scope = split_scoped_id(widget_key[1])
+    return widget_key[0], local_id, parent_scope
 
 
 # ---------------------------------------------------------------------------
@@ -466,7 +492,7 @@ def _resolve_emit_identity(
 def collect_subscriptions(registry: WidgetRegistry) -> list[Subscription]:
     """Collect subscriptions from all registered canvas widgets.
 
-    Tags are namespaced with the widget ID to prevent collisions.
+    Tags are namespaced with the window-local widget key to prevent collisions.
     """
     result: list[Subscription] = []
     for widget_id, entry in registry.items():
@@ -484,7 +510,8 @@ def collect_subscriptions(registry: WidgetRegistry) -> list[Subscription]:
             namespaced = sub.map_tag(
                 lambda tag, wid=widget_id: (  # type: ignore[misc]
                     "__canvas_widget__",
-                    wid,
+                    wid[0],
+                    wid[1],
                     tag,
                 )
             )
@@ -500,11 +527,12 @@ def maybe_handle_timer(
 
     Returns ``(handled, event_or_none, registry)``.
     """
-    if not (isinstance(tag, tuple) and len(tag) == 3 and tag[0] == "__canvas_widget__"):
+    if not (isinstance(tag, tuple) and len(tag) == 4 and tag[0] == "__canvas_widget__"):
         return False, None, registry
 
-    _, widget_id, inner_tag = tag
-    entry = registry.get(widget_id)
+    _, window_id, widget_id, inner_tag = tag
+    key = _widget_key(str(window_id), str(widget_id))
+    entry = registry.get(key)
     if entry is None:
         return False, None, registry
 
@@ -517,7 +545,7 @@ def maybe_handle_timer(
     except Exception:
         logger.warning(
             "canvas_widget %s handle_event(timer) raised",
-            widget_id,
+            key,
             exc_info=True,
         )
         return True, None, registry
@@ -525,10 +553,11 @@ def maybe_handle_timer(
     if isinstance(action, _Emit):
         if action.state is not None:
             entry.state = action.state
-        emit_id, emit_scope = _resolve_emit_identity(timer_event, widget_id)
+        emit_window_id, emit_id, emit_scope = _resolve_emit_identity(timer_event, key)
         emitted = WidgetEvent(
             kind=action.kind,
             id=emit_id,
+            window_id=emit_window_id,
             value=action.data.get("value"),
             data=action.data,
             scope=emit_scope,

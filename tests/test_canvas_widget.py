@@ -150,8 +150,8 @@ class TestBuild:
     def test_meta_preserved_through_normalize(self) -> None:
         node = StarRating.build("stars", props={"max": 5})
         tree = {
-            "id": "root",
-            "type": "container",
+            "id": "main",
+            "type": "window",
             "props": {},
             "children": [node],
         }
@@ -173,15 +173,15 @@ class TestDeriveRegistry:
     def test_extracts_widget_entries(self) -> None:
         tree = normalize(
             {
-                "id": "root",
-                "type": "container",
+                "id": "main",
+                "type": "window",
                 "props": {},
                 "children": [StarRating.build("stars", props={"max": 5})],
             }
         )
         reg = derive_registry(tree)
-        assert "root/stars" in reg
-        entry = reg["root/stars"]
+        assert ("main", "stars") in reg
+        entry = reg[("main", "stars")]
         assert isinstance(entry.definition, StarRating)
         assert entry.state == {"hovered": None, "max": 5}
         assert entry.props == {"max": 5}
@@ -194,22 +194,28 @@ class TestDeriveRegistry:
 
 class TestDispatchThroughWidgets:
     def test_ignored_passes_through(self) -> None:
-        reg = {"form/widget": RegistryEntry(definition=IgnoreAll(), state={}, props={})}
-        event = Click(id="btn", scope=("widget", "form"))
+        reg = {
+            ("main", "form/widget"): RegistryEntry(
+                definition=IgnoreAll(), state={}, props={}
+            )
+        }
+        event = Click(id="btn", window_id="main", scope=("widget", "form"))
         result, _new_reg = dispatch_through_widgets(reg, event)
         assert result is event
 
     def test_consumed_returns_none(self) -> None:
         reg = {
-            "form/widget": RegistryEntry(definition=ConsumeAll(), state={}, props={})
+            ("main", "form/widget"): RegistryEntry(
+                definition=ConsumeAll(), state={}, props={}
+            )
         }
-        event = Click(id="btn", scope=("widget", "form"))
+        event = Click(id="btn", window_id="main", scope=("widget", "form"))
         result, _new_reg = dispatch_through_widgets(reg, event)
         assert result is None
 
     def test_emit_replaces_event(self) -> None:
         reg = {
-            "stars": RegistryEntry(
+            ("main", "stars"): RegistryEntry(
                 definition=StarRating(),
                 state={"hovered": None, "max": 5},
                 props={"max": 5},
@@ -221,16 +227,18 @@ class TestDispatchThroughWidgets:
             x=10.0,
             y=10.0,
             button="left",
+            window_id="main",
             scope=(),
         )
         result, _new_reg = dispatch_through_widgets(reg, event)
         assert isinstance(result, WidgetEvent)
         assert result.kind == "select"
+        assert result.window_id == "main"
         assert result.data == {"value": "star3"}
 
     def test_update_state_modifies_registry(self) -> None:
         reg = {
-            "stars": RegistryEntry(
+            ("main", "stars"): RegistryEntry(
                 definition=StarRating(),
                 state={"hovered": None, "max": 5},
                 props={"max": 5},
@@ -241,20 +249,23 @@ class TestDispatchThroughWidgets:
             element_id="star2",
             x=10.0,
             y=10.0,
+            window_id="main",
             scope=(),
         )
         result, new_reg = dispatch_through_widgets(reg, event)
         assert result is None  # consumed by update_state
-        assert new_reg["stars"].state["hovered"] == "star2"
+        assert new_reg[("main", "stars")].state["hovered"] == "star2"
 
     def test_empty_registry_passes_through(self) -> None:
-        event = Click(id="btn", scope=())
+        event = Click(id="btn", window_id="main", scope=())
         result, _ = dispatch_through_widgets({}, event)
         assert result is event
 
     def test_no_scope_passes_through(self) -> None:
-        reg = {"stars": RegistryEntry(definition=IgnoreAll(), state={}, props={})}
-        event = Click(id="other")
+        reg = {
+            ("main", "stars"): RegistryEntry(definition=IgnoreAll(), state={}, props={})
+        }
+        event = Click(id="other", window_id="main")
         result, _ = dispatch_through_widgets(reg, event)
         assert result is event
 
@@ -267,11 +278,13 @@ class TestDispatchThroughWidgets:
 class TestCollectSubscriptions:
     def test_namespaced_tags(self) -> None:
         reg = {
-            "widget1": RegistryEntry(definition=WithSubscriptions(), state={}, props={})
+            ("main", "widget1"): RegistryEntry(
+                definition=WithSubscriptions(), state={}, props={}
+            )
         }
         subs = collect_subscriptions(reg)
         assert len(subs) == 1
-        assert subs[0].tag == ("__canvas_widget__", "widget1", "tick")
+        assert subs[0].tag == ("__canvas_widget__", "main", "widget1", "tick")
 
 
 # ---------------------------------------------------------------------------
@@ -285,9 +298,11 @@ class TestMaybeHandleTimer:
         assert handled is False
 
     def test_widget_tag_routed(self) -> None:
-        reg = {"stars": RegistryEntry(definition=IgnoreAll(), state={}, props={})}
+        reg = {
+            ("main", "stars"): RegistryEntry(definition=IgnoreAll(), state={}, props={})
+        }
         handled, event, _ = maybe_handle_timer(
-            reg, ("__canvas_widget__", "stars", "tick")
+            reg, ("__canvas_widget__", "main", "stars", "tick")
         )
         assert handled is True
         assert event is None  # IgnoreAll ignores everything

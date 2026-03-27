@@ -74,7 +74,10 @@ class Model:
     """Rate Plushie model."""
 
     rating: int = 0
+    hover_star: int | None = None
     dark_mode: bool = False
+    toggle_progress: float = 0.0
+    toggle_target: float = 0.0
     reviews: tuple[Review, ...] = INITIAL_REVIEWS
     review_name: str = ""
     review_comment: str = ""
@@ -268,7 +271,7 @@ def _rating_card(model: Model, p: float, t: _Theme) -> dict[str, Any]:
                 size=14,
                 color=t.text_secondary,
             ),
-            ui.column(*stars_children, id="stars-group", spacing=4),
+            ui.column(*stars_children, spacing=4),
             ui.rule(),
             _review_form(model, t),
             _theme_row(model, t),
@@ -339,8 +342,8 @@ def _review_form(model: Model, t: _Theme) -> dict[str, Any]:
         )
 
     return ui.column(
-        ui.column(*name_children, id="name-field", spacing=4, width="fill"),
-        ui.column(*comment_children, id="comment-field", spacing=4, width="fill"),
+        ui.column(*name_children, spacing=4, width="fill"),
+        ui.column(*comment_children, spacing=4, width="fill"),
         ui.button("submit-review", "Submit Review"),
         id="review-form",
         spacing=12,

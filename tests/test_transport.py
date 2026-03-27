@@ -124,7 +124,12 @@ class TestIoStreamAdapter:
         writer = _PipeWriter()
         adapter = IoStreamAdapter(reader, writer)
 
-        event_msg = {"type": "event", "kind": "click", "id": "btn"}
+        event_msg = {
+            "type": "event",
+            "family": "click",
+            "id": "btn",
+            "window_id": "main",
+        }
         reader.feed(_encode_msg(event_msg))
 
         event = adapter.receive_event(timeout=2.0)

@@ -196,6 +196,7 @@ def test_getting_started_decorator_view() -> None:
     model = built.init()
     tree = built.view(model)
 
+    assert isinstance(tree, dict)
     assert tree["type"] == "window"
     assert tree["id"] == "main"
     assert tree["props"]["title"] == "Counter"

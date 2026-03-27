@@ -93,11 +93,11 @@ class App[M](ABC):
         ...
 
     @abstractmethod
-    def view(self, model: M) -> dict[str, Any]:
-        """Called after every update.  Returns the UI tree as a plain dict.
+    def view(self, model: M) -> dict[str, Any] | list[dict[str, Any]]:
+        """Called after every update. Returns explicit top-level window nodes.
 
-        The tree is normalized and diffed by the runtime -- return
-        widget builder output directly.
+        Return either one ``ui.window(...)`` node or a list of window
+        nodes. Bare top-level widgets are rejected by the runtime.
         """
         ...
 
@@ -177,7 +177,7 @@ class _DecoratorApp(App[Any]):
             raise NotImplementedError(f"{self._name}: no update function registered")
         return self._update_fn(model, event)
 
-    def view(self, model: Any) -> dict[str, Any]:
+    def view(self, model: Any) -> dict[str, Any] | list[dict[str, Any]]:
         if self._view_fn is None:
             raise NotImplementedError(f"{self._name}: no view function registered")
         return self._view_fn(model)

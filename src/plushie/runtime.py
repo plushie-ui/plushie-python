@@ -32,6 +32,7 @@ from queue import Empty, Queue
 from typing import Any
 
 from plushie.app import App, AppBuilder
+from plushie.canvas_widget import WidgetRegistry
 from plushie.commands import Command
 from plushie.connection import Connection
 from plushie.effects import DEFAULT_TIMEOUTS
@@ -195,7 +196,7 @@ def coalesce_key(event: Any) -> Any | None:
     if isinstance(event, MouseMove):
         return ("mouse_move",)
     if isinstance(event, SensorResize):
-        return ("sensor_resize", event.id)
+        return ("sensor_resize", event.window_id, event.id)
     return None
 
 
@@ -288,7 +289,7 @@ class Runtime:
         self._pending_interact: tuple[threading.Event, str] | None = None
 
         # Canvas widget registry
-        self._canvas_widgets: dict[str, Any] = {}
+        self._canvas_widgets: WidgetRegistry = {}
 
         # Reader thread
         self._reader_thread: threading.Thread | None = None
@@ -642,7 +643,7 @@ class Runtime:
         self._sync_subscriptions(new_model, extra_subs=widget_subs)
         self._sync_windows(new_tree)
 
-    def _route_through_widgets(self, event: Any) -> tuple[Any | None, dict[str, Any]]:
+    def _route_through_widgets(self, event: Any) -> tuple[Any | None, WidgetRegistry]:
         """Dispatch event through canvas widget handler chain."""
         if not self._canvas_widgets:
             return event, self._canvas_widgets
@@ -689,10 +690,37 @@ class Runtime:
         """Call app.view() + normalize with error handling."""
         try:
             raw_tree = self._app.view(model)
+            self._validate_root_windows(raw_tree)
             return normalize(raw_tree, registry=self._canvas_widgets or None)
         except Exception:
             logger.exception("plushie runtime: view() raised")
             return None
+
+    def _validate_root_windows(self, tree: Any) -> None:
+        """Require explicit window nodes at the top level."""
+        if tree is None:
+            return
+
+        if isinstance(tree, list):
+            for node in tree:
+                if not isinstance(node, dict) or node.get("type") != "window":
+                    got = (
+                        node.get("type")
+                        if isinstance(node, dict)
+                        else type(node).__name__
+                    )
+                    raise ValueError(
+                        "view() must return a window node or a list of window nodes at the top level, "
+                        f"got {got!r}"
+                    )
+            return
+
+        if not isinstance(tree, dict) or tree.get("type") != "window":
+            got = tree.get("type") if isinstance(tree, dict) else type(tree).__name__
+            raise ValueError(
+                "view() must return a window node or a list of window nodes at the top level, "
+                f"got {got!r}"
+            )
 
     def _render_and_sync(self, model: Any) -> Node | None:
         """Render view, diff against old tree, send snapshot or patch."""

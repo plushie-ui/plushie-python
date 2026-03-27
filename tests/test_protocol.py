@@ -27,9 +27,8 @@ from plushie.events import (
     Close,
     Diagnostic,
     DuplicateNodeIds,
-    ExtensionCommandError,
-    RendererError,
     EffectResult,
+    ExtensionCommandError,
     FileDropped,
     FileHovered,
     FilesHoveredLeft,
@@ -509,51 +508,94 @@ class TestDecodeEffectResponse:
 
 class TestDecodeWidgetEvents:
     def test_click(self) -> None:
-        raw = {"type": "event", "family": "click", "id": "btn1"}
+        raw = {"type": "event", "family": "click", "id": "btn1", "window_id": "main"}
         result = decode_message(raw)
         assert isinstance(result, Click)
         assert result.id == "btn1"
+        assert result.window_id == "main"
         assert result.scope == ()
 
     def test_click_scoped(self) -> None:
-        raw = {"type": "event", "family": "click", "id": "form/section/save"}
+        raw = {
+            "type": "event",
+            "family": "click",
+            "id": "form/section/save",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Click)
         assert result.id == "save"
+        assert result.window_id == "main"
         assert result.scope == ("section", "form")
 
     def test_input(self) -> None:
-        raw = {"type": "event", "family": "input", "id": "name", "value": "Alice"}
+        raw = {
+            "type": "event",
+            "family": "input",
+            "id": "name",
+            "value": "Alice",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Input)
         assert result.value == "Alice"
 
     def test_submit(self) -> None:
-        raw = {"type": "event", "family": "submit", "id": "search", "value": "query"}
+        raw = {
+            "type": "event",
+            "family": "submit",
+            "id": "search",
+            "value": "query",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Submit)
         assert result.value == "query"
 
     def test_toggle(self) -> None:
-        raw = {"type": "event", "family": "toggle", "id": "cb", "value": True}
+        raw = {
+            "type": "event",
+            "family": "toggle",
+            "id": "cb",
+            "value": True,
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Toggle)
         assert result.value is True
 
     def test_select(self) -> None:
-        raw = {"type": "event", "family": "select", "id": "pick", "value": "option_a"}
+        raw = {
+            "type": "event",
+            "family": "select",
+            "id": "pick",
+            "value": "option_a",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Select)
         assert result.value == "option_a"
 
     def test_slide(self) -> None:
-        raw = {"type": "event", "family": "slide", "id": "vol", "value": 0.75}
+        raw = {
+            "type": "event",
+            "family": "slide",
+            "id": "vol",
+            "value": 0.75,
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Slide)
         assert result.value == 0.75
 
     def test_slide_release(self) -> None:
-        raw = {"type": "event", "family": "slide_release", "id": "vol", "value": 0.8}
+        raw = {
+            "type": "event",
+            "family": "slide_release",
+            "id": "vol",
+            "value": 0.8,
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, SlideRelease)
         assert result.value == 0.8
@@ -563,6 +605,7 @@ class TestDecodeWidgetEvents:
             "type": "event",
             "family": "scroll",
             "id": "log",
+            "window_id": "main",
             "data": {
                 "absolute_x": 0,
                 "absolute_y": 100,
@@ -580,7 +623,13 @@ class TestDecodeWidgetEvents:
         assert result.data.content_height == 600
 
     def test_paste(self) -> None:
-        raw = {"type": "event", "family": "paste", "id": "ed", "value": "pasted text"}
+        raw = {
+            "type": "event",
+            "family": "paste",
+            "id": "ed",
+            "value": "pasted text",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Paste)
         assert result.value == "pasted text"
@@ -590,6 +639,7 @@ class TestDecodeWidgetEvents:
             "type": "event",
             "family": "sort",
             "id": "tbl",
+            "window_id": "main",
             "data": {"column": "name"},
         }
         result = decode_message(raw)
@@ -597,12 +647,12 @@ class TestDecodeWidgetEvents:
         assert result.value == "name"
 
     def test_open(self) -> None:
-        raw = {"type": "event", "family": "open", "id": "combo"}
+        raw = {"type": "event", "family": "open", "id": "combo", "window_id": "main"}
         result = decode_message(raw)
         assert isinstance(result, Open)
 
     def test_close(self) -> None:
-        raw = {"type": "event", "family": "close", "id": "combo"}
+        raw = {"type": "event", "family": "close", "id": "combo", "window_id": "main"}
         result = decode_message(raw)
         assert isinstance(result, Close)
 
@@ -611,6 +661,7 @@ class TestDecodeWidgetEvents:
             "type": "event",
             "family": "option_hovered",
             "id": "pick",
+            "window_id": "main",
             "value": "opt",
         }
         result = decode_message(raw)
@@ -622,6 +673,7 @@ class TestDecodeWidgetEvents:
             "type": "event",
             "family": "key_binding",
             "id": "editor",
+            "window_id": "main",
             "data": "save",
         }
         result = decode_message(raw)
@@ -633,6 +685,7 @@ class TestDecodeWidgetEvents:
             "type": "event",
             "family": "key_binding",
             "id": "editor",
+            "window_id": "main",
             "data": {"binding": "undo"},
         }
         result = decode_message(raw)
@@ -642,32 +695,67 @@ class TestDecodeWidgetEvents:
 
 class TestDecodeMouseAreaEvents:
     def test_mouse_right_press(self) -> None:
-        raw = {"type": "event", "family": "mouse_right_press", "id": "area1"}
+        raw = {
+            "type": "event",
+            "family": "mouse_right_press",
+            "id": "area1",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, MouseAreaRightPress)
 
     def test_mouse_right_release(self) -> None:
-        raw = {"type": "event", "family": "mouse_right_release", "id": "area1"}
+        raw = {
+            "type": "event",
+            "family": "mouse_right_release",
+            "id": "area1",
+            "window_id": "main",
+        }
         assert isinstance(decode_message(raw), MouseAreaRightRelease)
 
     def test_mouse_middle_press(self) -> None:
-        raw = {"type": "event", "family": "mouse_middle_press", "id": "area1"}
+        raw = {
+            "type": "event",
+            "family": "mouse_middle_press",
+            "id": "area1",
+            "window_id": "main",
+        }
         assert isinstance(decode_message(raw), MouseAreaMiddlePress)
 
     def test_mouse_middle_release(self) -> None:
-        raw = {"type": "event", "family": "mouse_middle_release", "id": "area1"}
+        raw = {
+            "type": "event",
+            "family": "mouse_middle_release",
+            "id": "area1",
+            "window_id": "main",
+        }
         assert isinstance(decode_message(raw), MouseAreaMiddleRelease)
 
     def test_mouse_double_click(self) -> None:
-        raw = {"type": "event", "family": "mouse_double_click", "id": "area1"}
+        raw = {
+            "type": "event",
+            "family": "mouse_double_click",
+            "id": "area1",
+            "window_id": "main",
+        }
         assert isinstance(decode_message(raw), MouseAreaDoubleClick)
 
     def test_mouse_enter(self) -> None:
-        raw = {"type": "event", "family": "mouse_enter", "id": "area1"}
+        raw = {
+            "type": "event",
+            "family": "mouse_enter",
+            "id": "area1",
+            "window_id": "main",
+        }
         assert isinstance(decode_message(raw), MouseAreaEnter)
 
     def test_mouse_exit(self) -> None:
-        raw = {"type": "event", "family": "mouse_exit", "id": "area1"}
+        raw = {
+            "type": "event",
+            "family": "mouse_exit",
+            "id": "area1",
+            "window_id": "main",
+        }
         assert isinstance(decode_message(raw), MouseAreaExit)
 
     def test_mouse_move(self) -> None:
@@ -675,6 +763,7 @@ class TestDecodeMouseAreaEvents:
             "type": "event",
             "family": "mouse_move",
             "id": "area1",
+            "window_id": "main",
             "data": {"x": 10.5, "y": 20.3},
         }
         result = decode_message(raw)
@@ -687,6 +776,7 @@ class TestDecodeMouseAreaEvents:
             "type": "event",
             "family": "mouse_scroll",
             "id": "area1",
+            "window_id": "main",
             "data": {"delta_x": 0, "delta_y": -3.0},
         }
         result = decode_message(raw)
@@ -700,6 +790,7 @@ class TestDecodeCanvasEvents:
             "type": "event",
             "family": "canvas_press",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"x": 50, "y": 60, "button": "left"},
         }
         result = decode_message(raw)
@@ -711,6 +802,7 @@ class TestDecodeCanvasEvents:
             "type": "event",
             "family": "canvas_release",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"x": 50, "y": 60, "button": "right"},
         }
         result = decode_message(raw)
@@ -722,6 +814,7 @@ class TestDecodeCanvasEvents:
             "type": "event",
             "family": "canvas_move",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"x": 100, "y": 200},
         }
         result = decode_message(raw)
@@ -733,6 +826,7 @@ class TestDecodeCanvasEvents:
             "type": "event",
             "family": "canvas_scroll",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"x": 50, "y": 50, "delta_x": 0, "delta_y": -5},
         }
         result = decode_message(raw)
@@ -746,6 +840,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_enter",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"element_id": "bar1", "x": 10, "y": 20},
         }
         result = decode_message(raw)
@@ -757,6 +852,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_leave",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"element_id": "bar1"},
         }
         assert isinstance(decode_message(raw), CanvasElementLeave)
@@ -766,6 +862,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_click",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"element_id": "bar1", "x": 15, "y": 25, "button": "keyboard"},
         }
         result = decode_message(raw)
@@ -777,6 +874,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_drag",
             "id": "canvas1",
+            "window_id": "main",
             "data": {
                 "element_id": "node1",
                 "x": 100,
@@ -794,6 +892,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_drag_end",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"element_id": "node1", "x": 105, "y": 197},
         }
         assert isinstance(decode_message(raw), CanvasElementDragEnd)
@@ -803,6 +902,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_focused",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"element_id": "bar1"},
         }
         assert isinstance(decode_message(raw), CanvasElementFocused)
@@ -812,6 +912,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_blurred",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"element_id": "bar1"},
         }
         result = decode_message(raw)
@@ -823,6 +924,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_key_press",
             "id": "scope1/canvas1",
+            "window_id": "main",
             "data": {"element_id": "item1", "key": "ArrowRight"},
         }
         result = decode_message(raw)
@@ -837,6 +939,7 @@ class TestDecodeCanvasElementEvents:
             "type": "event",
             "family": "canvas_element_key_release",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"element_id": "item1", "key": "Enter"},
         }
         result = decode_message(raw)
@@ -849,13 +952,23 @@ class TestDecodeCanvasElementEvents:
 
 class TestDecodeCanvasLifecycleEvents:
     def test_canvas_focused(self) -> None:
-        raw = {"type": "event", "family": "canvas_focused", "id": "canvas1"}
+        raw = {
+            "type": "event",
+            "family": "canvas_focused",
+            "id": "canvas1",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, CanvasFocused)
         assert result.id == "canvas1"
 
     def test_canvas_blurred(self) -> None:
-        raw = {"type": "event", "family": "canvas_blurred", "id": "canvas1"}
+        raw = {
+            "type": "event",
+            "family": "canvas_blurred",
+            "id": "canvas1",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, CanvasBlurred)
         assert result.id == "canvas1"
@@ -867,6 +980,7 @@ class TestDecodeCanvasGroupEvents:
             "type": "event",
             "family": "canvas_group_focused",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"group_id": "toolbar"},
         }
         result = decode_message(raw)
@@ -878,6 +992,7 @@ class TestDecodeCanvasGroupEvents:
             "type": "event",
             "family": "canvas_group_blurred",
             "id": "canvas1",
+            "window_id": "main",
             "data": {"group_id": "toolbar"},
         }
         result = decode_message(raw)
@@ -911,6 +1026,7 @@ class TestDecodeSensorEvents:
             "type": "event",
             "family": "sensor_resize",
             "id": "sensor1",
+            "window_id": "main",
             "data": {"width": 300, "height": 200},
         }
         result = decode_message(raw)
@@ -924,6 +1040,7 @@ class TestDecodePaneEvents:
             "type": "event",
             "family": "pane_resized",
             "id": "grid1",
+            "window_id": "main",
             "data": {"split": "s1", "ratio": 0.6},
         }
         result = decode_message(raw)
@@ -935,6 +1052,7 @@ class TestDecodePaneEvents:
             "type": "event",
             "family": "pane_dragged",
             "id": "grid1",
+            "window_id": "main",
             "data": {
                 "pane": "p1",
                 "target": "p2",
@@ -952,6 +1070,7 @@ class TestDecodePaneEvents:
             "type": "event",
             "family": "pane_clicked",
             "id": "grid1",
+            "window_id": "main",
             "data": {"pane": "p1"},
         }
         assert isinstance(decode_message(raw), PaneClicked)
@@ -961,6 +1080,7 @@ class TestDecodePaneEvents:
             "type": "event",
             "family": "pane_focus_cycle",
             "id": "grid1",
+            "window_id": "main",
             "data": {"pane": "p2"},
         }
         assert isinstance(decode_message(raw), PaneFocusCycle)
@@ -1495,6 +1615,7 @@ class TestDecodePassthrough:
             "type": "event",
             "family": "custom_future_event",
             "id": "widget1",
+            "window_id": "main",
             "value": "something",
         }
         result = decode_message(raw)
@@ -1518,21 +1639,31 @@ class TestDecodePassthrough:
 
 class TestDecodeScopedIdSplitting:
     def test_no_scope(self) -> None:
-        raw = {"type": "event", "family": "click", "id": "save"}
+        raw = {"type": "event", "family": "click", "id": "save", "window_id": "main"}
         result = decode_message(raw)
         assert isinstance(result, Click)
         assert result.id == "save"
         assert result.scope == ()
 
     def test_single_scope(self) -> None:
-        raw = {"type": "event", "family": "click", "id": "form/save"}
+        raw = {
+            "type": "event",
+            "family": "click",
+            "id": "form/save",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Click)
         assert result.id == "save"
         assert result.scope == ("form",)
 
     def test_deep_scope(self) -> None:
-        raw = {"type": "event", "family": "click", "id": "app/form/section/save"}
+        raw = {
+            "type": "event",
+            "family": "click",
+            "id": "app/form/section/save",
+            "window_id": "main",
+        }
         result = decode_message(raw)
         assert isinstance(result, Click)
         assert result.id == "save"

@@ -13,10 +13,11 @@ typed fields. Pattern match on class type in ``update()``::
         case KeyPress(key="Escape"):
             handle_escape(model)
 
-Widget events carry ``id`` (the widget's local ID after scope splitting)
-and ``scope`` (tuple of ancestor container IDs, nearest first). For
-example, a button "save" inside container "form" produces
-``Click(id="save", scope=("form",))``.
+Widget events carry ``id`` (the widget's local ID after scope splitting),
+``window_id`` (the window that emitted the event), and ``scope`` (tuple
+of ancestor container IDs, nearest first). For example, a button "save"
+inside container "form" in window "main" produces
+``Click(id="save", window_id="main", scope=("form",))``.
 
 Subscription events (key, mouse, touch, IME, window) are global and
 carry no scope. Runtime events (AsyncResult, StreamChunk, TimerTick,
@@ -93,6 +94,7 @@ class Click:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -108,6 +110,7 @@ class Input:
 
     id: str
     value: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -123,6 +126,7 @@ class Submit:
 
     id: str
     value: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -138,6 +142,7 @@ class Toggle:
 
     id: str
     value: bool
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -153,6 +158,7 @@ class Select:
 
     id: str
     value: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -168,6 +174,7 @@ class Slide:
 
     id: str
     value: float
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -183,6 +190,7 @@ class SlideRelease:
 
     id: str
     value: float
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -199,6 +207,7 @@ class Scroll:
 
     id: str
     data: ScrollData
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -214,6 +223,7 @@ class Paste:
 
     id: str
     value: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -229,6 +239,7 @@ class Sort:
 
     id: str
     value: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -240,6 +251,7 @@ class Open:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -251,6 +263,7 @@ class Close:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -266,6 +279,7 @@ class OptionHovered:
 
     id: str
     value: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -281,6 +295,7 @@ class KeyBinding:
 
     id: str
     value: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -295,12 +310,15 @@ class WidgetEvent:
         kind: The wire family string.
         value: The event value field (type varies by family).
         data: Additional event data (type varies by family).
+        window_id: Runtime-delivered widget events always include this.
+            Hand-built test events may leave it empty.
     """
 
     kind: str
     id: str
     value: Any
     data: Any
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -317,6 +335,7 @@ class MouseAreaRightPress:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -328,6 +347,7 @@ class MouseAreaRightRelease:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -339,6 +359,7 @@ class MouseAreaMiddlePress:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -350,6 +371,7 @@ class MouseAreaMiddleRelease:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -361,6 +383,7 @@ class MouseAreaDoubleClick:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -372,6 +395,7 @@ class MouseAreaEnter:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -383,6 +407,7 @@ class MouseAreaExit:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -400,6 +425,7 @@ class MouseAreaMove:
     id: str
     x: float
     y: float
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -417,6 +443,7 @@ class MouseAreaScroll:
     id: str
     delta_x: float
     delta_y: float
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -441,6 +468,7 @@ class CanvasPress:
     x: float
     y: float
     button: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -460,6 +488,7 @@ class CanvasRelease:
     x: float
     y: float
     button: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -477,6 +506,7 @@ class CanvasMove:
     id: str
     x: float
     y: float
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -498,6 +528,7 @@ class CanvasScroll:
     y: float
     delta_x: float
     delta_y: float
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -523,6 +554,7 @@ class CanvasElementEnter:
     element_id: str
     x: float
     y: float
+    window_id: str = ""
     captured: bool = False
     scope: tuple[str, ...] = ()
 
@@ -540,6 +572,7 @@ class CanvasElementLeave:
 
     id: str
     element_id: str
+    window_id: str = ""
     captured: bool = False
     scope: tuple[str, ...] = ()
 
@@ -564,6 +597,7 @@ class CanvasElementClick:
     x: float
     y: float
     button: str
+    window_id: str = ""
     captured: bool = False
     scope: tuple[str, ...] = ()
 
@@ -589,6 +623,7 @@ class CanvasElementDrag:
     y: float
     delta_x: float
     delta_y: float
+    window_id: str = ""
     captured: bool = False
     scope: tuple[str, ...] = ()
 
@@ -610,6 +645,7 @@ class CanvasElementDragEnd:
     element_id: str
     x: float
     y: float
+    window_id: str = ""
     captured: bool = False
     scope: tuple[str, ...] = ()
 
@@ -627,6 +663,7 @@ class CanvasElementFocused:
 
     id: str
     element_id: str
+    window_id: str = ""
     captured: bool = False
     scope: tuple[str, ...] = ()
 
@@ -644,6 +681,7 @@ class CanvasElementBlurred:
 
     id: str
     element_id: str
+    window_id: str = ""
     captured: bool = False
     scope: tuple[str, ...] = ()
 
@@ -664,6 +702,7 @@ class CanvasElementKeyPress:
     element_id: str
     key: str
     modifiers: dict[str, bool] = field(default_factory=dict)
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -683,6 +722,7 @@ class CanvasElementKeyRelease:
     element_id: str
     key: str
     modifiers: dict[str, bool] = field(default_factory=dict)
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -694,6 +734,7 @@ class CanvasFocused:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -705,6 +746,7 @@ class CanvasBlurred:
     """
 
     id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -720,6 +762,7 @@ class CanvasGroupFocused:
 
     id: str
     group_id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -735,6 +778,7 @@ class CanvasGroupBlurred:
 
     id: str
     group_id: str
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -776,6 +820,7 @@ class SensorResize:
     id: str
     width: float
     height: float
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -798,6 +843,7 @@ class PaneResized:
     id: str
     split: Any
     ratio: float
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -819,6 +865,7 @@ class PaneDragged:
     pane: Any
     target: Any
     action: str
+    window_id: str = ""
     region: str | None = None
     edge: str | None = None
     scope: tuple[str, ...] = ()
@@ -836,6 +883,7 @@ class PaneClicked:
 
     id: str
     pane: Any
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -851,6 +899,7 @@ class PaneFocusCycle:
 
     id: str
     pane: Any
+    window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
@@ -1888,13 +1937,12 @@ __all__ = [
     # Diagnostic
     "Diagnostic",
     "DuplicateNodeIds",
-    "ExtensionCommandError",
-    "RendererError",
     # Effect
     "EffectResult",
     # Helper types
     "EffectStatus",
     "Event",
+    "ExtensionCommandError",
     # Window events
     "FileDropped",
     "FileHovered",
@@ -1944,6 +1992,7 @@ __all__ = [
     "PaneFocusCycle",
     "PaneResized",
     "Paste",
+    "RendererError",
     "RuntimeEvent",
     "ScopedWidgetEvent",
     "Scroll",
