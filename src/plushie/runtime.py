@@ -1154,7 +1154,10 @@ class Runtime:
                 and old_entry.max_rate != new_spec.max_rate
             ):
                 self._conn.send_subscribe(
-                    new_spec.wire_kind, new_spec.tag, max_rate=new_spec.max_rate
+                    new_spec.wire_kind,
+                    new_spec.tag,
+                    max_rate=new_spec.max_rate,
+                    window_id=new_spec.window_id,
                 )
                 kept[key] = _SubEntry(
                     source=old_entry.source,
@@ -1182,7 +1185,10 @@ class Runtime:
                 and entry.max_rate != new_spec.max_rate
             ):
                 self._conn.send_subscribe(
-                    new_spec.wire_kind, new_spec.tag, max_rate=new_spec.max_rate
+                    new_spec.wire_kind,
+                    new_spec.tag,
+                    max_rate=new_spec.max_rate,
+                    window_id=new_spec.window_id,
                 )
                 self._subscriptions[key] = _SubEntry(
                     source=entry.source,
@@ -1231,7 +1237,9 @@ class Runtime:
             )
 
         # Renderer subscription
-        self._conn.send_subscribe(spec.wire_kind, spec.tag, max_rate=spec.max_rate)
+        self._conn.send_subscribe(
+            spec.wire_kind, spec.tag, max_rate=spec.max_rate, window_id=spec.window_id
+        )
         return _SubEntry(
             source="renderer",
             kind=spec.kind,
@@ -1249,7 +1257,7 @@ class Runtime:
         if entry.source == "timer" and entry.timer is not None:
             entry.timer.cancel()
         elif entry.source == "renderer":
-            self._conn.send_unsubscribe(entry.kind)
+            self._conn.send_unsubscribe(entry.kind, tag=entry.tag)
 
     # -------------------------------------------------------------------
     # Window sync

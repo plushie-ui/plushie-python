@@ -103,6 +103,51 @@ class TestKeyEquality:
         assert a.key == b.key
 
 
+class TestWindowScoping:
+    def test_window_kwarg(self) -> None:
+        sub = Subscription.on_key_press("keys", window="editor")
+        assert sub.window_id == "editor"
+
+    def test_no_window_defaults_to_none(self) -> None:
+        sub = Subscription.on_key_press("keys")
+        assert sub.window_id is None
+
+    def test_window_scoped_key_differs(self) -> None:
+        a = Subscription.on_key_press("keys")
+        b = Subscription.on_key_press("keys", window="editor")
+        assert a.key != b.key
+
+    def test_different_windows_different_keys(self) -> None:
+        a = Subscription.on_key_press("keys", window="editor")
+        b = Subscription.on_key_press("keys", window="preview")
+        assert a.key != b.key
+
+    def test_for_window(self) -> None:
+        subs = Subscription.for_window(
+            "editor",
+            [
+                Subscription.on_key_press("keys"),
+                Subscription.on_mouse_move("mouse", max_rate=60),
+            ],
+        )
+        assert len(subs) == 2
+        assert all(s.window_id == "editor" for s in subs)
+        assert subs[0].tag == "keys"
+        assert subs[1].max_rate == 60
+
+    def test_for_window_preserves_other_fields(self) -> None:
+        original = Subscription.on_key_press("keys", max_rate=30)
+        [scoped] = Subscription.for_window("main", [original])
+        assert scoped.max_rate == 30
+        assert scoped.kind == "on_key_press"
+        assert scoped.tag == "keys"
+
+    def test_all_factories_accept_window(self) -> None:
+        for _kind, factory in TestRendererSubscriptions.FACTORIES:
+            sub = factory("t", window="win")
+            assert sub.window_id == "win"
+
+
 class TestFrozen:
     def test_subscription_is_frozen(self) -> None:
         sub = Subscription.every(16, "tick")

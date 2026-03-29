@@ -183,6 +183,7 @@ def subscribe_msg(
     tag: str,
     *,
     max_rate: int | None = None,
+    window_id: str | None = None,
     session: str = "",
 ) -> dict[str, Any]:
     """Build a Subscribe message.
@@ -191,6 +192,7 @@ def subscribe_msg(
         kind: Event category (e.g. ``"on_key_press"``).
         tag: Tag included in events for routing.
         max_rate: Maximum events per second (omit for unlimited).
+        window_id: Optional window to scope events to.
         session: Session identifier.
     """
     msg: dict[str, Any] = {
@@ -201,21 +203,30 @@ def subscribe_msg(
     }
     if max_rate is not None:
         msg["max_rate"] = max_rate
+    if window_id is not None:
+        msg["window_id"] = window_id
     return msg
 
 
 def unsubscribe_msg(
     kind: str,
     *,
+    tag: str | None = None,
     session: str = "",
 ) -> dict[str, Any]:
     """Build an Unsubscribe message.
 
     Args:
         kind: Event category to unsubscribe from.
+        tag: Optional tag for targeted removal of a specific
+            subscription when multiple subscriptions of the same
+            kind coexist (e.g. different window scopes).
         session: Session identifier.
     """
-    return {"type": "unsubscribe", "session": session, "kind": kind}
+    msg: dict[str, Any] = {"type": "unsubscribe", "session": session, "kind": kind}
+    if tag is not None:
+        msg["tag"] = tag
+    return msg
 
 
 def widget_op(

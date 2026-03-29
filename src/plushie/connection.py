@@ -562,6 +562,7 @@ class Connection:
         tag: str,
         *,
         max_rate: int | None = None,
+        window_id: str | None = None,
     ) -> None:
         """Subscribe to a renderer event category.
 
@@ -569,17 +570,22 @@ class Connection:
             kind: Event category (e.g. ``"on_key_press"``).
             tag: Tag for routing events.
             max_rate: Maximum events per second (omit for unlimited).
+            window_id: Optional window to scope events to.
         """
-        msg = subscribe_msg(kind, tag, max_rate=max_rate, session=self._session)
+        msg = subscribe_msg(
+            kind, tag, max_rate=max_rate, window_id=window_id, session=self._session
+        )
         self.send(msg)
 
-    def send_unsubscribe(self, kind: str) -> None:
+    def send_unsubscribe(self, kind: str, *, tag: str | None = None) -> None:
         """Unsubscribe from a renderer event category.
 
         Args:
             kind: Event category to unsubscribe from.
+            tag: Optional tag for targeted removal when multiple
+                subscriptions of the same kind coexist.
         """
-        msg = unsubscribe_msg(kind, session=self._session)
+        msg = unsubscribe_msg(kind, tag=tag, session=self._session)
         self.send(msg)
 
     def send_widget_op(
@@ -1271,13 +1277,20 @@ class _IoStreamConnection:
         self.send(msg)
 
     def send_subscribe(
-        self, kind: str, tag: str, *, max_rate: int | None = None
+        self,
+        kind: str,
+        tag: str,
+        *,
+        max_rate: int | None = None,
+        window_id: str | None = None,
     ) -> None:
-        msg = subscribe_msg(kind, tag, max_rate=max_rate, session=self._session)
+        msg = subscribe_msg(
+            kind, tag, max_rate=max_rate, window_id=window_id, session=self._session
+        )
         self.send(msg)
 
-    def send_unsubscribe(self, kind: str) -> None:
-        msg = unsubscribe_msg(kind, session=self._session)
+    def send_unsubscribe(self, kind: str, *, tag: str | None = None) -> None:
+        msg = unsubscribe_msg(kind, tag=tag, session=self._session)
         self.send(msg)
 
     def close(self) -> None:
