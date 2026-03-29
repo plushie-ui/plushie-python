@@ -508,6 +508,7 @@ class Runtime:
                 # Connection closed / reader thread finished
                 if self._attempt_reconnect():
                     continue
+                self._fail_pending_interact()
                 logger.info("plushie runtime: connection closed, stopping")
                 self._running = False
                 break
@@ -791,6 +792,18 @@ class Runtime:
             if expected_id == rid:
                 self._pending_interact = None
                 done.set()
+
+    def _fail_pending_interact(self) -> None:
+        """Unblock a waiting interact caller when the renderer is gone.
+
+        Sets the event so the caller wakes up immediately instead of
+        hanging until its timeout expires.
+        """
+        pending = self._pending_interact
+        if pending is not None:
+            done, _rid = pending
+            self._pending_interact = None
+            done.set()
 
     # -------------------------------------------------------------------
     # Command execution
@@ -1348,6 +1361,10 @@ class Runtime:
         # dispatches effect errors through update/2 before re-sending
         # settings and the snapshot to the new renderer).
         self._flush_pending_effects("renderer_restarted")
+
+        # Fail any in-flight interact so the caller doesn't hang until
+        # timeout waiting for a response from a dead renderer.
+        self._fail_pending_interact()
 
         for attempt in range(self._MAX_RESTART_ATTEMPTS):
             delay_ms = min(
