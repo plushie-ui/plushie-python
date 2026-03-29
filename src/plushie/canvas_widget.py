@@ -125,8 +125,15 @@ class EventAction:
 class CanvasWidgetDef(ABC):
     """Abstract base for canvas widget definitions.
 
-    Subclass and implement ``init``, ``render``, and ``handle_event``.
-    Optionally implement ``subscribe`` for timer-based updates.
+    Subclass and implement ``init`` and ``render``.
+
+    Override ``handle_event`` for interactive widgets that need to
+    intercept canvas element events, transform them into semantic
+    widget events, or manage internal state.  The default returns
+    ``EventAction.ignored()`` (transparent -- events pass through
+    to the app's ``update()``).
+
+    Override ``subscribe`` for timer-based updates.
     """
 
     @abstractmethod
@@ -154,13 +161,17 @@ class CanvasWidgetDef(ABC):
         """
         ...
 
-    @abstractmethod
     def handle_event(
         self,
         event: Any,
         state: dict[str, Any],
     ) -> EventActionResult:
         """Handle an incoming event.
+
+        The default implementation returns ``EventAction.ignored()``,
+        making the widget transparent to events.  Override this to
+        intercept events, emit semantic widget events, or update
+        internal state.
 
         Args:
             event: The event (canvas element events, timer ticks, etc.).
@@ -169,7 +180,7 @@ class CanvasWidgetDef(ABC):
         Returns:
             An ``EventAction`` result.
         """
-        ...
+        return EventAction.ignored()
 
     def subscribe(
         self,
