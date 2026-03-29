@@ -202,6 +202,13 @@ def _normalize_with_scope(
                     for i, c in enumerate(rendered_children)
                 ]
                 rendered_props = _encode_props(dict(rendered_node.get("props") or {}))
+                # Auto-apply standard widget options (a11y, event_rate)
+                # from the original widget props so widget authors don't
+                # have to manually forward them in render().
+                widget_props = node.get("props") or {}
+                for key in ("a11y", "event_rate"):
+                    if key in widget_props and key not in rendered_props:
+                        rendered_props[key] = _encode_prop_value(widget_props[key])
                 normalized_props = _resolve_a11y_id_refs(rendered_props, scope)
                 return {
                     "id": scoped_id,
