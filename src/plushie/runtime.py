@@ -291,8 +291,8 @@ class Runtime:
         # Pending await_async callers: tag -> Event
         self._pending_await_async: dict[str, threading.Event] = {}
 
-        # Pending interact: (event, request_id)
-        self._pending_interact: tuple[threading.Event, str] | None = None
+        # Pending interact slot (see _InteractSlot below)
+        self._pending_interact: _InteractSlot | None = None
 
         # Canvas widget registry
         self._canvas_widgets: WidgetRegistry = {}
@@ -460,6 +460,13 @@ class Runtime:
 
         Thread-safe: can be called from any thread.
 
+        Raises:
+            RuntimeError: If another interact is already in progress,
+                or if the renderer exits before the interaction
+                completes.
+            TimeoutError: If the renderer doesn't respond within
+                *timeout* seconds.
+
         Args:
             action: Interaction type (e.g. ``"click"``, ``"type_text"``).
             selector: Target selector string.
@@ -468,20 +475,28 @@ class Runtime:
         """
         from plushie.protocol import encode_selector, interact_msg
 
+        if self._pending_interact is not None:
+            raise RuntimeError(
+                "interact already in progress -- concurrent calls are not supported"
+            )
+
         rid = f"interact_{self._next_nonce()}"
         sel: dict[str, str] | None = None
         if selector is not None:
             sel = encode_selector(selector)
 
-        done = threading.Event()
-        self._pending_interact = (done, rid)
+        slot = _InteractSlot(request_id=rid)
+        self._pending_interact = slot
 
         msg = interact_msg(rid, action, sel, payload, session=self._conn.session)
         self._conn.send(msg)
 
-        if not done.wait(timeout):
+        if not slot.done.wait(timeout):
             self._pending_interact = None
-            logger.warning("interact(%r) timed out after %.1fs", action, timeout)
+            raise TimeoutError(f"interact({action!r}) timed out after {timeout:.1f}s")
+
+        if not slot.succeeded:
+            raise RuntimeError(f"renderer exited during interact({action!r})")
 
     # -------------------------------------------------------------------
     # Initialization
@@ -828,24 +843,23 @@ class Runtime:
 
         # Unblock the waiting caller
         rid = msg.get("id", "")
-        pending = self._pending_interact
-        if pending is not None:
-            done, expected_id = pending
-            if expected_id == rid:
-                self._pending_interact = None
-                done.set()
+        slot = self._pending_interact
+        if slot is not None and slot.request_id == rid:
+            self._pending_interact = None
+            slot.succeeded = True
+            slot.done.set()
 
     def _fail_pending_interact(self) -> None:
         """Unblock a waiting interact caller when the renderer is gone.
 
-        Sets the event so the caller wakes up immediately instead of
-        hanging until its timeout expires.
+        Signals failure so the caller can raise instead of silently
+        returning as if the interaction succeeded.
         """
-        pending = self._pending_interact
-        if pending is not None:
-            done, _rid = pending
+        slot = self._pending_interact
+        if slot is not None:
             self._pending_interact = None
-            done.set()
+            slot.succeeded = False
+            slot.done.set()
 
     # -------------------------------------------------------------------
     # Command execution
@@ -1530,6 +1544,28 @@ class Runtime:
         # Shutdown executor (don't wait for tasks)
         self._executor.shutdown(wait=False, cancel_futures=True)
         self._async_tasks.clear()
+
+
+# ---------------------------------------------------------------------------
+# Internal interact tracking
+# ---------------------------------------------------------------------------
+
+
+class _InteractSlot:
+    """Mutable state for a pending interact call.
+
+    Created by ``interact()`` on the caller thread, mutated by the
+    event loop thread when the response arrives or the renderer dies.
+    The ``done`` event is set to unblock the caller; ``succeeded``
+    tells the caller whether the interaction completed normally.
+    """
+
+    __slots__ = ("done", "request_id", "succeeded")
+
+    def __init__(self, request_id: str) -> None:
+        self.done: threading.Event = threading.Event()
+        self.request_id: str = request_id
+        self.succeeded: bool = True
 
 
 # ---------------------------------------------------------------------------
