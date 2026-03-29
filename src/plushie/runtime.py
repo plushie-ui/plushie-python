@@ -297,6 +297,9 @@ class Runtime:
         # Canvas widget registry
         self._canvas_widgets: WidgetRegistry = {}
 
+        # Consecutive view failure counter
+        self._consecutive_view_errors: int = 0
+
         # Reader thread
         self._reader_thread: threading.Thread | None = None
 
@@ -717,13 +720,24 @@ class Runtime:
                 )
             return None
 
+    _VIEW_ERROR_WARN_THRESHOLD = 5
+
     def _safe_view(self, model: Any) -> Node | None:
         """Call app.view() + normalize with error handling."""
         try:
             raw_tree = self._app.view(model)
-            return normalize_view(raw_tree, registry=self._canvas_widgets or None)
+            result = normalize_view(raw_tree, registry=self._canvas_widgets or None)
+            self._consecutive_view_errors = 0
+            return result
         except Exception:
             logger.exception("plushie runtime: view() raised")
+            self._consecutive_view_errors += 1
+            if self._consecutive_view_errors == self._VIEW_ERROR_WARN_THRESHOLD:
+                logger.warning(
+                    "plushie runtime: view() has failed %d consecutive times, "
+                    "the UI is stale",
+                    self._consecutive_view_errors,
+                )
             return None
 
     def _render_and_sync(self, model: Any) -> Node | None:
