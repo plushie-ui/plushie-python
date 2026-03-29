@@ -86,12 +86,20 @@ class Command:
 
     @staticmethod
     def task(fn: Callable[[], Any], tag: str) -> Command:
-        """Run *fn* in a background thread.  Result arrives as ``AsyncResult(tag=tag)``."""
+        """Run *fn* in a background thread.  Result arrives as ``AsyncResult(tag=tag)``.
+
+        Only one task per tag can be active. A new task with the same
+        tag cancels the running one. Use unique tags for concurrency.
+        """
         return Command(type="task", payload={"fn": fn, "tag": tag})
 
     @staticmethod
     def stream(fn: Callable[[Callable[[Any], None]], Any], tag: str) -> Command:
-        """Run *fn* with an emit callback.  Each emit produces ``StreamChunk(tag=tag)``."""
+        """Run *fn* with an emit callback.  Each emit produces ``StreamChunk(tag=tag)``.
+
+        Only one stream per tag can be active. A new stream with the
+        same tag cancels the running one. Use unique tags for concurrency.
+        """
         return Command(type="stream", payload={"fn": fn, "tag": tag})
 
     @staticmethod
@@ -106,7 +114,12 @@ class Command:
 
     @staticmethod
     def send_after(delay_ms: int, event: Any) -> Command:
-        """Deliver *event* to ``update`` after *delay_ms* milliseconds."""
+        """Deliver *event* to ``update`` after *delay_ms* milliseconds.
+
+        If a timer with the same event is already pending, the previous
+        timer is canceled and replaced. This prevents duplicate
+        deliveries when ``send_after`` is called repeatedly.
+        """
         return Command(type="send_after", payload={"delay": delay_ms, "event": event})
 
     @staticmethod
