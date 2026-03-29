@@ -1,0 +1,3368 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Native desktop GUI framework for Python, powered by iced">
+      
+      
+      
+        <link rel="canonical" href="https://plushie-ui.github.io/plushie-python/testing/">
+      
+      
+        <link rel="prev" href="../composition-patterns/">
+      
+      
+        <link rel="next" href="../accessibility/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Testing - plushie</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#testing" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="plushie" class="md-header__button md-logo" aria-label="plushie" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            plushie
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Testing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/plushie-ui/plushie-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plushie-ui/plushie-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="plushie" class="md-nav__button md-logo" aria-label="plushie" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    plushie
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/plushie-ui/plushie-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plushie-ui/plushie-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../layout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Layout
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../effects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Effects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scoped-ids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoped IDs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../composition-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Composition Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unit-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unit testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#testing-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing update()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-commands-from-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing commands from update()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing view()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing init()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tree-query-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tree query helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-tree-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON tree snapshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-test-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The test framework
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#selectors-interactions-and-assertions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selectors, interactions, and assertions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Selectors, interactions, and assertions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-do-widget-ids-come-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where do widget IDs come from?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#selectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selectors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#element-handles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Element handles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interaction-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interaction methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-interactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional interactions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assertions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assertions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backends
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backends">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backend-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapshots-and-screenshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Snapshots and screenshots
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Snapshots and screenshots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structural-tree-hashes-assert_tree_hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structural tree hashes (assert_tree_hash)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pixel-screenshots-assert_screenshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pixel screenshots (assert_screenshot)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saving-screenshots-to-disk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saving screenshots to disk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-tree-snapshots_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON tree snapshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-each" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use each
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#script-based-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Script-based testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Script-based testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-plushie-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The .plushie format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The .plushie format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#header-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Header fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instructions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running scripts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#replaying-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replaying scripts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wire-format-in-test-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wire format in test backends
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-async-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing async workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing async workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-the-mock-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On the mock backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on-headless-and-windowed-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On headless and windowed backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#debugging-and-error-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging and error messages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debugging and error messages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#element-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Element not found
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrong-interaction-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wrong interaction type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#headless-binary-not-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Headless binary not built
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspecting-state-when-a-test-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inspecting state when a test fails
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ci-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CI configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mock-ci-simplest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mock CI (simplest)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#headless-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Headless CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windowed-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windowed CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#progressive-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Progressive CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing extensions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing extensions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-side-unit-tests-no-renderer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python-side: unit tests (no renderer)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rust-side-unit-tests-no-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rust-side: unit tests (no Python)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#end-to-end-through-the-renderer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End-to-end: through the renderer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-name-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key name validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standalone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standalone Executables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#philosophy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Philosophy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unit-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unit testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unit testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#testing-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing update()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-commands-from-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing commands from update()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing view()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing init()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tree-query-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tree query helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-tree-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON tree snapshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-test-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The test framework
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#selectors-interactions-and-assertions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selectors, interactions, and assertions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Selectors, interactions, and assertions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-do-widget-ids-come-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where do widget IDs come from?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#selectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selectors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#element-handles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Element handles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interaction-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interaction methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-interactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional interactions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assertions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assertions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backends
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backends">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backend-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapshots-and-screenshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Snapshots and screenshots
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Snapshots and screenshots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structural-tree-hashes-assert_tree_hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structural tree hashes (assert_tree_hash)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pixel-screenshots-assert_screenshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pixel screenshots (assert_screenshot)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saving-screenshots-to-disk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saving screenshots to disk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-tree-snapshots_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JSON tree snapshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-each" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use each
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#script-based-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Script-based testing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Script-based testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-plushie-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The .plushie format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The .plushie format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#header-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Header fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instructions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running scripts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#replaying-scripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replaying scripts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wire-format-in-test-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wire format in test backends
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-async-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing async workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing async workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-the-mock-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On the mock backend
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on-headless-and-windowed-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On headless and windowed backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#debugging-and-error-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging and error messages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debugging and error messages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#element-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Element not found
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrong-interaction-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wrong interaction type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#headless-binary-not-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Headless binary not built
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspecting-state-when-a-test-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inspecting state when a test fails
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ci-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CI configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mock-ci-simplest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mock CI (simplest)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#headless-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Headless CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windowed-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windowed CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#progressive-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Progressive CI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing extensions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing extensions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-side-unit-tests-no-renderer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python-side: unit tests (no renderer)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rust-side-unit-tests-no-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rust-side: unit tests (no Python)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#end-to-end-through-the-renderer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End-to-end: through the renderer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-name-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key name validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h1>
+<h2 id="philosophy">Philosophy<a class="headerlink" href="#philosophy" title="Permanent link">&para;</a></h2>
+<p>Progressive fidelity: test your app's logic with fast, pure-Python mock tests;
+promote to headless or windowed backends when you need wire-protocol verification
+or pixel-accurate screenshots.</p>
+<h2 id="unit-testing">Unit testing<a class="headerlink" href="#unit-testing" title="Permanent link">&para;</a></h2>
+<p><code>update()</code> is pure, <code>view()</code> returns dicts. Plain pytest -- no framework
+needed.</p>
+<h3 id="testing-update">Testing <code>update()</code><a class="headerlink" href="#testing-update" title="Permanent link">&para;</a></h3>
+<!-- test: test_adding_a_todo_appends_and_clears_input -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_adding_a_todo_appends_and_clears_input</span><span class="p">():</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">MyApp</span><span class="p">()</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">todos</span><span class="o">=</span><span class="p">[],</span> <span class="nb">input</span><span class="o">=</span><span class="s2">&quot;Buy milk&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;add_todo&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">assert</span> <span class="n">model</span><span class="o">.</span><span class="n">todos</span> <span class="o">==</span> <span class="p">[{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Buy milk&quot;</span><span class="p">,</span> <span class="s2">&quot;done&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}]</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">assert</span> <span class="n">model</span><span class="o">.</span><span class="n">input</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
+</code></pre></div>
+<h3 id="testing-commands-from-update">Testing commands from <code>update()</code><a class="headerlink" href="#testing-commands-from-update" title="Permanent link">&para;</a></h3>
+<p>Commands are plain <code>Command</code> dataclasses. Inspect <code>type</code> and <code>payload</code>
+to verify what <code>update()</code> asked the runtime to do, without executing
+anything.</p>
+<!-- test: test_submitting_todo_returns_focus_command, test_save_triggers_async_task -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Submit</span><span class="p">,</span> <span class="n">Click</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_submitting_todo_returns_focus_command</span><span class="p">():</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">MyApp</span><span class="p">()</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">init</span><span class="p">(),</span> <span class="n">todos</span><span class="o">=</span><span class="p">[],</span> <span class="nb">input</span><span class="o">=</span><span class="s2">&quot;Buy milk&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">model</span><span class="p">,</span> <span class="n">cmd</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Submit</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;todo_input&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;Buy milk&quot;</span><span class="p">))</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="k">assert</span> <span class="n">model</span><span class="o">.</span><span class="n">todos</span> <span class="o">==</span> <span class="p">[{</span><span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Buy milk&quot;</span><span class="p">}]</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="k">assert</span> <span class="n">cmd</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;focus&quot;</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="k">assert</span> <span class="n">cmd</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;todo_input&quot;</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_save_triggers_async_task</span><span class="p">():</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">MyApp</span><span class="p">()</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">init</span><span class="p">(),</span> <span class="n">data</span><span class="o">=</span><span class="s2">&quot;unsaved&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">_model</span><span class="p">,</span> <span class="n">cmd</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;save&quot;</span><span class="p">))</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="k">assert</span> <span class="n">cmd</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;task&quot;</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="k">assert</span> <span class="n">cmd</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;tag&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;save_result&quot;</span>
+</code></pre></div>
+<h3 id="testing-view">Testing <code>view()</code><a class="headerlink" href="#testing-view" title="Permanent link">&para;</a></h3>
+<!-- test: test_view_shows_todo_count -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalize</span><span class="p">,</span> <span class="n">find</span><span class="p">,</span> <span class="n">text_of</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_view_shows_todo_count</span><span class="p">():</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">MyApp</span><span class="p">()</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="n">app</span><span class="o">.</span><span class="n">init</span><span class="p">(),</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="n">todos</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Buy milk&quot;</span><span class="p">,</span> <span class="s2">&quot;done&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}],</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="nb">input</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">model</span><span class="p">))</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">counter</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="s2">&quot;todo_count&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">assert</span> <span class="n">counter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="k">assert</span> <span class="s2">&quot;1&quot;</span> <span class="ow">in</span> <span class="n">text_of</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="testing-init">Testing <code>init()</code><a class="headerlink" href="#testing-init" title="Permanent link">&para;</a></h3>
+<!-- test: test_init_returns_valid_initial_state -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_init_returns_valid_initial_state</span><span class="p">():</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">MyApp</span><span class="p">()</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">todos</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="k">assert</span> <span class="n">model</span><span class="o">.</span><span class="n">input</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
+</code></pre></div>
+<h3 id="tree-query-helpers">Tree query helpers<a class="headerlink" href="#tree-query-helpers" title="Permanent link">&para;</a></h3>
+<p><code>plushie.tree</code> provides helpers for querying view trees directly:</p>
+<!-- test: test_find_by_id, test_exists, test_ids, test_find_all_by_predicate -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">find</span><span class="p">,</span> <span class="n">ids</span><span class="p">,</span> <span class="n">find_all</span><span class="p">,</span> <span class="n">exists</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">find</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="s2">&quot;my_button&quot;</span><span class="p">)</span>                         <span class="c1"># find node by ID</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">exists</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="s2">&quot;my_button&quot;</span><span class="p">)</span>                       <span class="c1"># check existence</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">ids</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>                                       <span class="c1"># all IDs (depth-first)</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">find_all</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">node</span><span class="p">:</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;button&quot;</span><span class="p">)</span>  <span class="c1"># find by predicate</span>
+</code></pre></div>
+<p>These work on the raw node dicts returned by <code>view()</code>. No test session or
+backend required.</p>
+<h3 id="json-tree-snapshots">JSON tree snapshots<a class="headerlink" href="#json-tree-snapshots" title="Permanent link">&para;</a></h3>
+<p>For complex views, snapshot the entire tree as JSON to catch unintended
+structural changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalize</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_initial_view_snapshot</span><span class="p">():</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">MyApp</span><span class="p">()</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">init</span><span class="p">()))</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">golden</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;tests/snapshots/initial_view.json&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">golden</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>        <span class="n">golden</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>        <span class="n">golden</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>        <span class="n">expected</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">golden</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>        <span class="k">assert</span> <span class="n">tree</span> <span class="o">==</span> <span class="n">expected</span>
+</code></pre></div>
+<p>First run writes the file. Subsequent runs compare and fail with a diff on
+mismatch. Update after intentional changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">PLUSHIE_UPDATE_SNAPSHOTS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pytest
+</code></pre></div>
+<p>This is a pure JSON comparison -- distinct from the framework's
+<code>assert_tree_hash()</code> (which uses SHA-256 hashes of the tree via a backend
+session) and <code>assert_screenshot()</code> (which compares pixel data).</p>
+<h2 id="the-test-framework">The test framework<a class="headerlink" href="#the-test-framework" title="Permanent link">&para;</a></h2>
+<p>Unit tests cover logic. But they cannot click a button, verify a widget
+appears after an interaction, or catch a rendering regression when you bump
+iced. That is what the test framework is for.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">AppFixture</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_clicking_increment_updates_counter</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>        <span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#increment&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="n">app</span><span class="o">.</span><span class="n">assert_text</span><span class="p">(</span><span class="s2">&quot;#count&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><code>AppFixture</code> starts a session, processes commands synchronously, and
+tears down on exit. The default backend is <code>mock</code> -- the plushie binary in
+<code>--mock</code> mode (lightweight rendering, no display). Sessions are pooled for
+performance via the <code>plushie_pool</code> pytest fixture.</p>
+<h2 id="selectors-interactions-and-assertions">Selectors, interactions, and assertions<a class="headerlink" href="#selectors-interactions-and-assertions" title="Permanent link">&para;</a></h2>
+<h3 id="where-do-widget-ids-come-from">Where do widget IDs come from?<a class="headerlink" href="#where-do-widget-ids-come-from" title="Permanent link">&para;</a></h3>
+<p>Every widget in plushie gets an ID from the first argument to its builder.
+For example, <code>ui.button("save_btn", "Save")</code> creates a button with ID
+<code>"save_btn"</code>.</p>
+<p>When using selectors in tests, prefix the ID with <code>#</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#save_btn&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;#save_btn&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">app</span><span class="o">.</span><span class="n">assert_text</span><span class="p">(</span><span class="s2">&quot;#save_btn&quot;</span><span class="p">,</span> <span class="s2">&quot;Save&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="selectors">Selectors<a class="headerlink" href="#selectors" title="Permanent link">&para;</a></h3>
+<p>Two selector forms:</p>
+<ul>
+<li><strong><code>"#id"</code></strong> -- find by widget ID. The <code>#</code> prefix is required.</li>
+<li><strong><code>"text content"</code></strong> -- find by text content (checks <code>content</code>, <code>label</code>,
+  <code>value</code>, <code>placeholder</code> props in that order, depth-first).</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#my_button&quot;</span><span class="p">)</span>         <span class="c1"># by ID</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;Click me&quot;</span><span class="p">)</span>           <span class="c1"># by text content</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">app</span><span class="o">.</span><span class="n">assert_exists</span><span class="p">(</span><span class="s2">&quot;#sidebar&quot;</span><span class="p">)</span>  <span class="c1"># by ID</span>
+</code></pre></div>
+<h3 id="element-handles">Element handles<a class="headerlink" href="#element-handles" title="Permanent link">&para;</a></h3>
+<p><code>query()</code> returns <code>None</code> if not found. <code>find()</code> raises
+<code>ElementNotFoundError</code> with a clear message. Both return an <code>Element</code>
+instance:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">element</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;#my-button&quot;</span><span class="p">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">element</span><span class="o">.</span><span class="n">id</span>        <span class="c1"># =&gt; &quot;my-button&quot;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">element</span><span class="o">.</span><span class="n">type</span>      <span class="c1"># =&gt; &quot;button&quot;</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">element</span><span class="o">.</span><span class="n">props</span>     <span class="c1"># =&gt; {&quot;label&quot;: &quot;Click me&quot;, ...}</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">element</span><span class="o">.</span><span class="n">children</span>  <span class="c1"># =&gt; [...]</span>
+</code></pre></div>
+<p>Use <code>text()</code> to extract display text from an element:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">assert</span> <span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;#count&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;42&quot;</span>
+</code></pre></div>
+<p><code>Element.text()</code> checks props in order: <code>content</code>, <code>label</code>, <code>value</code>,
+<code>placeholder</code>. Returns <code>None</code> if no text prop is found.</p>
+<h3 id="interaction-methods">Interaction methods<a class="headerlink" href="#interaction-methods" title="Permanent link">&para;</a></h3>
+<p>All interaction methods accept a selector string. They are available on
+the <code>AppFixture</code> instance.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Widget types</th>
+<th>Event produced</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>click(selector)</code></td>
+<td><code>button</code></td>
+<td><code>Click(id=id)</code></td>
+</tr>
+<tr>
+<td><code>type_text(selector, text)</code></td>
+<td><code>text_input</code>, <code>text_editor</code></td>
+<td><code>Input(id=id, value=text)</code></td>
+</tr>
+<tr>
+<td><code>submit(selector)</code></td>
+<td><code>text_input</code></td>
+<td><code>Submit(id=id, value=val)</code></td>
+</tr>
+<tr>
+<td><code>toggle(selector)</code></td>
+<td><code>checkbox</code>, <code>toggler</code></td>
+<td><code>Toggle(id=id, value=!current)</code></td>
+</tr>
+<tr>
+<td><code>select(selector, value)</code></td>
+<td><code>pick_list</code>, <code>combo_box</code>, <code>radio</code></td>
+<td><code>Select(id=id, value=val)</code></td>
+</tr>
+<tr>
+<td><code>slide(selector, value)</code></td>
+<td><code>slider</code>, <code>vertical_slider</code></td>
+<td><code>Slide(id=id, value=val)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Interacting with the wrong widget type raises with an actionable hint:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>TypeError: cannot click a checkbox widget -- use toggle() instead
+</code></pre></div>
+<h3 id="additional-interactions">Additional interactions<a class="headerlink" href="#additional-interactions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>press(key)</code></td>
+<td>Press a key (key down). Supports modifiers: <code>"ctrl+s"</code></td>
+</tr>
+<tr>
+<td><code>release(key)</code></td>
+<td>Release a key (key up). Supports modifiers: <code>"ctrl+s"</code></td>
+</tr>
+<tr>
+<td><code>type_key(key)</code></td>
+<td>Type a key (press + release). Supports modifiers: <code>"enter"</code></td>
+</tr>
+<tr>
+<td><code>move_to(x, y)</code></td>
+<td>Move the cursor to absolute coordinates</td>
+</tr>
+<tr>
+<td><code>scroll(selector, delta_x, delta_y)</code></td>
+<td>Scroll a widget</td>
+</tr>
+<tr>
+<td><code>paste(selector, text)</code></td>
+<td>Paste text into a widget</td>
+</tr>
+<tr>
+<td><code>sort(selector, column)</code></td>
+<td>Sort a table column</td>
+</tr>
+<tr>
+<td><code>canvas_press(selector, x, y, button)</code></td>
+<td>Press on a canvas</td>
+</tr>
+<tr>
+<td><code>canvas_release(selector, x, y, button)</code></td>
+<td>Release on a canvas</td>
+</tr>
+<tr>
+<td><code>canvas_move(selector, x, y)</code></td>
+<td>Move on a canvas</td>
+</tr>
+<tr>
+<td><code>pane_focus_cycle(selector)</code></td>
+<td>Cycle focus in a pane grid</td>
+</tr>
+</tbody>
+</table>
+<h3 id="assertions">Assertions<a class="headerlink" href="#assertions" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Text content</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">app</span><span class="o">.</span><span class="n">assert_text</span><span class="p">(</span><span class="s2">&quot;#count&quot;</span><span class="p">,</span> <span class="s2">&quot;42&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Existence</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">app</span><span class="o">.</span><span class="n">assert_exists</span><span class="p">(</span><span class="s2">&quot;#my-button&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">app</span><span class="o">.</span><span class="n">assert_not_exists</span><span class="p">(</span><span class="s2">&quot;#admin-panel&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="c1"># Full model equality</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="n">app</span><span class="o">.</span><span class="n">assert_model</span><span class="p">(</span><span class="n">MyModel</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">))</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="c1"># Direct model inspection</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="k">assert</span> <span class="n">app</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">5</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="c1"># Direct element access when you need more control</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="n">element</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;#count&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="k">assert</span> <span class="n">element</span><span class="o">.</span><span class="n">text</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;42&quot;</span>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="k">assert</span> <span class="n">element</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;text&quot;</span>
+</code></pre></div>
+<h2 id="api-reference">API reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
+<p>All of the following are available on an <code>AppFixture</code> instance:</p>
+<table>
+<thead>
+<tr>
+<th>Method / Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>find(selector)</code></td>
+<td>Find element by selector, raises <code>ElementNotFoundError</code> if not found</td>
+</tr>
+<tr>
+<td><code>query(selector)</code></td>
+<td>Find element by selector, returns <code>None</code> if not found</td>
+</tr>
+<tr>
+<td><code>click(selector)</code></td>
+<td>Click a button widget</td>
+</tr>
+<tr>
+<td><code>type_text(selector, text)</code></td>
+<td>Type text into a text_input or text_editor</td>
+</tr>
+<tr>
+<td><code>submit(selector)</code></td>
+<td>Submit a text_input (simulates pressing enter)</td>
+</tr>
+<tr>
+<td><code>toggle(selector)</code></td>
+<td>Toggle a checkbox or toggler</td>
+</tr>
+<tr>
+<td><code>select(selector, value)</code></td>
+<td>Select a value from pick_list, combo_box, or radio</td>
+</tr>
+<tr>
+<td><code>slide(selector, value)</code></td>
+<td>Slide a slider to a numeric value</td>
+</tr>
+<tr>
+<td><code>press(key)</code></td>
+<td>Press a key (key down). Supports modifiers: <code>"ctrl+s"</code></td>
+</tr>
+<tr>
+<td><code>release(key)</code></td>
+<td>Release a key (key up). Supports modifiers</td>
+</tr>
+<tr>
+<td><code>type_key(key)</code></td>
+<td>Type a key (press + release). Supports modifiers</td>
+</tr>
+<tr>
+<td><code>move_to(x, y)</code></td>
+<td>Move the cursor to absolute coordinates</td>
+</tr>
+<tr>
+<td><code>scroll(selector, delta_x, delta_y)</code></td>
+<td>Scroll a widget</td>
+</tr>
+<tr>
+<td><code>paste(selector, text)</code></td>
+<td>Paste text into a widget</td>
+</tr>
+<tr>
+<td><code>sort(selector, column)</code></td>
+<td>Sort a table column</td>
+</tr>
+<tr>
+<td><code>canvas_press(selector, x, y, button)</code></td>
+<td>Press on a canvas</td>
+</tr>
+<tr>
+<td><code>canvas_release(selector, x, y, button)</code></td>
+<td>Release on a canvas</td>
+</tr>
+<tr>
+<td><code>canvas_move(selector, x, y)</code></td>
+<td>Move on a canvas</td>
+</tr>
+<tr>
+<td><code>pane_focus_cycle(selector)</code></td>
+<td>Cycle focus in a pane grid</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>Returns the current app model (property)</td>
+</tr>
+<tr>
+<td><code>tree</code></td>
+<td>Returns the current normalized UI tree (property)</td>
+</tr>
+<tr>
+<td><code>text(selector)</code></td>
+<td>Extract text content from a widget</td>
+</tr>
+<tr>
+<td><code>exists(selector)</code></td>
+<td>Check whether an element exists in the tree</td>
+</tr>
+<tr>
+<td><code>find_by_role(role)</code></td>
+<td>Find an element by its accessible role</td>
+</tr>
+<tr>
+<td><code>find_by_label(label)</code></td>
+<td>Find an element by its accessible label</td>
+</tr>
+<tr>
+<td><code>find_focused()</code></td>
+<td>Find the currently focused element</td>
+</tr>
+<tr>
+<td><code>assert_text(selector, expected)</code></td>
+<td>Assert widget contains expected text</td>
+</tr>
+<tr>
+<td><code>assert_exists(selector)</code></td>
+<td>Assert widget exists in the tree</td>
+</tr>
+<tr>
+<td><code>assert_not_exists(selector)</code></td>
+<td>Assert widget does NOT exist in the tree</td>
+</tr>
+<tr>
+<td><code>assert_model(expected)</code></td>
+<td>Assert model equals expected (strict equality)</td>
+</tr>
+<tr>
+<td><code>assert_tree_hash(name)</code></td>
+<td>Capture tree hash and assert it matches golden file</td>
+</tr>
+<tr>
+<td><code>assert_screenshot(name)</code></td>
+<td>Capture screenshot and assert it matches golden file</td>
+</tr>
+<tr>
+<td><code>save_screenshot(name)</code></td>
+<td>Capture screenshot and save as PNG to <code>test/screenshots/</code></td>
+</tr>
+<tr>
+<td><code>await_async()</code></td>
+<td>No-op in synchronous test mode (work already done)</td>
+</tr>
+<tr>
+<td><code>reset()</code></td>
+<td>Reset session to initial state</td>
+</tr>
+<tr>
+<td><code>close()</code></td>
+<td>Release the session back to the pool</td>
+</tr>
+</tbody>
+</table>
+<h2 id="backends">Backends<a class="headerlink" href="#backends" title="Permanent link">&para;</a></h2>
+<p>All tests work on all backends. Write tests once, swap backends without
+changing assertions.</p>
+<h3 id="backend-modes">Backend modes<a class="headerlink" href="#backend-modes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>mock</code></th>
+<th><code>headless</code></th>
+<th><code>windowed</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Speed</strong></td>
+<td>~ms</td>
+<td>~100ms</td>
+<td>~seconds</td>
+</tr>
+<tr>
+<td><strong>Renderer</strong></td>
+<td>Yes (<code>--mock</code>)</td>
+<td>Yes (<code>--headless</code>)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Display server</strong></td>
+<td>No</td>
+<td>No</td>
+<td>Yes (Xvfb in CI)</td>
+</tr>
+<tr>
+<td><strong>Protocol round-trip</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Structural tree hashes</strong></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Pixel screenshots</strong></td>
+<td>No</td>
+<td>Yes (software)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Effects</strong></td>
+<td>Cancelled</td>
+<td>Cancelled</td>
+<td>Executed</td>
+</tr>
+<tr>
+<td><strong>Subscriptions</strong></td>
+<td>Tracked, not fired</td>
+<td>Tracked, not fired</td>
+<td>Active</td>
+</tr>
+<tr>
+<td><strong>Real rendering</strong></td>
+<td>No</td>
+<td>Yes (tiny-skia)</td>
+<td>Yes (GPU)</td>
+</tr>
+<tr>
+<td><strong>Real windows</strong></td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p><strong><code>mock</code></strong> -- shared <code>plushie --mock</code> process with session
+  multiplexing. Tests app logic, tree structure, and wire protocol.
+  No rendering, no display, sub-millisecond. The right default for
+  90% of tests.</p>
+</li>
+<li>
+<p><strong><code>headless</code></strong> -- <code>plushie --headless</code> with software rendering via
+  tiny-skia (no display server). Pixel screenshots for visual
+  regression. Catches rendering bugs that mock mode cannot.</p>
+</li>
+<li>
+<p><strong><code>windowed</code></strong> -- <code>plushie</code> with real iced windows and GPU rendering.
+  Effects execute, subscriptions fire, screenshots capture exactly
+  what a user sees. Needs a display server (Xvfb or headless Weston).</p>
+</li>
+</ul>
+<h3 id="backend-selection">Backend selection<a class="headerlink" href="#backend-selection" title="Permanent link">&para;</a></h3>
+<p>You never choose a backend in your test code. Backend selection is an
+infrastructure decision made via environment variable.</p>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Source</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Environment variable</td>
+<td><code>PLUSHIE_TEST_BACKEND=headless pytest</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Default</td>
+<td><code>mock</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>plushie_pool</code> pytest fixture (provided by <code>plushie.testing.plugin</code>)
+reads <code>PLUSHIE_TEST_BACKEND</code> at session startup and configures the
+<code>SessionPool</code> accordingly.</p>
+<h2 id="snapshots-and-screenshots">Snapshots and screenshots<a class="headerlink" href="#snapshots-and-screenshots" title="Permanent link">&para;</a></h2>
+<p>Plushie has three distinct regression testing mechanisms. Understanding the
+difference is important.</p>
+<h3 id="structural-tree-hashes-assert_tree_hash">Structural tree hashes (<code>assert_tree_hash</code>)<a class="headerlink" href="#structural-tree-hashes-assert_tree_hash" title="Permanent link">&para;</a></h3>
+<p><code>assert_tree_hash()</code> captures a SHA-256 hash of the serialized UI tree and
+compares it against a golden file. It works on all backend modes because
+every mode can produce a tree.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_counter_initial_state</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>        <span class="n">app</span><span class="o">.</span><span class="n">assert_tree_hash</span><span class="p">(</span><span class="s2">&quot;counter-initial&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_counter_after_increment</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>        <span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#increment&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>        <span class="n">app</span><span class="o">.</span><span class="n">assert_tree_hash</span><span class="p">(</span><span class="s2">&quot;counter-at-1&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Golden files are stored in <code>test/snapshots/</code> as <code>.tree_hash</code> files. On first
+run, the golden file is created automatically. On subsequent runs, the hash
+is compared and the test fails on mismatch.</p>
+<p>To update golden files after intentional changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nv">PLUSHIE_UPDATE_SNAPSHOTS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pytest
+</code></pre></div>
+<h3 id="pixel-screenshots-assert_screenshot">Pixel screenshots (<code>assert_screenshot</code>)<a class="headerlink" href="#pixel-screenshots-assert_screenshot" title="Permanent link">&para;</a></h3>
+<p><code>assert_screenshot()</code> captures real RGBA pixel data and compares it against
+a golden file. It produces meaningful data on the <code>headless</code> backend
+(software rendering via tiny-skia) and the <code>windowed</code> backend (GPU rendering
+via wgpu). On <code>mock</code>, it silently succeeds as a no-op (returns an empty
+hash, which is accepted without creating or checking a golden file).</p>
+<p>Note that headless screenshots use software rendering, so pixels will not
+match GPU output exactly. Maintain separate golden files per backend, or
+use headless screenshots for layout regression testing only.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_counter_renders_correctly</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>        <span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#increment&quot;</span><span class="p">)</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>        <span class="n">app</span><span class="o">.</span><span class="n">assert_screenshot</span><span class="p">(</span><span class="s2">&quot;counter-at-1&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Golden files are stored in <code>test/screenshots/</code> as <code>.screenshot_hash</code> files.
+The workflow is the same as structural snapshots but uses a separate env var:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nv">PLUSHIE_UPDATE_SCREENSHOTS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pytest
+</code></pre></div>
+<p>Because screenshots silently no-op on mock, you can include
+<code>assert_screenshot</code> calls in any test without conditional logic. They will
+produce assertions when run on the headless or windowed backends.</p>
+<h3 id="saving-screenshots-to-disk">Saving screenshots to disk<a class="headerlink" href="#saving-screenshots-to-disk" title="Permanent link">&para;</a></h3>
+<p><code>save_screenshot()</code> writes the actual PNG pixel data to
+<code>test/screenshots/&lt;name&gt;.png</code>. Useful for debugging visual issues.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_save_counter_screenshot</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>        <span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#increment&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>        <span class="n">path</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">save_screenshot</span><span class="p">(</span><span class="s2">&quot;counter-debug&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>        <span class="k">assert</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="json-tree-snapshots_1">JSON tree snapshots<a class="headerlink" href="#json-tree-snapshots_1" title="Permanent link">&para;</a></h3>
+<p>Pure JSON comparison at the unit test level -- no backend or session needed.
+See the <a href="#json-tree-snapshots">Unit testing</a> section above.</p>
+<h3 id="when-to-use-each">When to use each<a class="headerlink" href="#when-to-use-each" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><strong><code>assert_tree_hash</code></strong> -- always appropriate. Catches structural regressions
+  (widgets appearing/disappearing, prop changes, nesting changes). Works on
+  every backend. Use liberally.</p>
+</li>
+<li>
+<p><strong><code>assert_screenshot</code></strong> -- after bumping iced, changing the renderer,
+  modifying themes, or any change that affects visual output. Produces
+  meaningful assertions on the headless and windowed backends (no-op on
+  mock). Include alongside <code>assert_tree_hash</code> for critical views.</p>
+</li>
+<li>
+<p><strong>JSON tree snapshots</strong> -- for unit tests of <code>view()</code> output. No framework
+  overhead. Good for documenting what a view produces for a given model state.</p>
+</li>
+</ul>
+<h2 id="script-based-testing">Script-based testing<a class="headerlink" href="#script-based-testing" title="Permanent link">&para;</a></h2>
+<p><code>.plushie</code> scripts provide a declarative format for describing interaction
+sequences. The format is a superset of iced's <code>.ice</code> test scripts -- the
+core instructions (<code>click</code>, <code>type</code>, <code>expect</code>, <code>snapshot</code>) use the same
+syntax. Plushie adds <code>assert_text</code>, <code>assert_model</code>, <code>screenshot</code>, <code>wait</code>, and
+a header section for app configuration.</p>
+<h3 id="the-plushie-format">The <code>.plushie</code> format<a class="headerlink" href="#the-plushie-format" title="Permanent link">&para;</a></h3>
+<p>A <code>.plushie</code> file has a header and an instruction section separated by
+<code>-----</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>app: my_app:MyApp.Counter
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>viewport: 800x600
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>theme: dark
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>backend: mock
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>-----
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>click &quot;#increment&quot;
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>click &quot;#increment&quot;
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>expect &quot;Count: 2&quot;
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>tree_hash &quot;counter-at-2&quot;
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>screenshot &quot;counter-pixels&quot;
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>assert_text &quot;#count&quot; &quot;2&quot;
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>wait 500
+</code></pre></div>
+<h4 id="header-fields">Header fields<a class="headerlink" href="#header-fields" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>app</code></td>
+<td>Yes</td>
+<td>--</td>
+<td>Module path implementing <code>plushie.App</code></td>
+</tr>
+<tr>
+<td><code>viewport</code></td>
+<td>No</td>
+<td><code>800x600</code></td>
+<td>Viewport size as <code>WxH</code></td>
+</tr>
+<tr>
+<td><code>theme</code></td>
+<td>No</td>
+<td><code>dark</code></td>
+<td>Theme name</td>
+</tr>
+<tr>
+<td><code>backend</code></td>
+<td>No</td>
+<td><code>mock</code></td>
+<td>Backend: <code>mock</code>, <code>headless</code>, or <code>windowed</code></td>
+</tr>
+</tbody>
+</table>
+<p>Lines starting with <code>#</code> are comments (in both header and body sections).</p>
+<h4 id="instructions">Instructions<a class="headerlink" href="#instructions" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Instruction</th>
+<th>Syntax</th>
+<th>Mock support</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>click</code></td>
+<td><code>click "selector"</code></td>
+<td>Yes</td>
+<td>Click a widget</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td><code>type "selector" "text"</code></td>
+<td>Yes</td>
+<td>Type text into a widget</td>
+</tr>
+<tr>
+<td><code>type</code> (key)</td>
+<td><code>type enter</code></td>
+<td>Yes</td>
+<td>Send a special key (press + release). Supports modifiers: <code>type ctrl+s</code></td>
+</tr>
+<tr>
+<td><code>expect</code></td>
+<td><code>expect "text"</code></td>
+<td>Yes</td>
+<td>Assert text appears somewhere in the tree</td>
+</tr>
+<tr>
+<td><code>tree_hash</code></td>
+<td><code>tree_hash "name"</code></td>
+<td>Yes</td>
+<td>Capture and assert a structural tree hash</td>
+</tr>
+<tr>
+<td><code>screenshot</code></td>
+<td><code>screenshot "name"</code></td>
+<td>No-op on mock</td>
+<td>Capture and assert a pixel screenshot</td>
+</tr>
+<tr>
+<td><code>assert_text</code></td>
+<td><code>assert_text "selector" "text"</code></td>
+<td>Yes</td>
+<td>Assert widget has specific text</td>
+</tr>
+<tr>
+<td><code>assert_model</code></td>
+<td><code>assert_model "expression"</code></td>
+<td>Yes</td>
+<td>Assert expression appears in inspected model (substring match)</td>
+</tr>
+<tr>
+<td><code>press</code></td>
+<td><code>press key</code></td>
+<td>Yes</td>
+<td>Press a key down. Supports modifiers: <code>press ctrl+s</code></td>
+</tr>
+<tr>
+<td><code>release</code></td>
+<td><code>release key</code></td>
+<td>Yes</td>
+<td>Release a key. Supports modifiers: <code>release ctrl+s</code></td>
+</tr>
+<tr>
+<td><code>move</code></td>
+<td><code>move "selector"</code></td>
+<td>No-op</td>
+<td>Move mouse to a widget (requires widget bounds)</td>
+</tr>
+<tr>
+<td><code>move</code> (coords)</td>
+<td><code>move "x,y"</code></td>
+<td>Yes</td>
+<td>Move mouse to pixel coordinates</td>
+</tr>
+<tr>
+<td><code>wait</code></td>
+<td><code>wait 500</code></td>
+<td>Ignored (except replay)</td>
+<td>Pause N milliseconds</td>
+</tr>
+</tbody>
+</table>
+<h3 id="running-scripts">Running scripts<a class="headerlink" href="#running-scripts" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>script
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1"># Run specific scripts</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>script<span class="w"> </span>tests/scripts/counter.plushie<span class="w"> </span>tests/scripts/todo.plushie
+</code></pre></div>
+<h3 id="replaying-scripts">Replaying scripts<a class="headerlink" href="#replaying-scripts" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>replay<span class="w"> </span>tests/scripts/counter.plushie
+</code></pre></div>
+<p>Replay mode forces the <code>windowed</code> backend and respects <code>wait</code> timings, so you
+see interactions happen in real time with real windows. Useful for debugging
+visual issues, demos, and onboarding.</p>
+<h2 id="wire-format-in-test-backends">Wire format in test backends<a class="headerlink" href="#wire-format-in-test-backends" title="Permanent link">&para;</a></h2>
+<p>The headless and windowed backends communicate with the renderer using the same
+wire protocol as the production connection. By default, both use MessagePack
+(4-byte length-prefix framing). JSON is available for debugging:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Pass format when creating a connection manually</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.connection</span><span class="w"> </span><span class="kn">import</span> <span class="n">Connection</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="n">conn</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">(</span><span class="n">MyApp</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>The mock backend does not use a wire protocol (pure Python, no renderer
+process), so the format option has no effect on it.</p>
+<h2 id="testing-async-workflows">Testing async workflows<a class="headerlink" href="#testing-async-workflows" title="Permanent link">&para;</a></h2>
+<h3 id="on-the-mock-backend">On the mock backend<a class="headerlink" href="#on-the-mock-backend" title="Permanent link">&para;</a></h3>
+<p>The mock backend executes <code>task</code>, <code>stream</code>, and <code>done</code> commands
+synchronously. When <code>update()</code> returns a command like
+<code>Command.task(fn, tag="data_loaded")</code>, the fixture immediately calls the
+function, gets the result, and dispatches the result through <code>update()</code> --
+all within the same call.</p>
+<p>This means <code>await_async()</code> is a no-op (the work is already done):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_fetching_data_loads_results</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">MyApp</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>        <span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#fetch&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>        <span class="c1"># On mock, the task command already executed synchronously.</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>        <span class="c1"># await_async() is a no-op -- the model is already updated.</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>        <span class="n">app</span><span class="o">.</span><span class="n">await_async</span><span class="p">()</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+</code></pre></div>
+<p>Widget ops (focus, scroll), window ops, and timers are silently skipped on
+mock because they require a renderer. Test the command shape at the
+unit test level instead:</p>
+<!-- test: test_clicking_fetch_starts_async_load -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_clicking_fetch_starts_async_load</span><span class="p">():</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">MyApp</span><span class="p">()</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">init</span><span class="p">(),</span> <span class="n">loading</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>    <span class="n">model</span><span class="p">,</span> <span class="n">cmd</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;fetch&quot;</span><span class="p">))</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>    <span class="k">assert</span> <span class="n">model</span><span class="o">.</span><span class="n">loading</span> <span class="ow">is</span> <span class="kc">True</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>    <span class="k">assert</span> <span class="n">cmd</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;task&quot;</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>    <span class="k">assert</span> <span class="n">cmd</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;tag&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;data_loaded&quot;</span>
+</code></pre></div>
+<h3 id="on-headless-and-windowed-backends">On headless and windowed backends<a class="headerlink" href="#on-headless-and-windowed-backends" title="Permanent link">&para;</a></h3>
+<p>All backend modes execute async commands synchronously. <code>await_async()</code>
+returns immediately on all modes because the commands have already
+completed.</p>
+<h2 id="debugging-and-error-messages">Debugging and error messages<a class="headerlink" href="#debugging-and-error-messages" title="Permanent link">&para;</a></h2>
+<h3 id="element-not-found">Element not found<a class="headerlink" href="#element-not-found" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;#nonexistent&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="c1"># ElementNotFoundError: element not found: &#39;#nonexistent&#39;. Available IDs: [&#39;inc&#39;, &#39;dec&#39;, &#39;count&#39;]</span>
+</code></pre></div>
+<p>Use <code>app.tree</code> to inspect the current tree and verify the widget's ID or
+text content:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pprint</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="n">pprint</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">tree</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="wrong-interaction-type">Wrong interaction type<a class="headerlink" href="#wrong-interaction-type" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#my-checkbox&quot;</span><span class="p">)</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="c1"># TypeError: cannot click a checkbox widget -- use toggle() instead</span>
+</code></pre></div>
+<p>Use the correct interaction method for the widget type. See the
+<a href="#interaction-methods">interaction table</a> for the mapping.</p>
+<h3 id="headless-binary-not-built">Headless binary not built<a class="headerlink" href="#headless-binary-not-built" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>PlushieNotFoundError: failed to start renderer: ...
+</code></pre></div>
+<p>Download or build the renderer:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>download
+</code></pre></div>
+<h3 id="inspecting-state-when-a-test-fails">Inspecting state when a test fails<a class="headerlink" href="#inspecting-state-when-a-test-fails" title="Permanent link">&para;</a></h3>
+<p><code>model</code> and <code>tree</code> are your best debugging tools:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_debugging_a_failing_test</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">Counter</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>        <span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#increment&quot;</span><span class="p">)</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;model:&quot;</span><span class="p">,</span> <span class="n">app</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;tree:&quot;</span><span class="p">,</span> <span class="n">app</span><span class="o">.</span><span class="n">tree</span><span class="p">)</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>        <span class="k">assert</span> <span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;#count&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span>
+</code></pre></div>
+<h2 id="ci-configuration">CI configuration<a class="headerlink" href="#ci-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="mock-ci-simplest">Mock CI (simplest)<a class="headerlink" href="#mock-ci-simplest" title="Permanent link">&para;</a></h3>
+<p>No special setup. Works anywhere Python runs.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install plushie</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytest</span>
+</code></pre></div>
+<h3 id="headless-ci">Headless CI<a class="headerlink" href="#headless-ci" title="Permanent link">&para;</a></h3>
+<p>Requires the plushie binary (download or build from source).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install plushie</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python -m plushie download</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PLUSHIE_TEST_BACKEND=headless pytest</span>
+</code></pre></div>
+<h3 id="windowed-ci">Windowed CI<a class="headerlink" href="#windowed-ci" title="Permanent link">&para;</a></h3>
+<p>Requires a display server and GPU/software rendering. Two options:</p>
+<p><strong>Option A: Xvfb (X11)</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install plushie</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python -m plushie download</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sudo apt-get install -y xvfb mesa-vulkan-drivers</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="w">    </span><span class="no">Xvfb :99 -screen 0 1024x768x24 &amp;</span>
+<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="w">    </span><span class="no">export DISPLAY=:99</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a><span class="w">    </span><span class="no">export WINIT_UNIX_BACKEND=x11</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a><span class="w">    </span><span class="no">PLUSHIE_TEST_BACKEND=windowed pytest</span>
+</code></pre></div>
+<p><strong>Option B: Weston (Wayland)</strong></p>
+<p>Weston's headless backend provides a Wayland compositor without a physical
+display. Combined with <code>vulkan-swrast</code> (Mesa software rasterizer), this
+runs the full rendering pipeline on CPU.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install plushie</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">python -m plushie download</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sudo apt-get install -y weston mesa-vulkan-drivers</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="w">    </span><span class="no">export XDG_RUNTIME_DIR=/tmp/plushie-xdg-runtime</span>
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="w">    </span><span class="no">mkdir -p &quot;$XDG_RUNTIME_DIR&quot; &amp;&amp; chmod 0700 &quot;$XDG_RUNTIME_DIR&quot;</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a><span class="w">    </span><span class="no">weston --backend=headless --width=1024 --height=768 --socket=plushie-test &amp;</span>
+<a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a><span class="w">    </span><span class="no">sleep 1</span>
+<a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a><span class="w">    </span><span class="no">export WAYLAND_DISPLAY=plushie-test</span>
+<a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a><span class="w">    </span><span class="no">PLUSHIE_TEST_BACKEND=windowed pytest</span>
+</code></pre></div>
+<p>On Arch Linux, <code>weston</code> and <code>vulkan-swrast</code> are available via pacman.</p>
+<h3 id="progressive-ci">Progressive CI<a class="headerlink" href="#progressive-ci" title="Permanent link">&para;</a></h3>
+<p>Run mock tests fast, then promote to higher-fidelity backends for subsets:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="c1"># All tests on mock (fast, catches logic bugs)</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytest</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="c1"># Full suite on headless for protocol verification</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PLUSHIE_TEST_BACKEND=headless pytest</span>
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="c1"># Windowed for pixel regression (tagged subset)</span>
+<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a><span class="w">    </span><span class="no">Xvfb :99 -screen 0 1024x768x24 &amp;</span>
+<a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a><span class="w">    </span><span class="no">export DISPLAY=:99</span>
+<a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a><span class="w">    </span><span class="no">PLUSHIE_TEST_BACKEND=windowed pytest -m windowed</span>
+</code></pre></div>
+<p>Tag tests that need a specific backend with pytest markers:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">headless</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_protocol_round_trip</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>    <span class="o">...</span>
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">windowed</span>
+<a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_window_opens_and_renders</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a>    <span class="o">...</span>
+</code></pre></div>
+<h2 id="testing-extensions">Testing extensions<a class="headerlink" href="#testing-extensions" title="Permanent link">&para;</a></h2>
+<p>Extension widgets have two testing layers: Python-side logic (node building,
+command generation, demo app behavior) and Rust-side rendering (the widget
+actually renders, handles events, etc.).</p>
+<h3 id="python-side-unit-tests-no-renderer">Python-side: unit tests (no renderer)<a class="headerlink" href="#python-side-unit-tests-no-renderer" title="Permanent link">&para;</a></h3>
+<p>Extension definitions produce nodes and commands via <code>build_node()</code> and
+<code>build_command()</code>. Test these directly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.extension</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_node</span><span class="p">,</span> <span class="n">build_command</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_build_node_creates_correct_type</span><span class="p">():</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>    <span class="n">node</span> <span class="o">=</span> <span class="n">build_node</span><span class="p">(</span><span class="n">gauge_def</span><span class="p">,</span> <span class="s2">&quot;g1&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">})</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>    <span class="k">assert</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;gauge&quot;</span>
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>    <span class="k">assert</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;props&quot;</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">50</span>
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>
+<a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_build_command_creates_extension_command</span><span class="p">():</span>
+<a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>    <span class="n">cmd</span> <span class="o">=</span> <span class="n">build_command</span><span class="p">(</span><span class="n">gauge_def</span><span class="p">,</span> <span class="s2">&quot;g1&quot;</span><span class="p">,</span> <span class="s2">&quot;set_value&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="mf">42.0</span><span class="p">})</span>
+<a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a>    <span class="k">assert</span> <span class="n">cmd</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;extension_command&quot;</span>
+</code></pre></div>
+<p>Demo apps test the extension in context:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_view_produces_a_gauge_widget</span><span class="p">():</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">GaugeDemo</span><span class="p">()</span>
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>    <span class="n">model</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>    <span class="n">tree</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">model</span><span class="p">))</span>
+<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>    <span class="n">gauge</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="n">tree</span><span class="p">,</span> <span class="s2">&quot;my-gauge&quot;</span><span class="p">)</span>
+<a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>    <span class="k">assert</span> <span class="n">gauge</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;gauge&quot;</span>
+</code></pre></div>
+<h3 id="rust-side-unit-tests-no-python">Rust-side: unit tests (no Python)<a class="headerlink" href="#rust-side-unit-tests-no-python" title="Permanent link">&para;</a></h3>
+<p>The <code>plushie_ext::testing</code> module provides <code>TestEnv</code> and node factories
+for testing <code>WidgetExtension::render()</code> in isolation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="k">use</span><span class="w"> </span><span class="n">plushie_ext</span><span class="p">::</span><span class="n">testing</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="k">use</span><span class="w"> </span><span class="n">plushie_ext</span><span class="p">::</span><span class="n">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>
+<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="cp">#[test]</span>
+<a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="k">fn</span><span class="w"> </span><span class="nf">gauge_renders_without_panic</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">ext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MyGaugeExtension</span><span class="p">::</span><span class="n">new</span><span class="p">();</span>
+<a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TestEnv</span><span class="p">::</span><span class="n">default</span><span class="p">();</span>
+<a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">node_with_props</span><span class="p">(</span><span class="s">&quot;g1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;gauge&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">json</span><span class="o">!</span><span class="p">({</span><span class="s">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">75</span><span class="p">}));</span>
+<a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">test</span><span class="p">.</span><span class="n">env</span><span class="p">();</span>
+<a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">_element</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ext</span><span class="p">.</span><span class="n">render</span><span class="p">(</span><span class="o">&amp;</span><span class="n">node</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">env</span><span class="p">);</span>
+<a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="end-to-end-through-the-renderer">End-to-end: through the renderer<a class="headerlink" href="#end-to-end-through-the-renderer" title="Permanent link">&para;</a></h3>
+<p>To verify extension widgets survive the wire protocol round-trip and
+render correctly, build a custom renderer binary that includes the
+extension's Rust crate:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1"># Build the custom renderer with your extension compiled in</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>build
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>
+<a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="c1"># Run tests through the real renderer (headless, no display server)</span>
+<a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a><span class="nv">PLUSHIE_TEST_BACKEND</span><span class="o">=</span>headless<span class="w"> </span>pytest
+</code></pre></div>
+<p>Write end-to-end tests with <code>AppFixture</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_gauge_appears_in_rendered_tree</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">GaugeDemo</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>        <span class="n">app</span><span class="o">.</span><span class="n">assert_exists</span><span class="p">(</span><span class="s2">&quot;#my-gauge&quot;</span><span class="p">)</span>
+<a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a>
+<a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_gauge_responds_to_command</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">GaugeDemo</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a>        <span class="n">app</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s2">&quot;#push-value&quot;</span><span class="p">)</span>
+<a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>        <span class="n">app</span><span class="o">.</span><span class="n">assert_text</span><span class="p">(</span><span class="s2">&quot;#value-display&quot;</span><span class="p">,</span> <span class="s2">&quot;42&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>These tests run on <code>mock</code> by default (fast, logic-only). Set
+<code>PLUSHIE_TEST_BACKEND=headless</code> to exercise the full Rust rendering path
+with the extension compiled in.</p>
+<h2 id="key-name-validation">Key name validation<a class="headerlink" href="#key-name-validation" title="Permanent link">&para;</a></h2>
+<p><code>press()</code>, <code>type_key()</code>, and <code>release()</code> validate key names at call
+time. Input is case-insensitive. Named keys use PascalCase matching
+the renderer's wire format (same strings that appear in event data):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="n">press</span><span class="p">(</span><span class="s2">&quot;Tab&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="n">press</span><span class="p">(</span><span class="s2">&quot;ArrowRight&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="n">press</span><span class="p">(</span><span class="s2">&quot;Shift+PageUp&quot;</span><span class="p">)</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="n">press</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Unrecognized key names raise immediately:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>ValueError: unknown key &quot;tabb&quot;. Examples: Tab, ArrowRight, PageUp, Escape, Enter.
+</code></pre></div>
+<p>Single characters are also accepted and lowercased (<code>"a"</code>, <code>"Z"</code>,
+<code>"1"</code>). Modifier combos use <code>+</code>: <code>"Ctrl+s"</code>, <code>"Shift+ArrowUp"</code>.
+Modifiers: <code>shift</code>, <code>ctrl</code>, <code>alt</code>, <code>logo</code>, <code>command</code>.</p>
+<h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Script instruction <code>move</code> (move cursor to a widget by selector) is a
+  no-op. It requires widget bounds from layout, which only the renderer knows.</li>
+<li><code>move_to</code> on the mock backend dispatches cursor events but has no spatial
+  layout info. Mouse area enter/exit events will not fire.</li>
+<li>Pixel screenshots are only available on the headless and windowed backends
+  (mock returns stubs).</li>
+<li>Headless screenshots use software rendering (tiny-skia) and may not match
+  GPU output pixel-for-pixel.</li>
+<li>Script <code>assert_model</code> uses substring matching against the inspected model.
+  Use specific substrings or use pytest assertions for precise model checks.</li>
+<li>The <code>CommandProcessor</code> executes task/stream/batch commands synchronously
+  in all test backends. Timing and concurrency bugs will not surface in mock
+  tests. Use headless or windowed backends for concurrency-sensitive tests.</li>
+<li>There is a safety limit of 100 levels of recursive command processing to
+  prevent infinite command loops.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

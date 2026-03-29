@@ -1,0 +1,3136 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Native desktop GUI framework for Python, powered by iced">
+      
+      
+      
+        <link rel="canonical" href="https://plushie-ui.github.io/plushie-python/commands/">
+      
+      
+        <link rel="prev" href="../events/">
+      
+      
+        <link rel="next" href="../effects/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Commands - plushie</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#commands-and-subscriptions" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="plushie" class="md-header__button md-logo" aria-label="plushie" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            plushie
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Commands
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/plushie-ui/plushie-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plushie-ui/plushie-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="plushie" class="md-nav__button md-logo" aria-label="plushie" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    plushie
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/plushie-ui/plushie-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plushie-ui/plushie-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../layout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Layout
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#returning-commands-from-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returning commands from update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#async-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#streaming-async-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming async work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cancelling-async-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancelling async work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#done-lift-a-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Done (lift a value)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#widget-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Widget operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Widget operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#focus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Focus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#text-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Text operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scroll-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scroll operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#font-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Font loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renderer-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renderer queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#window-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#window-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window queries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Window queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#window-property-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window property queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#image-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#panegrid-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PaneGrid operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extension-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#animation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Animation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no-op" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No-op
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chaining-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chaining commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-commands-work-internally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How commands work internally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diy-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIY patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DIY patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#streaming-with-bare-threads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming with bare threads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cancellation-with-threads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancellation with threads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-which" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use which
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subscriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-subscribe-callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The subscribe callback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available subscriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available subscriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#window-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mouse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mouse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#touch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Touch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ime-input-method-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IME (Input Method Editor)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#catch-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catch-all
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event rate limiting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Event rate limiting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#per-widget-event_rate-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-widget event_rate prop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-subscription-max_rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-subscription max_rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-default_event_rate-setting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global default_event_rate setting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subscription-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscription lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-subscriptions-work-internally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How subscriptions work internally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-sparkline-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Demo: sparkline-dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#application-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands-vs-effects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commands vs. effects
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../effects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Effects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scoped-ids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoped IDs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../composition-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Composition Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standalone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standalone Executables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#returning-commands-from-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returning commands from update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#async-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#streaming-async-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming async work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cancelling-async-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancelling async work
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#done-lift-a-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Done (lift a value)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#widget-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Widget operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Widget operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#focus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Focus
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#text-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Text operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scroll-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scroll operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#font-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Font loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renderer-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renderer queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#window-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#window-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window queries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Window queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#window-property-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window property queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System queries
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#image-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#panegrid-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PaneGrid operations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extension-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#animation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Animation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#no-op" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No-op
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#chaining-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chaining commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-commands-work-internally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How commands work internally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diy-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DIY patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DIY patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#streaming-with-bare-threads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming with bare threads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cancellation-with-threads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancellation with threads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-which" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use which
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Subscriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-subscribe-callback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The subscribe callback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-subscriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available subscriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available subscriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#window-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Window lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mouse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mouse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#touch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Touch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ime-input-method-editor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IME (Input Method Editor)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#catch-all" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catch-all
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-rate-limiting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event rate limiting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Event rate limiting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#per-widget-event_rate-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-widget event_rate prop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-subscription-max_rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-subscription max_rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-default_event_rate-setting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global default_event_rate setting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subscription-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscription lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-subscriptions-work-internally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How subscriptions work internally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-sparkline-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Demo: sparkline-dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#application-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Application settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands-vs-effects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commands vs. effects
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="commands-and-subscriptions">Commands and subscriptions<a class="headerlink" href="#commands-and-subscriptions" title="Permanent link">&para;</a></h1>
+<p>Iced has two mechanisms beyond the basic update/view cycle: <code>Task</code> (async
+commands from update) and <code>Subscription</code> (ongoing event sources). Plushie
+provides Python equivalents for both.</p>
+<h2 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">&para;</a></h2>
+<p>Sometimes <code>update()</code> needs to do more than return a new model. It might
+need to focus a text input, start an HTTP request, open a new window, or
+schedule a delayed event. These are commands.</p>
+<h3 id="returning-commands-from-update">Returning commands from update<a class="headerlink" href="#returning-commands-from-update" title="Permanent link">&para;</a></h3>
+<p><code>update()</code> can return either a bare model or a <code>(model, command)</code> tuple:</p>
+<!-- test: test_update_returns_bare_model, test_update_returns_model_command_tuple -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span><span class="p">,</span> <span class="n">AsyncResult</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="c1"># No commands -- just return the model:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;simple&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            <span class="k">return</span> <span class="n">model</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="c1"># With commands -- return a tuple:</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;save&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">saving</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">Command</span><span class="o">.</span><span class="n">task</span><span class="p">(</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                <span class="k">lambda</span><span class="p">:</span> <span class="n">save_to_disk</span><span class="p">(</span><span class="n">model</span><span class="p">),</span> <span class="s2">&quot;save_result&quot;</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            <span class="p">)</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="k">case</span> <span class="n">AsyncResult</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;save_result&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">result</span><span class="p">):</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">saved</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="available-commands">Available commands<a class="headerlink" href="#available-commands" title="Permanent link">&para;</a></h3>
+<h4 id="async-work">Async work<a class="headerlink" href="#async-work" title="Permanent link">&para;</a></h4>
+<!-- test: test_command_task -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Run a function in a background thread. Result is delivered as an AsyncResult event.</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># The function runs in a thread. When it returns, the runtime delivers:</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1">#   AsyncResult(tag=tag, value=result)</span>
+</code></pre></div>
+<!-- test: test_command_task -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span><span class="p">,</span> <span class="n">AsyncResult</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;fetch&quot;</span><span class="p">):</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>            <span class="n">cmd</span> <span class="o">=</span> <span class="n">Command</span><span class="o">.</span><span class="n">task</span><span class="p">(</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>                <span class="k">lambda</span><span class="p">:</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://api.example.com/data&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">(),</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>                <span class="s2">&quot;data_fetched&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>            <span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">loading</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">cmd</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>        <span class="k">case</span> <span class="n">AsyncResult</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;data_fetched&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">body</span><span class="p">):</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">loading</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">body</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="streaming-async-work">Streaming async work<a class="headerlink" href="#streaming-async-work" title="Permanent link">&para;</a></h4>
+<p><code>Command.stream()</code> spawns a thread that sends multiple intermediate
+results to <code>update()</code> over time. The function receives an <code>emit</code>
+callback; each call to <code>emit</code> delivers a <code>StreamChunk(tag=tag, value=value)</code>
+event through the normal update cycle. The function's final return value
+is delivered as <code>AsyncResult(tag=tag, value=result)</code>.</p>
+<!-- test: test_command_stream -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># fn receives an emit callback: fn(emit) -&gt; result</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Each emit(value) dispatches StreamChunk(tag=tag, value=value) through update().</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># The function&#39;s final return value dispatches AsyncResult(tag=tag, value=result).</span>
+</code></pre></div>
+<!-- test: test_command_stream -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span><span class="p">,</span> <span class="n">StreamChunk</span><span class="p">,</span> <span class="n">AsyncResult</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;import&quot;</span><span class="p">):</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>            <span class="k">def</span><span class="w"> </span><span class="nf">do_import</span><span class="p">(</span><span class="n">emit</span><span class="p">):</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>                <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>                <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;big.csv&quot;</span><span class="p">),</span> <span class="mi">1</span><span class="p">):</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>                    <span class="n">row</span> <span class="o">=</span> <span class="n">parse_row</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>                    <span class="n">emit</span><span class="p">((</span><span class="s2">&quot;progress&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>                    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>                <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;complete&quot;</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">importing</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">Command</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">do_import</span><span class="p">,</span> <span class="s2">&quot;file_import&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>        <span class="k">case</span> <span class="n">StreamChunk</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;file_import&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;progress&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">)):</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rows_imported</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>        <span class="k">case</span> <span class="n">AsyncResult</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;file_import&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;complete&quot;</span><span class="p">,</span> <span class="n">rows</span><span class="p">)):</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">importing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">rows</span><span class="p">)</span>
+</code></pre></div>
+<p>This is convenience sugar. You can achieve the same thing with a bare
+thread and queue -- see <a href="#diy-patterns">DIY patterns</a> below.</p>
+<h4 id="cancelling-async-work">Cancelling async work<a class="headerlink" href="#cancelling-async-work" title="Permanent link">&para;</a></h4>
+<p><code>Command.cancel()</code> cancels a running <code>task</code> or <code>stream</code> command by its
+tag. The runtime tracks running threads by tag and terminates the
+associated work. If the task has already completed, this is a no-op.</p>
+<!-- test: test_command_cancel -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+</code></pre></div>
+<!-- test: test_command_cancel -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;cancel_import&quot;</span><span class="p">):</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">importing</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">Command</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="s2">&quot;file_import&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="done-lift-a-value">Done (lift a value)<a class="headerlink" href="#done-lift-a-value" title="Permanent link">&para;</a></h4>
+<p><code>Command.done()</code> wraps an already-resolved value as a command. The runtime
+immediately dispatches <code>mapper(value)</code> through <code>update()</code> without spawning
+a thread. Useful for lifting a pure value into the command pipeline.</p>
+<!-- test: test_command_done -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">done</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">mapper</span><span class="p">)</span>
+</code></pre></div>
+<!-- test: test_command_done -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;reset&quot;</span><span class="p">):</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">done</span><span class="p">(</span><span class="s2">&quot;defaults&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;config_loaded&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+</code></pre></div>
+<h4 id="exit">Exit<a class="headerlink" href="#exit" title="Permanent link">&para;</a></h4>
+<p><code>Command.exit()</code> terminates the application.</p>
+<!-- test: test_command_exit -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+</code></pre></div>
+<h4 id="widget-operations">Widget operations<a class="headerlink" href="#widget-operations" title="Permanent link">&para;</a></h4>
+<h5 id="focus">Focus<a class="headerlink" href="#focus" title="Permanent link">&para;</a></h5>
+<!-- test: test_command_focus, test_command_focus_next, test_command_focus_previous -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">focus</span><span class="p">(</span><span class="n">widget_id</span><span class="p">)</span>           <span class="c1"># Focus a text input</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">focus_next</span><span class="p">()</span>               <span class="c1"># Focus next focusable widget</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">Command</span><span class="o">.</span><span class="n">focus_previous</span><span class="p">()</span>           <span class="c1"># Focus previous focusable widget</span>
+</code></pre></div>
+<p>Example:</p>
+<!-- test: test_command_focus -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;new_todo&quot;</span><span class="p">):</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="nb">input</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="n">Command</span><span class="o">.</span><span class="n">focus</span><span class="p">(</span><span class="s2">&quot;todo_input&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h5 id="text-operations">Text operations<a class="headerlink" href="#text-operations" title="Permanent link">&para;</a></h5>
+<!-- test: test_command_select_all, test_command_select_range, test_command_move_cursor_to, test_command_move_cursor_to_front, test_command_move_cursor_to_end -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">select_all</span><span class="p">(</span><span class="n">widget_id</span><span class="p">)</span>                       <span class="c1"># Select all text</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">move_cursor_to_front</span><span class="p">(</span><span class="n">widget_id</span><span class="p">)</span>              <span class="c1"># Cursor to start</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">Command</span><span class="o">.</span><span class="n">move_cursor_to_end</span><span class="p">(</span><span class="n">widget_id</span><span class="p">)</span>                <span class="c1"># Cursor to end</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">Command</span><span class="o">.</span><span class="n">move_cursor_to</span><span class="p">(</span><span class="n">widget_id</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>          <span class="c1"># Cursor to char position</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">Command</span><span class="o">.</span><span class="n">select_range</span><span class="p">(</span><span class="n">widget_id</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>          <span class="c1"># Select character range</span>
+</code></pre></div>
+<p>Example:</p>
+<!-- test: test_command_select_range -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;select_word&quot;</span><span class="p">):</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">select_range</span><span class="p">(</span><span class="s2">&quot;editor&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</code></pre></div>
+<h5 id="scroll-operations">Scroll operations<a class="headerlink" href="#scroll-operations" title="Permanent link">&para;</a></h5>
+<!-- test: test_command_scroll_to, test_command_snap_to, test_command_snap_to_end, test_command_scroll_by -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">scroll_to</span><span class="p">(</span><span class="n">widget_id</span><span class="p">,</span> <span class="n">offset_y</span><span class="p">)</span>   <span class="c1"># Scroll to absolute vertical position</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">snap_to</span><span class="p">(</span><span class="n">widget_id</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>         <span class="c1"># Snap scroll to absolute offset</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">Command</span><span class="o">.</span><span class="n">snap_to_end</span><span class="p">(</span><span class="n">widget_id</span><span class="p">)</span>           <span class="c1"># Snap to end of scrollable content</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">Command</span><span class="o">.</span><span class="n">scroll_by</span><span class="p">(</span><span class="n">widget_id</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>       <span class="c1"># Scroll by relative delta</span>
+</code></pre></div>
+<p>Example:</p>
+<!-- test: test_command_snap_to_end -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;scroll_bottom&quot;</span><span class="p">):</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">snap_to_end</span><span class="p">(</span><span class="s2">&quot;chat_log&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h5 id="accessibility">Accessibility<a class="headerlink" href="#accessibility" title="Permanent link">&para;</a></h5>
+<!-- test: test_command_announce -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">announce</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>           <span class="c1"># Announce text to screen readers</span>
+</code></pre></div>
+<h5 id="font-loading">Font loading<a class="headerlink" href="#font-loading" title="Permanent link">&para;</a></h5>
+<!-- test: test_command_load_font -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">load_font</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>          <span class="c1"># Load a font at runtime from raw TTF/OTF bytes</span>
+</code></pre></div>
+<h5 id="renderer-queries">Renderer queries<a class="headerlink" href="#renderer-queries" title="Permanent link">&para;</a></h5>
+<!-- test: test_command_tree_hash_query, test_command_find_focused_query, test_command_list_images_query -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">tree_hash_query</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>        <span class="c1"># SHA-256 hash of the renderer&#39;s current tree</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">find_focused_query</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>     <span class="c1"># Which widget currently has keyboard focus</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">Command</span><span class="o">.</span><span class="n">list_images_query</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>      <span class="c1"># List all registered image handles</span>
+</code></pre></div>
+<p>Results arrive as system events in <code>update()</code>.</p>
+<h4 id="window-management">Window management<a class="headerlink" href="#window-management" title="Permanent link">&para;</a></h4>
+<p>Windows are opened declaratively by including window nodes in the view tree.
+There is no <code>open_window</code> command. To open a window, add a <code>window</code> node to
+the tree returned by <code>view()</code>. To close one, remove it or use
+<code>close_window()</code>.</p>
+<!-- test: test_command_close_window, test_command_resize_window, test_command_move_window, test_command_maximize_window, test_command_minimize_window, test_command_set_window_mode, test_command_toggle_maximize, test_command_toggle_decorations, test_command_gain_focus, test_command_set_window_level, test_command_drag_window, test_command_drag_resize_window, test_command_request_user_attention, test_command_screenshot_window, test_command_set_resizable, test_command_set_min_max_size, test_command_mouse_passthrough, test_command_show_system_menu, test_command_set_icon, test_command_set_resize_increments, test_command_allow_automatic_tabbing -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">close_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                            <span class="c1"># Close a window</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">resize_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>            <span class="c1"># Resize</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">Command</span><span class="o">.</span><span class="n">move_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>                       <span class="c1"># Move</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">Command</span><span class="o">.</span><span class="n">maximize_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                         <span class="c1"># Maximize (default: True)</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="n">Command</span><span class="o">.</span><span class="n">maximize_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>                  <span class="c1"># Restore from maximized</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="n">Command</span><span class="o">.</span><span class="n">minimize_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                         <span class="c1"># Minimize (default: True)</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="n">Command</span><span class="o">.</span><span class="n">minimize_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>                  <span class="c1"># Restore from minimized</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="n">Command</span><span class="o">.</span><span class="n">set_window_mode</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>                   <span class="c1"># &quot;fullscreen&quot;, &quot;windowed&quot;, etc.</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="n">Command</span><span class="o">.</span><span class="n">toggle_maximize</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                         <span class="c1"># Toggle maximize state</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="n">Command</span><span class="o">.</span><span class="n">toggle_decorations</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                      <span class="c1"># Toggle title bar/borders</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="n">Command</span><span class="o">.</span><span class="n">gain_focus</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                              <span class="c1"># Bring window to front</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="n">Command</span><span class="o">.</span><span class="n">set_window_level</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span>                 <span class="c1"># &quot;normal&quot;, &quot;always_on_top&quot;, etc.</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="n">Command</span><span class="o">.</span><span class="n">drag_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                             <span class="c1"># Initiate OS window drag</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="n">Command</span><span class="o">.</span><span class="n">drag_resize_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">direction</span><span class="p">)</span>           <span class="c1"># Initiate OS resize from edge</span>
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="n">Command</span><span class="o">.</span><span class="n">request_user_attention</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">urgency</span><span class="p">)</span>         <span class="c1"># Flash taskbar (&quot;informational&quot;, &quot;critical&quot;)</span>
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="n">Command</span><span class="o">.</span><span class="n">screenshot_window</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>                  <span class="c1"># Capture window pixels</span>
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a><span class="n">Command</span><span class="o">.</span><span class="n">set_resizable</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>                    <span class="c1"># Enable/disable resize</span>
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a><span class="n">Command</span><span class="o">.</span><span class="n">set_min_size</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>             <span class="c1"># Set minimum window size</span>
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a><span class="n">Command</span><span class="o">.</span><span class="n">set_max_size</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>             <span class="c1"># Set maximum window size</span>
+<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a><span class="n">Command</span><span class="o">.</span><span class="n">enable_mouse_passthrough</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                <span class="c1"># Click-through window</span>
+<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a><span class="n">Command</span><span class="o">.</span><span class="n">disable_mouse_passthrough</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>               <span class="c1"># Normal click handling</span>
+<a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a><span class="n">Command</span><span class="o">.</span><span class="n">show_system_menu</span><span class="p">(</span><span class="n">window_id</span><span class="p">)</span>                        <span class="c1"># Show OS window menu</span>
+<a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a><span class="n">Command</span><span class="o">.</span><span class="n">set_icon</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">rgba_data</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>      <span class="c1"># Set window icon (raw RGBA)</span>
+<a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a><span class="n">Command</span><span class="o">.</span><span class="n">set_resize_increments</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>    <span class="c1"># Set resize step increments</span>
+<a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a><span class="n">Command</span><span class="o">.</span><span class="n">allow_automatic_tabbing</span><span class="p">(</span><span class="n">enabled</span><span class="p">)</span>                   <span class="c1"># Enable/disable macOS automatic tab grouping</span>
+</code></pre></div>
+<p>Example:</p>
+<!-- test: test_command_set_window_mode, test_command_set_window_level -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;go_fullscreen&quot;</span><span class="p">):</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">set_window_mode</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="s2">&quot;fullscreen&quot;</span><span class="p">)</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;pin_on_top&quot;</span><span class="p">):</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">set_window_level</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="s2">&quot;always_on_top&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><code>set_icon()</code> sends raw RGBA pixel data (base64-encoded for wire transport).
+The <code>rgba_data</code> must be a <code>bytes</code> object of <code>width * height * 4</code> bytes.</p>
+<h4 id="window-queries">Window queries<a class="headerlink" href="#window-queries" title="Permanent link">&para;</a></h4>
+<p>Window queries are commands whose results arrive as events in <code>update()</code>.
+Despite accepting a <code>tag</code> parameter, window property queries use the
+<strong>effect response</strong> transport -- results arrive as
+<code>EffectResult(request_id=id, ...)</code> where <code>id</code> is the <strong>window_id string</strong>
+(the <code>tag</code> is currently unused for these queries). System queries use a
+separate path where the tag is used.</p>
+<h5 id="window-property-queries">Window property queries<a class="headerlink" href="#window-property-queries" title="Permanent link">&para;</a></h5>
+<p>These go through the effect/window_op system. Results arrive in <code>update()</code>
+as <code>EffectResult(request_id=window_id, status="ok", result=data)</code> where
+<code>window_id</code> is the string ID of the window and <code>data</code> varies by query type.</p>
+<!-- test: test_command_get_window_size, test_command_get_window_position, test_command_get_mode, test_command_get_scale_factor, test_command_is_maximized, test_command_is_minimized, test_command_raw_id, test_command_monitor_size -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">get_window_size</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="c1"># Result: EffectResult(request_id=window_id, status=&quot;ok&quot;, result={&quot;width&quot;: w, &quot;height&quot;: h})</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="n">Command</span><span class="o">.</span><span class="n">get_window_position</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="c1"># Result: EffectResult(request_id=window_id, status=&quot;ok&quot;, result={&quot;x&quot;: x, &quot;y&quot;: y})</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="c1"># (None if position is unavailable)</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="n">Command</span><span class="o">.</span><span class="n">get_mode</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="c1"># Result: EffectResult(request_id=window_id, status=&quot;ok&quot;, result=mode)</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="c1"># mode is &quot;windowed&quot;, &quot;fullscreen&quot;, or &quot;hidden&quot;</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="n">Command</span><span class="o">.</span><span class="n">get_scale_factor</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="c1"># Result: EffectResult(request_id=window_id, status=&quot;ok&quot;, result=factor)</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a>
+<a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a><span class="n">Command</span><span class="o">.</span><span class="n">is_maximized</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a><span class="c1"># Result: EffectResult(request_id=window_id, status=&quot;ok&quot;, result=boolean)</span>
+<a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a>
+<a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a><span class="n">Command</span><span class="o">.</span><span class="n">is_minimized</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a><span class="c1"># Result: EffectResult(request_id=window_id, status=&quot;ok&quot;, result=boolean)</span>
+<a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a>
+<a id="__codelineno-21-21" name="__codelineno-21-21" href="#__codelineno-21-21"></a><span class="n">Command</span><span class="o">.</span><span class="n">raw_id</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-21-22" name="__codelineno-21-22" href="#__codelineno-21-22"></a><span class="c1"># Result: EffectResult(request_id=window_id, status=&quot;ok&quot;, result=platform_id)</span>
+<a id="__codelineno-21-23" name="__codelineno-21-23" href="#__codelineno-21-23"></a>
+<a id="__codelineno-21-24" name="__codelineno-21-24" href="#__codelineno-21-24"></a><span class="n">Command</span><span class="o">.</span><span class="n">monitor_size</span><span class="p">(</span><span class="n">window_id</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-21-25" name="__codelineno-21-25" href="#__codelineno-21-25"></a><span class="c1"># Result: EffectResult(request_id=window_id, status=&quot;ok&quot;, result={&quot;width&quot;: w, &quot;height&quot;: h})</span>
+<a id="__codelineno-21-26" name="__codelineno-21-26" href="#__codelineno-21-26"></a><span class="c1"># (None if monitor cannot be determined)</span>
+</code></pre></div>
+<p>Example:</p>
+<!-- test: test_command_get_window_size -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span><span class="p">,</span> <span class="n">EffectResult</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;check_size&quot;</span><span class="p">):</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">get_window_size</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="s2">&quot;got_size&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>        <span class="k">case</span> <span class="n">EffectResult</span><span class="p">(</span><span class="n">request_id</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;ok&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;width&quot;</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">:</span> <span class="n">h</span><span class="p">}):</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">window_width</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">window_height</span><span class="o">=</span><span class="n">h</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Note:</strong> Because the response is keyed by <code>window_id</code> rather than <code>tag</code>,
+issuing multiple different queries against the same window will produce
+results that share the same <code>window_id</code> key. Distinguish them by the shape
+of the <code>result</code> dict (e.g. <code>{"width": _, "height": _}</code> for size vs.
+<code>{"x": _, "y": _}</code> for position).</p>
+<h5 id="system-queries">System queries<a class="headerlink" href="#system-queries" title="Permanent link">&para;</a></h5>
+<p>System-level queries use a different transport path. Results arrive as
+dedicated event dataclasses where the <strong>tag</strong> (stringified) identifies
+the response.</p>
+<!-- test: test_command_get_system_theme, test_command_get_system_info -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">get_system_theme</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="c1"># Result: SystemTheme(tag=tag_string, theme=mode)</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="c1"># mode is &quot;light&quot;, &quot;dark&quot;, or &quot;none&quot;</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="n">Command</span><span class="o">.</span><span class="n">get_system_info</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="c1"># Result: SystemInfo(tag=tag_string, data=info_dict)</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="c1"># info_dict keys: &quot;system_name&quot;, &quot;system_kernel&quot;, &quot;system_version&quot;,</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="c1">#   &quot;system_short_version&quot;, &quot;cpu_brand&quot;, &quot;cpu_cores&quot;, &quot;memory_total&quot;,</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="c1">#   &quot;memory_used&quot;, &quot;graphics_backend&quot;, &quot;graphics_adapter&quot;</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="c1"># Requires the renderer to be built with the `sysinfo` feature.</span>
+</code></pre></div>
+<p><strong>Important:</strong> The <code>tag</code> arrives as a <strong>string</strong> in <code>update()</code>, even if you
+pass a non-string value. Match on the string.</p>
+<!-- test: test_command_get_system_theme -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span><span class="p">,</span> <span class="n">SystemTheme</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;detect_theme&quot;</span><span class="p">):</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">get_system_theme</span><span class="p">(</span><span class="s2">&quot;theme_detected&quot;</span><span class="p">)</span>
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>        <span class="k">case</span> <span class="n">SystemTheme</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;theme_detected&quot;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="n">mode</span><span class="p">):</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">os_theme</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="image-operations">Image operations<a class="headerlink" href="#image-operations" title="Permanent link">&para;</a></h4>
+<p>In-memory images can be created, updated, and deleted at runtime. The
+<code>Image</code> widget references them via <code>{"handle": "name"}</code> as its source.</p>
+<!-- test: test_command_create_image, test_command_create_image_rgba, test_command_update_image, test_command_update_image_rgba, test_command_delete_image, test_command_clear_images -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">create_image</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>                         <span class="c1"># From PNG/JPEG bytes</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">create_image_rgba</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">pixels</span><span class="p">)</span>   <span class="c1"># From raw RGBA pixels</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="n">Command</span><span class="o">.</span><span class="n">update_image</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>                         <span class="c1"># Update with PNG/JPEG</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="n">Command</span><span class="o">.</span><span class="n">update_image_rgba</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">pixels</span><span class="p">)</span>   <span class="c1"># Update with raw RGBA</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="n">Command</span><span class="o">.</span><span class="n">delete_image</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>                               <span class="c1"># Remove in-memory image</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="n">Command</span><span class="o">.</span><span class="n">clear_images</span><span class="p">()</span>                                     <span class="c1"># Delete all in-memory images</span>
+</code></pre></div>
+<p>Example:</p>
+<!-- test: test_command_create_image, test_command_task -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span><span class="p">,</span> <span class="n">AsyncResult</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;load_preview&quot;</span><span class="p">):</span>
+<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>            <span class="n">cmd</span> <span class="o">=</span> <span class="n">Command</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;preview.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(),</span> <span class="s2">&quot;preview_loaded&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">cmd</span>
+<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>        <span class="k">case</span> <span class="n">AsyncResult</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;preview_loaded&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">data</span><span class="p">):</span>
+<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">create_image</span><span class="p">(</span><span class="s2">&quot;preview&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="panegrid-operations">PaneGrid operations<a class="headerlink" href="#panegrid-operations" title="Permanent link">&para;</a></h4>
+<p>Commands for manipulating panes in a <code>pane_grid</code> widget.</p>
+<!-- test: test_command_pane_split, test_command_pane_close, test_command_pane_swap, test_command_pane_maximize, test_command_pane_restore -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">pane_split</span><span class="p">(</span><span class="n">pane_grid_id</span><span class="p">,</span> <span class="n">pane</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">new_pane_id</span><span class="p">)</span>  <span class="c1"># Split a pane</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">pane_close</span><span class="p">(</span><span class="n">pane_grid_id</span><span class="p">,</span> <span class="n">pane</span><span class="p">)</span>                     <span class="c1"># Close a pane</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="n">Command</span><span class="o">.</span><span class="n">pane_swap</span><span class="p">(</span><span class="n">pane_grid_id</span><span class="p">,</span> <span class="n">pane_a</span><span class="p">,</span> <span class="n">pane_b</span><span class="p">)</span>            <span class="c1"># Swap two panes</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="n">Command</span><span class="o">.</span><span class="n">pane_maximize</span><span class="p">(</span><span class="n">pane_grid_id</span><span class="p">,</span> <span class="n">pane</span><span class="p">)</span>                  <span class="c1"># Maximize a pane</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="n">Command</span><span class="o">.</span><span class="n">pane_restore</span><span class="p">(</span><span class="n">pane_grid_id</span><span class="p">)</span>                         <span class="c1"># Restore from maximized</span>
+</code></pre></div>
+<p>Example:</p>
+<!-- test: test_command_pane_split -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;split_editor&quot;</span><span class="p">):</span>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">pane_split</span><span class="p">(</span><span class="s2">&quot;pane_grid&quot;</span><span class="p">,</span> <span class="s2">&quot;editor&quot;</span><span class="p">,</span> <span class="s2">&quot;horizontal&quot;</span><span class="p">,</span> <span class="s2">&quot;new_editor&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="timers">Timers<a class="headerlink" href="#timers" title="Permanent link">&para;</a></h4>
+<!-- test: test_command_send_after -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">send_after</span><span class="p">(</span><span class="n">delay_ms</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>  <span class="c1"># Deliver event to update after delay</span>
+</code></pre></div>
+<!-- test: test_command_send_after -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;flash_message&quot;</span><span class="p">):</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>            <span class="k">return</span> <span class="p">(</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>                <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Saved!&quot;</span><span class="p">),</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>                <span class="n">Command</span><span class="o">.</span><span class="n">send_after</span><span class="p">(</span><span class="mi">3000</span><span class="p">,</span> <span class="s2">&quot;clear_message&quot;</span><span class="p">),</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>            <span class="p">)</span>
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>        <span class="k">case</span> <span class="s2">&quot;clear_message&quot;</span><span class="p">:</span>
+<a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="batch">Batch<a class="headerlink" href="#batch" title="Permanent link">&para;</a></h4>
+<!-- test: test_command_batch -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">batch</span><span class="p">([</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>    <span class="n">Command</span><span class="o">.</span><span class="n">focus</span><span class="p">(</span><span class="s2">&quot;name_input&quot;</span><span class="p">),</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>    <span class="n">Command</span><span class="o">.</span><span class="n">send_after</span><span class="p">(</span><span class="mi">5000</span><span class="p">,</span> <span class="s2">&quot;auto_save&quot;</span><span class="p">),</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="p">])</span>
+</code></pre></div>
+<p>Commands in a batch are dispatched sequentially. Async commands spawn
+concurrent threads, but the dispatch loop itself processes each command
+in order.</p>
+<h4 id="extension-commands">Extension commands<a class="headerlink" href="#extension-commands" title="Permanent link">&para;</a></h4>
+<p>Push data directly to a native Rust extension widget without triggering the
+view/diff/patch cycle. Used for high-frequency data like terminal output or
+streaming log lines.</p>
+<!-- test: test_command_extension_command, test_command_extension_commands -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="c1"># Single command</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="n">Command</span><span class="o">.</span><span class="n">extension_command</span><span class="p">(</span><span class="s2">&quot;term-1&quot;</span><span class="p">,</span> <span class="s2">&quot;write&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">output</span><span class="p">})</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="c1"># Batch (all processed before next view cycle)</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="n">Command</span><span class="o">.</span><span class="n">extension_commands</span><span class="p">([</span>
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>    <span class="p">(</span><span class="s2">&quot;term-1&quot;</span><span class="p">,</span> <span class="s2">&quot;write&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">line1</span><span class="p">}),</span>
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>    <span class="p">(</span><span class="s2">&quot;log-1&quot;</span><span class="p">,</span> <span class="s2">&quot;append&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="n">entry</span><span class="p">}),</span>
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="p">])</span>
+</code></pre></div>
+<p>Extension commands are only meaningful for widgets backed by a
+<code>WidgetExtension</code> Rust implementation. They are silently ignored for
+widgets without an extension handler.</p>
+<h4 id="animation">Animation<a class="headerlink" href="#animation" title="Permanent link">&para;</a></h4>
+<!-- test: test_command_advance_frame -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="n">Command</span><span class="o">.</span><span class="n">advance_frame</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>  <span class="c1"># Advance the animation clock (test/headless only)</span>
+</code></pre></div>
+<p>The <code>timestamp</code> is monotonic milliseconds. Used for stepping through
+animations deterministically in tests.</p>
+<h4 id="no-op">No-op<a class="headerlink" href="#no-op" title="Permanent link">&para;</a></h4>
+<!-- test: test_command_none -- keep this section in sync with the test -->
+
+<p>When <code>update</code> returns a bare model (not a tuple), the runtime treats it as
+<code>(model, Command.none())</code>. You never need to write <code>Command.none()</code>
+explicitly.</p>
+<h3 id="chaining-commands">Chaining commands<a class="headerlink" href="#chaining-commands" title="Permanent link">&para;</a></h3>
+<p>In iced, commands support <code>.then()</code> and <code>.chain()</code> for sequencing async
+work. Plushie does not need dedicated chaining combinators because the Elm
+update cycle provides this naturally: each <code>update()</code> can return
+<code>(model, command)</code>, and the result of each command feeds back into
+<code>update()</code> as an event, which can return more commands.</p>
+<p>The model is updated and <code>view()</code> is re-rendered between each step. This
+is actually more powerful than iced's chaining because you get full model
+updates and UI refreshes at every link in the chain, not just at the end.</p>
+<!-- test: test_chaining_via_update_cycle -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span><span class="p">,</span> <span class="n">AsyncResult</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>        <span class="c1"># Step 1: user clicks &quot;deploy&quot; -- validate first</span>
+<a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;deploy&quot;</span><span class="p">):</span>
+<a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a>            <span class="n">cmd</span> <span class="o">=</span> <span class="n">Command</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">validate_config</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">),</span> <span class="s2">&quot;validated&quot;</span><span class="p">)</span>
+<a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;validating&quot;</span><span class="p">),</span> <span class="n">cmd</span>
+<a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a>
+<a id="__codelineno-34-12" name="__codelineno-34-12" href="#__codelineno-34-12"></a>        <span class="c1"># Step 2: validation result arrives -- if OK, start the build</span>
+<a id="__codelineno-34-13" name="__codelineno-34-13" href="#__codelineno-34-13"></a>        <span class="k">case</span> <span class="n">AsyncResult</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;validated&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;ok&quot;</span><span class="p">):</span>
+<a id="__codelineno-34-14" name="__codelineno-34-14" href="#__codelineno-34-14"></a>            <span class="n">cmd</span> <span class="o">=</span> <span class="n">Command</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">build_release</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">),</span> <span class="s2">&quot;built&quot;</span><span class="p">)</span>
+<a id="__codelineno-34-15" name="__codelineno-34-15" href="#__codelineno-34-15"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;building&quot;</span><span class="p">),</span> <span class="n">cmd</span>
+<a id="__codelineno-34-16" name="__codelineno-34-16" href="#__codelineno-34-16"></a>
+<a id="__codelineno-34-17" name="__codelineno-34-17" href="#__codelineno-34-17"></a>        <span class="k">case</span> <span class="n">AsyncResult</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;validated&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="p">)):</span>
+<a id="__codelineno-34-18" name="__codelineno-34-18" href="#__codelineno-34-18"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;failed&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="p">))</span>
+<a id="__codelineno-34-19" name="__codelineno-34-19" href="#__codelineno-34-19"></a>
+<a id="__codelineno-34-20" name="__codelineno-34-20" href="#__codelineno-34-20"></a>        <span class="c1"># Step 3: build result arrives -- if OK, push it</span>
+<a id="__codelineno-34-21" name="__codelineno-34-21" href="#__codelineno-34-21"></a>        <span class="k">case</span> <span class="n">AsyncResult</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;built&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;ok&quot;</span><span class="p">,</span> <span class="n">artifact</span><span class="p">)):</span>
+<a id="__codelineno-34-22" name="__codelineno-34-22" href="#__codelineno-34-22"></a>            <span class="n">cmd</span> <span class="o">=</span> <span class="n">Command</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">push_artifact</span><span class="p">(</span><span class="n">artifact</span><span class="p">),</span> <span class="s2">&quot;deployed&quot;</span><span class="p">)</span>
+<a id="__codelineno-34-23" name="__codelineno-34-23" href="#__codelineno-34-23"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;deploying&quot;</span><span class="p">),</span> <span class="n">cmd</span>
+<a id="__codelineno-34-24" name="__codelineno-34-24" href="#__codelineno-34-24"></a>
+<a id="__codelineno-34-25" name="__codelineno-34-25" href="#__codelineno-34-25"></a>        <span class="c1"># Step 4: done</span>
+<a id="__codelineno-34-26" name="__codelineno-34-26" href="#__codelineno-34-26"></a>        <span class="k">case</span> <span class="n">AsyncResult</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;deployed&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;ok&quot;</span><span class="p">):</span>
+<a id="__codelineno-34-27" name="__codelineno-34-27" href="#__codelineno-34-27"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;live&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Each step is a separate match arm with its own model state. The UI
+reflects progress at every stage. No special chaining API needed --
+the architecture is the API.</p>
+<h3 id="how-commands-work-internally">How commands work internally<a class="headerlink" href="#how-commands-work-internally" title="Permanent link">&para;</a></h3>
+<p>Commands are data. They describe what should happen, not how. The runtime
+interprets them:</p>
+<ul>
+<li><strong>Async commands</strong> spawn a Python thread managed by the runtime.
+  When the thread completes, the result is wrapped in <code>AsyncResult</code> and
+  dispatched through <code>update()</code>.</li>
+<li><strong>Widget operations</strong> are encoded as wire messages and sent to the
+  renderer.</li>
+<li><strong>Window commands</strong> are encoded as wire messages to the renderer.</li>
+<li><strong>Window property queries</strong> (get_size, get_position, etc.) are sent as
+  <code>window_op</code> wire messages. The renderer responds with an <code>effect_response</code>
+  keyed by <code>window_id</code>.</li>
+<li><strong>System ops</strong> are sent as <code>system_op</code> wire messages.</li>
+<li><strong>System queries</strong> (get_system_theme, get_system_info) are sent as
+  <code>system_query</code> wire messages. The renderer responds with an
+  <code>op_query_response</code> keyed by tag.</li>
+<li><strong>Image operations</strong> are encoded as wire messages to the renderer.</li>
+<li><strong>PaneGrid operations</strong> are encoded as widget ops sent to the renderer.</li>
+<li><strong>Timers</strong> use Python's <code>threading.Timer</code> under the hood.</li>
+</ul>
+<p>Commands are not side effects in <code>update</code>. They are descriptions of side
+effects that the runtime executes after <code>update</code> returns. This keeps
+<code>update</code> testable:</p>
+<!-- test: test_update_returns_inspectable_command -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="n">model</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;loading&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">my_app</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;fetch&quot;</span><span class="p">))</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="n">new_model</span><span class="p">,</span> <span class="n">cmd</span> <span class="o">=</span> <span class="n">result</span>
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="k">assert</span> <span class="n">new_model</span><span class="p">[</span><span class="s2">&quot;loading&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span>
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="k">assert</span> <span class="n">cmd</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;task&quot;</span>
+</code></pre></div>
+<h3 id="diy-patterns">DIY patterns<a class="headerlink" href="#diy-patterns" title="Permanent link">&para;</a></h3>
+<p>The <code>Command</code> class is convenience sugar, not a requirement. Python
+already has all the concurrency primitives you need. Some users will
+prefer the direct approach, and that is perfectly fine.</p>
+<h4 id="streaming-with-bare-threads">Streaming with bare threads<a class="headerlink" href="#streaming-with-bare-threads" title="Permanent link">&para;</a></h4>
+<p>The runtime accepts events from any thread via its event queue. You
+can send events directly from a worker thread:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;import&quot;</span><span class="p">):</span>
+<a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>            <span class="n">runtime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runtime</span>  <span class="c1"># reference to the runtime&#39;s event queue</span>
+<a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a>
+<a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a>            <span class="k">def</span><span class="w"> </span><span class="nf">do_import</span><span class="p">():</span>
+<a id="__codelineno-36-11" name="__codelineno-36-11" href="#__codelineno-36-11"></a>                <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;big.csv&quot;</span><span class="p">),</span> <span class="mi">1</span><span class="p">):</span>
+<a id="__codelineno-36-12" name="__codelineno-36-12" href="#__codelineno-36-12"></a>                    <span class="n">row</span> <span class="o">=</span> <span class="n">parse_row</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+<a id="__codelineno-36-13" name="__codelineno-36-13" href="#__codelineno-36-13"></a>                    <span class="n">runtime</span><span class="o">.</span><span class="n">dispatch</span><span class="p">((</span><span class="s2">&quot;import_progress&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">row</span><span class="p">))</span>
+<a id="__codelineno-36-14" name="__codelineno-36-14" href="#__codelineno-36-14"></a>                <span class="n">runtime</span><span class="o">.</span><span class="n">dispatch</span><span class="p">(</span><span class="s2">&quot;import_done&quot;</span><span class="p">)</span>
+<a id="__codelineno-36-15" name="__codelineno-36-15" href="#__codelineno-36-15"></a>
+<a id="__codelineno-36-16" name="__codelineno-36-16" href="#__codelineno-36-16"></a>            <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">do_import</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<a id="__codelineno-36-17" name="__codelineno-36-17" href="#__codelineno-36-17"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">importing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-36-18" name="__codelineno-36-18" href="#__codelineno-36-18"></a>
+<a id="__codelineno-36-19" name="__codelineno-36-19" href="#__codelineno-36-19"></a>        <span class="k">case</span> <span class="p">(</span><span class="s2">&quot;import_progress&quot;</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+<a id="__codelineno-36-20" name="__codelineno-36-20" href="#__codelineno-36-20"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">rows_imported</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">model</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">row</span><span class="p">])</span>
+<a id="__codelineno-36-21" name="__codelineno-36-21" href="#__codelineno-36-21"></a>
+<a id="__codelineno-36-22" name="__codelineno-36-22" href="#__codelineno-36-22"></a>        <span class="k">case</span> <span class="s2">&quot;import_done&quot;</span><span class="p">:</span>
+<a id="__codelineno-36-23" name="__codelineno-36-23" href="#__codelineno-36-23"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">importing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="cancellation-with-threads">Cancellation with threads<a class="headerlink" href="#cancellation-with-threads" title="Permanent link">&para;</a></h4>
+<p>If you track the thread yourself, you can implement cooperative
+cancellation via a <code>threading.Event</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;start_import&quot;</span><span class="p">):</span>
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>            <span class="n">cancel</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>            <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+<a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>                <span class="n">target</span><span class="o">=</span><span class="n">import_worker</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">cancel</span><span class="p">,</span> <span class="n">runtime_ref</span><span class="p">)</span>
+<a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>            <span class="p">)</span>
+<a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a>            <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">importing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cancel_event</span><span class="o">=</span><span class="n">cancel</span><span class="p">)</span>
+<a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a>
+<a id="__codelineno-37-13" name="__codelineno-37-13" href="#__codelineno-37-13"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;cancel_import&quot;</span><span class="p">):</span>
+<a id="__codelineno-37-14" name="__codelineno-37-14" href="#__codelineno-37-14"></a>            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">cancel_event</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-37-15" name="__codelineno-37-15" href="#__codelineno-37-15"></a>                <span class="n">model</span><span class="o">.</span><span class="n">cancel_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+<a id="__codelineno-37-16" name="__codelineno-37-16" href="#__codelineno-37-16"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">importing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cancel_event</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+<p>Note: Python threads cannot be forcibly killed (unlike Erlang
+processes). <code>Command.cancel()</code> prevents delivery of stale results
+but cannot stop a blocked thread. Design task functions to check a
+cancellation flag periodically for long-running work.</p>
+<h4 id="when-to-use-which">When to use which<a class="headerlink" href="#when-to-use-which" title="Permanent link">&para;</a></h4>
+<p>Use <code>Command.task()</code> and <code>Command.stream()</code> when you want the runtime
+to manage thread lifecycle and deliver results through the standard
+<code>AsyncResult</code>/<code>StreamChunk</code> convention. Use bare threads when you need
+more control over message shapes, or when the command abstraction feels
+like overhead for your use case.</p>
+<h2 id="subscriptions">Subscriptions<a class="headerlink" href="#subscriptions" title="Permanent link">&para;</a></h2>
+<p>Subscriptions are ongoing event sources. Unlike commands (one-shot),
+subscriptions produce events continuously as long as they are active.</p>
+<p><strong>Important: tag semantics differ by subscription type.</strong> For timer
+subscriptions (<code>every()</code>), the tag becomes the event wrapper -- <code>update()</code>
+receives <code>TimerTick(tag=tag, timestamp=ts)</code>. For all renderer subscriptions
+(keyboard, mouse, window, etc.), the tag is management-only and does NOT
+appear in the event. Renderer events arrive as their own dataclasses like
+<code>KeyPress(...)</code> regardless of what tag you chose.</p>
+<h3 id="the-subscribe-callback">The subscribe callback<a class="headerlink" href="#the-subscribe-callback" title="Permanent link">&para;</a></h3>
+<!-- test: test_subscription_every, test_subscription_on_key_press -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.subscriptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Subscription</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>    <span class="n">subs</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>
+<a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>    <span class="c1"># Tick every second while the timer is running</span>
+<a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a>    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">timer_running</span><span class="p">:</span>
+<a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>        <span class="n">subs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Subscription</span><span class="o">.</span><span class="n">every</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="s2">&quot;tick&quot;</span><span class="p">))</span>
+<a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>
+<a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a>    <span class="c1"># Always listen for keyboard shortcuts</span>
+<a id="__codelineno-38-11" name="__codelineno-38-11" href="#__codelineno-38-11"></a>    <span class="n">subs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Subscription</span><span class="o">.</span><span class="n">on_key_press</span><span class="p">(</span><span class="s2">&quot;key_event&quot;</span><span class="p">))</span>
+<a id="__codelineno-38-12" name="__codelineno-38-12" href="#__codelineno-38-12"></a>
+<a id="__codelineno-38-13" name="__codelineno-38-13" href="#__codelineno-38-13"></a>    <span class="k">return</span> <span class="n">subs</span>
+</code></pre></div>
+<p><code>subscribe()</code> is called after every <code>update</code>. The runtime diffs the
+returned subscription list against the previous one and starts/stops
+subscriptions as needed. Subscriptions are identified by their
+specification -- returning the same <code>Subscription.every(1000, "tick")</code> on
+consecutive calls keeps the existing subscription alive; removing it stops
+it.</p>
+<h3 id="available-subscriptions">Available subscriptions<a class="headerlink" href="#available-subscriptions" title="Permanent link">&para;</a></h3>
+<h4 id="time">Time<a class="headerlink" href="#time" title="Permanent link">&para;</a></h4>
+<!-- test: test_subscription_every -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">every</span><span class="p">(</span><span class="n">interval_ms</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="c1"># Delivers: TimerTick(tag=tag, timestamp=ts) every interval_ms</span>
+</code></pre></div>
+<h4 id="keyboard">Keyboard<a class="headerlink" href="#keyboard" title="Permanent link">&para;</a></h4>
+<!-- test: test_subscription_on_key_press, test_subscription_on_key_release, test_subscription_on_modifiers_changed -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_key_press</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="c1"># Delivers: KeyPress(key=..., modifiers=..., ...)</span>
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>
+<a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_key_release</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a><span class="c1"># Delivers: KeyRelease(key=..., modifiers=..., ...)</span>
+<a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>
+<a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_modifiers_changed</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-40-8" name="__codelineno-40-8" href="#__codelineno-40-8"></a><span class="c1"># Delivers: ModifiersChanged(modifiers=KeyModifiers(...))</span>
+<a id="__codelineno-40-9" name="__codelineno-40-9" href="#__codelineno-40-9"></a>
+<a id="__codelineno-40-10" name="__codelineno-40-10" href="#__codelineno-40-10"></a><span class="c1"># The tag is used by the runtime to register/unregister the</span>
+<a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a><span class="c1"># subscription with the renderer. It is NOT included in the event</span>
+<a id="__codelineno-40-12" name="__codelineno-40-12" href="#__codelineno-40-12"></a><span class="c1"># delivered to update(). See docs/events.md for the full</span>
+<a id="__codelineno-40-13" name="__codelineno-40-13" href="#__codelineno-40-13"></a><span class="c1"># KeyPress and KeyModifiers dataclass definitions.</span>
+</code></pre></div>
+<h4 id="window-lifecycle">Window lifecycle<a class="headerlink" href="#window-lifecycle" title="Permanent link">&para;</a></h4>
+<!-- test: test_subscription_on_window_close, test_subscription_on_window_open, test_subscription_on_window_resize, test_subscription_on_window_focus, test_subscription_on_window_unfocus, test_subscription_on_window_move, test_subscription_on_window_event -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_window_close</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="c1"># Delivers: WindowCloseRequested(window_id=wid)</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>
+<a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_window_open</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a><span class="c1"># Delivers: WindowOpen(window_id=wid, width=w, height=h, ...)</span>
+<a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a>
+<a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_window_resize</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a><span class="c1"># Delivers: WindowResized(window_id=wid, width=w, height=h)</span>
+<a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>
+<a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_window_focus</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a><span class="c1"># Delivers: WindowFocused(window_id=wid)</span>
+<a id="__codelineno-41-12" name="__codelineno-41-12" href="#__codelineno-41-12"></a>
+<a id="__codelineno-41-13" name="__codelineno-41-13" href="#__codelineno-41-13"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_window_unfocus</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-41-14" name="__codelineno-41-14" href="#__codelineno-41-14"></a><span class="c1"># Delivers: WindowUnfocused(window_id=wid)</span>
+<a id="__codelineno-41-15" name="__codelineno-41-15" href="#__codelineno-41-15"></a>
+<a id="__codelineno-41-16" name="__codelineno-41-16" href="#__codelineno-41-16"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_window_move</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-41-17" name="__codelineno-41-17" href="#__codelineno-41-17"></a><span class="c1"># Delivers: WindowMoved(window_id=wid, x=x, y=y)</span>
+<a id="__codelineno-41-18" name="__codelineno-41-18" href="#__codelineno-41-18"></a>
+<a id="__codelineno-41-19" name="__codelineno-41-19" href="#__codelineno-41-19"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_window_event</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-41-20" name="__codelineno-41-20" href="#__codelineno-41-20"></a><span class="c1"># Delivers: various Window* dataclasses (catch-all for window events)</span>
+</code></pre></div>
+<h4 id="mouse">Mouse<a class="headerlink" href="#mouse" title="Permanent link">&para;</a></h4>
+<!-- test: test_subscription_on_mouse_move, test_subscription_on_mouse_button, test_subscription_on_mouse_scroll -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_mouse_move</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="c1"># Delivers: MouseMove(x=x, y=y)</span>
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_mouse_button</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="c1"># Delivers: MouseButtonPress(button=btn) or MouseButtonRelease(button=btn)</span>
+<a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a>
+<a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_mouse_scroll</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a><span class="c1"># Delivers: MouseWheel(delta_x=dx, delta_y=dy, unit=unit)</span>
+</code></pre></div>
+<h4 id="touch">Touch<a class="headerlink" href="#touch" title="Permanent link">&para;</a></h4>
+<!-- test: test_subscription_on_touch -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_touch</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="c1"># Delivers: TouchPress(finger_id=fid, x=x, y=y)</span>
+<a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="c1">#           TouchMove(...)</span>
+<a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a><span class="c1">#           TouchLift(...)</span>
+<a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a><span class="c1">#           TouchLost(...)</span>
+</code></pre></div>
+<h4 id="ime-input-method-editor">IME (Input Method Editor)<a class="headerlink" href="#ime-input-method-editor" title="Permanent link">&para;</a></h4>
+<!-- test: test_subscription_on_ime -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_ime</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="c1"># Delivers: ImeOpen()</span>
+<a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="c1">#           ImePreedit(text=text, cursor=(start, end_pos))</span>
+<a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="c1">#           ImeCommit(text=text)</span>
+<a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="c1">#           ImeClose()</span>
+</code></pre></div>
+<h4 id="system">System<a class="headerlink" href="#system" title="Permanent link">&para;</a></h4>
+<!-- test: test_subscription_on_theme_change, test_subscription_on_animation_frame, test_subscription_on_file_drop -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_theme_change</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="c1"># Delivers: ThemeChanged(theme=mode)  (mode is &quot;light&quot; or &quot;dark&quot;)</span>
+<a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a>
+<a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_animation_frame</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a><span class="c1"># Delivers: AnimationFrame(timestamp=ts)</span>
+<a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a>
+<a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_file_drop</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-45-8" name="__codelineno-45-8" href="#__codelineno-45-8"></a><span class="c1"># Delivers: FileDropped(window_id=wid, path=path)</span>
+<a id="__codelineno-45-9" name="__codelineno-45-9" href="#__codelineno-45-9"></a><span class="c1">#           FileHovered(window_id=wid, path=path)</span>
+<a id="__codelineno-45-10" name="__codelineno-45-10" href="#__codelineno-45-10"></a><span class="c1">#           FilesHoveredLeft(window_id=wid)</span>
+</code></pre></div>
+<h4 id="catch-all">Catch-all<a class="headerlink" href="#catch-all" title="Permanent link">&para;</a></h4>
+<!-- test: test_subscription_on_event -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a><span class="c1"># Receives all renderer events. Dataclass type varies by event family.</span>
+</code></pre></div>
+<h3 id="event-rate-limiting">Event rate limiting<a class="headerlink" href="#event-rate-limiting" title="Permanent link">&para;</a></h3>
+<p>The renderer supports rate limiting for high-frequency events (mouse moves,
+scroll, animation frames, slider drags, etc.). This reduces wire traffic
+and host CPU usage. Three configuration levels, in order of priority:</p>
+<h4 id="per-widget-event_rate-prop">Per-widget <code>event_rate</code> prop<a class="headerlink" href="#per-widget-event_rate-prop" title="Permanent link">&para;</a></h4>
+<p>Widgets that emit high-frequency events accept an <code>event_rate</code> option:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="c1"># Volume slider limited to 15 events/sec, seek bar at 60:</span>
+<a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a><span class="n">slider</span><span class="p">(</span><span class="s2">&quot;volume&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">model</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">event_rate</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a><span class="n">slider</span><span class="p">(</span><span class="s2">&quot;seek&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">duration</span><span class="p">),</span> <span class="n">model</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">event_rate</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+</code></pre></div>
+<p>Supported on: <code>Slider</code>, <code>VerticalSlider</code>, <code>Canvas</code>, <code>MouseArea</code>, <code>Sensor</code>,
+<code>PaneGrid</code>, and all extension widgets.</p>
+<h4 id="per-subscription-max_rate">Per-subscription <code>max_rate</code><a class="headerlink" href="#per-subscription-max_rate" title="Permanent link">&para;</a></h4>
+<p>Renderer subscriptions accept a <code>max_rate</code> keyword argument:</p>
+<!-- test: test_subscription_max_rate, test_subscription_every_no_max_rate -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="c1"># Rate-limit mouse moves to 30 events per second:</span>
+<a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_mouse_move</span><span class="p">(</span><span class="s2">&quot;mouse&quot;</span><span class="p">,</span> <span class="n">max_rate</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a>
+<a id="__codelineno-48-4" name="__codelineno-48-4" href="#__codelineno-48-4"></a><span class="c1"># Animation frames at 60fps:</span>
+<a id="__codelineno-48-5" name="__codelineno-48-5" href="#__codelineno-48-5"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_animation_frame</span><span class="p">(</span><span class="s2">&quot;frame&quot;</span><span class="p">,</span> <span class="n">max_rate</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+<a id="__codelineno-48-6" name="__codelineno-48-6" href="#__codelineno-48-6"></a>
+<a id="__codelineno-48-7" name="__codelineno-48-7" href="#__codelineno-48-7"></a><span class="c1"># Subscribe but never emit (capture tracking only):</span>
+<a id="__codelineno-48-8" name="__codelineno-48-8" href="#__codelineno-48-8"></a><span class="n">Subscription</span><span class="o">.</span><span class="n">on_mouse_move</span><span class="p">(</span><span class="s2">&quot;mouse&quot;</span><span class="p">,</span> <span class="n">max_rate</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
+<p>Timer subscriptions (<code>every()</code>) do not support <code>max_rate</code>.</p>
+<h4 id="global-default_event_rate-setting">Global <code>default_event_rate</code> setting<a class="headerlink" href="#global-default_event_rate-setting" title="Permanent link">&para;</a></h4>
+<p>A global default applied to all coalescable event types:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;default_event_rate&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">}</span>
+</code></pre></div>
+<p>Set to 60 for most apps. Lower for dashboards or remote rendering.
+Omit for unlimited (current default behavior).</p>
+<h3 id="subscription-lifecycle">Subscription lifecycle<a class="headerlink" href="#subscription-lifecycle" title="Permanent link">&para;</a></h3>
+<p>Subscriptions are declarative. You do not start or stop them imperatively.
+You return a list from <code>subscribe()</code>, and the runtime manages the rest:</p>
+<!-- test: test_subscription_lifecycle_declarative, test_subscription_key_identity -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">Command</span>
+<a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.subscriptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Subscription</span>
+<a id="__codelineno-50-4" name="__codelineno-50-4" href="#__codelineno-50-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Click</span><span class="p">,</span> <span class="n">TimerTick</span><span class="p">,</span> <span class="n">AsyncResult</span>
+<a id="__codelineno-50-5" name="__codelineno-50-5" href="#__codelineno-50-5"></a>
+<a id="__codelineno-50-6" name="__codelineno-50-6" href="#__codelineno-50-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<a id="__codelineno-50-7" name="__codelineno-50-7" href="#__codelineno-50-7"></a>    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">polling</span><span class="p">:</span>
+<a id="__codelineno-50-8" name="__codelineno-50-8" href="#__codelineno-50-8"></a>        <span class="k">return</span> <span class="p">[</span><span class="n">Subscription</span><span class="o">.</span><span class="n">every</span><span class="p">(</span><span class="mi">5000</span><span class="p">,</span> <span class="s2">&quot;poll&quot;</span><span class="p">)]</span>
+<a id="__codelineno-50-9" name="__codelineno-50-9" href="#__codelineno-50-9"></a>    <span class="k">return</span> <span class="p">[]</span>
+<a id="__codelineno-50-10" name="__codelineno-50-10" href="#__codelineno-50-10"></a>
+<a id="__codelineno-50-11" name="__codelineno-50-11" href="#__codelineno-50-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-50-12" name="__codelineno-50-12" href="#__codelineno-50-12"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-50-13" name="__codelineno-50-13" href="#__codelineno-50-13"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;start_polling&quot;</span><span class="p">):</span>
+<a id="__codelineno-50-14" name="__codelineno-50-14" href="#__codelineno-50-14"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">polling</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-50-15" name="__codelineno-50-15" href="#__codelineno-50-15"></a>        <span class="k">case</span> <span class="n">Click</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;stop_polling&quot;</span><span class="p">):</span>
+<a id="__codelineno-50-16" name="__codelineno-50-16" href="#__codelineno-50-16"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">polling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-50-17" name="__codelineno-50-17" href="#__codelineno-50-17"></a>        <span class="k">case</span> <span class="n">TimerTick</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;poll&quot;</span><span class="p">):</span>
+<a id="__codelineno-50-18" name="__codelineno-50-18" href="#__codelineno-50-18"></a>            <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">Command</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">fetch_data</span><span class="p">,</span> <span class="s2">&quot;data_received&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>When <code>polling</code> becomes true, the runtime starts the timer. When it becomes
+false, the runtime stops it. No explicit cleanup needed.</p>
+<h3 id="how-subscriptions-work-internally">How subscriptions work internally<a class="headerlink" href="#how-subscriptions-work-internally" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Time subscriptions</strong> use Python's <code>threading.Timer</code> loop.</li>
+<li><strong>Keyboard, mouse, touch, and window subscriptions</strong> are registered with
+  the renderer via wire messages. The renderer sends events when they occur.</li>
+<li><strong>System subscriptions</strong> (theme change, animation frame, file drop) are
+  also renderer-side event sources.</li>
+</ul>
+<p>Subscriptions that require the renderer (everything except timers) are
+paused during renderer restart and resumed once the renderer is back.</p>
+<h3 id="demo-sparkline-dashboard">Demo: sparkline-dashboard<a class="headerlink" href="#demo-sparkline-dashboard" title="Permanent link">&para;</a></h3>
+<p>The <a href="https://github.com/plushie-ui/plushie-demos/tree/main/python/sparkline-dashboard">sparkline-dashboard demo</a>
+uses timer subscriptions to poll simulated metrics and extension
+commands to push data to Rust-rendered sparkline charts in real time.</p>
+<h2 id="application-settings">Application settings<a class="headerlink" href="#application-settings" title="Permanent link">&para;</a></h2>
+<p>The <code>settings()</code> callback configures the renderer. Notable settings
+relevant to commands and rendering:</p>
+<ul>
+<li><code>vsync</code> -- boolean (default <code>True</code>). Controls vertical sync. Set to
+  <code>False</code> for uncapped frame rates (useful for benchmarks or animation-heavy
+  apps at the cost of higher GPU usage).</li>
+<li><code>scale_factor</code> -- number (default <code>1.0</code>). Global UI scale factor applied
+  to all windows. Values greater than 1.0 make the UI larger; less than 1.0
+  makes it smaller.</li>
+<li><code>default_event_rate</code> -- integer. Maximum events per second for coalescable
+  event types. Omit for unlimited (default). See <a href="#event-rate-limiting">Event rate limiting</a>.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>    <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a>        <span class="s2">&quot;antialiasing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-51-4" name="__codelineno-51-4" href="#__codelineno-51-4"></a>        <span class="s2">&quot;vsync&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-51-5" name="__codelineno-51-5" href="#__codelineno-51-5"></a>        <span class="s2">&quot;scale_factor&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span>
+<a id="__codelineno-51-6" name="__codelineno-51-6" href="#__codelineno-51-6"></a>        <span class="s2">&quot;default_event_rate&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+<a id="__codelineno-51-7" name="__codelineno-51-7" href="#__codelineno-51-7"></a>    <span class="p">}</span>
+</code></pre></div>
+<h2 id="commands-vs-effects">Commands vs. effects<a class="headerlink" href="#commands-vs-effects" title="Permanent link">&para;</a></h2>
+<p>Commands are Python-side operations handled by the runtime. Effects are
+native platform operations handled by the renderer (see <a href="../effects/">effects.md</a>).</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Commands</th>
+<th>Effects</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Handled by</td>
+<td>Python runtime</td>
+<td>Rust renderer</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>async work, timers, focus</td>
+<td>file dialogs, clipboard, notifications</td>
+</tr>
+<tr>
+<td>Transport</td>
+<td>internal</td>
+<td>wire protocol request/response</td>
+</tr>
+<tr>
+<td>Return from</td>
+<td><code>update()</code></td>
+<td><code>update()</code> (via <code>plushie.effects</code> functions)</td>
+</tr>
+</tbody>
+</table>
+<p>Widget operations and window commands are a hybrid -- they are initiated
+from the Python side but executed by the renderer. They use the command
+mechanism for the API but effect/effect_response for the transport.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

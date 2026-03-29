@@ -1,0 +1,3290 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Native desktop GUI framework for Python, powered by iced">
+      
+      
+      
+        <link rel="canonical" href="https://plushie-ui.github.io/plushie-python/accessibility/">
+      
+      
+        <link rel="prev" href="../testing/">
+      
+      
+        <link rel="next" href="../extensions/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Accessibility - plushie</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#accessibility" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="plushie" class="md-header__button md-logo" aria-label="plushie" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            plushie
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Accessibility
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/plushie-ui/plushie-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plushie-ui/plushie-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="plushie" class="md-nav__button md-logo" aria-label="plushie" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    plushie
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/plushie-ui/plushie-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plushie-ui/plushie-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../layout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Layout
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../effects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Effects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scoped-ids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoped IDs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../composition-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Composition Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How it works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#plushies-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        plushie's role
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auto-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auto-inference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Auto-inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#role-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Role mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Labels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-a11y-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The a11y prop
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The a11y prop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-a11y-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the a11y prop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available roles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#patterns-and-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Patterns and best practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Patterns and best practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#every-interactive-widget-needs-a-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every interactive widget needs a name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-headings-to-create-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use headings to create structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-landmarks-for-page-regions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use landmarks for page regions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-regions-for-dynamic-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live regions for dynamic content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#busy-state-and-continuous-interactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Busy state and continuous interactions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forms
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Forms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cross-widget-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-widget relationships
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hiding-decorative-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hiding decorative content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#canvas-widgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Canvas widgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-canvas-shapes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive canvas shapes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-widgets-with-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom widgets with state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-position-and-popup-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set position and popup hints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expandedcollapsed-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expanded/collapsed state
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#widget-specific-accessibility-props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Widget-specific accessibility props
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Widget-specific accessibility props">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        alt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        label
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        description
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decorative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decorative
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationship-to-the-a11y-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship to the a11y prop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#action-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing accessibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing accessibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find_by_role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        find_by_role
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find_by_label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        find_by_label
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#element-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Element helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform support
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-with-a-screen-reader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing with a screen reader
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing with a screen reader">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#linux-orca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux (Orca)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-voiceover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS (VoiceOver)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-nvda" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows (NVDA)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iced-fork-v0140-a11y-accesskit-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iced fork (v0.14.0-a11y-accesskit branch)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a11yoverride-wrapper-widget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A11yOverride wrapper widget
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renderer-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renderer integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standalone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standalone Executables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How it works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#plushies-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        plushie's role
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auto-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auto-inference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Auto-inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#role-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Role mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Labels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-a11y-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The a11y prop
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The a11y prop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-a11y-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the a11y prop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available roles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#patterns-and-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Patterns and best practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Patterns and best practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#every-interactive-widget-needs-a-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every interactive widget needs a name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-headings-to-create-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use headings to create structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-landmarks-for-page-regions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use landmarks for page regions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-regions-for-dynamic-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live regions for dynamic content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#busy-state-and-continuous-interactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Busy state and continuous interactions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#forms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forms
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Forms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cross-widget-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-widget relationships
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hiding-decorative-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hiding decorative content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#canvas-widgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Canvas widgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-canvas-shapes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive canvas shapes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-widgets-with-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom widgets with state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-position-and-popup-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set position and popup hints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expandedcollapsed-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expanded/collapsed state
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#widget-specific-accessibility-props" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Widget-specific accessibility props
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Widget-specific accessibility props">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        alt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        label
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        description
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decorative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decorative
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationship-to-the-a11y-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship to the a11y prop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#action-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing accessibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing accessibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find_by_role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        find_by_role
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find_by_label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        find_by_label
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#element-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Element helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing patterns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform support
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-with-a-screen-reader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing with a screen reader
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing with a screen reader">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#linux-orca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux (Orca)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos-voiceover" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS (VoiceOver)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-nvda" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows (NVDA)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#iced-fork-v0140-a11y-accesskit-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        iced fork (v0.14.0-a11y-accesskit branch)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a11yoverride-wrapper-widget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A11yOverride wrapper widget
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renderer-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Renderer integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="accessibility">Accessibility<a class="headerlink" href="#accessibility" title="Permanent link">&para;</a></h1>
+<p>Plushie provides built-in accessibility support via
+<a href="https://github.com/AccessKit/accesskit">accesskit</a>, a cross-platform
+accessibility toolkit. The default renderer build includes accessibility,
+activating native platform APIs automatically: VoiceOver on macOS,
+AT-SPI/Orca on Linux, and UI Automation/NVDA/JAWS on Windows.</p>
+<p>Screen reader users, keyboard-only users, and other AT users interact with
+the same widgets and receive the same events as mouse users. No special
+event handling is needed in your <code>update()</code> -- AT actions produce the same
+<code>Click(id=id)</code>, <code>Input(id=id, value=val)</code>, etc. events as direct
+interaction.</p>
+<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<p>Iced's fork (<code>v0.14.0-a11y-accesskit</code> branch) provides native accessibility
+support. Three pieces work together:</p>
+<ol>
+<li>
+<p><strong>iced widgets report <code>Accessible</code> metadata</strong> -- each widget implements
+   the <code>Accessible</code> trait via iced's <code>operate()</code> mechanism. Widgets declare
+   their role, label, and state to the accessibility system automatically.</p>
+</li>
+<li>
+<p><strong>TreeBuilder assembles the accesskit tree</strong> -- <code>iced_winit::a11y</code>
+   contains a <code>TreeBuilder</code> that walks the widget tree during <code>operate()</code>,
+   collecting <code>Accessible</code> metadata and building an accesskit <code>TreeUpdate</code>.
+   This happens natively inside iced -- plushie does not build the tree.</p>
+</li>
+<li>
+<p><strong>AT actions become native iced events</strong> -- when an AT triggers an action
+   (e.g. a screen reader user activates a button), iced translates it to a
+   native event. The renderer maps it to a standard plushie event and sends
+   it to Python over the wire protocol.</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Host (Python)             Renderer (iced)               Platform AT
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   |                         |                              |
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>   |--- UI tree (a11y) -----&gt;|                              |
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   |                         |-- operate() + TreeBuilder --&gt;|
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>   |                         |-- TreeUpdate ---------------&gt;|
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>   |                         |                              |
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>   |                         |&lt;-- AT Action (Click) --------|
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>   |                         |   (native iced event)        |
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>   |&lt;-- Click(id=...) -------|                              |
+</code></pre></div>
+<h3 id="plushies-role">plushie's role<a class="headerlink" href="#plushies-role" title="Permanent link">&para;</a></h3>
+<p>plushie does not build its own accesskit tree. Iced handles tree building,
+AT actions, and platform integration natively. plushie's contribution is the
+<code>A11yOverride</code> wrapper widget (<code>a11y_widget.rs</code> in plushie) that
+intercepts <code>operate()</code> to apply Python-side overrides from the <code>a11y</code> prop.</p>
+<p>This means:</p>
+<ul>
+<li><strong>Standard widgets</strong> get correct accessibility semantics automatically
+  from iced's own <code>Accessible</code> implementations.</li>
+<li><strong>Extension widgets</strong> get free a11y support without any code -- they are
+  already iced <code>Element</code>s that participate in <code>operate()</code>.</li>
+<li><strong>The <code>a11y</code> prop</strong> lets Python override or augment the inferred semantics
+  when auto-inference is insufficient.</li>
+<li><strong><code>HiddenInterceptor</code></strong> is a companion wrapper that excludes widgets from
+  the AT tree when <code>hidden: True</code> is set.</li>
+</ul>
+<p>Accessibility is compiled unconditionally -- there are no feature flags to
+toggle it.</p>
+<h2 id="auto-inference">Auto-inference<a class="headerlink" href="#auto-inference" title="Permanent link">&para;</a></h2>
+<p>Most widgets get correct accessibility semantics without any annotation.
+Iced automatically reports roles, labels, and state from widget types and
+existing props via the <code>Accessible</code> trait.</p>
+<h3 id="role-mapping">Role mapping<a class="headerlink" href="#role-mapping" title="Permanent link">&para;</a></h3>
+<p>Every widget type maps to an accesskit role:</p>
+<table>
+<thead>
+<tr>
+<th>Widget type</th>
+<th>Role</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>button</code></td>
+<td>Button</td>
+<td></td>
+</tr>
+<tr>
+<td><code>text</code>, <code>rich_text</code></td>
+<td>Label</td>
+<td></td>
+</tr>
+<tr>
+<td><code>text_input</code></td>
+<td>TextInput</td>
+<td></td>
+</tr>
+<tr>
+<td><code>text_editor</code></td>
+<td>MultilineTextInput</td>
+<td></td>
+</tr>
+<tr>
+<td><code>checkbox</code></td>
+<td>CheckBox</td>
+<td></td>
+</tr>
+<tr>
+<td><code>toggler</code></td>
+<td>Switch</td>
+<td></td>
+</tr>
+<tr>
+<td><code>radio</code></td>
+<td>RadioButton</td>
+<td></td>
+</tr>
+<tr>
+<td><code>slider</code>, <code>vertical_slider</code></td>
+<td>Slider</td>
+<td></td>
+</tr>
+<tr>
+<td><code>pick_list</code>, <code>combo_box</code></td>
+<td>ComboBox</td>
+<td></td>
+</tr>
+<tr>
+<td><code>progress_bar</code></td>
+<td>ProgressIndicator</td>
+<td></td>
+</tr>
+<tr>
+<td><code>scrollable</code></td>
+<td>ScrollView</td>
+<td></td>
+</tr>
+<tr>
+<td><code>container</code>, <code>column</code>, <code>row</code>, <code>stack</code></td>
+<td>GenericContainer</td>
+<td>Also: <code>keyed_column</code>, <code>grid</code>, <code>float</code>, <code>pin</code>, <code>responsive</code>, <code>space</code>, <code>themer</code>, <code>mouse_area</code>, <code>sensor</code>, <code>overlay</code></td>
+</tr>
+<tr>
+<td><code>window</code></td>
+<td>Window</td>
+<td></td>
+</tr>
+<tr>
+<td><code>image</code>, <code>svg</code>, <code>qr_code</code></td>
+<td>Image</td>
+<td></td>
+</tr>
+<tr>
+<td><code>canvas</code></td>
+<td>Canvas</td>
+<td></td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td>Table</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tooltip</code></td>
+<td>Tooltip</td>
+<td></td>
+</tr>
+<tr>
+<td><code>markdown</code></td>
+<td>Document</td>
+<td></td>
+</tr>
+<tr>
+<td><code>pane_grid</code></td>
+<td>Group</td>
+<td></td>
+</tr>
+<tr>
+<td><code>rule</code></td>
+<td>Splitter</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="labels">Labels<a class="headerlink" href="#labels" title="Permanent link">&para;</a></h3>
+<p>Labels are the accessible name announced by screen readers. They are
+extracted from the prop that makes sense for each widget type:</p>
+<table>
+<thead>
+<tr>
+<th>Widget type</th>
+<th>Label source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>button</code>, <code>checkbox</code>, <code>toggler</code>, <code>radio</code></td>
+<td><code>label</code> prop</td>
+</tr>
+<tr>
+<td><code>text</code>, <code>rich_text</code></td>
+<td><code>content</code> prop</td>
+</tr>
+<tr>
+<td><code>image</code>, <code>svg</code></td>
+<td><code>alt</code> prop</td>
+</tr>
+<tr>
+<td><code>text_input</code></td>
+<td><code>placeholder</code> prop (as description, not label)</td>
+</tr>
+</tbody>
+</table>
+<p>If a widget has no auto-inferred label and no <code>a11y</code> label override, the
+screen reader sees the role with no name. This is fine for structural
+containers but not for interactive widgets -- always give buttons, inputs,
+and toggles either a visible label or an <code>a11y</code> label.</p>
+<h3 id="state">State<a class="headerlink" href="#state" title="Permanent link">&para;</a></h3>
+<p>Widget state is extracted from existing props automatically:</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Source</th>
+<th>Widgets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Disabled</td>
+<td><code>disabled: True</code></td>
+<td>Any widget</td>
+</tr>
+<tr>
+<td>Toggled</td>
+<td><code>checked</code> prop</td>
+<td><code>checkbox</code></td>
+</tr>
+<tr>
+<td>Toggled</td>
+<td><code>is_toggled</code> prop</td>
+<td><code>toggler</code></td>
+</tr>
+<tr>
+<td>Toggled</td>
+<td><code>selected</code> prop (boolean)</td>
+<td><code>radio</code></td>
+</tr>
+<tr>
+<td>Numeric value</td>
+<td><code>value</code> prop (number)</td>
+<td><code>slider</code>, <code>progress_bar</code></td>
+</tr>
+<tr>
+<td>Min/max</td>
+<td><code>range</code> prop (<code>[min, max]</code>)</td>
+<td><code>slider</code>, <code>progress_bar</code></td>
+</tr>
+<tr>
+<td>String value</td>
+<td><code>value</code> prop (string)</td>
+<td><code>text_input</code></td>
+</tr>
+<tr>
+<td>Selected item</td>
+<td><code>selected</code> prop (string)</td>
+<td><code>pick_list</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-a11y-prop">The a11y prop<a class="headerlink" href="#the-a11y-prop" title="Permanent link">&para;</a></h2>
+<p>For cases where auto-inference is insufficient, every widget accepts an
+<code>a11y</code> prop -- a dict of fields that override or augment the inferred
+semantics.</p>
+<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>role</code></td>
+<td><code>str</code></td>
+<td>Override the inferred role (see <a href="#available-roles">available roles</a>)</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td><code>str</code></td>
+<td>Accessible name (what the screen reader announces)</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>str</code></td>
+<td>Longer description (secondary announcement)</td>
+</tr>
+<tr>
+<td><code>live</code></td>
+<td><code>"off"</code> / <code>"polite"</code> / <code>"assertive"</code></td>
+<td>Live region -- AT announces content changes</td>
+</tr>
+<tr>
+<td><code>hidden</code></td>
+<td><code>bool</code></td>
+<td>Exclude from accessibility tree entirely</td>
+</tr>
+<tr>
+<td><code>expanded</code></td>
+<td><code>bool</code></td>
+<td>Expanded/collapsed state (menus, disclosures)</td>
+</tr>
+<tr>
+<td><code>required</code></td>
+<td><code>bool</code></td>
+<td>Mark form field as required</td>
+</tr>
+<tr>
+<td><code>level</code></td>
+<td><code>int</code></td>
+<td>Heading level (1-6, only meaningful with <code>"heading"</code> role)</td>
+</tr>
+<tr>
+<td><code>busy</code></td>
+<td><code>bool</code></td>
+<td>Suppresses AT announcements until cleared (auto-managed by sliders during drag; set explicitly for custom continuous interactions)</td>
+</tr>
+<tr>
+<td><code>invalid</code></td>
+<td><code>bool</code></td>
+<td>Form validation failure</td>
+</tr>
+<tr>
+<td><code>modal</code></td>
+<td><code>bool</code></td>
+<td>Dialog is modal (AT restricts navigation to this container)</td>
+</tr>
+<tr>
+<td><code>read_only</code></td>
+<td><code>bool</code></td>
+<td>Can be read but not edited</td>
+</tr>
+<tr>
+<td><code>mnemonic</code></td>
+<td><code>str</code></td>
+<td>Alt+letter keyboard shortcut (single character)</td>
+</tr>
+<tr>
+<td><code>toggled</code></td>
+<td><code>bool</code></td>
+<td>Toggled/checked state (for custom toggle widgets)</td>
+</tr>
+<tr>
+<td><code>selected</code></td>
+<td><code>bool</code></td>
+<td>Selected state (for custom selectable widgets)</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td><code>str</code></td>
+<td>Current value as a string (for custom value-displaying widgets)</td>
+</tr>
+<tr>
+<td><code>orientation</code></td>
+<td><code>"horizontal"</code> / <code>"vertical"</code></td>
+<td>Orientation hint for AT navigation</td>
+</tr>
+<tr>
+<td><code>labelled_by</code></td>
+<td><code>str</code></td>
+<td>ID of the widget that labels this one</td>
+</tr>
+<tr>
+<td><code>described_by</code></td>
+<td><code>str</code></td>
+<td>ID of the widget that describes this one</td>
+</tr>
+<tr>
+<td><code>error_message</code></td>
+<td><code>str</code></td>
+<td>ID of the widget showing the error message</td>
+</tr>
+<tr>
+<td><code>disabled</code></td>
+<td><code>bool</code></td>
+<td>Override disabled state for AT</td>
+</tr>
+<tr>
+<td><code>position_in_set</code></td>
+<td><code>int</code></td>
+<td>1-based position in a set ("Item 3 of 7")</td>
+</tr>
+<tr>
+<td><code>size_of_set</code></td>
+<td><code>int</code></td>
+<td>Total items in the set</td>
+</tr>
+<tr>
+<td><code>has_popup</code></td>
+<td><code>str</code></td>
+<td>Popup type: <code>"listbox"</code>, <code>"menu"</code>, <code>"dialog"</code>, <code>"tree"</code>, <code>"grid"</code></td>
+</tr>
+</tbody>
+</table>
+<p>All fields are optional -- only include what you need.</p>
+<h3 id="using-the-a11y-prop">Using the a11y prop<a class="headerlink" href="#using-the-a11y-prop" title="Permanent link">&para;</a></h3>
+<!-- test: test_heading_with_level, test_heading_level_2, test_icon_button_label, test_landmark_region, test_live_region_polite, test_hidden_from_at, test_expanded_state, test_required_form_field -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Headings</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;Welcome to MyApp&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;heading&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;settings_heading&quot;</span><span class="p">,</span> <span class="s2">&quot;Settings&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;heading&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Icon buttons that need a label for screen readers</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;close&quot;</span><span class="p">,</span> <span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Close dialog&quot;</span><span class="p">})</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># Landmark regions</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">ui</span><span class="o">.</span><span class="n">container</span><span class="p">(</span><span class="s2">&quot;search_results&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;region&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Search results&quot;</span><span class="p">},</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># Live regions -- AT announces changes automatically</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;save_status&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">saved_count</span><span class="si">}</span><span class="s2"> items saved&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;live&quot;</span><span class="p">:</span> <span class="s2">&quot;polite&quot;</span><span class="p">})</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># Decorative elements hidden from AT</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">ui</span><span class="o">.</span><span class="n">rule</span><span class="p">(</span><span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;hidden&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;divider&quot;</span><span class="p">,</span> <span class="s2">&quot;/images/decorative-line.png&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;hidden&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="c1"># Disclosure / expandable sections</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">ui</span><span class="o">.</span><span class="n">container</span><span class="p">(</span><span class="s2">&quot;details&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;expanded&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">expanded</span><span class="p">,</span> <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Advanced options&quot;</span><span class="p">},</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>    <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">expanded</span> <span class="k">else</span> <span class="p">[])</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="c1"># Required form fields</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="n">ui</span><span class="o">.</span><span class="n">text_input</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Email address&quot;</span><span class="p">})</span>
+</code></pre></div>
+<h3 id="available-roles">Available roles<a class="headerlink" href="#available-roles" title="Permanent link">&para;</a></h3>
+<p>The <code>role</code> field accepts strings. Use them to override the auto-inferred role
+when a widget is semantically different from its type (e.g. a <code>text</code> that is
+actually a heading, or a <code>container</code> that is a navigation landmark).</p>
+<p><strong>Interactive:</strong>
+<code>"button"</code>, <code>"checkbox"</code> / <code>"check_box"</code>, <code>"combo_box"</code> / <code>"combobox"</code>,
+<code>"link"</code>, <code>"menu_item"</code>, <code>"radio"</code> / <code>"radio_button"</code>, <code>"slider"</code>,
+<code>"switch"</code>, <code>"tab"</code>, <code>"text_input"</code>, <code>"multiline_text_input"</code> /
+<code>"text_editor"</code>, <code>"tree_item"</code></p>
+<p><strong>Structure:</strong>
+<code>"generic_container"</code> / <code>"generic"</code> / <code>"container"</code>, <code>"group"</code>,
+<code>"heading"</code>, <code>"label"</code>, <code>"list"</code>, <code>"list_item"</code>, <code>"row"</code>,
+<code>"cell"</code>, <code>"column_header"</code>, <code>"row_header"</code>, <code>"table"</code>, <code>"tree"</code></p>
+<p><strong>Landmarks:</strong>
+<code>"navigation"</code>, <code>"region"</code>, <code>"search"</code></p>
+<p><strong>Status:</strong>
+<code>"alert"</code>, <code>"alert_dialog"</code> / <code>"alertdialog"</code>, <code>"dialog"</code>, <code>"status"</code>,
+<code>"timer"</code>, <code>"meter"</code>, <code>"progress_indicator"</code> / <code>"progressbar"</code></p>
+<p><strong>Other:</strong>
+<code>"document"</code>, <code>"image"</code>, <code>"menu"</code>, <code>"menu_bar"</code>, <code>"scroll_view"</code>,
+<code>"separator"</code>, <code>"tab_list"</code>, <code>"tab_panel"</code>, <code>"toolbar"</code>, <code>"tooltip"</code>,
+<code>"window"</code></p>
+<p>Unknown role strings are accepted but mapped to <code>Unknown</code>.</p>
+<h2 id="patterns-and-best-practices">Patterns and best practices<a class="headerlink" href="#patterns-and-best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="every-interactive-widget-needs-a-name">Every interactive widget needs a name<a class="headerlink" href="#every-interactive-widget-needs-a-name" title="Permanent link">&para;</a></h3>
+<p>Screen readers announce a widget's role and its label. A button with no
+label is announced as just "button" -- useless. Make sure every button,
+input, checkbox, and toggle has either:</p>
+<ul>
+<li>A visible label prop that auto-inference picks up, or</li>
+<li>An <code>a11y={"label": "..."}</code> override</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Good -- label is auto-inferred from the button&#39;s label prop</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;save&quot;</span><span class="p">,</span> <span class="s2">&quot;Save document&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Good -- terse label with explicit a11y override for clarity</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;close&quot;</span><span class="p">,</span> <span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Close dialog&quot;</span><span class="p">})</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Bad -- screen reader just announces &quot;button&quot; with no name</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;do_thing&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="use-headings-to-create-structure">Use headings to create structure<a class="headerlink" href="#use-headings-to-create-structure" title="Permanent link">&para;</a></h3>
+<p>Screen reader users navigate by headings. Use the <code>a11y</code> prop to mark
+section titles:</p>
+<!-- test: test_heading_hierarchy_in_view -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">view</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">return</span> <span class="n">ui</span><span class="o">.</span><span class="n">window</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;MyApp&quot;</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>            <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;page_title&quot;</span><span class="p">,</span> <span class="s2">&quot;Dashboard&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>                    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;heading&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}),</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>            <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;h_recent&quot;</span><span class="p">,</span> <span class="s2">&quot;Recent activity&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>                    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;heading&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}),</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>            <span class="c1"># ... activity list ...</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>            <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;h_actions&quot;</span><span class="p">,</span> <span class="s2">&quot;Quick actions&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>                    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;heading&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}),</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            <span class="c1"># ... action buttons ...</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="p">])</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="p">])</span>
+</code></pre></div>
+<h3 id="use-landmarks-for-page-regions">Use landmarks for page regions<a class="headerlink" href="#use-landmarks-for-page-regions" title="Permanent link">&para;</a></h3>
+<p>Landmarks let screen reader users jump between major sections. Wrap
+significant regions in containers with landmark roles:</p>
+<!-- test: test_navigation_landmark, test_region_landmark, test_search_landmark -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">container</span><span class="p">(</span><span class="s2">&quot;nav&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;navigation&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Main navigation&quot;</span><span class="p">},</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>            <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>                <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;home&quot;</span><span class="p">,</span> <span class="s2">&quot;Home&quot;</span><span class="p">),</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>                <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;settings&quot;</span><span class="p">,</span> <span class="s2">&quot;Settings&quot;</span><span class="p">),</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>                <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;help&quot;</span><span class="p">,</span> <span class="s2">&quot;Help&quot;</span><span class="p">),</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>            <span class="p">])</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="p">]),</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">container</span><span class="p">(</span><span class="s2">&quot;main_content&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;region&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Main content&quot;</span><span class="p">},</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>        <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">]),</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">container</span><span class="p">(</span><span class="s2">&quot;search_area&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;search&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Search&quot;</span><span class="p">},</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>        <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>            <span class="n">ui</span><span class="o">.</span><span class="n">text_input</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="s2">&quot;Search...&quot;</span><span class="p">),</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>            <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;go&quot;</span><span class="p">,</span> <span class="s2">&quot;Search&quot;</span><span class="p">),</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>        <span class="p">]),</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="p">])</span>
+</code></pre></div>
+<h3 id="live-regions-for-dynamic-content">Live regions for dynamic content<a class="headerlink" href="#live-regions-for-dynamic-content" title="Permanent link">&para;</a></h3>
+<p>When content changes and you want the screen reader to announce it
+without the user navigating to it, use live regions:</p>
+<ul>
+<li><code>"polite"</code> -- announced after the current speech finishes (status
+  messages, save confirmations, non-urgent updates)</li>
+<li><code>"assertive"</code> -- interrupts current speech (errors, urgent alerts)</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Status bar that announces changes</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">status_message</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;live&quot;</span><span class="p">:</span> <span class="s2">&quot;polite&quot;</span><span class="p">})</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Error message that interrupts</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">error</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>            <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;live&quot;</span><span class="p">:</span> <span class="s2">&quot;assertive&quot;</span><span class="p">,</span> <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;alert&quot;</span><span class="p">})</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Counter value announced on change</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;counter&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Count: </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;live&quot;</span><span class="p">:</span> <span class="s2">&quot;polite&quot;</span><span class="p">})</span>
+</code></pre></div>
+<p><strong>Tip:</strong> Only mark the element that changes as live, not its parent
+container. Marking a large container as live causes the entire container's
+text to be re-announced on every change.</p>
+<h3 id="busy-state-and-continuous-interactions">Busy state and continuous interactions<a class="headerlink" href="#busy-state-and-continuous-interactions" title="Permanent link">&para;</a></h3>
+<p>When a value changes rapidly (e.g. during a slider drag or canvas
+interaction), setting <code>busy=True</code> on the node suppresses AT
+announcements until <code>busy</code> clears. AT then announces the final
+value once, avoiding a flood of intermediate announcements. This
+maps to WAI-ARIA <code>aria-busy</code>.</p>
+<p><strong>Built-in widgets handle this automatically.</strong> Sliders set
+<code>busy=True</code> during drag and clear it on release. No SDK code
+needed.</p>
+<p><strong>For app-managed live regions</strong> that reflect values from a
+continuous interaction (e.g. a text display showing a hex color
+while the user drags a canvas), set <code>busy</code> explicitly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">text</span><span class="p">(</span><span class="s2">&quot;hex&quot;</span><span class="p">,</span> <span class="n">hex_value</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;live&quot;</span><span class="p">:</span> <span class="s2">&quot;polite&quot;</span><span class="p">,</span> <span class="s2">&quot;busy&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">drag</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">})</span>
+</code></pre></div>
+<p>When the drag ends, <code>busy</code> clears and the screen reader announces
+the final hex value.</p>
+<h3 id="forms">Forms<a class="headerlink" href="#forms" title="Permanent link">&para;</a></h3>
+<p>Label your inputs, mark required fields, and provide clear error feedback:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">spacing</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;form_heading&quot;</span><span class="p">,</span> <span class="s2">&quot;Create account&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>            <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;heading&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}),</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">spacing</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;username_label&quot;</span><span class="p">,</span> <span class="s2">&quot;Username&quot;</span><span class="p">),</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">text_input</span><span class="p">(</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>                      <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Username&quot;</span><span class="p">}),</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="p">]),</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">spacing</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;email_label&quot;</span><span class="p">,</span> <span class="s2">&quot;Email&quot;</span><span class="p">),</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">text_input</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>                      <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Email address&quot;</span><span class="p">}),</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>        <span class="o">*</span><span class="p">(</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>            <span class="p">[</span><span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;email_error&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">email_error</span><span class="p">,</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>                     <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;live&quot;</span><span class="p">:</span> <span class="s2">&quot;assertive&quot;</span><span class="p">,</span> <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;alert&quot;</span><span class="p">})]</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">email_error</span> <span class="k">else</span> <span class="p">[]</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        <span class="p">),</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="p">]),</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;Create account&quot;</span><span class="p">),</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="p">])</span>
+</code></pre></div>
+<p><strong>Why the explicit <code>a11y={"label": "Username"}</code> when there is a visible
+<code>text("username_label", "Username")</code> above?</strong> Because plushie does not
+automatically associate a text label with the input below it. The visible
+text and the input are separate widgets in the tree. The <code>a11y</code> label
+connects them for AT users.</p>
+<h4 id="cross-widget-relationships">Cross-widget relationships<a class="headerlink" href="#cross-widget-relationships" title="Permanent link">&para;</a></h4>
+<p>Instead of duplicating label text in the <code>a11y</code> prop, you can point to
+another widget by ID using <code>labelled_by</code>, <code>described_by</code>, and
+<code>error_message</code>. The renderer resolves these to accesskit node references
+so the screen reader follows the relationship automatically.</p>
+<!-- test: test_labelled_by, test_normalize_resolves_a11y_refs_in_scope -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">spacing</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;form_heading&quot;</span><span class="p">,</span> <span class="s2">&quot;Create account&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>            <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;heading&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}),</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">spacing</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;email-label&quot;</span><span class="p">,</span> <span class="s2">&quot;Email&quot;</span><span class="p">),</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;email-help&quot;</span><span class="p">,</span> <span class="s2">&quot;We&#39;ll send a confirmation link&quot;</span><span class="p">),</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">text_input</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>                      <span class="n">a11y</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>                          <span class="s2">&quot;labelled_by&quot;</span><span class="p">:</span> <span class="s2">&quot;email-label&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>                          <span class="s2">&quot;described_by&quot;</span><span class="p">:</span> <span class="s2">&quot;email-help&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>                          <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="s2">&quot;email-error&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>                      <span class="p">}),</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>        <span class="o">*</span><span class="p">(</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>            <span class="p">[</span><span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;email-error&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">email_error</span><span class="p">,</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>                     <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;alert&quot;</span><span class="p">,</span> <span class="s2">&quot;live&quot;</span><span class="p">:</span> <span class="s2">&quot;assertive&quot;</span><span class="p">})]</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">email_error</span> <span class="k">else</span> <span class="p">[]</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>        <span class="p">),</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>    <span class="p">]),</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;Create account&quot;</span><span class="p">),</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="p">])</span>
+</code></pre></div>
+<p>When the user focuses the email input, the screen reader announces the
+label text from the <code>email-label</code> widget and the description from
+<code>email-help</code>. If the field is invalid, it also announces the error text
+from <code>email-error</code>.</p>
+<p>Use <code>labelled_by</code> instead of <code>label</code> when a visible text widget already
+provides the label -- it avoids duplicating the string and keeps the
+label in sync if you change the visible text.</p>
+<h3 id="hiding-decorative-content">Hiding decorative content<a class="headerlink" href="#hiding-decorative-content" title="Permanent link">&para;</a></h3>
+<p>Decorative elements that add no information should be hidden from AT:</p>
+<!-- test: test_rule_hidden, test_image_hidden, test_image_alt_text -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Decorative dividers</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">rule</span><span class="p">(</span><span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;hidden&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Decorative images</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;hero&quot;</span><span class="p">,</span> <span class="s2">&quot;/images/banner.png&quot;</span><span class="p">,</span> <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;hidden&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># Spacing elements</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">ui</span><span class="o">.</span><span class="n">space</span><span class="p">(</span><span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;hidden&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+</code></pre></div>
+<p>Do not hide functional elements. If an image conveys information, give it
+an <code>alt</code> prop instead:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;status_icon&quot;</span><span class="p">,</span> <span class="n">icon_path</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="s2">&quot;Status: online&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="canvas-widgets">Canvas widgets<a class="headerlink" href="#canvas-widgets" title="Permanent link">&para;</a></h3>
+<p>Canvas draws arbitrary shapes -- accesskit cannot infer anything from raw
+geometry. Always provide alternative text:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Static chart -- describe the content</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">canvas</span><span class="p">(</span><span class="s2">&quot;chart&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">layers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">chart_shapes</span><span class="p">},</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;image&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Sales chart: Q1 revenue up 15%, Q2 flat&quot;</span><span class="p">})</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1"># Interactive canvas -- describe the interaction model</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">ui</span><span class="o">.</span><span class="n">canvas</span><span class="p">(</span><span class="s2">&quot;drawing&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">layers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;shapes&quot;</span><span class="p">:</span> <span class="n">shapes</span><span class="p">},</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;image&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Drawing canvas, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">shapes</span><span class="p">)</span><span class="si">}</span><span class="s2"> shapes&quot;</span><span class="p">})</span>
+</code></pre></div>
+<h3 id="interactive-canvas-shapes">Interactive canvas shapes<a class="headerlink" href="#interactive-canvas-shapes" title="Permanent link">&para;</a></h3>
+<p>When a canvas contains shapes with the <code>interactive</code> field, each
+shape becomes a separate accessible node. The canvas widget itself
+is the container; individual shapes are focusable children. Tab and
+Arrow keys navigate between shapes. Enter/Space activates the focused
+shape.</p>
+<p>This is how you build accessible custom widgets from canvas
+primitives. Without interactive shapes, a canvas is a single opaque
+"image" node to screen readers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">canvas</span><span class="p">(</span><span class="s2">&quot;color-picker&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="n">layers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>        <span class="p">{</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;group&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>            <span class="s2">&quot;transforms&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;translate&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">i</span> <span class="o">*</span> <span class="mi">32</span><span class="p">}],</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;color-</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>            <span class="s2">&quot;on_click&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>            <span class="s2">&quot;a11y&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;radio&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>                <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">color</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>                <span class="s2">&quot;selected&quot;</span><span class="p">:</span> <span class="n">color</span> <span class="o">==</span> <span class="n">model</span><span class="o">.</span><span class="n">selected</span><span class="p">,</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>                <span class="s2">&quot;position_in_set&quot;</span><span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>                <span class="s2">&quot;size_of_set&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">),</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>            <span class="p">},</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>            <span class="s2">&quot;children&quot;</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>                <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;rect&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="mi">32</span><span class="p">,</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>                 <span class="s2">&quot;fill&quot;</span><span class="p">:</span> <span class="n">color</span><span class="o">.</span><span class="n">hex</span><span class="p">},</span>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>            <span class="p">],</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>        <span class="p">}</span>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>    <span class="p">]},</span>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="p">)</span>
+</code></pre></div>
+<p>Screen reader: "Red, radio button, 1 of 5, selected."</p>
+<p>The <code>position_in_set</code> and <code>size_of_set</code> fields tell screen readers
+where each shape sits in the group. Without them, the reader
+announces each shape individually with no positional context.</p>
+<h3 id="custom-widgets-with-state">Custom widgets with state<a class="headerlink" href="#custom-widgets-with-state" title="Permanent link">&para;</a></h3>
+<p>When building custom widgets with canvas or other primitives, use <code>toggled</code>,
+<code>selected</code>, <code>value</code>, and <code>orientation</code> to expose their state to AT users:</p>
+<!-- test: test_switch_a11y, test_meter_a11y -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Custom toggle switch built with canvas</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">canvas</span><span class="p">(</span><span class="s2">&quot;dark-mode-switch&quot;</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;switch&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Dark mode&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="s2">&quot;toggled&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">dark_mode</span><span class="p">,</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="p">})</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="c1"># Custom gauge showing percentage</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="n">ui</span><span class="o">.</span><span class="n">canvas</span><span class="p">(</span><span class="s2">&quot;cpu-gauge&quot;</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>        <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;meter&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CPU usage&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">cpu_percent</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>        <span class="s2">&quot;orientation&quot;</span><span class="p">:</span> <span class="s2">&quot;horizontal&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>    <span class="p">})</span>
+</code></pre></div>
+<p><code>toggled</code> and <code>selected</code> are booleans. Use <code>toggled</code> for on/off controls
+(switches, checkboxes) and <code>selected</code> for selection state (list items, tabs).
+<code>value</code> is a string describing the current value in human-readable form.
+<code>orientation</code> tells AT users whether a control is horizontal or vertical.</p>
+<h3 id="set-position-and-popup-hints">Set position and popup hints<a class="headerlink" href="#set-position-and-popup-hints" title="Permanent link">&para;</a></h3>
+<p>Use <code>position_in_set</code> / <code>size_of_set</code> when building composite widgets
+from primitives (custom lists, tab bars, radio groups). Without these,
+screen readers cannot announce position context like "Item 3 of 7".</p>
+<!-- test: test_tab_position_in_set, test_has_popup_menu, test_disabled_override -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Custom tab bar</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tab_</span><span class="si">{</span><span class="n">tab</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tab</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>              <span class="n">a11y</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>                  <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;tab&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>                  <span class="s2">&quot;selected&quot;</span><span class="p">:</span> <span class="n">tab</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">model</span><span class="o">.</span><span class="n">active_tab</span><span class="p">,</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>                  <span class="s2">&quot;position_in_set&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">,</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>                  <span class="s2">&quot;size_of_set&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tabs</span><span class="p">),</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>              <span class="p">})</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">tab</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">tabs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="p">])</span>
+</code></pre></div>
+<p>Use <code>has_popup</code> to tell screen readers that activating a widget opens
+a popup of a specific type:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Dropdown button</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;menu_btn&quot;</span><span class="p">,</span> <span class="s2">&quot;Options&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;has_popup&quot;</span><span class="p">:</span> <span class="s2">&quot;menu&quot;</span><span class="p">,</span> <span class="s2">&quot;expanded&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">menu_open</span><span class="p">})</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># Combo box with listbox popup</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="n">ui</span><span class="o">.</span><span class="n">text_input</span><span class="p">(</span><span class="s2">&quot;search&quot;</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">query</span><span class="p">,</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;has_popup&quot;</span><span class="p">:</span> <span class="s2">&quot;listbox&quot;</span><span class="p">,</span> <span class="s2">&quot;expanded&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">suggestions_visible</span><span class="p">})</span>
+</code></pre></div>
+<p>Use <code>disabled</code> to override the disabled state for AT when a widget
+is visually disabled via custom styling but does not use the standard
+<code>disabled</code> prop:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;submit&quot;</span><span class="p">,</span> <span class="s2">&quot;Submit&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;disabled&quot;</span><span class="p">:</span> <span class="ow">not</span> <span class="n">model</span><span class="o">.</span><span class="n">form_valid</span><span class="p">})</span>
+</code></pre></div>
+<h3 id="expandedcollapsed-state">Expanded/collapsed state<a class="headerlink" href="#expandedcollapsed-state" title="Permanent link">&para;</a></h3>
+<p>For disclosure widgets, toggleable panels, and dropdown menus:</p>
+<!-- test: test_expanded_button, test_collapsed_button -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">view</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="k">return</span> <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span><span class="n">children</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;toggle_details&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>            <span class="s2">&quot;Hide details&quot;</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">show_details</span> <span class="k">else</span> <span class="s2">&quot;Show details&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>            <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;expanded&quot;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">show_details</span><span class="p">}),</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>        <span class="o">*</span><span class="p">(</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>            <span class="p">[</span><span class="n">ui</span><span class="o">.</span><span class="n">container</span><span class="p">(</span><span class="s2">&quot;details&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>                <span class="n">a11y</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;region&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Details&quot;</span><span class="p">},</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>                <span class="n">children</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])]</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>            <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">show_details</span> <span class="k">else</span> <span class="p">[]</span>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>        <span class="p">),</span>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>    <span class="p">])</span>
+</code></pre></div>
+<h2 id="widget-specific-accessibility-props">Widget-specific accessibility props<a class="headerlink" href="#widget-specific-accessibility-props" title="Permanent link">&para;</a></h2>
+<p>Some widgets accept accessibility props directly as top-level fields,
+outside the <code>a11y</code> dict. The Rust renderer reads these and maps them
+to the appropriate accesskit node properties.</p>
+<h3 id="alt">alt<a class="headerlink" href="#alt" title="Permanent link">&para;</a></h3>
+<p>An accessible label string for visual content widgets.</p>
+<table>
+<thead>
+<tr>
+<th>Widget</th>
+<th>Prop</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>image</code></td>
+<td><code>alt</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>svg</code></td>
+<td><code>alt</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>qr_code</code></td>
+<td><code>alt</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>canvas</code></td>
+<td><code>alt</code></td>
+<td><code>str</code></td>
+</tr>
+</tbody>
+</table>
+<!-- test: test_image_alt, test_svg_alt -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;logo&quot;</span><span class="p">,</span> <span class="s2">&quot;/images/logo.png&quot;</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="s2">&quot;Company logo&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">svg</span><span class="p">(</span><span class="s2">&quot;icon&quot;</span><span class="p">,</span> <span class="s2">&quot;/icons/search.svg&quot;</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="s2">&quot;Search&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">ui</span><span class="o">.</span><span class="n">qr_code</span><span class="p">(</span><span class="s2">&quot;invite&quot;</span><span class="p">,</span> <span class="n">invite_url</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="s2">&quot;QR code for invite link&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">ui</span><span class="o">.</span><span class="n">canvas</span><span class="p">(</span><span class="s2">&quot;chart&quot;</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">shapes</span><span class="p">},</span> <span class="n">alt</span><span class="o">=</span><span class="s2">&quot;Revenue chart&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="label">label<a class="headerlink" href="#label" title="Permanent link">&para;</a></h3>
+<p>An accessible label for interactive widgets without a visible text label.</p>
+<table>
+<thead>
+<tr>
+<th>Widget</th>
+<th>Prop</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>slider</code></td>
+<td><code>label</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>vertical_slider</code></td>
+<td><code>label</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>progress_bar</code></td>
+<td><code>label</code></td>
+<td><code>str</code></td>
+</tr>
+</tbody>
+</table>
+<!-- test: test_slider_label, test_progress_bar_label -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">slider</span><span class="p">(</span><span class="s2">&quot;volume&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">model</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Volume&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">vertical_slider</span><span class="p">(</span><span class="s2">&quot;brightness&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">model</span><span class="o">.</span><span class="n">brightness</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Brightness&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">ui</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">(</span><span class="s2">&quot;upload&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">model</span><span class="o">.</span><span class="n">progress</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Upload progress&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="description">description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h3>
+<p>An extended accessible description string, announced as secondary
+information after the label.</p>
+<table>
+<thead>
+<tr>
+<th>Widget</th>
+<th>Prop</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>image</code></td>
+<td><code>description</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>svg</code></td>
+<td><code>description</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>qr_code</code></td>
+<td><code>description</code></td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>canvas</code></td>
+<td><code>description</code></td>
+<td><code>str</code></td>
+</tr>
+</tbody>
+</table>
+<!-- test: test_image_description -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;photo&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="s2">&quot;Team photo&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The engineering team at the 2025 offsite&quot;</span><span class="p">)</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="n">ui</span><span class="o">.</span><span class="n">canvas</span><span class="p">(</span><span class="s2">&quot;chart&quot;</span><span class="p">,</span> <span class="n">layers</span><span class="o">=</span><span class="n">layers</span><span class="p">,</span> <span class="n">alt</span><span class="o">=</span><span class="s2">&quot;Sales chart&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>          <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Q1 up 15%, Q2 flat, Q3 down 8%&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="decorative">decorative<a class="headerlink" href="#decorative" title="Permanent link">&para;</a></h3>
+<p>A boolean that hides visual content from AT entirely. Shorthand for
+<code>a11y={"hidden": True}</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Widget</th>
+<th>Prop</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>image</code></td>
+<td><code>decorative</code></td>
+<td><code>bool</code></td>
+</tr>
+<tr>
+<td><code>svg</code></td>
+<td><code>decorative</code></td>
+<td><code>bool</code></td>
+</tr>
+</tbody>
+</table>
+<!-- test: test_image_decorative_prop, test_svg_decorative_prop -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="s2">&quot;divider&quot;</span><span class="p">,</span> <span class="s2">&quot;/images/decorative-line.png&quot;</span><span class="p">,</span> <span class="n">decorative</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">svg</span><span class="p">(</span><span class="s2">&quot;flourish&quot;</span><span class="p">,</span> <span class="s2">&quot;/icons/flourish.svg&quot;</span><span class="p">,</span> <span class="n">decorative</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="relationship-to-the-a11y-prop">Relationship to the a11y prop<a class="headerlink" href="#relationship-to-the-a11y-prop" title="Permanent link">&para;</a></h3>
+<p>These widget-specific props and the <code>a11y</code> prop are complementary. The
+widget-specific props are read directly by the Rust renderer as top-level
+node properties. The <code>a11y</code> prop provides the full set of accesskit
+overrides via the <code>A11yOverride</code> wrapper widget.</p>
+<p>If both are set (e.g. <code>alt="Photo"</code> and <code>a11y={"label": "Team photo"}</code>),
+the <code>a11y</code> override takes precedence for the accesskit label since
+<code>A11yOverride</code> runs after the widget's own <code>Accessible</code> implementation.</p>
+<h2 id="action-handling">Action handling<a class="headerlink" href="#action-handling" title="Permanent link">&para;</a></h2>
+<p>When an AT triggers an action, iced translates it to a native event. The
+renderer maps it to a standard plushie event:</p>
+<table>
+<thead>
+<tr>
+<th>AT action</th>
+<th>Plushie event</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Click</td>
+<td><code>Click(id=id)</code></td>
+<td>Screen reader activate, switch press</td>
+</tr>
+<tr>
+<td>SetValue</td>
+<td><code>Input(id=id, value=val)</code></td>
+<td>AT sets an input value directly</td>
+</tr>
+<tr>
+<td>Focus</td>
+<td>(internal)</td>
+<td>Focus tracking, no event emitted</td>
+</tr>
+<tr>
+<td>Other</td>
+<td><code>A11yAction(id=id, action=name)</code></td>
+<td>Scroll, dismiss, etc.</td>
+</tr>
+</tbody>
+</table>
+<p>Your <code>update()</code> already handles <code>Click(...)</code> and <code>Input(...)</code> --
+AT actions produce identical events. Handle <code>A11yAction</code> for the catch-all:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">A11yAction</span><span class="p">):</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;scroll_down&quot;</span><span class="p">:</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>            <span class="k">return</span> <span class="n">scroll</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;down&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;dismiss&quot;</span><span class="p">:</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>            <span class="k">return</span> <span class="n">close_dialog</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>        <span class="k">return</span> <span class="n">model</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>    <span class="o">...</span>
+</code></pre></div>
+<h2 id="testing-accessibility">Testing accessibility<a class="headerlink" href="#testing-accessibility" title="Permanent link">&para;</a></h2>
+<p>The test framework provides methods for verifying accessibility semantics
+without running a screen reader.</p>
+<h3 id="find_by_role">find_by_role<a class="headerlink" href="#find_by_role" title="Permanent link">&para;</a></h3>
+<p>Find an element by its accessible role:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_heading_has_correct_role</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">MyApp</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>        <span class="n">el</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">find_by_role</span><span class="p">(</span><span class="s2">&quot;heading&quot;</span><span class="p">)</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>        <span class="k">assert</span> <span class="n">el</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</code></pre></div>
+<h3 id="find_by_label">find_by_label<a class="headerlink" href="#find_by_label" title="Permanent link">&para;</a></h3>
+<p>Find an element by its accessible label:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_input_has_label</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">MyApp</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>        <span class="n">el</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">find_by_label</span><span class="p">(</span><span class="s2">&quot;Email address&quot;</span><span class="p">)</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>        <span class="k">assert</span> <span class="n">el</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</code></pre></div>
+<h3 id="element-helpers">Element helpers<a class="headerlink" href="#element-helpers" title="Permanent link">&para;</a></h3>
+<p><code>Element</code> provides lower-level accessors:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_element_accessors</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">MyApp</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>        <span class="n">el</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;#heading&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>        <span class="c1"># Get the raw a11y prop dict</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>        <span class="k">assert</span> <span class="n">el</span><span class="o">.</span><span class="n">a11y</span><span class="p">()</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;heading&quot;</span><span class="p">,</span> <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>        <span class="c1"># Get the inferred role (checks a11y override, then widget type)</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>        <span class="k">assert</span> <span class="n">el</span><span class="o">.</span><span class="n">inferred_role</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;heading&quot;</span>
+</code></pre></div>
+<h3 id="testing-patterns">Testing patterns<a class="headerlink" href="#testing-patterns" title="Permanent link">&para;</a></h3>
+<p><strong>Test the semantics, not the implementation.</strong> Focus on what AT users
+experience:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_todo_app_is_accessible</span><span class="p">(</span><span class="n">plushie_pool</span><span class="p">):</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>    <span class="k">with</span> <span class="n">AppFixture</span><span class="p">(</span><span class="n">TodoApp</span><span class="p">,</span> <span class="n">plushie_pool</span><span class="p">)</span> <span class="k">as</span> <span class="n">app</span><span class="p">:</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>        <span class="c1"># Interactive widgets are labelled</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>        <span class="n">el</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">find_by_label</span><span class="p">(</span><span class="s2">&quot;New todo&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>        <span class="k">assert</span> <span class="n">el</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>        <span class="c1"># Status updates are announced</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>        <span class="n">app</span><span class="o">.</span><span class="n">type_text</span><span class="p">(</span><span class="s2">&quot;#new_todo&quot;</span><span class="p">,</span> <span class="s2">&quot;Buy milk&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>        <span class="n">app</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="s2">&quot;#new_todo&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a>        <span class="n">status</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;#todo_count&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>        <span class="k">assert</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>        <span class="k">assert</span> <span class="n">status</span><span class="o">.</span><span class="n">a11y</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;live&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;polite&quot;</span>
+</code></pre></div>
+<h2 id="building">Building<a class="headerlink" href="#building" title="Permanent link">&para;</a></h2>
+<p>Accessibility is included by default in both precompiled binaries
+(<code>python -m plushie download</code>) and source builds (<code>python -m plushie build</code>).</p>
+<h2 id="platform-support">Platform support<a class="headerlink" href="#platform-support" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>AT</th>
+<th>API</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux</td>
+<td>Orca</td>
+<td>AT-SPI2</td>
+<td>Supported</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td>VoiceOver</td>
+<td>NSAccessibility</td>
+<td>Supported</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>NVDA, JAWS, Narrator</td>
+<td>UI Automation</td>
+<td>Supported</td>
+</tr>
+</tbody>
+</table>
+<p>All three platforms are supported via accesskit.</p>
+<h2 id="testing-with-a-screen-reader">Testing with a screen reader<a class="headerlink" href="#testing-with-a-screen-reader" title="Permanent link">&para;</a></h2>
+<h3 id="linux-orca">Linux (Orca)<a class="headerlink" href="#linux-orca" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># Build the renderer (a11y is included by default)</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>build
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="c1"># Start Orca (usually Super+Alt+S, or from accessibility settings)</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>orca<span class="w"> </span><span class="p">&amp;</span>
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="c1"># Run your app</span>
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>run<span class="w"> </span>my_app:MyApp
+</code></pre></div>
+<h3 id="macos-voiceover">macOS (VoiceOver)<a class="headerlink" href="#macos-voiceover" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>build
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="c1"># Toggle VoiceOver: Cmd+F5</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>run<span class="w"> </span>my_app:MyApp
+</code></pre></div>
+<h3 id="windows-nvda">Windows (NVDA)<a class="headerlink" href="#windows-nvda" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>build
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="c1"># Start NVDA</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>python<span class="w"> </span>-m<span class="w"> </span>plushie<span class="w"> </span>run<span class="w"> </span>my_app:MyApp
+</code></pre></div>
+<p>Tab between widgets. The screen reader should announce roles, labels, and
+state (checked, disabled, expanded, etc.).</p>
+<h2 id="architecture-details">Architecture details<a class="headerlink" href="#architecture-details" title="Permanent link">&para;</a></h2>
+<p>For contributors working on the accessibility internals:</p>
+<h3 id="iced-fork-v0140-a11y-accesskit-branch">iced fork (<code>v0.14.0-a11y-accesskit</code> branch)<a class="headerlink" href="#iced-fork-v0140-a11y-accesskit-branch" title="Permanent link">&para;</a></h3>
+<p>The iced fork adds native accessibility support. Key additions:</p>
+<ul>
+<li><strong><code>Accessible</code> trait</strong> -- widgets implement this to report their role,
+  label, and state to accesskit. Most built-in widgets already implement it.</li>
+<li><strong><code>TreeBuilder</code></strong> in <code>iced_winit</code> -- walks the widget tree via <code>operate()</code>,
+  collecting <code>Accessible</code> metadata and building an accesskit <code>TreeUpdate</code>.</li>
+<li><strong>Per-window adapters</strong> -- each window gets an accesskit adapter connecting
+  to the platform's AT layer.</li>
+<li><strong>AT action routing</strong> -- AT actions are translated to native iced events,
+  which the renderer maps to plushie wire events.</li>
+</ul>
+<h3 id="a11yoverride-wrapper-widget">A11yOverride wrapper widget<a class="headerlink" href="#a11yoverride-wrapper-widget" title="Permanent link">&para;</a></h3>
+<p><code>a11y_widget.rs</code> in plushie contains two wrapper widgets:</p>
+<ul>
+<li><strong><code>A11yOverride</code></strong> -- wraps any iced <code>Element</code> and intercepts <code>operate()</code>
+  to apply Python-side overrides from the <code>a11y</code> prop (role, label,
+  description, live, expanded, required, level, busy, invalid, modal,
+  read_only, mnemonic, toggled, selected, value, orientation, labelled_by,
+  described_by, error_message).</li>
+<li><strong><code>HiddenInterceptor</code></strong> -- wraps an <code>Element</code> and suppresses it from the
+  accessibility tree when <code>hidden: True</code> is set.</li>
+</ul>
+<p>These wrappers are applied automatically by the renderer when building the
+iced widget tree from plushie's UI tree. No manual wrapping is needed from
+Python.</p>
+<h3 id="renderer-integration">Renderer integration<a class="headerlink" href="#renderer-integration" title="Permanent link">&para;</a></h3>
+<p>When the renderer builds the iced widget tree from a plushie snapshot or
+patch, it checks each node's <code>a11y</code> prop. If present (and not just
+<code>hidden: True</code>), the rendered widget is wrapped in <code>A11yOverride</code>. If
+<code>hidden: True</code>, it is wrapped in <code>HiddenInterceptor</code>. Nodes without an
+<code>a11y</code> prop are rendered as-is -- iced's native <code>Accessible</code> trait provides
+their baseline accessibility semantics.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

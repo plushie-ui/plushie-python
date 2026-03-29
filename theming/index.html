@@ -1,0 +1,1864 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Native desktop GUI framework for Python, powered by iced">
+      
+      
+      
+        <link rel="canonical" href="https://plushie-ui.github.io/plushie-python/theming/">
+      
+      
+        <link rel="prev" href="../effects/">
+      
+      
+        <link rel="next" href="../scoped-ids/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Theming - plushie</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#theming" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="plushie" class="md-header__button md-logo" aria-label="plushie" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            plushie
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Theming
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/plushie-ui/plushie-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plushie-ui/plushie-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="plushie" class="md-nav__button md-logo" aria-label="plushie" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    plushie
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/plushie-ui/plushie-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plushie-ui/plushie-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../layout/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Layout
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../effects/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Effects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theming
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setting-a-theme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting a theme
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in themes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom themes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extended-palette-shade-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extended palette shade overrides
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extended palette shade overrides">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-override-shades" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why override shades?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-naming-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key naming convention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-subtree-theme-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-subtree theme override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#widget-level-styling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Widget-level styling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Widget-level styling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#named-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Named presets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#style-maps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Style maps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#style-map-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Style map fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status overrides
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#presets-and-style-maps-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Presets and style maps together
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-theme-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System theme detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#density" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Density
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scoped-ids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scoped IDs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../composition-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Composition Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standalone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standalone Executables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setting-a-theme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting a theme
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in themes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom themes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extended-palette-shade-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extended palette shade overrides
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extended palette shade overrides">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-override-shades" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why override shades?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-naming-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key naming convention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-subtree-theme-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-subtree theme override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#widget-level-styling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Widget-level styling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Widget-level styling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#named-presets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Named presets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#style-maps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Style maps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#style-map-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Style map fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status overrides
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#presets-and-style-maps-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Presets and style maps together
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-theme-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System theme detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#density" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Density
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="theming">Theming<a class="headerlink" href="#theming" title="Permanent link">&para;</a></h1>
+<p>Plushie exposes iced's theming system directly. No additional abstraction
+layer, no token system, no design system framework. If you need those,
+build them in your app.</p>
+<h2 id="setting-a-theme">Setting a theme<a class="headerlink" href="#setting-a-theme" title="Permanent link">&para;</a></h2>
+<p>Themes are set at the window level:</p>
+<!-- test: test_themer_widget_builtin -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">view</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">return</span> <span class="n">ui</span><span class="o">.</span><span class="n">window</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My App&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">themer</span><span class="p">(</span><span class="s2">&quot;theme&quot;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s2">&quot;catppuccin_mocha&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>            <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;Themed content&quot;</span><span class="p">),</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            <span class="p">),</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="p">),</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="p">)</span>
+</code></pre></div>
+<h2 id="built-in-themes">Built-in themes<a class="headerlink" href="#built-in-themes" title="Permanent link">&para;</a></h2>
+<p>Iced 0.14 ships with 22 built-in themes. Plushie passes the theme name
+string directly to the renderer, which resolves it to an iced <code>Theme</code>
+variant.</p>
+<p>All 22 built-in themes:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>light</code></td>
+<td>Default light theme</td>
+</tr>
+<tr>
+<td><code>dark</code></td>
+<td>Default dark theme</td>
+</tr>
+<tr>
+<td><code>dracula</code></td>
+<td>Dracula color scheme</td>
+</tr>
+<tr>
+<td><code>nord</code></td>
+<td>Nord color scheme</td>
+</tr>
+<tr>
+<td><code>solarized_light</code></td>
+<td>Solarized Light</td>
+</tr>
+<tr>
+<td><code>solarized_dark</code></td>
+<td>Solarized Dark</td>
+</tr>
+<tr>
+<td><code>gruvbox_light</code></td>
+<td>Gruvbox Light</td>
+</tr>
+<tr>
+<td><code>gruvbox_dark</code></td>
+<td>Gruvbox Dark</td>
+</tr>
+<tr>
+<td><code>catppuccin_latte</code></td>
+<td>Catppuccin Latte (light)</td>
+</tr>
+<tr>
+<td><code>catppuccin_frappe</code></td>
+<td>Catppuccin Frappe</td>
+</tr>
+<tr>
+<td><code>catppuccin_macchiato</code></td>
+<td>Catppuccin Macchiato</td>
+</tr>
+<tr>
+<td><code>catppuccin_mocha</code></td>
+<td>Catppuccin Mocha (dark)</td>
+</tr>
+<tr>
+<td><code>tokyo_night</code></td>
+<td>Tokyo Night</td>
+</tr>
+<tr>
+<td><code>tokyo_night_storm</code></td>
+<td>Tokyo Night Storm</td>
+</tr>
+<tr>
+<td><code>tokyo_night_light</code></td>
+<td>Tokyo Night Light</td>
+</tr>
+<tr>
+<td><code>kanagawa_wave</code></td>
+<td>Kanagawa Wave</td>
+</tr>
+<tr>
+<td><code>kanagawa_dragon</code></td>
+<td>Kanagawa Dragon</td>
+</tr>
+<tr>
+<td><code>kanagawa_lotus</code></td>
+<td>Kanagawa Lotus</td>
+</tr>
+<tr>
+<td><code>moonfly</code></td>
+<td>Moonfly</td>
+</tr>
+<tr>
+<td><code>nightfly</code></td>
+<td>Nightfly</td>
+</tr>
+<tr>
+<td><code>oxocarbon</code></td>
+<td>Oxocarbon</td>
+</tr>
+<tr>
+<td><code>ferra</code></td>
+<td>Ferra</td>
+</tr>
+</tbody>
+</table>
+<p>Unknown names fall back to <code>dark</code>.</p>
+<p>Built-in theme name constants are available in <code>plushie.types</code>:</p>
+<!-- test: test_builtin_theme_constants, test_theme_builtin_to_wire -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">THEME_CATPPUCCIN_MOCHA</span><span class="p">,</span> <span class="n">BUILTIN_THEMES</span>
+</code></pre></div>
+<h2 id="custom-themes">Custom themes<a class="headerlink" href="#custom-themes" title="Permanent link">&para;</a></h2>
+<p>Custom themes are defined by providing a palette:</p>
+<!-- test: test_theme_custom, test_theme_custom_to_wire -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Theme</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">theme</span> <span class="o">=</span> <span class="n">Theme</span><span class="o">.</span><span class="n">custom</span><span class="p">(</span><span class="s2">&quot;my_app&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">background</span><span class="o">=</span><span class="s2">&quot;#1e1e2e&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">text</span><span class="o">=</span><span class="s2">&quot;#cdd6f4&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">primary</span><span class="o">=</span><span class="s2">&quot;#89b4fa&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">success</span><span class="o">=</span><span class="s2">&quot;#a6e3a1&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">danger</span><span class="o">=</span><span class="s2">&quot;#f38ba8&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">warning</span><span class="o">=</span><span class="s2">&quot;#f9e2af&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">)</span>
+</code></pre></div>
+<p>Then pass it to a <code>themer</code> widget:</p>
+<!-- test: test_themer_widget_custom_theme -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">themer</span><span class="p">(</span><span class="s2">&quot;app_theme&quot;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="n">theme</span><span class="p">,</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="c1"># ...</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="p">)</span>
+</code></pre></div>
+<p>The palette is passed to iced's <code>Theme::custom()</code> with Oklch-based
+palette generation (plushie-iced). Only the colors you specify are overridden;
+the rest are derived automatically.</p>
+<h2 id="extended-palette-shade-overrides">Extended palette shade overrides<a class="headerlink" href="#extended-palette-shade-overrides" title="Permanent link">&para;</a></h2>
+<p>When you set a custom theme, iced generates an "extended palette" of shade
+variants from your six core colors. These shades (strong, weak, base, etc.)
+control how widgets render their backgrounds, borders, and text in different
+states. By default the shades are derived automatically using iced's
+Oklch-based color math.</p>
+<p>If the auto-generated shades don't match your design, you can override
+individual shades by passing extra keyword arguments to <code>Theme.custom()</code>.
+Only the shades you specify are replaced -- the rest keep their generated
+values.</p>
+<h3 id="why-override-shades">Why override shades?<a class="headerlink" href="#why-override-shades" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Pin a specific button hover or pressed color</li>
+<li>Ensure WCAG contrast ratios on specific shade/text pairs</li>
+<li>Match an existing brand color system that doesn't follow iced's derivation</li>
+</ul>
+<h3 id="key-naming-convention">Key naming convention<a class="headerlink" href="#key-naming-convention" title="Permanent link">&para;</a></h3>
+<p>For the five color families (primary, secondary, success, warning, danger),
+each has three shade levels:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>What it controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>{family}_base</code></td>
+<td>Base shade background</td>
+</tr>
+<tr>
+<td><code>{family}_weak</code></td>
+<td>Weak shade background</td>
+</tr>
+<tr>
+<td><code>{family}_strong</code></td>
+<td>Strong shade background</td>
+</tr>
+<tr>
+<td><code>{family}_base_text</code></td>
+<td>Text color on the base shade</td>
+</tr>
+<tr>
+<td><code>{family}_weak_text</code></td>
+<td>Text color on the weak shade</td>
+</tr>
+<tr>
+<td><code>{family}_strong_text</code></td>
+<td>Text color on the strong shade</td>
+</tr>
+</tbody>
+</table>
+<p>Where <code>{family}</code> is one of: <code>primary</code>, <code>secondary</code>, <code>success</code>, <code>warning</code>,
+<code>danger</code>.</p>
+<p>The background family has eight levels:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>What it controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>background_base</code></td>
+<td>Base background</td>
+</tr>
+<tr>
+<td><code>background_weakest</code></td>
+<td>Weakest background shade</td>
+</tr>
+<tr>
+<td><code>background_weaker</code></td>
+<td>Weaker background shade</td>
+</tr>
+<tr>
+<td><code>background_weak</code></td>
+<td>Weak background shade</td>
+</tr>
+<tr>
+<td><code>background_neutral</code></td>
+<td>Neutral background shade</td>
+</tr>
+<tr>
+<td><code>background_strong</code></td>
+<td>Strong background shade</td>
+</tr>
+<tr>
+<td><code>background_stronger</code></td>
+<td>Stronger background shade</td>
+</tr>
+<tr>
+<td><code>background_strongest</code></td>
+<td>Strongest background shade</td>
+</tr>
+</tbody>
+</table>
+<p>Each background key also supports a <code>_text</code> suffix (e.g.
+<code>background_weakest_text</code>).</p>
+<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
+<!-- test: test_theme_custom_with_shade_overrides -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Theme</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">theme</span> <span class="o">=</span> <span class="n">Theme</span><span class="o">.</span><span class="n">custom</span><span class="p">(</span><span class="s2">&quot;branded&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">background</span><span class="o">=</span><span class="s2">&quot;#1a1a2e&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">text</span><span class="o">=</span><span class="s2">&quot;#e0e0e0&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">primary</span><span class="o">=</span><span class="s2">&quot;#0f3460&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="c1"># Override the strong primary shade and its text color</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">primary_strong</span><span class="o">=</span><span class="s2">&quot;#1a5276&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">primary_strong_text</span><span class="o">=</span><span class="s2">&quot;#ffffff&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="c1"># Pin the weakest background for sidebar panels</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">background_weakest</span><span class="o">=</span><span class="s2">&quot;#0d0d1a&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">)</span>
+</code></pre></div>
+<p>Shade overrides only apply to custom themes (dict palettes). Built-in theme
+name strings like <code>"dark"</code> or <code>"nord"</code> are not affected.</p>
+<h2 id="per-subtree-theme-override">Per-subtree theme override<a class="headerlink" href="#per-subtree-theme-override" title="Permanent link">&para;</a></h2>
+<p>Themes can be overridden for a subtree using a <code>themer</code> wrapper:</p>
+<!-- test: test_themer_subtree_override -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;Uses window theme&quot;</span><span class="p">),</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">themer</span><span class="p">(</span><span class="s2">&quot;sidebar_theme&quot;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s2">&quot;nord&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">container</span><span class="p">(</span><span class="s2">&quot;sidebar&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>            <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;Uses Nord theme&quot;</span><span class="p">),</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="p">),</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="p">),</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="p">)</span>
+</code></pre></div>
+<p>This is useful for panels, modals, or sections that need a different
+visual treatment.</p>
+<h2 id="widget-level-styling">Widget-level styling<a class="headerlink" href="#widget-level-styling" title="Permanent link">&para;</a></h2>
+<p>Individual widgets accept a <code>style</code> keyword argument. This can be a named
+preset string or a <code>StyleMap</code> instance for per-instance visual customization.</p>
+<h3 id="named-presets">Named presets<a class="headerlink" href="#named-presets" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;save&quot;</span><span class="p">,</span> <span class="s2">&quot;Save&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;primary&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;cancel&quot;</span><span class="p">,</span> <span class="s2">&quot;Cancel&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;secondary&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="s2">&quot;Delete&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;danger&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Style strings (<code>"primary"</code>, <code>"secondary"</code>, <code>"danger"</code>, etc.) map to iced's
+built-in style functions. Available presets vary by widget.</p>
+<h3 id="style-maps">Style maps<a class="headerlink" href="#style-maps" title="Permanent link">&para;</a></h3>
+<p>Style maps let you fully customize widget appearance from Python without
+writing Rust. They work on all 13 styleable widgets: button, container,
+text_input, text_editor, checkbox, radio, toggler, pick_list, progress_bar,
+rule, slider, vertical_slider, and tooltip.</p>
+<!-- test: test_style_map_builder_pattern, test_style_map_to_wire, test_style_map_immutable -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">StyleMap</span><span class="p">,</span> <span class="n">Border</span><span class="p">,</span> <span class="n">Shadow</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># Build a style map with the builder pattern</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">card_style</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">StyleMap</span><span class="p">()</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="o">.</span><span class="n">with_background</span><span class="p">(</span><span class="s2">&quot;#ffffff&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="o">.</span><span class="n">with_text_color</span><span class="p">(</span><span class="s2">&quot;#1a1a1a&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="o">.</span><span class="n">with_border</span><span class="p">(</span><span class="n">Border</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;#e0e0e0&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">8</span><span class="p">))</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="o">.</span><span class="n">with_shadow</span><span class="p">(</span><span class="n">Shadow</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;#00000020&quot;</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">blur_radius</span><span class="o">=</span><span class="mi">8</span><span class="p">))</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="p">)</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="n">ui</span><span class="o">.</span><span class="n">container</span><span class="p">(</span><span class="s2">&quot;card&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="n">card_style</span><span class="p">,</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="n">ui</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="s2">&quot;Card content&quot;</span><span class="p">),</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="style-map-fields">Style map fields<a class="headerlink" href="#style-map-fields" title="Permanent link">&para;</a></h3>
+<!-- test: test_border_construction, test_border_to_wire, test_shadow_construction, test_shadow_to_wire -- keep this section in sync with the test -->
+
+<ul>
+<li><code>background</code> -- hex color for the widget background</li>
+<li><code>text_color</code> -- hex color for text</li>
+<li><code>border</code> -- a <code>Border</code> dataclass (color, width, radius)</li>
+<li><code>shadow</code> -- a <code>Shadow</code> dataclass (color, offset, blur_radius)</li>
+</ul>
+<h3 id="status-overrides">Status overrides<a class="headerlink" href="#status-overrides" title="Permanent link">&para;</a></h3>
+<p>Style maps support interaction state overrides. Each override is a
+partial style dict that is merged on top of the base when the widget
+enters that state:</p>
+<!-- test: test_style_map_status_overrides, test_style_map_with_status_override_to_wire -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">nav_item_style</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">StyleMap</span><span class="p">()</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="o">.</span><span class="n">with_background</span><span class="p">(</span><span class="s2">&quot;#00000000&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="o">.</span><span class="n">with_text_color</span><span class="p">(</span><span class="s2">&quot;#cccccc&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="o">.</span><span class="n">with_hovered</span><span class="p">({</span><span class="s2">&quot;background&quot;</span><span class="p">:</span> <span class="s2">&quot;#333333&quot;</span><span class="p">,</span> <span class="s2">&quot;text_color&quot;</span><span class="p">:</span> <span class="s2">&quot;#ffffff&quot;</span><span class="p">})</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="o">.</span><span class="n">with_pressed</span><span class="p">({</span><span class="s2">&quot;background&quot;</span><span class="p">:</span> <span class="s2">&quot;#222222&quot;</span><span class="p">})</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="o">.</span><span class="n">with_disabled</span><span class="p">({</span><span class="s2">&quot;text_color&quot;</span><span class="p">:</span> <span class="s2">&quot;#666666&quot;</span><span class="p">})</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="p">)</span>
+</code></pre></div>
+<p>Supported statuses: <code>hovered</code>, <code>pressed</code>, <code>disabled</code>, <code>focused</code>.</p>
+<p>If you don't specify an override for a status, the renderer auto-derives:</p>
+<ul>
+<li><strong>hovered</strong>: darkens background by 10%</li>
+<li><strong>pressed</strong>: uses the base style (matching iced's own pattern)</li>
+<li><strong>disabled</strong>: applies 50% alpha to background and text_color</li>
+</ul>
+<p>This means hover and disabled states "just work" without explicit
+overrides in most cases. You only need explicit overrides when you want
+a specific look.</p>
+<h3 id="presets-and-style-maps-together">Presets and style maps together<a class="headerlink" href="#presets-and-style-maps-together" title="Permanent link">&para;</a></h3>
+<p>Style maps don't replace presets -- they complement them. Use presets
+for standard looks and style maps when you need custom appearance:</p>
+<!-- test: test_style_map_cta_button -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Standard danger button</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="s2">&quot;Delete&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;danger&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Custom branded button</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s2">&quot;cta&quot;</span><span class="p">,</span> <span class="s2">&quot;Get Started&quot;</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">StyleMap</span><span class="p">()</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="o">.</span><span class="n">with_background</span><span class="p">(</span><span class="s2">&quot;#7c3aed&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="o">.</span><span class="n">with_text_color</span><span class="p">(</span><span class="s2">&quot;#ffffff&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="o">.</span><span class="n">with_border</span><span class="p">(</span><span class="n">Border</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">24</span><span class="p">))</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="p">))</span>
+</code></pre></div>
+<p>See <code>docs/composition-patterns.md</code> for concrete examples of building
+polished UI patterns with style maps.</p>
+<h2 id="system-theme-detection">System theme detection<a class="headerlink" href="#system-theme-detection" title="Permanent link">&para;</a></h2>
+<p>The simplest way to follow the OS light/dark preference is to set the
+window theme to <code>"system"</code>:</p>
+<!-- test: test_system_theme_in_settings -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">view</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="k">return</span> <span class="n">ui</span><span class="o">.</span><span class="n">window</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My App&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>        <span class="n">ui</span><span class="o">.</span><span class="n">themer</span><span class="p">(</span><span class="s2">&quot;sys_theme&quot;</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="s2">&quot;system&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>            <span class="c1"># content</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>        <span class="p">),</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="p">)</span>
+</code></pre></div>
+<p>The renderer tracks the current OS mode and applies Light or Dark
+automatically. This also works in <code>settings()</code> for the app-level default:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;theme&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">}</span>
+</code></pre></div>
+<p>For manual control, subscribe to theme change events with
+<code>Subscription.on_theme_change()</code>:</p>
+<!-- test: test_subscription_on_theme_change (see test_commands_doc.py) -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.subscriptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Subscription</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">plushie.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThemeChanged</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">subscribe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="k">return</span> <span class="p">[</span><span class="n">Subscription</span><span class="o">.</span><span class="n">on_theme_change</span><span class="p">(</span><span class="s2">&quot;theme_changed&quot;</span><span class="p">)]</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="k">match</span> <span class="n">event</span><span class="p">:</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        <span class="k">case</span> <span class="n">ThemeChanged</span><span class="p">(</span><span class="n">theme</span><span class="o">=</span><span class="n">mode</span><span class="p">):</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>            <span class="c1"># mode is &quot;light&quot; or &quot;dark&quot;</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">preferred_theme</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+</code></pre></div>
+<p>Your app can use this to follow the system theme or ignore it entirely.</p>
+<p><strong>Note:</strong> The <code>themer</code> widget (per-subtree theme override) does not support
+<code>"system"</code> as a theme value. Setting a themer's theme to <code>"system"</code> is
+treated as "no override" (the parent theme passes through). Use <code>"system"</code>
+on window nodes or in <code>settings()</code> instead.</p>
+<h2 id="density">Density<a class="headerlink" href="#density" title="Permanent link">&para;</a></h2>
+<p>For apps that need density-aware spacing (compact, comfortable, roomy),
+build a simple helper function in your app:</p>
+<!-- test: test_density_helper -- keep this code block in sync with the test -->
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">spacing</span><span class="p">(</span><span class="n">density</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="n">table</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>        <span class="p">(</span><span class="s2">&quot;compact&quot;</span><span class="p">,</span> <span class="s2">&quot;md&quot;</span><span class="p">):</span> <span class="mi">4</span><span class="p">,</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>        <span class="p">(</span><span class="s2">&quot;comfortable&quot;</span><span class="p">,</span> <span class="s2">&quot;md&quot;</span><span class="p">):</span> <span class="mi">8</span><span class="p">,</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>        <span class="p">(</span><span class="s2">&quot;roomy&quot;</span><span class="p">,</span> <span class="s2">&quot;md&quot;</span><span class="p">):</span> <span class="mi">12</span><span class="p">,</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="c1"># ... etc.</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="p">}</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="k">return</span> <span class="n">table</span><span class="p">[(</span><span class="n">density</span><span class="p">,</span> <span class="n">size</span><span class="p">)]</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">(</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="c1"># ...</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="n">spacing</span><span class="o">=</span><span class="n">spacing</span><span class="p">(</span><span class="s2">&quot;compact&quot;</span><span class="p">,</span> <span class="s2">&quot;md&quot;</span><span class="p">),</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="p">)</span>
+</code></pre></div>
+<p>There is no global density setting or built-in density module -- your app
+decides how to handle it.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
