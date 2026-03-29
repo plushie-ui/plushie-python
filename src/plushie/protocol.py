@@ -892,6 +892,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     data = msg.get("data") or {}
     captured = bool(msg.get("captured", False))
     modifiers_raw = msg.get("modifiers")
+    sub_window_id = str(msg.get("window_id", "") or "")
 
     # ------- Widget events (scoped) -------
 
@@ -1389,6 +1390,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             text=data.get("text"),
             repeat=bool(data.get("repeat", False)),
             captured=captured,
+            window_id=sub_window_id,
         )
 
     if family == "key_release":
@@ -1401,11 +1403,14 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             location=data.get("location", "standard"),
             text=data.get("text"),
             captured=captured,
+            window_id=sub_window_id,
         )
 
     if family == "modifiers_changed":
         mods = _parse_modifiers(modifiers_raw)
-        return ModifiersChanged(modifiers=mods, captured=captured)
+        return ModifiersChanged(
+            modifiers=mods, captured=captured, window_id=sub_window_id
+        )
 
     # ------- Mouse events (global subscription) -------
 
@@ -1414,19 +1419,24 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             captured=captured,
+            window_id=sub_window_id,
         )
 
     if family == "cursor_entered":
-        return MouseEnter(captured=captured)
+        return MouseEnter(captured=captured, window_id=sub_window_id)
 
     if family == "cursor_left":
-        return MouseLeave(captured=captured)
+        return MouseLeave(captured=captured, window_id=sub_window_id)
 
     if family == "button_pressed":
-        return MouseButtonPress(button=str(value or "left"), captured=captured)
+        return MouseButtonPress(
+            button=str(value or "left"), captured=captured, window_id=sub_window_id
+        )
 
     if family == "button_released":
-        return MouseButtonRelease(button=str(value or "left"), captured=captured)
+        return MouseButtonRelease(
+            button=str(value or "left"), captured=captured, window_id=sub_window_id
+        )
 
     if family == "wheel_scrolled":
         return MouseWheel(
@@ -1434,6 +1444,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             delta_y=float(data.get("delta_y", 0)),
             unit=data.get("unit", "line"),
             captured=captured,
+            window_id=sub_window_id,
         )
 
     # ------- Touch events (global subscription) -------
@@ -1444,6 +1455,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             captured=captured,
+            window_id=sub_window_id,
         )
 
     if family == "finger_moved":
@@ -1452,6 +1464,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             captured=captured,
+            window_id=sub_window_id,
         )
 
     if family == "finger_lifted":
@@ -1460,6 +1473,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             captured=captured,
+            window_id=sub_window_id,
         )
 
     if family == "finger_lost":
@@ -1468,12 +1482,13 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             captured=captured,
+            window_id=sub_window_id,
         )
 
     # ------- IME events (global subscription) -------
 
     if family == "ime_opened":
-        return ImeOpen(captured=captured)
+        return ImeOpen(captured=captured, window_id=sub_window_id)
 
     if family == "ime_preedit":
         cursor_raw = data.get("cursor")
@@ -1492,13 +1507,16 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             text=str(data.get("text", "")),
             cursor=cursor,
             captured=captured,
+            window_id=sub_window_id,
         )
 
     if family == "ime_commit":
-        return ImeCommit(text=str(data.get("text", "")), captured=captured)
+        return ImeCommit(
+            text=str(data.get("text", "")), captured=captured, window_id=sub_window_id
+        )
 
     if family == "ime_closed":
-        return ImeClose(captured=captured)
+        return ImeClose(captured=captured, window_id=sub_window_id)
 
     # ------- Window events (global subscription) -------
 

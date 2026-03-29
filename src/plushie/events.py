@@ -19,9 +19,11 @@ of ancestor container IDs, nearest first). For example, a button "save"
 inside container "form" in window "main" produces
 ``Click(id="save", window_id="main", scope=("form",))``.
 
-Subscription events (key, mouse, touch, IME, window) are global and
-carry no scope. Runtime events (AsyncResult, StreamChunk, TimerTick,
-EffectResult) are generated Python-side.
+Subscription events (key, mouse, touch, IME) carry ``window_id``
+(the window that was focused when the event fired, or ``""`` when
+absent). Window lifecycle events carry ``window_id`` natively.
+Runtime events (AsyncResult, StreamChunk, TimerTick, EffectResult)
+are generated Python-side.
 """
 
 from __future__ import annotations
@@ -937,6 +939,7 @@ class KeyPress:
     text: str | None = None
     repeat: bool = False
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -962,6 +965,7 @@ class KeyRelease:
     location: KeyLocation = "standard"
     text: str | None = None
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -978,6 +982,7 @@ class ModifiersChanged:
 
     modifiers: KeyModifiers
     captured: bool = False
+    window_id: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -1000,6 +1005,7 @@ class MouseMove:
     x: float
     y: float
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1010,9 +1016,11 @@ class MouseEnter:
 
     Attributes:
         captured: Whether a widget already consumed this event.
+        window_id: The window the cursor entered, or ``""`` if absent.
     """
 
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1023,9 +1031,11 @@ class MouseLeave:
 
     Attributes:
         captured: Whether a widget already consumed this event.
+        window_id: The window the cursor left, or ``""`` if absent.
     """
 
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1041,6 +1051,7 @@ class MouseButtonPress:
 
     button: str
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1056,6 +1067,7 @@ class MouseButtonRelease:
 
     button: str
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1075,6 +1087,7 @@ class MouseWheel:
     delta_y: float
     unit: ScrollUnit = "line"
     captured: bool = False
+    window_id: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -1099,6 +1112,7 @@ class TouchPress:
     x: float
     y: float
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1118,6 +1132,7 @@ class TouchMove:
     x: float
     y: float
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1137,6 +1152,7 @@ class TouchLift:
     x: float
     y: float
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1156,6 +1172,7 @@ class TouchLost:
     x: float
     y: float
     captured: bool = False
+    window_id: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -1171,9 +1188,11 @@ class ImeOpen:
 
     Attributes:
         captured: Whether a widget already consumed this event.
+        window_id: The window with IME focus, or ``""`` if absent.
     """
 
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1193,6 +1212,7 @@ class ImePreedit:
     text: str
     cursor: tuple[int, int] | None = None
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1204,10 +1224,12 @@ class ImeCommit:
     Attributes:
         text: The committed text string.
         captured: Whether a widget already consumed this event.
+        window_id: The window with IME focus, or ``""`` if absent.
     """
 
     text: str
     captured: bool = False
+    window_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1218,9 +1240,11 @@ class ImeClose:
 
     Attributes:
         captured: Whether a widget already consumed this event.
+        window_id: The window with IME focus, or ``""`` if absent.
     """
 
     captured: bool = False
+    window_id: str = ""
 
 
 # ---------------------------------------------------------------------------

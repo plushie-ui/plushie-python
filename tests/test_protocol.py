@@ -1109,6 +1109,21 @@ class TestDecodeKeyEvents:
         assert result.modified_key == "A"
         assert result.modifiers.shift is True
         assert result.text == "A"
+        assert result.window_id == ""
+
+    def test_key_press_with_window_id(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "key_press",
+            "id": "",
+            "tag": "kb",
+            "window_id": "editor",
+            "data": {"key": "a", "modified_key": "a"},
+            "modifiers": {},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, KeyPress)
+        assert result.window_id == "editor"
 
     def test_key_release(self) -> None:
         raw = {
@@ -1134,6 +1149,20 @@ class TestDecodeKeyEvents:
         result = decode_message(raw)
         assert isinstance(result, ModifiersChanged)
         assert result.modifiers.ctrl is True
+        assert result.window_id == ""
+
+    def test_modifiers_changed_with_window_id(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "modifiers_changed",
+            "id": "",
+            "tag": "kb",
+            "window_id": "main",
+            "modifiers": {"shift": True},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, ModifiersChanged)
+        assert result.window_id == "main"
 
 
 class TestDecodeMouseEvents:
@@ -1148,6 +1177,20 @@ class TestDecodeMouseEvents:
         result = decode_message(raw)
         assert isinstance(result, MouseMove)
         assert result.x == 100.5
+        assert result.window_id == ""
+
+    def test_cursor_moved_with_window_id(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "cursor_moved",
+            "id": "",
+            "tag": "m",
+            "window_id": "canvas_win",
+            "data": {"x": 50.0, "y": 75.0},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, MouseMove)
+        assert result.window_id == "canvas_win"
 
     def test_cursor_entered(self) -> None:
         raw = {"type": "event", "family": "cursor_entered", "id": "", "tag": "m"}
