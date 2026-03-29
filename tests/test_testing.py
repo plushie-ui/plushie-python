@@ -328,15 +328,15 @@ class TestResolveSelector:
         result = _resolve_selector("Click me", None)
         assert result == {"by": "text", "value": "Click me"}
 
-    def test_id_not_found_in_tree(self) -> None:
+    def test_id_not_found_in_tree_raises(self) -> None:
         tree = {
             "id": "root",
             "type": "container",
             "props": {},
             "children": [],
         }
-        result = _resolve_selector("#missing", tree)
-        assert result == {"by": "id", "value": "missing"}
+        with pytest.raises(ValueError, match="widget not found"):
+            _resolve_selector("#missing", tree)
 
 
 # ---------------------------------------------------------------------------
@@ -502,7 +502,7 @@ class TestAssertText:
     def test_fails_when_element_not_found(self) -> None:
         with (
             _make_fixture() as app,
-            pytest.raises(AssertionError, match="not found or has no text"),
+            pytest.raises(ValueError, match="widget not found"),
         ):
             app.assert_text("#missing", "anything")
 

@@ -203,10 +203,26 @@ def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
                     raise ValueError(
                         f'selector "{selector}" is ambiguous across windows; prefix it with "#<window_id>::" or use the full scoped id'
                     )
+                if not local_matches and not exact_matches:
+                    available = _collect_widget_ids(tree)
+                    hint = (
+                        f" Available IDs: {', '.join(sorted(available))}"
+                        if available
+                        else ""
+                    )
+                    raise ValueError(f'widget not found: "{selector}".{hint}')
             elif len(exact_matches) > 1:
                 raise ValueError(
                     f'selector "{selector}" matches multiple windows; prefix it with "#<window_id>::"'
                 )
+            elif not exact_matches:
+                available = _collect_widget_ids(tree)
+                hint = (
+                    f" Available IDs: {', '.join(sorted(available))}"
+                    if available
+                    else ""
+                )
+                raise ValueError(f'widget not found: "{selector}".{hint}')
 
         result = {"by": "id", "value": target_id}
         if window_id is not None:
@@ -242,6 +258,17 @@ def _find_local_id_targets(
     for child in tree.get("children", []):
         matches.extend(_find_local_id_targets(child, target_id, node_window_id))
     return matches
+
+
+def _collect_widget_ids(tree: Node) -> set[str]:
+    """Collect all widget IDs from the tree for error messages."""
+    ids: set[str] = set()
+    node_id = tree.get("id", "")
+    if node_id and not node_id.startswith("auto:"):
+        ids.add(node_id.rsplit("/", 1)[-1])
+    for child in tree.get("children", []):
+        ids.update(_collect_widget_ids(child))
+    return ids
 
 
 def _find_node_by_id(tree: Node, target_id: str) -> Node | None:
