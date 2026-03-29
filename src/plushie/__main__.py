@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from plushie.extension import ExtensionDef
+    from plushie.native_widget import NativeWidgetDef
 
 from plushie.app import App
 
@@ -183,6 +183,23 @@ def _cmd_download(args: argparse.Namespace) -> None:
     pyproject_cfg = _load_pyproject_config()
     want_bin, want_wasm = _resolve_artifacts(args, pyproject_cfg)
 
+    # Block precompiled download when native extensions are configured.
+    # The stock binary won't have them registered.
+    if want_bin and pyproject_cfg.get("extensions"):
+        ext_kinds = [e.get("kind", "?") for e in pyproject_cfg["extensions"]]
+        print(
+            "cannot download a precompiled binary when native widgets are configured.",
+            file=sys.stderr,
+        )
+        print(f"  native widgets: {', '.join(ext_kinds)}", file=sys.stderr)
+        print("", file=sys.stderr)
+        print(
+            "use `python -m plushie build` to compile a custom binary "
+            "that includes them.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
     # Resolve bin_file: CLI flag > pyproject.toml > None (standard location)
     bin_file = getattr(args, "bin_file", None) or pyproject_cfg.get("bin_file")
 
@@ -204,15 +221,15 @@ def _cmd_download(args: argparse.Namespace) -> None:
         print(f"downloaded WASM bundle: {path}")
 
 
-def _parse_extensions(raw: list[dict[str, Any]]) -> list[ExtensionDef]:
-    """Parse a list of raw extension dicts into ``ExtensionDef`` objects.
+def _parse_extensions(raw: list[dict[str, Any]]) -> list[NativeWidgetDef]:
+    """Parse a list of raw extension dicts into ``NativeWidgetDef`` objects.
 
     Works for both JSON config files and pyproject.toml ``[tool.plushie]``
     extension entries.
     """
-    from plushie.extension import CommandDef, ExtensionDef, ParamDef, PropDef
+    from plushie.native_widget import CommandDef, NativeWidgetDef, ParamDef, PropDef
 
-    extensions: list[ExtensionDef] = []
+    extensions: list[NativeWidgetDef] = []
     for ext_data in raw:
         props = [PropDef(p["name"], p["prop_type"]) for p in ext_data.get("props", [])]
         commands = [
@@ -223,7 +240,7 @@ def _parse_extensions(raw: list[dict[str, Any]]) -> list[ExtensionDef]:
             for c in ext_data.get("commands", [])
         ]
         extensions.append(
-            ExtensionDef(
+            NativeWidgetDef(
                 kind=ext_data["kind"],
                 rust_crate=ext_data["rust_crate"],
                 rust_constructor=ext_data["rust_constructor"],
@@ -269,13 +286,13 @@ def _cmd_build(args: argparse.Namespace) -> None:
 
     check_rust_version()
 
-    from plushie.extension import generate_cargo_toml, generate_main_rs
+    from plushie.native_widget import generate_cargo_toml, generate_main_rs
 
     # Extension resolution order:
     # 1. pyproject.toml [tool.plushie] extensions
     # 2. JSON config file (--config flag or plushie_extensions.json)
     # 3. Stock build (no extensions)
-    extensions: list[ExtensionDef] = []
+    extensions: list[NativeWidgetDef] = []
 
     pyproject_extensions = pyproject_cfg.get("extensions", [])
     if pyproject_extensions:
@@ -366,7 +383,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
         return
 
     # Validate extensions
-    from plushie.extension import validate_all
+    from plushie.native_widget import validate_all
 
     errors = validate_all(extensions)
     if errors:
@@ -376,7 +393,10 @@ def _cmd_build(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
     # binary_name resolution: --name flag > pyproject.toml build_name > default
-    binary_name = args.name or pyproject_cfg.get("build_name") or "plushie-custom"
+    binary_name = args.name or pyproject_cfg.get("build_name") or "plushie-renderer"
+
+    # Check extension crate plushie-ext version compatibility
+    _check_extension_versions(extensions)
 
     # Generate build files -- workspace at _plushie_build/ in the project root.
     # Must be at the project root level so extension crates (e.g. native/gauge/)
@@ -456,6 +476,61 @@ def _cmd_build(args: argparse.Namespace) -> None:
     else:
         print(f"built: {built_path}")
         print("warning: could not install -- binary not found at expected path")
+
+
+def _check_extension_versions(extensions: list[NativeWidgetDef]) -> None:
+    """Check extension crate plushie-ext version compatibility.
+
+    Reads each extension's Cargo.toml, extracts the plushie-ext
+    dependency version, and warns if the major.minor doesn't match
+    the SDK's binary version.  A mismatch would cause a cryptic Cargo
+    resolution failure -- this gives a clear warning instead.
+    """
+    import os
+    import re
+
+    from plushie.binary import BINARY_VERSION
+
+    expected_parts = BINARY_VERSION.split(".")
+    if len(expected_parts) < 2:
+        return
+    expected_major_minor = (int(expected_parts[0]), int(expected_parts[1]))
+
+    for ext in extensions:
+        cargo_path = os.path.join(ext.rust_crate, "Cargo.toml")
+        if not os.path.isfile(cargo_path):
+            continue
+
+        try:
+            with open(cargo_path) as f:
+                content = f.read()
+        except OSError:
+            continue
+
+        # Match: plushie-ext = "0.5" or plushie-ext = { version = "0.5", ... }
+        match = re.search(
+            r'plushie-ext\s*=\s*(?:"([^"]+)"|\{[^}]*version\s*=\s*"([^"]+)")',
+            content,
+        )
+        if not match:
+            continue
+
+        dep_version = match.group(1) or match.group(2)
+        # Strip leading operators (^, ~, >=, =)
+        base = re.sub(r"^[^0-9]*", "", dep_version)
+        dep_parts = base.split(".")
+        if len(dep_parts) < 2:
+            continue
+
+        dep_major_minor = (int(dep_parts[0]), int(dep_parts[1]))
+
+        if dep_major_minor != expected_major_minor:
+            print(
+                f"warning: extension {ext.kind!r} depends on plushie-ext "
+                f"{dep_version}, but this SDK targets {BINARY_VERSION}. "
+                f"Update the extension crate or the SDK.",
+                file=sys.stderr,
+            )
 
 
 def _cmd_inspect(args: argparse.Namespace) -> None:
@@ -607,7 +682,7 @@ def _build_parser() -> argparse.ArgumentParser:
     build_parser.add_argument(
         "--name",
         default=None,
-        help="output binary name (default: plushie-custom)",
+        help="output binary name (default: plushie-renderer)",
     )
     build_parser.add_argument(
         "--bin",

@@ -289,7 +289,7 @@ def build_command(
 
 def generate_cargo_toml(
     widgets: list[NativeWidgetDef],
-    binary_name: str = "plushie-custom",
+    binary_name: str = "plushie-renderer",
     *,
     build_dir: str = ".",
     source_path: str | None = None,

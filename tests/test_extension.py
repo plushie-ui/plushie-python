@@ -354,7 +354,7 @@ class TestGenerateCargoToml:
     def test_single_extension(self) -> None:
         toml = generate_cargo_toml([_gauge_def()])
         assert '"native/my_gauge"' in toml
-        assert 'name = "plushie-custom"' in toml
+        assert 'name = "plushie-renderer"' in toml
         assert 'my_gauge = { path = "native/my_gauge" }' in toml
 
     def test_custom_binary_name(self) -> None:
