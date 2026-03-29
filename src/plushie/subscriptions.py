@@ -32,7 +32,7 @@ window::
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 
@@ -318,8 +318,6 @@ class Subscription:
                 Subscription.on_mouse_move("editor_mouse", max_rate=60),
             ])
         """
-        from dataclasses import replace
-
         return [replace(sub, window_id=window_id) for sub in subscriptions]
 
     # ------------------------------------------------------------------
@@ -335,8 +333,6 @@ class Subscription:
         Args:
             mapper: Function that transforms the tag value.
         """
-        from dataclasses import replace
-
         return replace(self, tag=mapper(self.tag))
 
 

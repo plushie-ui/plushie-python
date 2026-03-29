@@ -929,6 +929,8 @@ class KeyPress:
             non-printable keys.
         repeat: Whether this is an auto-repeat event from holding the key.
         captured: Whether a widget already consumed this event.
+        window_id: The window that was focused when the key was pressed,
+            or ``""`` when absent.
     """
 
     key: str
@@ -956,6 +958,8 @@ class KeyRelease:
         location: Physical key location on the keyboard.
         text: Text value, or ``None`` for non-printable keys.
         captured: Whether a widget already consumed this event.
+        window_id: The window that was focused when the key was released,
+            or ``""`` when absent.
     """
 
     key: str
@@ -978,6 +982,8 @@ class ModifiersChanged:
     Attributes:
         modifiers: The new modifier state.
         captured: Whether a widget already consumed this event.
+        window_id: The window that was focused when modifiers changed,
+            or ``""`` when absent.
     """
 
     modifiers: KeyModifiers
@@ -1000,6 +1006,7 @@ class MouseMove:
         x: Horizontal cursor position.
         y: Vertical cursor position.
         captured: Whether a widget already consumed this event.
+        window_id: The window the cursor is over, or ``""`` if absent.
     """
 
     x: float
@@ -1047,6 +1054,7 @@ class MouseButtonPress:
     Attributes:
         button: The mouse button identifier.
         captured: Whether a widget already consumed this event.
+        window_id: The window with focus, or ``""`` if absent.
     """
 
     button: str
@@ -1063,6 +1071,7 @@ class MouseButtonRelease:
     Attributes:
         button: The mouse button identifier.
         captured: Whether a widget already consumed this event.
+        window_id: The window with focus, or ``""`` if absent.
     """
 
     button: str
@@ -1081,6 +1090,7 @@ class MouseWheel:
         delta_y: Vertical scroll delta.
         unit: Whether deltas are in lines or pixels.
         captured: Whether a widget already consumed this event.
+        window_id: The window the cursor is over, or ``""`` if absent.
     """
 
     delta_x: float
@@ -1106,6 +1116,7 @@ class TouchPress:
         x: Horizontal touch position.
         y: Vertical touch position.
         captured: Whether a widget already consumed this event.
+        window_id: The window receiving the touch, or ``""`` if absent.
     """
 
     finger_id: int
@@ -1126,6 +1137,7 @@ class TouchMove:
         x: Current horizontal touch position.
         y: Current vertical touch position.
         captured: Whether a widget already consumed this event.
+        window_id: The window receiving the touch, or ``""`` if absent.
     """
 
     finger_id: int
@@ -1146,6 +1158,7 @@ class TouchLift:
         x: Final horizontal touch position.
         y: Final vertical touch position.
         captured: Whether a widget already consumed this event.
+        window_id: The window receiving the touch, or ``""`` if absent.
     """
 
     finger_id: int
@@ -1166,6 +1179,7 @@ class TouchLost:
         x: Last known horizontal touch position.
         y: Last known vertical touch position.
         captured: Whether a widget already consumed this event.
+        window_id: The window receiving the touch, or ``""`` if absent.
     """
 
     finger_id: int
@@ -1207,6 +1221,7 @@ class ImePreedit:
             ``(start, end)`` tuple of byte offsets, or ``None`` when
             no cursor info is available.
         captured: Whether a widget already consumed this event.
+        window_id: The window with IME focus, or ``""`` if absent.
     """
 
     text: str

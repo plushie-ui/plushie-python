@@ -261,13 +261,14 @@ def _find_local_id_targets(
 
 
 def _collect_widget_ids(tree: Node) -> set[str]:
-    """Collect all widget IDs from the tree for error messages."""
+    """Collect all non-auto widget IDs from the tree for error messages."""
     ids: set[str] = set()
     node_id = tree.get("id", "")
     if node_id and not node_id.startswith("auto:"):
         ids.add(node_id.rsplit("/", 1)[-1])
     for child in tree.get("children", []):
-        ids.update(_collect_widget_ids(child))
+        if isinstance(child, dict):
+            ids.update(_collect_widget_ids(child))
     return ids
 
 
