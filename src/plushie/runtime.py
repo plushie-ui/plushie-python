@@ -348,6 +348,10 @@ class Runtime:
         The renderer will return ``response`` immediately for any effect
         of the given ``kind``. Blocks until the renderer confirms.
 
+        Raises:
+            RuntimeError: If a register or unregister for the same kind
+                is already awaiting confirmation.
+
         Args:
             kind: Effect kind (e.g. ``"file_open"``).
             response: Canned response the renderer returns.
@@ -355,6 +359,10 @@ class Runtime:
         """
         from plushie.protocol import register_effect_stub
 
+        if kind in self._pending_stub_acks:
+            raise RuntimeError(
+                f"register_effect_stub({kind!r}): another stub ack is already pending"
+            )
         ack = threading.Event()
         self._pending_stub_acks[kind] = ack
         msg = register_effect_stub(kind, response, session=self._conn.session)
@@ -368,12 +376,20 @@ class Runtime:
 
         Blocks until the renderer confirms removal.
 
+        Raises:
+            RuntimeError: If a register or unregister for the same kind
+                is already awaiting confirmation.
+
         Args:
             kind: Effect kind to remove.
             timeout: Maximum seconds to wait for ack.
         """
         from plushie.protocol import unregister_effect_stub
 
+        if kind in self._pending_stub_acks:
+            raise RuntimeError(
+                f"unregister_effect_stub({kind!r}): another stub ack is already pending"
+            )
         ack = threading.Event()
         self._pending_stub_acks[kind] = ack
         msg = unregister_effect_stub(kind, session=self._conn.session)
@@ -402,6 +418,10 @@ class Runtime:
         ``timeout``). If the task has already completed or was never
         started, returns immediately.
 
+        Raises:
+            RuntimeError: If another caller is already waiting for the
+                same tag.
+
         Args:
             tag: The async task tag to wait for.
             timeout: Maximum seconds to wait.
@@ -412,6 +432,10 @@ class Runtime:
         if tag not in self._async_tasks:
             return True
 
+        if tag in self._pending_await_async:
+            raise RuntimeError(
+                f"await_async({tag!r}): another caller is already waiting"
+            )
         done = threading.Event()
         self._pending_await_async[tag] = done
         return done.wait(timeout)
