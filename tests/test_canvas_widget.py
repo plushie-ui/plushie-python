@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from plushie.events import (
     CanvasElementClick,
@@ -16,6 +16,7 @@ from plushie.tree import normalize
 from plushie.widget import (
     EventAction,
     EventActionResult,
+    EventSpec,
     RegistryEntry,
     WidgetDef,
     collect_subscriptions,
@@ -131,6 +132,35 @@ class WithSubscriptions(WidgetDef):
         self, props: dict[str, Any], state: dict[str, Any]
     ) -> list[Subscription]:
         return [Subscription.every(100, "tick")]
+
+
+class ValidatedWidget(WidgetDef):
+    """Widget with event_specs for validation testing."""
+
+    event_specs: ClassVar[dict[str, EventSpec]] = {
+        "change": EventSpec(fields={"hue": float, "saturation": float}),
+        "select": EventSpec(value_type=int),
+        "cleared": EventSpec(),
+    }
+
+    def init(self, props: dict[str, Any]) -> dict[str, Any]:
+        return {}
+
+    def render(
+        self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+    def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
+        if isinstance(event, CanvasElementClick):
+            eid = event.element_id
+            if eid == "ring":
+                return EventAction.emit("change", {"hue": 180.0, "saturation": 0.5})
+            if eid == "star":
+                return EventAction.emit("select", 3)
+            if eid == "clear":
+                return EventAction.emit("cleared")
+        return EventAction.ignored()
 
 
 # ---------------------------------------------------------------------------
@@ -355,6 +385,245 @@ class TestDispatchThroughWidgets:
         event = Click(id="other", window_id="main")
         result, _ = dispatch_through_widgets(reg, event)
         assert result is event
+
+
+# ---------------------------------------------------------------------------
+# Event spec validation tests
+# ---------------------------------------------------------------------------
+
+
+class TestEventSpecs:
+    def _make_reg(self) -> dict[tuple[str, str], RegistryEntry]:
+        return {
+            ("main", "picker"): RegistryEntry(
+                definition=ValidatedWidget(),
+                state={},
+                props={},
+            )
+        }
+
+    def _click(self, element_id: str) -> CanvasElementClick:
+        return CanvasElementClick(
+            id="picker",
+            element_id=element_id,
+            x=0.0,
+            y=0.0,
+            button="left",
+            window_id="main",
+            scope=(),
+        )
+
+    def test_valid_data_event_passes(self) -> None:
+        reg = self._make_reg()
+        result, _ = dispatch_through_widgets(reg, self._click("ring"))
+        assert isinstance(result, WidgetEvent)
+        assert result.kind == "change"
+        assert result.data == {"hue": 180.0, "saturation": 0.5}
+
+    def test_valid_value_event_produces_typed(self) -> None:
+        reg = self._make_reg()
+        result, _ = dispatch_through_widgets(reg, self._click("star"))
+        assert isinstance(result, Select)
+        assert result.value == 3
+
+    def test_valid_no_payload_event(self) -> None:
+        reg = self._make_reg()
+        # "cleared" has EventSpec() -- no payload expected
+        # The widget emits with None data -> normalized to {}
+        # Need a widget that emits "cleared":
+
+        class ClearWidget(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "cleared": EventSpec(),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def render(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("cleared")
+
+        reg = {
+            ("main", "w"): RegistryEntry(definition=ClearWidget(), state={}, props={})
+        }
+        event = CanvasElementClick(
+            id="w",
+            element_id="x",
+            x=0.0,
+            y=0.0,
+            button="left",
+            window_id="main",
+            scope=(),
+        )
+        result, _ = dispatch_through_widgets(reg, event)
+        assert isinstance(result, WidgetEvent)
+        assert result.kind == "cleared"
+
+    def test_undeclared_event_name_raises(self) -> None:
+        class BadWidget(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "change": EventSpec(fields={"x": float}),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def render(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("chaneg", {"x": 1.0})  # typo!
+
+        reg = {("main", "w"): RegistryEntry(definition=BadWidget(), state={}, props={})}
+        event = CanvasElementClick(
+            id="w",
+            element_id="x",
+            x=0.0,
+            y=0.0,
+            button="left",
+            window_id="main",
+            scope=(),
+        )
+        import pytest
+
+        with pytest.raises(ValueError, match="undeclared event"):
+            dispatch_through_widgets(reg, event)
+
+    def test_missing_field_raises(self) -> None:
+        class IncompleteWidget(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "change": EventSpec(fields={"hue": float, "saturation": float}),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def render(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("change", {"hue": 180.0})  # missing saturation
+
+        reg = {
+            ("main", "w"): RegistryEntry(
+                definition=IncompleteWidget(), state={}, props={}
+            )
+        }
+        event = CanvasElementClick(
+            id="w",
+            element_id="x",
+            x=0.0,
+            y=0.0,
+            button="left",
+            window_id="main",
+            scope=(),
+        )
+        import pytest
+
+        with pytest.raises(ValueError, match="missing declared fields"):
+            dispatch_through_widgets(reg, event)
+
+    def test_wrong_value_type_raises(self) -> None:
+        class WrongTypeWidget(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "select": EventSpec(value_type=int),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def render(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("select", "not_an_int")
+
+        reg = {
+            ("main", "w"): RegistryEntry(
+                definition=WrongTypeWidget(), state={}, props={}
+            )
+        }
+        event = CanvasElementClick(
+            id="w",
+            element_id="x",
+            x=0.0,
+            y=0.0,
+            button="left",
+            window_id="main",
+            scope=(),
+        )
+        import pytest
+
+        with pytest.raises(TypeError, match="expected int"):
+            dispatch_through_widgets(reg, event)
+
+    def test_builtin_event_allowed_without_declaration(self) -> None:
+        """A widget with event_specs can still emit built-in events."""
+
+        class ClickEmitter(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "custom": EventSpec(),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def render(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("click")
+
+        reg = {
+            ("main", "w"): RegistryEntry(definition=ClickEmitter(), state={}, props={})
+        }
+        event = CanvasElementClick(
+            id="w",
+            element_id="x",
+            x=0.0,
+            y=0.0,
+            button="left",
+            window_id="main",
+            scope=(),
+        )
+        result, _ = dispatch_through_widgets(reg, event)
+        assert isinstance(result, Click)
+
+    def test_no_event_specs_skips_validation(self) -> None:
+        """Widgets without event_specs can emit anything."""
+        reg = {
+            ("main", "picker"): RegistryEntry(
+                definition=CustomEmitter(),  # no event_specs
+                state={},
+                props={},
+            )
+        }
+        result, _ = dispatch_through_widgets(reg, self._click("ring"))
+        assert isinstance(result, WidgetEvent)
+        assert result.kind == "change"
 
 
 # ---------------------------------------------------------------------------

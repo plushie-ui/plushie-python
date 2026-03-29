@@ -52,7 +52,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 from plushie.events import (
     Click,
@@ -98,6 +98,106 @@ _BUILTIN_EVENT_MAP: dict[str, tuple[type, str]] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Event specs for custom widget events
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class EventSpec:
+    """Declaration of a custom widget event's payload shape.
+
+    Widgets declare their emitted events via ``event_specs`` on the
+    class.  The framework validates emitted data against the spec at
+    emit time, catching typos and structural mismatches immediately
+    instead of letting them surface in the consumer's ``update()``.
+
+    Three forms:
+
+    **No payload** (just the event name)::
+
+        EventSpec()
+
+    **Scalar value** (goes in the event's ``value`` field)::
+
+        EventSpec(value_type=int)
+        EventSpec(value_type=float)
+
+    **Structured data** (dict with named fields)::
+
+        EventSpec(fields={"hue": float, "saturation": float})
+
+    Field types use Python's built-in types (``int``, ``float``,
+    ``str``, ``bool``).  Use ``object`` for fields that accept any
+    type.
+    """
+
+    fields: dict[str, type] | None = None
+    """Field names and types for data-carrier events."""
+
+    value_type: type | None = None
+    """Expected type for value-carrier events."""
+
+
+def _validate_emit(
+    kind: str,
+    data: dict[str, Any],
+    event_specs: dict[str, EventSpec],
+    widget_name: str,
+) -> None:
+    """Validate emitted event data against the widget's event specs.
+
+    Raises ``ValueError`` with a clear message when:
+
+    - The event name is not declared and not a built-in event family.
+    - A data-carrier spec's declared fields are missing from the data.
+    - A value-carrier spec's value has the wrong type.
+    """
+    if not event_specs:
+        return
+
+    spec = event_specs.get(kind)
+
+    # Undeclared event name
+    if spec is None and kind not in _BUILTIN_EVENT_MAP:
+        declared = sorted(event_specs.keys())
+        raise ValueError(
+            f"{widget_name} emitted undeclared event {kind!r}. "
+            f"Declared events: {declared}. "
+            f"Declare it in event_specs or emit a built-in event name."
+        )
+
+    if spec is None:
+        # Built-in event -- no custom spec to validate against
+        return
+
+    # Data-carrier: check all declared fields are present
+    if spec.fields is not None:
+        missing = [f for f in spec.fields if f not in data]
+        if missing:
+            raise ValueError(
+                f"{widget_name} event {kind!r} is missing declared fields: {missing}"
+            )
+        for field_name, field_type in spec.fields.items():
+            if field_type is object:
+                continue
+            value = data.get(field_name)
+            if value is not None and not isinstance(value, field_type):
+                raise TypeError(
+                    f"{widget_name} event {kind!r} field {field_name!r}: "
+                    f"expected {field_type.__name__}, got {type(value).__name__}"
+                )
+
+    # Value-carrier: check value type
+    if spec.value_type is not None and spec.value_type is not object:
+        value = data.get("value")
+        if value is not None and not isinstance(value, spec.value_type):
+            raise TypeError(
+                f"{widget_name} event {kind!r} value: "
+                f"expected {spec.value_type.__name__}, got {type(value).__name__}"
+            )
+
+
 def _build_emitted_event(
     kind: str,
     data: dict[str, Any],
@@ -105,6 +205,8 @@ def _build_emitted_event(
     id: str,
     window_id: str,
     scope: tuple[str, ...],
+    event_specs: dict[str, EventSpec] | None = None,
+    widget_name: str = "",
 ) -> Any:
     """Build a typed event from an emit action.
 
@@ -114,11 +216,18 @@ def _build_emitted_event(
     the consumer's ``update()``.
 
     For unrecognized kinds, falls back to :class:`WidgetEvent`.
-    """
-    spec = _BUILTIN_EVENT_MAP.get(kind)
 
-    if spec is not None:
-        cls, carrier = spec
+    If *event_specs* is provided, validates the emitted data against
+    the widget's declared event specs before constructing the event.
+    """
+    # Validate against event specs if the widget declares them
+    if event_specs:
+        _validate_emit(kind, data, event_specs, widget_name)
+
+    # Route to typed event class for built-in families
+    builtin = _BUILTIN_EVENT_MAP.get(kind)
+    if builtin is not None:
+        cls, carrier = builtin
         if carrier == "value":
             return cls(
                 id=id,
@@ -129,6 +238,7 @@ def _build_emitted_event(
         # carrier == "none"
         return cls(id=id, window_id=window_id, scope=scope)
 
+    # Custom event -> WidgetEvent
     return WidgetEvent(
         kind=kind,
         id=id,
@@ -221,7 +331,7 @@ class EventAction:
 
 
 class WidgetDef(ABC):
-    """Abstract base for canvas widget definitions.
+    """Abstract base for custom widget definitions.
 
     Subclass and implement ``init`` and ``render``.
 
@@ -232,6 +342,26 @@ class WidgetDef(ABC):
     to the app's ``update()``).
 
     Override ``subscribe`` for timer-based updates.
+
+    Declare ``event_specs`` to document and validate emitted events::
+
+        class ColorPicker(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "change": EventSpec(fields={"hue": float, "saturation": float}),
+                "cleared": EventSpec(),
+            }
+
+    When ``event_specs`` is declared, the framework validates emitted
+    event names and data at emit time.  Undeclared event names raise
+    ``ValueError``; mismatched data raises ``TypeError``.
+    """
+
+    event_specs: ClassVar[dict[str, EventSpec]] = {}
+    """Custom event declarations for emit-time validation.
+
+    Maps event family names to :class:`EventSpec` instances.  Empty
+    dict (the default) disables validation -- all event names are
+    accepted.
     """
 
     @abstractmethod
@@ -556,12 +686,15 @@ def _walk_chain(
             emit_window_id, emit_id, emit_scope = _resolve_emit_identity(
                 event, widget_key
             )
+            widget_cls = type(entry.definition)
             event = _build_emitted_event(
                 action.kind,
                 action.data,
                 id=emit_id,
                 window_id=emit_window_id,
                 scope=emit_scope,
+                event_specs=widget_cls.event_specs or None,
+                widget_name=widget_cls.__name__,
             )
 
     return event, registry
@@ -661,12 +794,15 @@ def maybe_handle_timer(
         if action.state is not None:
             entry.state = action.state
         emit_window_id, emit_id, emit_scope = _resolve_emit_identity(timer_event, key)
+        widget_cls = type(entry.definition)
         emitted = _build_emitted_event(
             action.kind,
             action.data,
             id=emit_id,
             window_id=emit_window_id,
             scope=emit_scope,
+            event_specs=widget_cls.event_specs or None,
+            widget_name=widget_cls.__name__,
         )
         # Dispatch through remaining scope chain
         result_event, registry = dispatch_through_widgets(registry, emitted)
@@ -683,6 +819,7 @@ def maybe_handle_timer(
 __all__ = [
     "EventAction",
     "EventActionResult",
+    "EventSpec",
     "RegistryEntry",
     "WidgetDef",
     "WidgetRegistry",
