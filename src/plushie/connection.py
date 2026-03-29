@@ -29,8 +29,8 @@ from queue import Empty, Queue
 from typing import Any
 
 from plushie.binary import PlushieNotFoundError, resolve
-from plushie.extension import ExtensionDef
 from plushie.framing import MsgpackFraming
+from plushie.native_widget import NativeWidgetDef
 from plushie.protocol import (
     PROTOCOL_VERSION,
     advance_frame_msg,
@@ -75,13 +75,13 @@ def _next_request_id() -> str:
     return f"py-{next(_request_counter)}"
 
 
-def _normalize_expected_extensions(
-    expected: list[str | ExtensionDef] | tuple[str | ExtensionDef, ...] | None,
+def _normalize_expected_widgets(
+    expected: list[str | NativeWidgetDef] | tuple[str | NativeWidgetDef, ...] | None,
 ) -> tuple[str, ...]:
     if not expected:
         return ()
     return tuple(
-        ext.kind if isinstance(ext, ExtensionDef) else str(ext) for ext in expected
+        ext.kind if isinstance(ext, NativeWidgetDef) else str(ext) for ext in expected
     )
 
 
@@ -134,8 +134,8 @@ class Connection:
         process: subprocess.Popen[bytes],
         *,
         session: str = "",
-        expected_extensions: list[str | ExtensionDef]
-        | tuple[str | ExtensionDef, ...]
+        expected_widgets: list[str | NativeWidgetDef]
+        | tuple[str | NativeWidgetDef, ...]
         | None = None,
         _spawn_args: list[str] | None = None,
         _spawn_env: dict[str, str] | None = None,
@@ -150,7 +150,7 @@ class Connection:
         self._pending: dict[str, Queue[dict[str, Any]]] = {}
         self._pending_lock = threading.Lock()
         self._hello: HelloInfo | None = None
-        self._expected_extensions = _normalize_expected_extensions(expected_extensions)
+        self._expected_widgets = _normalize_expected_widgets(expected_widgets)
         self._hello_event = threading.Event()
         self._closed = False
         self._reader_thread = threading.Thread(
@@ -169,8 +169,8 @@ class Connection:
         json: bool = False,
         max_sessions: int | None = None,
         session: str = "",
-        expected_extensions: list[str | ExtensionDef]
-        | tuple[str | ExtensionDef, ...]
+        expected_widgets: list[str | NativeWidgetDef]
+        | tuple[str | NativeWidgetDef, ...]
         | None = None,
         extra_args: list[str] | None = None,
         env: dict[str, str] | None = None,
@@ -231,7 +231,7 @@ class Connection:
         return cls(
             process,
             session=session,
-            expected_extensions=expected_extensions,
+            expected_widgets=expected_widgets,
             _spawn_args=args,
             _spawn_env=proc_env,
         )
@@ -242,8 +242,8 @@ class Connection:
         adapter: Any,
         *,
         session: str = "",
-        expected_extensions: list[str | ExtensionDef]
-        | tuple[str | ExtensionDef, ...]
+        expected_widgets: list[str | NativeWidgetDef]
+        | tuple[str | NativeWidgetDef, ...]
         | None = None,
     ) -> _IoStreamConnection:
         """Create a Connection-like object backed by an iostream adapter.
@@ -262,7 +262,7 @@ class Connection:
             A connection-like object wrapping the adapter.
         """
         return _IoStreamConnection(
-            adapter, session=session, expected_extensions=expected_extensions
+            adapter, session=session, expected_widgets=expected_widgets
         )
 
     @property
@@ -315,7 +315,7 @@ class Connection:
         if not self._hello_event.wait(timeout):
             raise ConnectionError(f"renderer did not send hello within {timeout}s")
         assert self._hello is not None
-        _validate_required_extensions(self._hello, self._expected_extensions)
+        _validate_required_extensions(self._hello, self._expected_widgets)
         return self._hello
 
     def close(self) -> None:
@@ -945,7 +945,7 @@ class StdioConnection:
         self._pending: dict[str, Queue[dict[str, Any]]] = {}
         self._pending_lock = threading.Lock()
         self._hello: HelloInfo | None = None
-        self._expected_extensions: tuple[str, ...] = ()
+        self._expected_widgets: tuple[str, ...] = ()
         self._hello_event = threading.Event()
         self._closed = False
 
@@ -1000,7 +1000,7 @@ class StdioConnection:
         if not self._hello_event.wait(timeout):
             raise ConnectionError(f"renderer did not send hello within {timeout}s")
         assert self._hello is not None
-        _validate_required_extensions(self._hello, self._expected_extensions)
+        _validate_required_extensions(self._hello, self._expected_widgets)
         return self._hello
 
     def send(self, msg: dict[str, Any]) -> None:
@@ -1223,13 +1223,13 @@ class _IoStreamConnection:
         adapter: Any,
         *,
         session: str = "",
-        expected_extensions: list[str | ExtensionDef]
-        | tuple[str | ExtensionDef, ...]
+        expected_widgets: list[str | NativeWidgetDef]
+        | tuple[str | NativeWidgetDef, ...]
         | None = None,
     ) -> None:
         self._adapter = adapter
         self._session = session
-        self._expected_extensions = _normalize_expected_extensions(expected_extensions)
+        self._expected_widgets = _normalize_expected_widgets(expected_widgets)
 
     @property
     def hello(self) -> HelloInfo | None:
@@ -1255,7 +1255,7 @@ class _IoStreamConnection:
 
     def wait_hello(self, timeout: float = 10.0) -> HelloInfo:
         hello = self._adapter.wait_hello(timeout)
-        _validate_required_extensions(hello, self._expected_extensions)
+        _validate_required_extensions(hello, self._expected_widgets)
         return hello
 
     def send(self, msg: dict[str, Any]) -> None:

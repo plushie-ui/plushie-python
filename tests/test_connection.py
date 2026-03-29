@@ -34,10 +34,10 @@ from plushie.connection import (
     ConnectionError,
     _decode_events_list,
     _next_request_id,
-    _normalize_expected_extensions,
+    _normalize_expected_widgets,
     _validate_required_extensions,
 )
-from plushie.extension import ExtensionDef
+from plushie.native_widget import NativeWidgetDef
 from plushie.protocol import PROTOCOL_VERSION, decode_message
 from plushie.types import HelloInfo
 
@@ -100,7 +100,7 @@ class TestHelloExtensionValidation:
             extensions=(),
         )
         expected = (
-            ExtensionDef(
+            NativeWidgetDef(
                 kind="gauge",
                 rust_crate="native/gauge",
                 rust_constructor="gauge::Gauge::new()",
@@ -108,9 +108,7 @@ class TestHelloExtensionValidation:
         )
 
         with pytest.raises(ConnectionError, match="missing required extensions"):
-            _validate_required_extensions(
-                hello, _normalize_expected_extensions(expected)
-            )
+            _validate_required_extensions(hello, _normalize_expected_widgets(expected))
 
 
 class TestDetectArch:
