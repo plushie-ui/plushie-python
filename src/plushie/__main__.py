@@ -491,10 +491,11 @@ def _check_extension_versions(extensions: list[NativeWidgetDef]) -> None:
 
     from plushie.binary import BINARY_VERSION
 
-    expected_parts = BINARY_VERSION.split(".")
-    if len(expected_parts) < 2:
+    try:
+        parts = BINARY_VERSION.split(".")
+        expected_major_minor = (int(parts[0]), int(parts[1]))
+    except (IndexError, ValueError):
         return
-    expected_major_minor = (int(expected_parts[0]), int(expected_parts[1]))
 
     for ext in extensions:
         cargo_path = os.path.join(ext.rust_crate, "Cargo.toml")
@@ -518,11 +519,12 @@ def _check_extension_versions(extensions: list[NativeWidgetDef]) -> None:
         dep_version = match.group(1) or match.group(2)
         # Strip leading operators (^, ~, >=, =)
         base = re.sub(r"^[^0-9]*", "", dep_version)
-        dep_parts = base.split(".")
-        if len(dep_parts) < 2:
-            continue
 
-        dep_major_minor = (int(dep_parts[0]), int(dep_parts[1]))
+        try:
+            dep_parts = base.split(".")
+            dep_major_minor = (int(dep_parts[0]), int(dep_parts[1]))
+        except (IndexError, ValueError):
+            continue
 
         if dep_major_minor != expected_major_minor:
             print(
