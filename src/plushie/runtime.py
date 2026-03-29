@@ -694,7 +694,7 @@ class Runtime:
         self._sync_windows(new_tree)
 
     def _route_through_widgets(self, event: Any) -> tuple[Any | None, WidgetRegistry]:
-        """Dispatch event through canvas widget handler chain."""
+        """Dispatch event through widget handler chain."""
         if not self._widget_registry:
             return event, self._widget_registry
         from plushie.widget import dispatch_through_widgets
