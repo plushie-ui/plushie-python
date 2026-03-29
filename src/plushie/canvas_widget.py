@@ -15,6 +15,9 @@ from plushie.widget import (
     EventActionResult as EventActionResult,
 )
 from plushie.widget import (
+    EventSpec as EventSpec,
+)
+from plushie.widget import (
     RegistryEntry as RegistryEntry,
 )
 from plushie.widget import (
@@ -49,6 +52,7 @@ __all__ = [
     "CanvasWidgetDef",
     "EventAction",
     "EventActionResult",
+    "EventSpec",
     "RegistryEntry",
     "WidgetDef",
     "WidgetKey",

@@ -138,6 +138,13 @@ class EventSpec:
     value_type: type | None = None
     """Expected type for value-carrier events."""
 
+    def __post_init__(self) -> None:
+        if self.fields is not None and self.value_type is not None:
+            raise ValueError(
+                "EventSpec cannot have both fields and value_type -- "
+                "use fields for structured data or value_type for scalars"
+            )
+
 
 def _validate_emit(
     kind: str,
@@ -147,11 +154,10 @@ def _validate_emit(
 ) -> None:
     """Validate emitted event data against the widget's event specs.
 
-    Raises ``ValueError`` with a clear message when:
-
-    - The event name is not declared and not a built-in event family.
-    - A data-carrier spec's declared fields are missing from the data.
-    - A value-carrier spec's value has the wrong type.
+    Raises:
+        ValueError: The event name is undeclared, or required fields
+            are missing from the emitted data.
+        TypeError: A field or value has the wrong type.
     """
     if not event_specs:
         return
@@ -284,7 +290,7 @@ type EventActionResult = _Ignored | _Consumed | _UpdateState | _Emit
 
 
 class EventAction:
-    """Factory for canvas widget event handler results."""
+    """Factory for widget event handler results."""
 
     @staticmethod
     def ignored() -> _Ignored:
@@ -326,7 +332,7 @@ class EventAction:
 
 
 # ---------------------------------------------------------------------------
-# Canvas widget definition (ABC)
+# Widget definition (ABC)
 # ---------------------------------------------------------------------------
 
 
@@ -380,7 +386,7 @@ class WidgetDef(ABC):
         props: dict[str, Any],
         state: dict[str, Any],
     ) -> dict[str, Any]:
-        """Render the widget as a canvas node dict.
+        """Render the widget as a node dict.
 
         Args:
             widget_id: The widget's scoped ID.
@@ -470,14 +476,14 @@ def render_placeholder(
     local_id: str,
     registry: WidgetRegistry,
 ) -> tuple[WidgetKey, dict[str, Any], Any] | None:
-    """Render a canvas widget placeholder during normalization.
+    """Render a widget placeholder during normalization.
 
     Args:
         node: The placeholder node (has meta with __widget__).
         window_id: The containing window ID.
         scoped_id: The fully scoped ID for this node.
         local_id: The local (pre-scoped) ID passed to render().
-        registry: Existing canvas widget registry for state lookup.
+        registry: Existing widget registry for state lookup.
 
     Returns:
         (key, rendered_node, entry) or None if rendering fails.
@@ -489,7 +495,7 @@ def render_placeholder(
         return None
 
     if not window_id:
-        raise ValueError(f"canvas widget {local_id!r} must be rendered inside a window")
+        raise ValueError(f"widget {local_id!r} must be rendered inside a window")
 
     # Look up existing state or initialize
     key = _widget_key(window_id, scoped_id)
@@ -526,7 +532,7 @@ type WidgetRegistry = dict[WidgetKey, RegistryEntry]
 
 @dataclass(slots=True)
 class RegistryEntry:
-    """A registered canvas widget instance."""
+    """A registered widget instance."""
 
     definition: WidgetDef
     state: dict[str, Any]
@@ -534,7 +540,7 @@ class RegistryEntry:
 
 
 def derive_registry(tree: dict[str, Any] | None) -> WidgetRegistry:
-    """Derive the canvas widget registry from the normalized tree.
+    """Derive the widget registry from the normalized tree.
 
     Walks the tree and extracts widget metadata from ``meta`` fields.
     Returns a flat dict keyed by scoped ID for O(1) dispatch lookups.
@@ -551,7 +557,7 @@ def _collect_entries(
     registry: WidgetRegistry,
     window_id: str | None,
 ) -> None:
-    """Recursively collect canvas widget entries from the tree."""
+    """Recursively collect widget entries from the tree."""
     current_window_id = node.get("id") if node.get("type") == "window" else window_id
     meta = node.get("meta")
     if isinstance(meta, dict):
@@ -559,7 +565,7 @@ def _collect_entries(
         if widget_cls is not None and isinstance(widget_cls, type):
             if not current_window_id:
                 raise ValueError(
-                    f"canvas widget {node.get('id', '')!r} must be rendered inside a window"
+                    f"widget {node.get('id', '')!r} must be rendered inside a window"
                 )
             node_id = node.get("id", "")
             state = meta.get("__widget_state__", {})
@@ -586,7 +592,7 @@ def dispatch_through_widgets(
     registry: WidgetRegistry,
     event: Any,
 ) -> tuple[Any | None, WidgetRegistry]:
-    """Dispatch an event through the canvas widget handler chain.
+    """Dispatch an event through the widget handler chain.
 
     Builds an ordered list of handlers from the event's scope (innermost
     to outermost) and walks it following iced's captured/ignored model.
@@ -610,7 +616,7 @@ def dispatch_through_widgets(
     )
 
     if not chain and event_id and isinstance(window_id, str):
-        # Check if the event's target itself is a canvas widget
+        # Check if the event's target itself is a widget
         target_id = _widget_key(window_id, _scope_to_id(scope, event_id))
         entry = registry.get(target_id)
         if entry is not None:
@@ -706,7 +712,7 @@ def _resolve_emit_identity(
 ) -> tuple[str, str, tuple[str, ...]]:
     """Resolve the ID and scope for emitted events.
 
-    For widget events (which carry scope), the canvas widget's ID is
+    For widget events (which carry scope), the widget's ID is
     the first scope element. For non-widget events, falls back to
     splitting the explicit widget_id.
     """
@@ -730,7 +736,7 @@ def _resolve_emit_identity(
 
 
 def collect_subscriptions(registry: WidgetRegistry) -> list[Subscription]:
-    """Collect subscriptions from all registered canvas widgets.
+    """Collect subscriptions from all registered widgets.
 
     Tags are namespaced with the window-local widget key to prevent collisions.
     """
@@ -763,7 +769,7 @@ def maybe_handle_timer(
     registry: WidgetRegistry,
     tag: Any,
 ) -> tuple[bool, Any | None, WidgetRegistry]:
-    """Check if a timer event is for a canvas widget subscription.
+    """Check if a timer event is for a widget subscription.
 
     Returns ``(handled, event_or_none, registry)``.
     """
