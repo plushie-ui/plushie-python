@@ -458,7 +458,8 @@ class Runtime:
         handled in the event loop using apply_event (update + commands,
         no render per-step) followed by a single snapshot.
 
-        Thread-safe: can be called from any thread.
+        Can be called from any thread, but only one interact may be
+        in progress at a time.
 
         Raises:
             RuntimeError: If another interact is already in progress,

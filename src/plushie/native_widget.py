@@ -170,14 +170,14 @@ def validate(ext_def: NativeWidgetDef) -> list[str]:
     return errors
 
 
-def validate_all(extensions: list[NativeWidgetDef]) -> list[str]:
-    """Validate a list of extensions, including cross-extension checks.
+def validate_all(widgets: list[NativeWidgetDef]) -> list[str]:
+    """Validate a list of native widget definitions, including cross-widget checks.
 
-    Runs :func:`validate` on each extension individually, then checks
+    Runs :func:`validate` on each widget individually, then checks
     for collisions across the full list:
 
-    - No two extensions may claim the same ``kind`` (widget type name).
-    - No two extensions may share the same crate name (last segment of
+    - No two widgets may claim the same ``kind`` (widget type name).
+    - No two widgets may share the same crate name (last segment of
       ``rust_crate`` path).
 
     Returns an empty list when valid, or a list of human-readable error
@@ -185,14 +185,14 @@ def validate_all(extensions: list[NativeWidgetDef]) -> list[str]:
     """
     errors: list[str] = []
 
-    # Per-extension validation
-    for ext in extensions:
+    # Per-widget validation
+    for ext in widgets:
         for err in validate(ext):
             errors.append(f"[{ext.kind or '?'}] {err}")
 
     # Kind collisions
     seen_kinds: dict[str, str] = {}
-    for ext in extensions:
+    for ext in widgets:
         if ext.kind in seen_kinds:
             errors.append(
                 f'widget type "{ext.kind}" claimed by both '
@@ -202,7 +202,7 @@ def validate_all(extensions: list[NativeWidgetDef]) -> list[str]:
 
     # Crate name collisions
     seen_crates: dict[str, str] = {}
-    for ext in extensions:
+    for ext in widgets:
         crate_name = ext.rust_crate.rsplit("/", maxsplit=1)[-1]
         if crate_name in seen_crates:
             errors.append(
@@ -218,12 +218,12 @@ def validate_all(extensions: list[NativeWidgetDef]) -> list[str]:
 
 
 def prop_names(ext_def: NativeWidgetDef) -> list[str]:
-    """Return the declared property names from an native widget definition."""
+    """Return the declared property names from a native widget definition."""
     return [p.name for p in ext_def.props]
 
 
 def command_names(ext_def: NativeWidgetDef) -> list[str]:
-    """Return the declared command names from an native widget definition."""
+    """Return the declared command names from a native widget definition."""
     return [c.name for c in ext_def.commands]
 
 
@@ -234,9 +234,9 @@ def build_node(
     *,
     children: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Build a node dict for a native native widget.
+    """Build a node dict for a native widget.
 
-    Creates a node with the extension's ``kind`` as the type and the
+    Creates a node with the widget's ``kind`` as the type and the
     given props.  The node dict is wire-compatible and can be included
     directly in a view tree.
 
@@ -244,7 +244,7 @@ def build_node(
         ext_def: The native widget definition.
         id: Unique node ID.
         props: Property key-value pairs.
-        children: Optional child nodes (for container extensions).
+        children: Optional child nodes (for container widgets).
 
     Returns:
         A node dict with ``id``, ``type``, ``props``, and ``children``.
@@ -288,7 +288,7 @@ def build_command(
 
 
 def generate_cargo_toml(
-    extensions: list[NativeWidgetDef],
+    widgets: list[NativeWidgetDef],
     binary_name: str = "plushie-custom",
     *,
     build_dir: str = ".",
@@ -297,14 +297,14 @@ def generate_cargo_toml(
     """Generate a Cargo.toml workspace for a custom binary build.
 
     Produces the Cargo workspace manifest that includes plushie-ext
-    and all extension crates as path dependencies.  This is the Python
-    equivalent of ``mix plushie.build``'s Cargo generation.
+    and all native widget crates as path dependencies.  This is the
+    Python equivalent of ``mix plushie.build``'s Cargo generation.
 
     Crate paths are made relative to ``build_dir`` so the generated
     Cargo.toml works from the build output directory.
 
     Args:
-        extensions: Extension definitions to include.
+        widgets: Native widget definitions to include.
         binary_name: Name for the output binary.
         build_dir: The directory where the Cargo.toml will be written.
             Crate paths are resolved relative to this.
@@ -318,7 +318,7 @@ def generate_cargo_toml(
     import os
 
     deps = []
-    for ext in extensions:
+    for ext in widgets:
         # Make crate path relative to build_dir
         abs_crate = os.path.abspath(ext.rust_crate)
         rel_crate = os.path.relpath(abs_crate, os.path.abspath(build_dir))
@@ -361,20 +361,20 @@ path = "src/main.rs"
 """
 
 
-def generate_main_rs(extensions: list[NativeWidgetDef]) -> str:
-    """Generate main.rs registering all extensions.
+def generate_main_rs(widgets: list[NativeWidgetDef]) -> str:
+    """Generate main.rs registering all native widgets.
 
     Produces the Rust entry point that creates a ``PlushieAppBuilder``,
-    registers each extension via ``.extension()``, and calls ``run()``.
+    registers each widget via ``.extension()``, and calls ``run()``.
 
     Args:
-        extensions: Extension definitions to register.
+        widgets: Native widget definitions to register.
 
     Returns:
         The main.rs content as a string.
     """
     registrations = []
-    for ext in extensions:
+    for ext in widgets:
         registrations.append(f"        .extension({ext.rust_constructor})")
     registrations_block = "\n".join(registrations)
 
