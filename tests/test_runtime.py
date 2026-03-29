@@ -124,8 +124,8 @@ class TestDetectWindows:
         }
         assert detect_windows(tree) == {"win1", "win2"}
 
-    def test_nested_windows_not_detected(self) -> None:
-        """Windows deeper than direct children are not detected."""
+    def test_nested_windows_detected(self) -> None:
+        """Windows at any depth are detected recursively."""
         tree = {
             "id": "root",
             "type": "container",
@@ -146,7 +146,7 @@ class TestDetectWindows:
                 },
             ],
         }
-        assert detect_windows(tree) == set()
+        assert detect_windows(tree) == {"deep_win"}
 
     def test_no_windows(self) -> None:
         tree = {

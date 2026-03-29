@@ -136,6 +136,7 @@ _WINDOW_PROP_KEYS = frozenset(
         "blur",
         "level",
         "exit_on_close_request",
+        "scale_factor",
     }
 )
 
@@ -143,20 +144,25 @@ _WINDOW_PROP_KEYS = frozenset(
 def detect_windows(tree: Node | None) -> set[str]:
     """Detect window node IDs from the tree.
 
-    Only recognizes window nodes at root level or as direct children
-    of the root (matching the Rust renderer's expected depth).
+    Searches the entire tree recursively, matching the renderer's
+    behavior.  Window nodes at any depth are detected and tracked.
     """
     if tree is None:
         return set()
-    if tree.get("type") == "window":
-        node_id = tree.get("id")
-        return {node_id} if node_id else set()
-    children = tree.get("children", [])
-    return {
-        child["id"]
-        for child in children
-        if isinstance(child, dict) and child.get("type") == "window" and child.get("id")
-    }
+    found: set[str] = set()
+    _collect_windows(tree, found)
+    return found
+
+
+def _collect_windows(node: Node, found: set[str]) -> None:
+    """Recursively collect window IDs from a tree node."""
+    if node.get("type") == "window":
+        node_id = node.get("id")
+        if node_id:
+            found.add(node_id)
+    for child in node.get("children", []):
+        if isinstance(child, dict):
+            _collect_windows(child, found)
 
 
 def extract_window_props(tree: Node | None, window_id: str) -> dict[str, Any]:
@@ -171,16 +177,14 @@ def extract_window_props(tree: Node | None, window_id: str) -> dict[str, Any]:
 
 
 def _find_window_node(tree: Node, window_id: str) -> Node | None:
-    """Find a window node at root or direct-child level."""
+    """Find a window node anywhere in the tree by ID."""
     if tree.get("type") == "window" and tree.get("id") == window_id:
         return tree
     for child in tree.get("children", []):
-        if (
-            isinstance(child, dict)
-            and child.get("type") == "window"
-            and child.get("id") == window_id
-        ):
-            return child
+        if isinstance(child, dict):
+            found = _find_window_node(child, window_id)
+            if found is not None:
+                return found
     return None
 
 
