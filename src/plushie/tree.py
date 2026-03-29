@@ -178,9 +178,9 @@ def _normalize_with_scope(
     # Canvas widget rendering: if this node is a placeholder, render it
     # with stored state and normalize the output.
     meta = node.get("meta")
-    if registry is not None and meta and "__canvas_widget__" in meta:
+    if registry is not None and meta and "__widget__" in meta:
         try:
-            from plushie.canvas_widget import render_placeholder
+            from plushie.widget import render_placeholder
 
             placeholder = render_placeholder(
                 node, current_window_id, scoped_id, node_id, registry

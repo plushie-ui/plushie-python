@@ -32,7 +32,6 @@ from queue import Empty, Queue
 from typing import Any
 
 from plushie.app import App, AppBuilder
-from plushie.canvas_widget import WidgetRegistry
 from plushie.commands import Command
 from plushie.connection import Connection
 from plushie.effects import DEFAULT_TIMEOUTS
@@ -62,6 +61,7 @@ from plushie.protocol import (
 from plushie.subscriptions import Subscription
 from plushie.tree import Node, diff, normalize_view
 from plushie.types import HelloInfo
+from plushie.widget import WidgetRegistry
 
 logger = logging.getLogger("plushie")
 
@@ -294,8 +294,8 @@ class Runtime:
         # Pending interact slot (see _InteractSlot below)
         self._pending_interact: _InteractSlot | None = None
 
-        # Canvas widget registry
-        self._canvas_widgets: WidgetRegistry = {}
+        # Custom widget registry (canvas widgets + composites)
+        self._widget_registry: WidgetRegistry = {}
 
         # Consecutive view failure counter
         self._consecutive_view_errors: int = 0
@@ -647,11 +647,11 @@ class Runtime:
             self._cancel_pending_effect(event.request_id)
 
         # Route canvas widget timer events to the widget handler
-        if isinstance(event, TimerTick) and self._canvas_widgets:
-            from plushie.canvas_widget import maybe_handle_timer
+        if isinstance(event, TimerTick) and self._widget_registry:
+            from plushie.widget import maybe_handle_timer
 
-            handled, routed_event, self._canvas_widgets = maybe_handle_timer(
-                self._canvas_widgets, event.tag
+            handled, routed_event, self._widget_registry = maybe_handle_timer(
+                self._widget_registry, event.tag
             )
             if handled:
                 if routed_event is not None:
@@ -663,7 +663,7 @@ class Runtime:
             # If not handled, fall through to normal dispatch
 
         # Dispatch through canvas widget handlers
-        event, self._canvas_widgets = self._route_through_widgets(event)
+        event, self._widget_registry = self._route_through_widgets(event)
         if event is None:
             return
 
@@ -684,10 +684,10 @@ class Runtime:
         self._tree = new_tree
 
         # Derive canvas widget registry from the new tree
-        from plushie.canvas_widget import collect_subscriptions, derive_registry
+        from plushie.widget import collect_subscriptions, derive_registry
 
-        self._canvas_widgets = derive_registry(new_tree)
-        widget_subs = collect_subscriptions(self._canvas_widgets)
+        self._widget_registry = derive_registry(new_tree)
+        widget_subs = collect_subscriptions(self._widget_registry)
 
         # Sync subscriptions (merge widget subs) and windows
         self._sync_subscriptions(new_model, extra_subs=widget_subs)
@@ -695,11 +695,11 @@ class Runtime:
 
     def _route_through_widgets(self, event: Any) -> tuple[Any | None, WidgetRegistry]:
         """Dispatch event through canvas widget handler chain."""
-        if not self._canvas_widgets:
-            return event, self._canvas_widgets
-        from plushie.canvas_widget import dispatch_through_widgets
+        if not self._widget_registry:
+            return event, self._widget_registry
+        from plushie.widget import dispatch_through_widgets
 
-        return dispatch_through_widgets(self._canvas_widgets, event)
+        return dispatch_through_widgets(self._widget_registry, event)
 
     def _safe_update(
         self, app: App[Any], model: Any, event: Any
@@ -742,7 +742,7 @@ class Runtime:
         """Call app.view() + normalize with error handling."""
         try:
             raw_tree = self._app.view(model)
-            result = normalize_view(raw_tree, registry=self._canvas_widgets or None)
+            result = normalize_view(raw_tree, registry=self._widget_registry or None)
             self._consecutive_view_errors = 0
             return result
         except Exception:
@@ -783,7 +783,7 @@ class Runtime:
         Used by interact_step where events are batched and a single
         snapshot follows after all events are processed.
         """
-        event, self._canvas_widgets = self._route_through_widgets(event)
+        event, self._widget_registry = self._route_through_widgets(event)
         if event is None:
             return
 

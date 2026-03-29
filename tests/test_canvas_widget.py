@@ -1,19 +1,9 @@
-"""Tests for the canvas widget system."""
+"""Tests for the custom widget system."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from plushie.canvas_widget import (
-    CanvasWidgetDef,
-    EventAction,
-    EventActionResult,
-    RegistryEntry,
-    collect_subscriptions,
-    derive_registry,
-    dispatch_through_widgets,
-    maybe_handle_timer,
-)
 from plushie.events import (
     CanvasElementClick,
     CanvasElementEnter,
@@ -22,13 +12,23 @@ from plushie.events import (
 )
 from plushie.subscriptions import Subscription
 from plushie.tree import normalize
+from plushie.widget import (
+    EventAction,
+    EventActionResult,
+    RegistryEntry,
+    WidgetDef,
+    collect_subscriptions,
+    derive_registry,
+    dispatch_through_widgets,
+    maybe_handle_timer,
+)
 
 # ---------------------------------------------------------------------------
 # Test widget definitions
 # ---------------------------------------------------------------------------
 
 
-class StarRating(CanvasWidgetDef):
+class StarRating(WidgetDef):
     """Simple star rating widget for testing."""
 
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
@@ -47,7 +47,7 @@ class StarRating(CanvasWidgetDef):
         return EventAction.ignored()
 
 
-class IgnoreAll(CanvasWidgetDef):
+class IgnoreAll(WidgetDef):
     """Widget that ignores all events."""
 
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
@@ -62,7 +62,7 @@ class IgnoreAll(CanvasWidgetDef):
         return EventAction.ignored()
 
 
-class ConsumeAll(CanvasWidgetDef):
+class ConsumeAll(WidgetDef):
     """Widget that consumes all events."""
 
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
@@ -77,7 +77,7 @@ class ConsumeAll(CanvasWidgetDef):
         return EventAction.consumed()
 
 
-class WithSubscriptions(CanvasWidgetDef):
+class WithSubscriptions(WidgetDef):
     """Widget with timer subscription."""
 
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
@@ -144,8 +144,8 @@ class TestBuild:
         assert node["id"] == "stars"
         assert node["type"] == "canvas"
         meta = node["meta"]
-        assert meta["__canvas_widget__"] is StarRating
-        assert meta["__canvas_widget_props__"] == {"max": 5}
+        assert meta["__widget__"] is StarRating
+        assert meta["__widget_props__"] == {"max": 5}
 
     def test_meta_preserved_through_normalize(self) -> None:
         node = StarRating.build("stars", props={"max": 5})
@@ -158,7 +158,7 @@ class TestBuild:
         result = normalize(tree)
         child = result["children"][0]
         assert "meta" in child
-        assert child["meta"]["__canvas_widget__"] is StarRating
+        assert child["meta"]["__widget__"] is StarRating
 
 
 # ---------------------------------------------------------------------------
@@ -284,7 +284,7 @@ class TestCollectSubscriptions:
         }
         subs = collect_subscriptions(reg)
         assert len(subs) == 1
-        assert subs[0].tag == ("__canvas_widget__", "main", "widget1", "tick")
+        assert subs[0].tag == ("__widget__", "main", "widget1", "tick")
 
 
 # ---------------------------------------------------------------------------
@@ -302,7 +302,7 @@ class TestMaybeHandleTimer:
             ("main", "stars"): RegistryEntry(definition=IgnoreAll(), state={}, props={})
         }
         handled, event, _ = maybe_handle_timer(
-            reg, ("__canvas_widget__", "main", "stars", "tick")
+            reg, ("__widget__", "main", "stars", "tick")
         )
         assert handled is True
         assert event is None  # IgnoreAll ignores everything
