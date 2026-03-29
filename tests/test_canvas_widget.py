@@ -8,6 +8,7 @@ from plushie.events import (
     CanvasElementClick,
     CanvasElementEnter,
     Click,
+    Select,
     WidgetEvent,
 )
 from plushie.subscriptions import Subscription
@@ -75,6 +76,41 @@ class ConsumeAll(WidgetDef):
 
     def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
         return EventAction.consumed()
+
+
+class CustomEmitter(WidgetDef):
+    """Widget that emits a custom (non-built-in) event name."""
+
+    def init(self, props: dict[str, Any]) -> dict[str, Any]:
+        return {}
+
+    def render(
+        self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+    def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
+        if isinstance(event, CanvasElementClick):
+            return EventAction.emit("change", {"hue": 180.0, "sat": 0.5})
+        return EventAction.ignored()
+
+
+class ToggleEmitter(WidgetDef):
+    """Widget that emits a built-in toggle event."""
+
+    def init(self, props: dict[str, Any]) -> dict[str, Any]:
+        return {"on": False}
+
+    def render(
+        self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+    def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
+        if isinstance(event, CanvasElementClick):
+            new_on = not state["on"]
+            return EventAction.emit("toggle", new_on, state={"on": new_on})
+        return EventAction.ignored()
 
 
 class WithSubscriptions(WidgetDef):
@@ -231,10 +267,61 @@ class TestDispatchThroughWidgets:
             scope=(),
         )
         result, _new_reg = dispatch_through_widgets(reg, event)
-        assert isinstance(result, WidgetEvent)
-        assert result.kind == "select"
+        assert isinstance(result, Select)
+        assert result.value == "star3"
         assert result.window_id == "main"
-        assert result.data == {"value": "star3"}
+        assert result.id == "stars"
+
+    def test_emit_custom_event_produces_widget_event(self) -> None:
+        """Custom event names produce WidgetEvent (no typed class)."""
+        reg = {
+            ("main", "picker"): RegistryEntry(
+                definition=CustomEmitter(),
+                state={},
+                props={},
+            )
+        }
+        event = CanvasElementClick(
+            id="picker",
+            element_id="ring",
+            x=10.0,
+            y=10.0,
+            button="left",
+            window_id="main",
+            scope=(),
+        )
+        result, _ = dispatch_through_widgets(reg, event)
+        assert isinstance(result, WidgetEvent)
+        assert result.kind == "change"
+        assert result.data == {"hue": 180.0, "sat": 0.5}
+
+    def test_emit_toggle_produces_typed_event(self) -> None:
+        """Built-in 'toggle' emission produces a Toggle dataclass."""
+        from plushie.events import Toggle
+
+        reg = {
+            ("main", "sw"): RegistryEntry(
+                definition=ToggleEmitter(),
+                state={"on": False},
+                props={},
+            )
+        }
+        event = CanvasElementClick(
+            id="sw",
+            element_id="switch",
+            x=5.0,
+            y=5.0,
+            button="left",
+            window_id="main",
+            scope=(),
+        )
+        result, new_reg = dispatch_through_widgets(reg, event)
+        assert isinstance(result, Toggle)
+        assert result.value is True
+        assert result.id == "sw"
+        assert result.window_id == "main"
+        # State was also updated
+        assert new_reg[("main", "sw")].state == {"on": True}
 
     def test_update_state_modifies_registry(self) -> None:
         reg = {

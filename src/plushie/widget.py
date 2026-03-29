@@ -54,10 +54,89 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
-from plushie.events import WidgetEvent, split_scoped_id
+from plushie.events import (
+    Click,
+    Close,
+    Input,
+    Open,
+    OptionHovered,
+    Paste,
+    Select,
+    Slide,
+    SlideRelease,
+    Sort,
+    Submit,
+    Toggle,
+    WidgetEvent,
+    split_scoped_id,
+)
 from plushie.subscriptions import Subscription
 
 logger = logging.getLogger("plushie")
+
+
+# ---------------------------------------------------------------------------
+# Built-in event routing
+# ---------------------------------------------------------------------------
+
+# Maps wire family names to (event_class, carrier) where carrier is:
+#   "none"  -- no payload (just id/scope/window_id)
+#   "value" -- scalar in the event's `value` field
+_BUILTIN_EVENT_MAP: dict[str, tuple[type, str]] = {
+    "click": (Click, "none"),
+    "input": (Input, "value"),
+    "submit": (Submit, "value"),
+    "toggle": (Toggle, "value"),
+    "select": (Select, "value"),
+    "slide": (Slide, "value"),
+    "slide_release": (SlideRelease, "value"),
+    "paste": (Paste, "value"),
+    "open": (Open, "none"),
+    "close": (Close, "none"),
+    "option_hovered": (OptionHovered, "value"),
+    "sort": (Sort, "value"),
+}
+
+
+def _build_emitted_event(
+    kind: str,
+    data: dict[str, Any],
+    *,
+    id: str,
+    window_id: str,
+    scope: tuple[str, ...],
+) -> Any:
+    """Build a typed event from an emit action.
+
+    When *kind* matches a built-in widget event family, constructs the
+    corresponding typed dataclass (e.g. ``Select``, ``Toggle``).  This
+    makes widget emissions indistinguishable from real widget events in
+    the consumer's ``update()``.
+
+    For unrecognized kinds, falls back to :class:`WidgetEvent`.
+    """
+    spec = _BUILTIN_EVENT_MAP.get(kind)
+
+    if spec is not None:
+        cls, carrier = spec
+        if carrier == "value":
+            return cls(
+                id=id,
+                value=data.get("value"),
+                window_id=window_id,
+                scope=scope,
+            )
+        # carrier == "none"
+        return cls(id=id, window_id=window_id, scope=scope)
+
+    return WidgetEvent(
+        kind=kind,
+        id=id,
+        window_id=window_id,
+        value=data.get("value"),
+        data=data,
+        scope=scope,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -477,15 +556,13 @@ def _walk_chain(
             emit_window_id, emit_id, emit_scope = _resolve_emit_identity(
                 event, widget_key
             )
-            emitted = WidgetEvent(
-                kind=action.kind,
+            event = _build_emitted_event(
+                action.kind,
+                action.data,
                 id=emit_id,
                 window_id=emit_window_id,
-                value=action.data.get("value"),
-                data=action.data,
                 scope=emit_scope,
             )
-            event = emitted
 
     return event, registry
 
@@ -584,12 +661,11 @@ def maybe_handle_timer(
         if action.state is not None:
             entry.state = action.state
         emit_window_id, emit_id, emit_scope = _resolve_emit_identity(timer_event, key)
-        emitted = WidgetEvent(
-            kind=action.kind,
+        emitted = _build_emitted_event(
+            action.kind,
+            action.data,
             id=emit_id,
             window_id=emit_window_id,
-            value=action.data.get("value"),
-            data=action.data,
             scope=emit_scope,
         )
         # Dispatch through remaining scope chain
