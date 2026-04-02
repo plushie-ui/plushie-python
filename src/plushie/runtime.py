@@ -666,13 +666,20 @@ class Runtime:
                     event = routed_event
                 else:
                     # Widget handled internally -- re-render for state changes
-                    self._render_and_sync(self._model)
+                    new_tree = self._render_and_sync(self._model)
+                    if new_tree is not None:
+                        self._tree = new_tree
+                        self._sync_windows(new_tree)
                     return
             # If not handled, fall through to normal dispatch
 
-        # Dispatch through canvas widget handlers
+        # Dispatch through widget handlers
+        old_registry = self._widget_registry
         event, self._widget_registry = self._route_through_widgets(event)
         if event is None:
+            # Event consumed. If widget state changed, re-render.
+            if self._widget_registry is not old_registry:
+                self._rerender_after_widget_state_change(old_registry)
             return
 
         result = self._safe_update(app, model, event)
@@ -708,6 +715,36 @@ class Runtime:
         from plushie.widget import dispatch_through_widgets
 
         return dispatch_through_widgets(self._widget_registry, event)
+
+    def _rerender_after_widget_state_change(self, old_registry: WidgetRegistry) -> None:
+        """Re-render after a widget's handle_event updated state without emitting.
+
+        On view error, reverts the widget registry to the pre-update state
+        to prevent a desync between the handler registry and the rendered tree.
+        """
+        from plushie.widget import collect_subscriptions, derive_registry
+
+        new_tree = self._safe_view(self._model)
+        if new_tree is None:
+            # View failed: revert widget state to avoid state-tree desync
+            self._widget_registry = old_registry
+            return
+
+        old_tree = self._tree
+        if old_tree is None:
+            self._conn.send_snapshot(new_tree)
+        else:
+            from plushie.tree import diff
+
+            ops = diff(old_tree, new_tree)
+            if ops:
+                self._conn.send_patch(ops)
+
+        self._tree = new_tree
+        self._widget_registry = derive_registry(new_tree)
+        widget_subs = collect_subscriptions(self._widget_registry)
+        self._sync_subscriptions(self._model, extra_subs=widget_subs)
+        self._sync_windows(new_tree)
 
     def _safe_update(
         self, app: App[Any], model: Any, event: Any
