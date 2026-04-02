@@ -205,18 +205,18 @@ class Command:
 
     @staticmethod
     def move_cursor_to_front(widget_id: str) -> Command:
-        """Move the text cursor to the beginning of *widget_id*."""
+        """Move the text cursor to the beginning of *widget_id*. Supports ``"window#widget"``."""
         return Command(
             type="widget_op",
-            payload={"op": "move_cursor_to_front", "target": widget_id},
+            payload=_targeted_payload("move_cursor_to_front", widget_id),
         )
 
     @staticmethod
     def move_cursor_to_end(widget_id: str) -> Command:
-        """Move the text cursor to the end of *widget_id*."""
+        """Move the text cursor to the end of *widget_id*. Supports ``"window#widget"``."""
         return Command(
             type="widget_op",
-            payload={"op": "move_cursor_to_end", "target": widget_id},
+            payload=_targeted_payload("move_cursor_to_end", widget_id),
         )
 
     @staticmethod

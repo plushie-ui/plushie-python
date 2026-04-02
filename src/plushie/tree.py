@@ -22,12 +22,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import Any
-
-from plushie.animation.sequence import Sequence
-from plushie.animation.spring import Spring
-from plushie.animation.transition import Transition
-from plushie.types import A11y, Border, Font, Gradient, Shadow, StyleMap, Theme
+from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger("plushie")
 
@@ -40,6 +35,19 @@ type Node = dict[str, Any]
 
 type PatchOp = dict[str, Any]
 """A patch operation dict with ``op``, ``path``, and operation-specific keys."""
+
+
+@runtime_checkable
+class WireEncodable(Protocol):
+    """Any type that can encode itself for the wire protocol.
+
+    Types implementing ``to_wire()`` are automatically recognized by
+    the tree normalizer and encoded when used as prop values. No manual
+    registration needed.
+    """
+
+    def to_wire(self) -> Any: ...
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -285,28 +293,14 @@ def _check_duplicate_ids(children: list[Node]) -> None:
         )
 
 
-_WIRE_TYPES = (
-    StyleMap,
-    Border,
-    Shadow,
-    Font,
-    Gradient,
-    A11y,
-    Theme,
-    Transition,
-    Spring,
-    Sequence,
-)
-
-
 def _encode_prop_value(value: Any) -> Any:
-    """Convert a known dataclass type to its wire-compatible representation.
+    """Convert a prop value to its wire-compatible representation.
 
-    Recognized types: StyleMap, Border, Shadow, Font, Gradient, A11y, Theme.
-    Tuples are converted to lists (wire format uses arrays).
-    Other values pass through unchanged.
+    Types implementing :class:`WireEncodable` (with a ``to_wire()``
+    method) are encoded automatically. Tuples are converted to lists
+    (wire format uses arrays). Other values pass through unchanged.
     """
-    if isinstance(value, _WIRE_TYPES):
+    if isinstance(value, WireEncodable):
         return value.to_wire()
     if isinstance(value, tuple):
         return list(value)
@@ -641,6 +635,7 @@ def text_of(node: Node) -> str | None:
 __all__ = [
     "Node",
     "PatchOp",
+    "WireEncodable",
     "diff",
     "exists",
     "find",
