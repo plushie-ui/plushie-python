@@ -36,7 +36,7 @@ class StarRating(WidgetDef):
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
         return {"hovered": None, "max": props.get("max", 5)}
 
-    def render(
+    def view(
         self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
     ) -> dict[str, Any]:
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -55,7 +55,7 @@ class IgnoreAll(WidgetDef):
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    def render(
+    def view(
         self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
     ) -> dict[str, Any]:
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -70,7 +70,7 @@ class ConsumeAll(WidgetDef):
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    def render(
+    def view(
         self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
     ) -> dict[str, Any]:
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -85,7 +85,7 @@ class CustomEmitter(WidgetDef):
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    def render(
+    def view(
         self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
     ) -> dict[str, Any]:
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -102,7 +102,7 @@ class ToggleEmitter(WidgetDef):
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
         return {"on": False}
 
-    def render(
+    def view(
         self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
     ) -> dict[str, Any]:
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -120,7 +120,7 @@ class WithSubscriptions(WidgetDef):
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    def render(
+    def view(
         self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
     ) -> dict[str, Any]:
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -146,7 +146,7 @@ class ValidatedWidget(WidgetDef):
     def init(self, props: dict[str, Any]) -> dict[str, Any]:
         return {}
 
-    def render(
+    def view(
         self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
     ) -> dict[str, Any]:
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -482,7 +482,7 @@ class TestEventSpecs:
             def init(self, props: dict[str, Any]) -> dict[str, Any]:
                 return {}
 
-            def render(
+            def view(
                 self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
             ) -> dict[str, Any]:
                 return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -517,7 +517,7 @@ class TestEventSpecs:
             def init(self, props: dict[str, Any]) -> dict[str, Any]:
                 return {}
 
-            def render(
+            def view(
                 self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
             ) -> dict[str, Any]:
                 return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -551,7 +551,7 @@ class TestEventSpecs:
             def init(self, props: dict[str, Any]) -> dict[str, Any]:
                 return {}
 
-            def render(
+            def view(
                 self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
             ) -> dict[str, Any]:
                 return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -589,7 +589,7 @@ class TestEventSpecs:
             def init(self, props: dict[str, Any]) -> dict[str, Any]:
                 return {}
 
-            def render(
+            def view(
                 self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
             ) -> dict[str, Any]:
                 return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
@@ -629,7 +629,7 @@ class TestEventSpecs:
             def init(self, props: dict[str, Any]) -> dict[str, Any]:
                 return {}
 
-            def render(
+            def view(
                 self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
             ) -> dict[str, Any]:
                 return {"id": widget_id, "type": "canvas", "props": {}, "children": []}

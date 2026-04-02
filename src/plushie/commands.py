@@ -34,7 +34,7 @@ Categories:
   ``get_system_theme``, ``get_system_info``
 - **Image ops**: ``create_image``, ``create_image_rgba``,
   ``update_image``, ``update_image_rgba``, ``delete_image``
-- **Extension**: ``extension_command``, ``extension_commands``
+- **Widget**: ``widget_command``, ``widget_commands``
 - **Animation**: ``advance_frame``
 
 Usage::
@@ -710,20 +710,20 @@ class Command:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def extension_command(
+    def widget_command(
         node_id: str, op: str, payload: dict[str, Any] | None = None
     ) -> Command:
-        """Send a command directly to a native extension widget."""
+        """Send a command directly to a native widget."""
         return Command(
             type="extension_command",
             payload={"node_id": node_id, "op": op, "payload": payload or {}},
         )
 
     @staticmethod
-    def extension_commands(
+    def widget_commands(
         commands: list[tuple[str, str, dict[str, Any]]],
     ) -> Command:
-        """Send a batch of extension commands processed in one cycle."""
+        """Send a batch of widget commands processed in one cycle."""
         return Command(
             type="extension_commands",
             payload={"commands": commands},

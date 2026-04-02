@@ -49,7 +49,7 @@ class StarRating(CanvasWidgetDef):
             case _:
                 return EventAction.consumed()
 
-    def render(
+    def view(
         self,
         widget_id: str,
         props: dict[str, Any],

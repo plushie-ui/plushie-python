@@ -1573,8 +1573,8 @@ class DuplicateNodeIds:
 
 
 @dataclass(frozen=True, slots=True)
-class ExtensionCommandError:
-    """Renderer error for an ``extension_command``.
+class WidgetCommandError:
+    """Renderer error for a ``widget_command``.
 
     Wire family: ``error`` with ``id = "extension_command"``.
 
@@ -1582,14 +1582,14 @@ class ExtensionCommandError:
         reason: Machine-readable error reason.
         node_id: Target widget node ID when known.
         op: Command operation name when known.
-        extension: Extension widget type when known.
+        widget: Widget type name when known.
         message: Human-readable error text.
     """
 
     reason: str
     node_id: str | None = None
     op: str | None = None
-    extension: str | None = None
+    widget: str | None = None
     message: str | None = None
 
 
@@ -1900,7 +1900,7 @@ type SystemEvent = (
     | ImageList
     | FocusedWidget
     | TreeHash
-    | ExtensionCommandError
+    | WidgetCommandError
     | RendererError
 )
 """Union of all system/query response events."""
@@ -1981,7 +1981,6 @@ __all__ = [
     # Helper types
     "EffectStatus",
     "Event",
-    "ExtensionCommandError",
     # Window events
     "FileDropped",
     "FileHovered",
@@ -2058,6 +2057,7 @@ __all__ = [
     "TouchMove",
     "TouchPress",
     "TreeHash",
+    "WidgetCommandError",
     "WidgetEvent",
     "WindowCloseRequested",
     "WindowClosed",

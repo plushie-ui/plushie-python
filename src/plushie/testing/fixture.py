@@ -132,7 +132,7 @@ def _process_commands(
             continue
 
         # Everything else (widget_op, window_op, effect, send_after,
-        # cancel, exit, image_op, extension_command, advance_frame)
+        # cancel, exit, image_op, widget_command, advance_frame)
         # is silently skipped in test mode.
 
     return model

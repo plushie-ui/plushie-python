@@ -658,9 +658,9 @@ def test_command_batch():
 # ---------------------------------------------------------------------------
 
 
-def test_command_extension_command():
-    """Command.extension_command() sends data to a native widget."""
-    cmd = Command.extension_command("term-1", "write", {"data": "hello"})
+def test_command_widget_command():
+    """Command.widget_command() sends data to a native widget."""
+    cmd = Command.widget_command("term-1", "write", {"data": "hello"})
 
     assert cmd.type == "extension_command"
     assert cmd.payload["node_id"] == "term-1"
@@ -668,9 +668,9 @@ def test_command_extension_command():
     assert cmd.payload["payload"] == {"data": "hello"}
 
 
-def test_command_extension_commands():
-    """Command.extension_commands() batches extension commands."""
-    cmd = Command.extension_commands(
+def test_command_widget_commands():
+    """Command.widget_commands() batches widget commands."""
+    cmd = Command.widget_commands(
         [
             ("term-1", "write", {"data": "line1"}),
             ("log-1", "append", {"line": "entry"}),

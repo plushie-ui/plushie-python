@@ -281,7 +281,7 @@ def build_command(
         ``"extension_command"``.
     """
     _ = ext_def  # present for API symmetry and future validation
-    return Command.extension_command(node_id, op, payload or {})
+    return Command.widget_command(node_id, op, payload or {})
 
 
 # -- Build system integration -------------------------------------------------

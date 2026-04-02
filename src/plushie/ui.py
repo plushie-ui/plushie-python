@@ -664,7 +664,7 @@ def qr_code(id: str, data: str, /, **kwargs: Any) -> Node:
     Args:
         id: QR code identifier.
         data: Data string to encode.
-        **kwargs: QR code props (cell_size, cell_color, background_color,
+        **kwargs: QR code props (cell_size, cell_color, background,
             error_correction, alt, description, a11y).
     """
     return _node(id, "qr_code", {"data": data, **kwargs})

@@ -204,7 +204,7 @@ def _normalize_with_scope(
                 rendered_props = _encode_props(dict(rendered_node.get("props") or {}))
                 # Auto-apply standard widget options (a11y, event_rate)
                 # from the original widget props so widget authors don't
-                # have to manually forward them in render().
+                # have to manually forward them in view().
                 widget_props = node.get("props") or {}
                 for key in ("a11y", "event_rate"):
                     if key in widget_props and key not in rendered_props:

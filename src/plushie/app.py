@@ -114,11 +114,11 @@ class App[M](ABC):
 
         Supported keys: ``default_font``, ``default_text_size``,
         ``antialiasing``, ``vsync``, ``scale_factor``, ``theme``,
-        ``fonts``, ``default_event_rate``, ``extension_config``.
+        ``fonts``, ``default_event_rate``, ``widget_config``.
 
-        The ``extension_config`` key accepts a dict keyed by extension
+        The ``widget_config`` key accepts a dict keyed by native
         widget type. It is forwarded to the renderer and made available
-        to native widget extensions.
+        to native widgets.
 
         Default: empty dict (renderer defaults).
         """

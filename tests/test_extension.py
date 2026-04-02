@@ -340,10 +340,10 @@ class TestBuildCommand:
         assert cmd.payload["payload"] == {}
 
     def test_matches_command_factory(self) -> None:
-        """build_command should produce the same result as Command.extension_command."""
+        """build_command should produce the same result as Command.widget_command."""
         ext = _gauge_def()
         via_ext = build_command(ext, "g1", "set_value", {"value": 50})
-        via_cmd = Command.extension_command("g1", "set_value", {"value": 50})
+        via_cmd = Command.widget_command("g1", "set_value", {"value": 50})
         assert via_ext == via_cmd
 
 

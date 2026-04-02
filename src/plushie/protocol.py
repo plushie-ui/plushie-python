@@ -40,7 +40,6 @@ from plushie.events import (
     Diagnostic,
     DuplicateNodeIds,
     EffectResult,
-    ExtensionCommandError,
     FileDropped,
     FileHovered,
     FilesHoveredLeft,
@@ -95,6 +94,7 @@ from plushie.events import (
     TouchMove,
     TouchPress,
     TreeHash,
+    WidgetCommandError,
     WidgetEvent,
     WindowClosed,
     WindowCloseRequested,
@@ -376,18 +376,18 @@ def image_op(
     return msg
 
 
-def extension_command(
+def widget_command(
     node_id: str,
     op: str,
     payload: dict[str, Any] | None = None,
     *,
     session: str = "",
 ) -> dict[str, Any]:
-    """Build an ExtensionCommand message.
+    """Build a widget command message for a native widget.
 
     Args:
-        node_id: Target extension widget node ID.
-        op: Extension operation name.
+        node_id: Target native widget node ID.
+        op: Widget operation name.
         payload: Operation-specific payload.
         session: Session identifier.
     """
@@ -400,18 +400,18 @@ def extension_command(
     }
 
 
-def extension_commands(
+def widget_commands(
     commands: list[dict[str, Any]],
     *,
     session: str = "",
 ) -> dict[str, Any]:
-    """Build an ExtensionCommands (batch) message.
+    """Build a batch of widget commands processed in one cycle.
 
     Each item in ``commands`` should have ``node_id``, ``op``, and
     ``payload`` keys.
 
     Args:
-        commands: List of extension command dicts.
+        commands: List of widget command dicts.
         session: Session identifier.
     """
     return {
@@ -1603,13 +1603,13 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         if error_id == "duplicate_node_ids":
             return DuplicateNodeIds(details=data)
         if error_id == "extension_command":
-            return ExtensionCommandError(
+            return WidgetCommandError(
                 reason=str(data.get("reason", "")),
                 node_id=str(data["node_id"])
                 if data.get("node_id") is not None
                 else None,
                 op=str(data["op"]) if data.get("op") is not None else None,
-                extension=str(data["extension"])
+                widget=str(data["extension"])
                 if data.get("extension") is not None
                 else None,
                 message=str(data["message"])
@@ -1697,8 +1697,6 @@ __all__ = [
     "decode_message",
     "effect_msg",
     "encode_selector",
-    "extension_command",
-    "extension_commands",
     "image_op",
     "interact_msg",
     "parse_effect_response",
@@ -1720,6 +1718,8 @@ __all__ = [
     "tree_hash_msg",
     "unregister_effect_stub",
     "unsubscribe_msg",
+    "widget_command",
+    "widget_commands",
     "widget_op",
     "window_op",
 ]

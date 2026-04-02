@@ -403,20 +403,20 @@ class TestImageOps:
 
 
 class TestExtension:
-    def test_extension_command(self) -> None:
-        cmd = Command.extension_command("chart", "set_data", {"values": [1, 2]})
+    def test_widget_command(self) -> None:
+        cmd = Command.widget_command("chart", "set_data", {"values": [1, 2]})
         assert cmd.type == "extension_command"
         assert cmd.payload["node_id"] == "chart"
         assert cmd.payload["op"] == "set_data"
         assert cmd.payload["payload"] == {"values": [1, 2]}
 
-    def test_extension_command_default_payload(self) -> None:
-        cmd = Command.extension_command("chart", "reset")
+    def test_widget_command_default_payload(self) -> None:
+        cmd = Command.widget_command("chart", "reset")
         assert cmd.payload["payload"] == {}
 
-    def test_extension_commands(self) -> None:
+    def test_widget_commands(self) -> None:
         cmds = [("a", "op1", {}), ("b", "op2", {"x": 1})]
-        cmd = Command.extension_commands(cmds)
+        cmd = Command.widget_commands(cmds)
         assert cmd.type == "extension_commands"
         assert cmd.payload["commands"] == cmds
 

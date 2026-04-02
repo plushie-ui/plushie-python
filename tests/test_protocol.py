@@ -28,7 +28,6 @@ from plushie.events import (
     Diagnostic,
     DuplicateNodeIds,
     EffectResult,
-    ExtensionCommandError,
     FileDropped,
     FileHovered,
     FilesHoveredLeft,
@@ -81,6 +80,7 @@ from plushie.events import (
     TouchMove,
     TouchPress,
     TreeHash,
+    WidgetCommandError,
     WidgetEvent,
     WindowClosed,
     WindowCloseRequested,
@@ -97,8 +97,6 @@ from plushie.protocol import (
     decode_message,
     effect_msg,
     encode_selector,
-    extension_command,
-    extension_commands,
     image_op,
     interact_msg,
     parse_effect_response,
@@ -118,6 +116,8 @@ from plushie.protocol import (
     subscribe_msg,
     tree_hash_msg,
     unsubscribe_msg,
+    widget_command,
+    widget_commands,
     widget_op,
     window_op,
 )
@@ -244,7 +244,7 @@ class TestImageOp:
 
 class TestExtensionCommand:
     def test_structure(self) -> None:
-        msg = extension_command("chart1", "append_data", {"values": [1, 2]})
+        msg = widget_command("chart1", "append_data", {"values": [1, 2]})
         assert msg["type"] == "extension_command"
         assert msg["node_id"] == "chart1"
         assert msg["op"] == "append_data"
@@ -257,7 +257,7 @@ class TestExtensionCommands:
             {"node_id": "a", "op": "x", "payload": {}},
             {"node_id": "b", "op": "y", "payload": {}},
         ]
-        msg = extension_commands(cmds)
+        msg = widget_commands(cmds)
         assert msg["type"] == "extension_commands"
         assert len(msg["commands"]) == 2
 
@@ -1534,7 +1534,7 @@ class TestDecodeErrorAndAnnounce:
         assert isinstance(result, Announce)
         assert result.text == "Item saved"
 
-    def test_extension_command_error(self) -> None:
+    def test_widget_command_error(self) -> None:
         raw = {
             "type": "event",
             "family": "error",
@@ -1548,7 +1548,7 @@ class TestDecodeErrorAndAnnounce:
             },
         }
         result = decode_message(raw)
-        assert isinstance(result, ExtensionCommandError)
+        assert isinstance(result, WidgetCommandError)
         assert result.reason == "unknown_node"
         assert result.node_id == "g1"
         assert result.op == "set_value"

@@ -56,7 +56,7 @@ class ThemeToggle(CanvasWidgetDef):
             return [Subscription.every(16, "animate")]
         return []
 
-    def render(
+    def view(
         self,
         widget_id: str,
         props: dict[str, Any],

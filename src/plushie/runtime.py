@@ -50,11 +50,11 @@ from plushie.events import (
 from plushie.protocol import (
     advance_frame_msg,
     effect_msg,
-    extension_command,
-    extension_commands,
     image_op,
     system_op,
     system_query,
+    widget_command,
+    widget_commands,
     widget_op,
     window_op,
 )
@@ -974,7 +974,7 @@ class Runtime:
             return
 
         if t == "extension_command":
-            msg = extension_command(
+            msg = widget_command(
                 p["node_id"],
                 p["op"],
                 p.get("payload"),
@@ -988,7 +988,7 @@ class Runtime:
                 {"node_id": c[0], "op": c[1], "payload": c[2]}
                 for c in p.get("commands", [])
             ]
-            msg = extension_commands(cmds, session=self._conn.session)
+            msg = widget_commands(cmds, session=self._conn.session)
             self._conn.send(msg)
             return
 

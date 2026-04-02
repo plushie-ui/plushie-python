@@ -1,8 +1,8 @@
 """Custom widget system for pure-Python widgets.
 
-Widgets manage internal state, render as either canvas shapes or
-compositions of built-in widgets, transform raw events into semantic
-widget events, and follow iced's captured/ignored dispatch model.
+Widgets manage internal state, produce view trees as either canvas
+shapes or compositions of built-in widgets, transform raw events into
+semantic widget events, and follow iced's captured/ignored dispatch model.
 
 **Canvas widget** -- renders custom shapes::
 
@@ -12,13 +12,13 @@ widget events, and follow iced's captured/ignored dispatch model.
         def init(self, props):
             return {"hovered": None}
 
-        def render(self, id, props, state):
+        def view(self, id, props, state):
             return canvas.canvas(id, canvas.group("star-0", ...))
 
         def handle_event(self, event, state):
             match event:
-                case CanvasElementClick(element_id=eid):
-                    return EventAction.emit("select", int(eid) + 1)
+                case Click(id="star-0"):
+                    return EventAction.emit("select", 1)
                 case _:
                     return EventAction.ignored()
 
@@ -28,7 +28,7 @@ widget events, and follow iced's captured/ignored dispatch model.
         def init(self, props):
             return {}
 
-        def render(self, id, props, state):
+        def view(self, id, props, state):
             return ui.container(id,
                 ui.text(f"{id}/title", props.get("title", "")),
                 ui.button(f"{id}/expand", "Read more"),
@@ -381,7 +381,7 @@ class EventAction:
 class WidgetDef(ABC):
     """Abstract base for custom widget definitions.
 
-    Subclass and implement ``init`` and ``render``.
+    Subclass and implement ``init`` and ``view``.
 
     Override ``handle_event`` for interactive widgets that need to
     intercept canvas element events, transform them into semantic
@@ -422,13 +422,13 @@ class WidgetDef(ABC):
         ...
 
     @abstractmethod
-    def render(
+    def view(
         self,
         widget_id: str,
         props: dict[str, Any],
         state: dict[str, Any],
     ) -> dict[str, Any]:
-        """Render the widget as a node dict.
+        """Return the widget's view tree as a node dict.
 
         Args:
             widget_id: The widget's scoped ID.
@@ -524,7 +524,7 @@ def render_placeholder(
         node: The placeholder node (has meta with __widget__).
         window_id: The containing window ID.
         scoped_id: The fully scoped ID for this node.
-        local_id: The local (pre-scoped) ID passed to render().
+        local_id: The local (pre-scoped) ID passed to view().
         registry: Existing widget registry for state lookup.
 
     Returns:
@@ -548,9 +548,9 @@ def render_placeholder(
         instance = widget_cls()
         state = instance.init(widget_props)
 
-    # Render the widget
+    # Produce the widget's view tree
     instance = widget_cls()
-    rendered = instance.render(local_id, widget_props, state)
+    rendered = instance.view(local_id, widget_props, state)
 
     # Attach metadata to the rendered node for registry derivation
     entry = RegistryEntry(definition=instance, state=state, props=widget_props)
@@ -594,6 +594,20 @@ def derive_registry(tree: dict[str, Any] | None) -> WidgetRegistry:
     return registry
 
 
+def _handles_events(cls: type) -> bool:
+    """Check whether a widget class participates in event dispatch.
+
+    Render-only widgets (no event_specs, no handle_event override, no
+    subscribe override) are transparent layout wrappers that don't need
+    to be in the handler registry.
+    """
+    if getattr(cls, "event_specs", None):
+        return True
+    if "handle_event" in cls.__dict__:
+        return True
+    return "subscribe" in cls.__dict__
+
+
 def _collect_entries(
     node: dict[str, Any],
     registry: WidgetRegistry,
@@ -604,7 +618,11 @@ def _collect_entries(
     meta = node.get("meta")
     if isinstance(meta, dict):
         widget_cls = meta.get("__widget__")
-        if widget_cls is not None and isinstance(widget_cls, type):
+        if (
+            widget_cls is not None
+            and isinstance(widget_cls, type)
+            and _handles_events(widget_cls)
+        ):
             if not current_window_id:
                 raise ValueError(
                     f"widget {node.get('id', '')!r} must be rendered inside a window"
