@@ -59,7 +59,7 @@ class ChecksumError(RuntimeError):
     """Raised when SHA-256 verification of a downloaded artifact fails."""
 
 
-BINARY_VERSION = "0.5.1"
+BINARY_VERSION = "0.6.1"
 """Default plushie binary version. Matches the renderer protocol this SDK was built against."""
 
 MIN_RUST_VERSION = (1, 92, 0)
