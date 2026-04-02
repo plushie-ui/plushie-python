@@ -28,7 +28,7 @@ are generated Python-side.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from plushie.types import KeyModifiers
@@ -42,6 +42,15 @@ type MouseButton = Literal["left", "right", "middle", "back", "forward"] | str
 
 Standard buttons use literal strings. Non-standard buttons use
 arbitrary string names from the renderer.
+"""
+
+type PointerType = Literal["mouse", "touch", "pen"]
+"""Pointer device type."""
+
+type PointerButton = Literal["left", "right", "middle", "back", "forward"] | str
+"""Pointer button identifier.
+
+Same values as MouseButton, but used in the unified pointer event types.
 """
 
 type ScrollUnit = Literal["line", "pixel"]
@@ -417,204 +426,101 @@ class WidgetEvent:
 
 
 # ---------------------------------------------------------------------------
-# MouseArea events -- scoped
+# Unified pointer events -- scoped
 # ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True, slots=True)
-class MouseAreaRightPress:
-    """Right mouse button pressed inside a mouse_area widget.
+class Press:
+    """A pointer button was pressed on a widget.
 
-    Wire family: ``mouse_right_press``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class MouseAreaRightRelease:
-    """Right mouse button released inside a mouse_area widget.
-
-    Wire family: ``mouse_right_release``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class MouseAreaMiddlePress:
-    """Middle mouse button pressed inside a mouse_area widget.
-
-    Wire family: ``mouse_middle_press``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class MouseAreaMiddleRelease:
-    """Middle mouse button released inside a mouse_area widget.
-
-    Wire family: ``mouse_middle_release``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class MouseAreaDoubleClick:
-    """Double-click detected inside a mouse_area widget.
-
-    Wire family: ``mouse_double_click``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class MouseAreaEnter:
-    """Mouse cursor entered a mouse_area widget's bounds.
-
-    Wire family: ``mouse_enter``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class MouseAreaExit:
-    """Mouse cursor exited a mouse_area widget's bounds.
-
-    Wire family: ``mouse_exit``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class MouseAreaMove:
-    """Mouse cursor moved within a mouse_area widget.
-
-    Wire family: ``mouse_move``. Coordinates are in the widget's local space.
+    Wire family: ``press``. Replaces mouse_area right/middle/left press
+    and canvas_press with a single type carrying full pointer metadata.
 
     Attributes:
-        x: Horizontal cursor position in local coordinates.
-        y: Vertical cursor position in local coordinates.
+        x: Horizontal position in widget-local coordinates.
+        y: Vertical position in widget-local coordinates.
+        button: The button name (e.g. ``"left"``, ``"right"``).
+        pointer: The pointer device type.
+        modifiers: Active keyboard modifiers at press time.
+        finger: Touch finger identifier, or ``None`` for mouse/pen.
     """
 
     id: str
     x: float
     y: float
+    button: str = "left"
+    pointer: str = "mouse"
+    modifiers: KeyModifiers = field(default_factory=KeyModifiers)
+    finger: int | None = None
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
-class MouseAreaScroll:
-    """Mouse wheel scrolled inside a mouse_area widget.
+class Release:
+    """A pointer button was released on a widget.
 
-    Wire family: ``mouse_scroll``.
-
-    Attributes:
-        delta_x: Horizontal scroll delta.
-        delta_y: Vertical scroll delta.
-    """
-
-    id: str
-    delta_x: float
-    delta_y: float
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-# ---------------------------------------------------------------------------
-# Canvas events -- scoped
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasPress:
-    """A mouse button was pressed on a canvas widget.
-
-    Wire family: ``canvas_press``.
+    Wire family: ``release``. Replaces mouse_area right/middle/left release
+    and canvas_release.
 
     Attributes:
-        x: Horizontal position in canvas local coordinates.
-        y: Vertical position in canvas local coordinates.
-        button: The mouse button name (e.g. ``"left"``, ``"right"``).
+        x: Horizontal position in widget-local coordinates.
+        y: Vertical position in widget-local coordinates.
+        button: The button name.
+        pointer: The pointer device type.
+        modifiers: Active keyboard modifiers at release time.
+        finger: Touch finger identifier, or ``None`` for mouse/pen.
     """
 
     id: str
     x: float
     y: float
-    button: str
+    button: str = "left"
+    pointer: str = "mouse"
+    modifiers: KeyModifiers = field(default_factory=KeyModifiers)
+    finger: int | None = None
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
-class CanvasRelease:
-    """A mouse button was released on a canvas widget.
+class Move:
+    """Pointer moved within a widget.
 
-    Wire family: ``canvas_release``.
+    Wire family: ``move``. Replaces mouse_area move and canvas_move.
 
     Attributes:
-        x: Horizontal position in canvas local coordinates.
-        y: Vertical position in canvas local coordinates.
-        button: The mouse button name.
+        x: Horizontal position in widget-local coordinates.
+        y: Vertical position in widget-local coordinates.
+        pointer: The pointer device type.
+        modifiers: Active keyboard modifiers during movement.
+        finger: Touch finger identifier, or ``None`` for mouse/pen.
     """
 
     id: str
     x: float
     y: float
-    button: str
+    pointer: str = "mouse"
+    modifiers: KeyModifiers = field(default_factory=KeyModifiers)
+    finger: int | None = None
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
-class CanvasMove:
-    """The mouse cursor moved within a canvas widget.
+class PointerScroll:
+    """Pointer wheel scrolled within a widget.
 
-    Wire family: ``canvas_move``.
-
-    Attributes:
-        x: Horizontal position in canvas local coordinates.
-        y: Vertical position in canvas local coordinates.
-    """
-
-    id: str
-    x: float
-    y: float
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasScroll:
-    """The mouse wheel was scrolled within a canvas widget.
-
-    Wire family: ``canvas_scroll``.
+    Wire family: ``scroll``. Replaces mouse_area scroll and canvas_scroll.
 
     Attributes:
         x: Horizontal cursor position.
         y: Vertical cursor position.
         delta_x: Horizontal scroll delta.
         delta_y: Vertical scroll delta.
+        pointer: The pointer device type.
+        modifiers: Active keyboard modifiers during scroll.
     """
 
     id: str
@@ -622,6 +528,48 @@ class CanvasScroll:
     y: float
     delta_x: float
     delta_y: float
+    pointer: str = "mouse"
+    modifiers: KeyModifiers = field(default_factory=KeyModifiers)
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class DoubleClick:
+    """Double-click detected on a widget.
+
+    Wire family: ``double_click``. Replaces MouseAreaDoubleClick.
+
+    Attributes:
+        x: Horizontal click position.
+        y: Vertical click position.
+        pointer: The pointer device type.
+        modifiers: Active keyboard modifiers at click time.
+    """
+
+    id: str
+    x: float
+    y: float
+    pointer: str = "mouse"
+    modifiers: KeyModifiers = field(default_factory=KeyModifiers)
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class Resize:
+    """A widget's rendered dimensions changed.
+
+    Wire family: ``resize``. Replaces SensorResize.
+
+    Attributes:
+        width: New rendered width in logical pixels.
+        height: New rendered height in logical pixels.
+    """
+
+    id: str
+    width: float
+    height: float
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -643,29 +591,6 @@ class Diagnostic:
     element_id: str
     code: str
     message: str
-
-
-# ---------------------------------------------------------------------------
-# Sensor events -- scoped
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class SensorResize:
-    """A sensor widget detected that its rendered dimensions changed.
-
-    Wire family: ``sensor_resize``.
-
-    Attributes:
-        width: New rendered width in logical pixels.
-        height: New rendered height in logical pixels.
-    """
-
-    id: str
-    width: float
-    height: float
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
 
 
 # ---------------------------------------------------------------------------
@@ -1624,20 +1549,12 @@ def target(
     | DragEnd
     | Enter
     | Exit
-    | MouseAreaRightPress
-    | MouseAreaRightRelease
-    | MouseAreaMiddlePress
-    | MouseAreaMiddleRelease
-    | MouseAreaDoubleClick
-    | MouseAreaEnter
-    | MouseAreaExit
-    | MouseAreaMove
-    | MouseAreaScroll
-    | CanvasPress
-    | CanvasRelease
-    | CanvasMove
-    | CanvasScroll
-    | SensorResize
+    | Press
+    | Release
+    | Move
+    | PointerScroll
+    | DoubleClick
+    | Resize
     | PaneResized
     | PaneDragged
     | PaneClicked
@@ -1693,24 +1610,17 @@ type ScopedWidgetEvent = (
     | DragEnd
     | Enter
     | Exit
+    | Press
+    | Release
+    | Move
+    | PointerScroll
+    | DoubleClick
+    | Resize
 )
 """Union of all widget events that carry ``id`` and ``scope``."""
 
-type MouseAreaEvent = (
-    MouseAreaRightPress
-    | MouseAreaRightRelease
-    | MouseAreaMiddlePress
-    | MouseAreaMiddleRelease
-    | MouseAreaDoubleClick
-    | MouseAreaEnter
-    | MouseAreaExit
-    | MouseAreaMove
-    | MouseAreaScroll
-)
-"""Union of all mouse_area events."""
-
-type CanvasEvent = CanvasPress | CanvasRelease | CanvasMove | CanvasScroll
-"""Union of all raw canvas events."""
+type PointerEvent = Press | Release | Move | PointerScroll | DoubleClick
+"""Union of all unified pointer events."""
 
 type PaneEvent = PaneResized | PaneDragged | PaneClicked | PaneFocusCycle
 """Union of all pane_grid events."""
@@ -1769,10 +1679,7 @@ type RuntimeEvent = AsyncResult | StreamChunk | TimerTick
 
 type Event = (
     ScopedWidgetEvent
-    | MouseAreaEvent
-    | CanvasEvent
     | Diagnostic
-    | SensorResize
     | PaneEvent
     | KeyEvent
     | MouseEvent
@@ -1794,18 +1701,19 @@ type Event = (
 
 __all__ = [
     "AllWindowsClosed",
+    "AllWindowsClosed",
+    "AnimationFrame",
     "AnimationFrame",
     "Announce",
+    "Announce",
+    "AsyncResult",
     "AsyncResult",
     "Blurred",
-    "CanvasEvent",
-    "CanvasMove",
-    "CanvasPress",
-    "CanvasRelease",
-    "CanvasScroll",
+    "Blurred",
     "Click",
     "Close",
     "Diagnostic",
+    "DoubleClick",
     "Drag",
     "DragEnd",
     "DuplicateNodeIds",
@@ -1832,16 +1740,6 @@ __all__ = [
     "KeyPress",
     "KeyRelease",
     "ModifiersChanged",
-    "MouseAreaDoubleClick",
-    "MouseAreaEnter",
-    "MouseAreaEvent",
-    "MouseAreaExit",
-    "MouseAreaMiddlePress",
-    "MouseAreaMiddleRelease",
-    "MouseAreaMove",
-    "MouseAreaRightPress",
-    "MouseAreaRightRelease",
-    "MouseAreaScroll",
     "MouseButton",
     "MouseButtonPress",
     "MouseButtonRelease",
@@ -1850,6 +1748,7 @@ __all__ = [
     "MouseLeave",
     "MouseMove",
     "MouseWheel",
+    "Move",
     "Open",
     "OptionHovered",
     "PaneClicked",
@@ -1858,14 +1757,20 @@ __all__ = [
     "PaneFocusCycle",
     "PaneResized",
     "Paste",
+    "PointerButton",
+    "PointerEvent",
+    "PointerScroll",
+    "PointerType",
+    "Press",
+    "Release",
     "RendererError",
+    "Resize",
     "RuntimeEvent",
     "ScopedWidgetEvent",
     "Scroll",
     "ScrollData",
     "ScrollUnit",
     "Select",
-    "SensorResize",
     "Slide",
     "SlideRelease",
     "Sort",
@@ -1895,7 +1800,6 @@ __all__ = [
     "WindowRescaled",
     "WindowResized",
     "WindowUnfocused",
-    # Helpers
     "split_scoped_id",
     "target",
 ]

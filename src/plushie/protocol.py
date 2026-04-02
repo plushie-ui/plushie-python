@@ -19,13 +19,10 @@ from plushie.events import (
     AnimationFrame,
     Announce,
     Blurred,
-    CanvasMove,
-    CanvasPress,
-    CanvasRelease,
-    CanvasScroll,
     Click,
     Close,
     Diagnostic,
+    DoubleClick,
     Drag,
     DragEnd,
     DuplicateNodeIds,
@@ -47,21 +44,13 @@ from plushie.events import (
     KeyPress,
     KeyRelease,
     ModifiersChanged,
-    MouseAreaDoubleClick,
-    MouseAreaEnter,
-    MouseAreaExit,
-    MouseAreaMiddlePress,
-    MouseAreaMiddleRelease,
-    MouseAreaMove,
-    MouseAreaRightPress,
-    MouseAreaRightRelease,
-    MouseAreaScroll,
     MouseButtonPress,
     MouseButtonRelease,
     MouseEnter,
     MouseLeave,
     MouseMove,
     MouseWheel,
+    Move,
     Open,
     OptionHovered,
     PaneClicked,
@@ -69,11 +58,14 @@ from plushie.events import (
     PaneFocusCycle,
     PaneResized,
     Paste,
+    PointerScroll,
+    Press,
+    Release,
     RendererError,
+    Resize,
     Scroll,
     ScrollData,
     Select,
-    SensorResize,
     Slide,
     SlideRelease,
     Sort,
@@ -761,19 +753,12 @@ def decode_message(
     | OptionHovered
     | KeyBinding
     | WidgetEvent
-    | MouseAreaRightPress
-    | MouseAreaRightRelease
-    | MouseAreaMiddlePress
-    | MouseAreaMiddleRelease
-    | MouseAreaDoubleClick
-    | MouseAreaEnter
-    | MouseAreaExit
-    | MouseAreaMove
-    | MouseAreaScroll
-    | CanvasPress
-    | CanvasRelease
-    | CanvasMove
-    | CanvasScroll
+    | Press
+    | Release
+    | Move
+    | PointerScroll
+    | DoubleClick
+    | Resize
     | Focused
     | Blurred
     | Drag
@@ -781,7 +766,6 @@ def decode_message(
     | Enter
     | Exit
     | Diagnostic
-    | SensorResize
     | PaneResized
     | PaneDragged
     | PaneClicked
@@ -966,7 +950,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    if family == "scroll":
+    if family == "scroll" and "absolute_x" in data:
         local_id, scope = split_scoped_id(wire_id)
         sd = ScrollData(
             absolute_x=float(data.get("absolute_x", 0)),
@@ -1045,131 +1029,91 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    # ------- MouseArea events (scoped) -------
+    # ------- Unified pointer events (scoped) -------
 
-    if family == "mouse_right_press":
+    if family == "press":
         local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaRightPress(
-            id=local_id,
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "mouse_right_release":
-        local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaRightRelease(
-            id=local_id,
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "mouse_middle_press":
-        local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaMiddlePress(
-            id=local_id,
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "mouse_middle_release":
-        local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaMiddleRelease(
-            id=local_id,
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "mouse_double_click":
-        local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaDoubleClick(
-            id=local_id,
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "mouse_enter":
-        local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaEnter(
-            id=local_id,
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "mouse_exit":
-        local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaExit(
-            id=local_id,
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "mouse_move":
-        local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaMove(
-            id=local_id,
-            x=float(data.get("x", 0)),
-            y=float(data.get("y", 0)),
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "mouse_scroll":
-        local_id, scope = split_scoped_id(wire_id)
-        return MouseAreaScroll(
-            id=local_id,
-            delta_x=float(data.get("delta_x", 0)),
-            delta_y=float(data.get("delta_y", 0)),
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    # ------- Canvas events (scoped) -------
-
-    if family == "canvas_press":
-        local_id, scope = split_scoped_id(wire_id)
-        return CanvasPress(
+        mods = _parse_modifiers(data.get("modifiers"))
+        return Press(
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             button=str(data.get("button", "left")),
+            pointer=str(data.get("pointer", "mouse")),
+            modifiers=mods,
+            finger=data.get("finger"),
             window_id=_extract_window_id(msg),
             scope=scope,
         )
 
-    if family == "canvas_release":
+    if family == "release":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasRelease(
+        mods = _parse_modifiers(data.get("modifiers"))
+        return Release(
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             button=str(data.get("button", "left")),
+            pointer=str(data.get("pointer", "mouse")),
+            modifiers=mods,
+            finger=data.get("finger"),
             window_id=_extract_window_id(msg),
             scope=scope,
         )
 
-    if family == "canvas_move":
+    if family == "move":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasMove(
+        mods = _parse_modifiers(data.get("modifiers"))
+        return Move(
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
+            pointer=str(data.get("pointer", "mouse")),
+            modifiers=mods,
+            finger=data.get("finger"),
             window_id=_extract_window_id(msg),
             scope=scope,
         )
 
-    if family == "canvas_scroll":
+    if family == "scroll":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasScroll(
+        mods = _parse_modifiers(data.get("modifiers"))
+        return PointerScroll(
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
+            pointer=str(data.get("pointer", "mouse")),
+            modifiers=mods,
             window_id=_extract_window_id(msg),
             scope=scope,
         )
 
-    # ------- Unified canvas/widget events (scoped) -------
+    if family == "double_click":
+        local_id, scope = split_scoped_id(wire_id)
+        mods = _parse_modifiers(data.get("modifiers"))
+        return DoubleClick(
+            id=local_id,
+            x=float(data.get("x", 0)),
+            y=float(data.get("y", 0)),
+            pointer=str(data.get("pointer", "mouse")),
+            modifiers=mods,
+            window_id=_extract_window_id(msg),
+            scope=scope,
+        )
+
+    if family == "resize":
+        local_id, scope = split_scoped_id(wire_id)
+        return Resize(
+            id=local_id,
+            width=float(data.get("width", 0)),
+            height=float(data.get("height", 0)),
+            window_id=_extract_window_id(msg),
+            scope=scope,
+        )
+
+    # ------- Unified focus/drag/enter/exit events (scoped) -------
 
     if family == "focused":
         local_id, scope = split_scoped_id(wire_id)
@@ -1235,18 +1179,6 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             element_id=str(data.get("element_id", "")),
             code=str(data.get("code", "")),
             message=str(data.get("message", "")),
-        )
-
-    # ------- Sensor events (scoped) -------
-
-    if family == "sensor_resize":
-        local_id, scope = split_scoped_id(wire_id)
-        return SensorResize(
-            id=local_id,
-            width=float(data.get("width", 0)),
-            height=float(data.get("height", 0)),
-            window_id=_extract_window_id(msg),
-            scope=scope,
         )
 
     # ------- Pane events (scoped) -------

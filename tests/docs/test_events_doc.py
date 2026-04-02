@@ -14,11 +14,10 @@ from plushie.commands import Command
 from plushie.events import (
     AnimationFrame,
     AsyncResult,
-    CanvasMove,
-    CanvasPress,
     Click,
     Close,
     EffectResult,
+    Enter,
     FileDropped,
     FileHovered,
     FilesHoveredLeft,
@@ -28,19 +27,19 @@ from plushie.events import (
     KeyBinding,
     KeyPress,
     ModifiersChanged,
-    MouseAreaEnter,
-    MouseAreaMove,
     MouseButtonPress,
     MouseMove,
+    Move,
     Open,
     OptionHovered,
     PaneClicked,
     PaneResized,
     Paste,
+    Press,
+    Resize,
     Scroll,
     ScrollData,
     Select,
-    SensorResize,
     Slide,
     SlideRelease,
     Sort,
@@ -288,46 +287,46 @@ class TestSortMatch:
 # -- Mouse area events -------------------------------------------------------
 
 
-class TestMouseAreaEnterMatch:
+class TestEnterMatch:
     def test_enter_match(self) -> None:
-        event = MouseAreaEnter(id="hover_zone")
+        event = Enter(id="hover_zone")
         model = Model()
         match event:
-            case MouseAreaEnter(id="hover_zone"):
+            case Enter(id="hover_zone"):
                 model = replace(model, hovered=True)
         assert model.hovered is True
 
 
-class TestMouseAreaMoveMatch:
+class TestMoveMatch:
     def test_move_match(self) -> None:
-        event = MouseAreaMove(id="canvas_area", x=10.0, y=20.0)
+        event = Move(id="canvas_area", x=10.0, y=20.0)
         model = Model()
         match event:
-            case MouseAreaMove(id="canvas_area", x=x, y=y):
+            case Move(id="canvas_area", x=x, y=y):
                 model = replace(model, cursor=(x, y))
         assert model.cursor == (10.0, 20.0)
 
 
-# -- Canvas events -----------------------------------------------------------
+# -- Pointer events ----------------------------------------------------------
 
 
-class TestCanvasPressMatch:
+class TestPressMatch:
     def test_press_left_match(self) -> None:
-        event = CanvasPress(id="draw_area", x=42.0, y=100.0, button="left")
+        event = Press(id="draw_area", x=42.0, y=100.0, button="left")
         model = Model()
         match event:
-            case CanvasPress(id="draw_area", x=x, y=y, button="left"):
+            case Press(id="draw_area", x=x, y=y, button="left"):
                 model = replace(model, drawing=True, last_point=(x, y))
         assert model.drawing is True
         assert model.last_point == (42.0, 100.0)
 
 
-class TestCanvasMoveMatch:
+class TestPointerMoveMatch:
     def test_move_while_drawing(self) -> None:
-        event = CanvasMove(id="draw_area", x=5.0, y=10.0)
+        event = Move(id="draw_area", x=5.0, y=10.0)
         model = Model(drawing=True, strokes=())
         match event:
-            case CanvasMove(id="draw_area", x=x, y=y) if model.drawing:
+            case Move(id="draw_area", x=x, y=y) if model.drawing:
                 model = replace(
                     model, last_point=(x, y), strokes=(*model.strokes, (x, y))
                 )
@@ -345,15 +344,15 @@ class TestCanvasElementClickMatch:
         assert model.selected_bar == "bar-jan"
 
 
-# -- Sensor events -----------------------------------------------------------
+# -- Resize events -----------------------------------------------------------
 
 
-class TestSensorResizeMatch:
-    def test_sensor_resize_match(self) -> None:
-        event = SensorResize(id="content_area", width=800.0, height=600.0)
+class TestResizeMatch:
+    def test_resize_match(self) -> None:
+        event = Resize(id="content_area", width=800.0, height=600.0)
         model = Model()
         match event:
-            case SensorResize(id="content_area", width=w, height=h):
+            case Resize(id="content_area", width=w, height=h):
                 model = replace(model, content_size=(w, h))
         assert model.content_size == (800.0, 600.0)
 

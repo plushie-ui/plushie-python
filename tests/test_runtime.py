@@ -17,7 +17,7 @@ from plushie.events import (
     AsyncResult,
     Click,
     MouseMove,
-    SensorResize,
+    Move,
     TimerTick,
 )
 from plushie.runtime import (
@@ -225,13 +225,13 @@ class TestCoalesceKey:
         event = MouseMove(x=10.0, y=20.0)
         assert coalesce_key(event) == ("mouse_move",)
 
-    def test_sensor_resize(self) -> None:
-        event = SensorResize(id="s1", window_id="main", width=100.0, height=200.0)
-        assert coalesce_key(event) == ("sensor_resize", "main", "s1")
+    def test_pointer_move(self) -> None:
+        event = Move(id="area1", x=10.0, y=20.0, window_id="main")
+        assert coalesce_key(event) == ("move", "main", "area1")
 
-    def test_different_sensors_different_keys(self) -> None:
-        e1 = SensorResize(id="s1", window_id="main", width=100.0, height=200.0)
-        e2 = SensorResize(id="s2", window_id="main", width=100.0, height=200.0)
+    def test_different_move_targets_different_keys(self) -> None:
+        e1 = Move(id="area1", x=10.0, y=20.0, window_id="main")
+        e2 = Move(id="area2", x=10.0, y=20.0, window_id="main")
         assert coalesce_key(e1) != coalesce_key(e2)
 
     def test_non_coalescable_returns_none(self) -> None:

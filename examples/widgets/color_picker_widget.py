@@ -22,10 +22,10 @@ from plushie import canvas as c
 from plushie import ui
 from plushie.canvas_widget import CanvasWidgetDef, EventAction, EventActionResult
 from plushie.events import (
-    CanvasMove,
-    CanvasPress,
-    CanvasRelease,
     KeyPress,
+    Move,
+    Press,
+    Release,
 )
 
 # -- Geometry constants ------------------------------------------------------
@@ -55,7 +55,7 @@ class ColorPickerWidget(CanvasWidgetDef):
 
     def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
         match event:
-            case CanvasPress(x=x, y=y, button="left"):
+            case Press(x=x, y=y, button="left"):
                 dx = x - CX
                 dy = y - CY
                 dist = math.sqrt(dx * dx + dy * dy)
@@ -77,7 +77,7 @@ class ColorPickerWidget(CanvasWidgetDef):
                 else:
                     return EventAction.consumed()
 
-            case CanvasMove(x=x, y=y):
+            case Move(x=x, y=y):
                 if state["drag"] == "ring":
                     new_state = {**state, "hue": _hue_from_point(x - CX, y - CY)}
                     return EventAction.emit(
@@ -91,7 +91,7 @@ class ColorPickerWidget(CanvasWidgetDef):
                 else:
                     return EventAction.consumed()
 
-            case CanvasRelease():
+            case Release():
                 return EventAction.update_state({**state, "drag": "none"})
 
             case KeyPress(id=eid, key=key, modifiers=mods) if eid is not None:

@@ -55,10 +55,6 @@ from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from plushie.events import (
-    CanvasMove,
-    CanvasPress,
-    CanvasRelease,
-    CanvasScroll,
     Click,
     Close,
     Input,
@@ -77,18 +73,6 @@ from plushie.events import (
 from plushie.subscriptions import Subscription
 
 logger = logging.getLogger("plushie")
-
-# Canvas-internal event types that should not leak to update().
-# When a handler chain exists (the event went through widget dispatch)
-# but no handler captured, canvas-internal events are auto-consumed.
-# Raw canvases (not managed by a WidgetDef) bypass the handler chain
-# entirely, so their events pass through to update() normally.
-_CANVAS_INTERNAL_TYPES: tuple[type, ...] = (
-    CanvasMove,
-    CanvasPress,
-    CanvasRelease,
-    CanvasScroll,
-)
 
 
 # ---------------------------------------------------------------------------
@@ -736,12 +720,6 @@ def _walk_chain(
                 event_specs=widget_cls.event_specs or None,
                 widget_name=widget_cls.__name__,
             )
-
-    # Auto-consume canvas-internal events that no handler captured.
-    # These are implementation details of canvas rendering that should
-    # not leak to the app's update().
-    if isinstance(event, _CANVAS_INTERNAL_TYPES):
-        return None, registry
 
     return event, registry
 

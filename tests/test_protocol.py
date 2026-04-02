@@ -7,13 +7,10 @@ from plushie.events import (
     AnimationFrame,
     Announce,
     Blurred,
-    CanvasMove,
-    CanvasPress,
-    CanvasRelease,
-    CanvasScroll,
     Click,
     Close,
     Diagnostic,
+    DoubleClick,
     Drag,
     DragEnd,
     DuplicateNodeIds,
@@ -34,21 +31,13 @@ from plushie.events import (
     KeyPress,
     KeyRelease,
     ModifiersChanged,
-    MouseAreaDoubleClick,
-    MouseAreaEnter,
-    MouseAreaExit,
-    MouseAreaMiddlePress,
-    MouseAreaMiddleRelease,
-    MouseAreaMove,
-    MouseAreaRightPress,
-    MouseAreaRightRelease,
-    MouseAreaScroll,
     MouseButtonPress,
     MouseButtonRelease,
     MouseEnter,
     MouseLeave,
     MouseMove,
     MouseWheel,
+    Move,
     Open,
     OptionHovered,
     PaneClicked,
@@ -56,9 +45,12 @@ from plushie.events import (
     PaneFocusCycle,
     PaneResized,
     Paste,
+    PointerScroll,
+    Press,
+    Release,
+    Resize,
     Scroll,
     Select,
-    SensorResize,
     Slide,
     SlideRelease,
     Sort,
@@ -690,145 +682,91 @@ class TestDecodeWidgetEvents:
         assert result.value == "undo"
 
 
-class TestDecodeMouseAreaEvents:
-    def test_mouse_right_press(self) -> None:
+class TestDecodePointerEvents:
+    def test_press(self) -> None:
         raw = {
             "type": "event",
-            "family": "mouse_right_press",
+            "family": "press",
             "id": "area1",
             "window_id": "main",
+            "data": {"x": 50, "y": 60, "button": "left"},
         }
         result = decode_message(raw)
-        assert isinstance(result, MouseAreaRightPress)
+        assert isinstance(result, Press)
+        assert result.button == "left"
 
-    def test_mouse_right_release(self) -> None:
+    def test_press_right(self) -> None:
         raw = {
             "type": "event",
-            "family": "mouse_right_release",
+            "family": "press",
             "id": "area1",
             "window_id": "main",
+            "data": {"x": 0, "y": 0, "button": "right"},
         }
-        assert isinstance(decode_message(raw), MouseAreaRightRelease)
+        result = decode_message(raw)
+        assert isinstance(result, Press)
+        assert result.button == "right"
 
-    def test_mouse_middle_press(self) -> None:
+    def test_release(self) -> None:
         raw = {
             "type": "event",
-            "family": "mouse_middle_press",
+            "family": "release",
             "id": "area1",
             "window_id": "main",
+            "data": {"x": 50, "y": 60, "button": "right"},
         }
-        assert isinstance(decode_message(raw), MouseAreaMiddlePress)
+        result = decode_message(raw)
+        assert isinstance(result, Release)
+        assert result.button == "right"
 
-    def test_mouse_middle_release(self) -> None:
+    def test_move(self) -> None:
         raw = {
             "type": "event",
-            "family": "mouse_middle_release",
-            "id": "area1",
-            "window_id": "main",
-        }
-        assert isinstance(decode_message(raw), MouseAreaMiddleRelease)
-
-    def test_mouse_double_click(self) -> None:
-        raw = {
-            "type": "event",
-            "family": "mouse_double_click",
-            "id": "area1",
-            "window_id": "main",
-        }
-        assert isinstance(decode_message(raw), MouseAreaDoubleClick)
-
-    def test_mouse_enter(self) -> None:
-        raw = {
-            "type": "event",
-            "family": "mouse_enter",
-            "id": "area1",
-            "window_id": "main",
-        }
-        assert isinstance(decode_message(raw), MouseAreaEnter)
-
-    def test_mouse_exit(self) -> None:
-        raw = {
-            "type": "event",
-            "family": "mouse_exit",
-            "id": "area1",
-            "window_id": "main",
-        }
-        assert isinstance(decode_message(raw), MouseAreaExit)
-
-    def test_mouse_move(self) -> None:
-        raw = {
-            "type": "event",
-            "family": "mouse_move",
+            "family": "move",
             "id": "area1",
             "window_id": "main",
             "data": {"x": 10.5, "y": 20.3},
         }
         result = decode_message(raw)
-        assert isinstance(result, MouseAreaMove)
+        assert isinstance(result, Move)
         assert result.x == 10.5
         assert result.y == 20.3
 
-    def test_mouse_scroll(self) -> None:
+    def test_scroll(self) -> None:
         raw = {
             "type": "event",
-            "family": "mouse_scroll",
+            "family": "scroll",
             "id": "area1",
             "window_id": "main",
-            "data": {"delta_x": 0, "delta_y": -3.0},
+            "data": {"x": 0, "y": 0, "delta_x": 0, "delta_y": -3.0},
         }
         result = decode_message(raw)
-        assert isinstance(result, MouseAreaScroll)
+        assert isinstance(result, PointerScroll)
         assert result.delta_y == -3.0
 
-
-class TestDecodeCanvasEvents:
-    def test_canvas_press(self) -> None:
+    def test_double_click(self) -> None:
         raw = {
             "type": "event",
-            "family": "canvas_press",
-            "id": "canvas1",
+            "family": "double_click",
+            "id": "area1",
             "window_id": "main",
-            "data": {"x": 50, "y": 60, "button": "left"},
+            "data": {"x": 50, "y": 50},
         }
         result = decode_message(raw)
-        assert isinstance(result, CanvasPress)
-        assert result.button == "left"
+        assert isinstance(result, DoubleClick)
+        assert result.x == 50
 
-    def test_canvas_release(self) -> None:
+    def test_resize(self) -> None:
         raw = {
             "type": "event",
-            "family": "canvas_release",
-            "id": "canvas1",
+            "family": "resize",
+            "id": "content1",
             "window_id": "main",
-            "data": {"x": 50, "y": 60, "button": "right"},
+            "data": {"width": 800, "height": 600},
         }
         result = decode_message(raw)
-        assert isinstance(result, CanvasRelease)
-        assert result.button == "right"
-
-    def test_canvas_move(self) -> None:
-        raw = {
-            "type": "event",
-            "family": "canvas_move",
-            "id": "canvas1",
-            "window_id": "main",
-            "data": {"x": 100, "y": 200},
-        }
-        result = decode_message(raw)
-        assert isinstance(result, CanvasMove)
-        assert result.x == 100
-
-    def test_canvas_scroll(self) -> None:
-        raw = {
-            "type": "event",
-            "family": "canvas_scroll",
-            "id": "canvas1",
-            "window_id": "main",
-            "data": {"x": 50, "y": 50, "delta_x": 0, "delta_y": -5},
-        }
-        result = decode_message(raw)
-        assert isinstance(result, CanvasScroll)
-        assert result.delta_y == -5
+        assert isinstance(result, Resize)
+        assert result.width == 800
 
 
 class TestDecodeUnifiedEvents:
@@ -949,20 +887,6 @@ class TestDecodeDiagnostic:
         assert result.level == "warning"
         assert result.element_id == "star-0"
         assert result.code == "MISSING_A11Y"
-
-
-class TestDecodeSensorEvents:
-    def test_sensor_resize(self) -> None:
-        raw = {
-            "type": "event",
-            "family": "sensor_resize",
-            "id": "sensor1",
-            "window_id": "main",
-            "data": {"width": 300, "height": 200},
-        }
-        result = decode_message(raw)
-        assert isinstance(result, SensorResize)
-        assert result.width == 300
 
 
 class TestDecodePaneEvents:

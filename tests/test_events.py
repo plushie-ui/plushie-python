@@ -10,13 +10,10 @@ from plushie.events import (
     Announce,
     AsyncResult,
     Blurred,
-    CanvasMove,
-    CanvasPress,
-    CanvasRelease,
-    CanvasScroll,
     Click,
     Close,
     Diagnostic,
+    DoubleClick,
     Drag,
     DragEnd,
     DuplicateNodeIds,
@@ -38,21 +35,13 @@ from plushie.events import (
     KeyPress,
     KeyRelease,
     ModifiersChanged,
-    MouseAreaDoubleClick,
-    MouseAreaEnter,
-    MouseAreaExit,
-    MouseAreaMiddlePress,
-    MouseAreaMiddleRelease,
-    MouseAreaMove,
-    MouseAreaRightPress,
-    MouseAreaRightRelease,
-    MouseAreaScroll,
     MouseButtonPress,
     MouseButtonRelease,
     MouseEnter,
     MouseLeave,
     MouseMove,
     MouseWheel,
+    Move,
     Open,
     OptionHovered,
     PaneClicked,
@@ -60,10 +49,13 @@ from plushie.events import (
     PaneFocusCycle,
     PaneResized,
     Paste,
+    PointerScroll,
+    Press,
+    Release,
+    Resize,
     Scroll,
     ScrollData,
     Select,
-    SensorResize,
     Slide,
     SlideRelease,
     Sort,
@@ -232,71 +224,48 @@ class TestWidgetEvents:
 # ---------------------------------------------------------------------------
 
 
-class TestMouseAreaEvents:
-    """Construct every mouse_area event type."""
-
-    def test_right_press(self) -> None:
-        e = MouseAreaRightPress(id="area")
-        assert e.id == "area"
-
-    def test_right_release(self) -> None:
-        e = MouseAreaRightRelease(id="area", scope=("panel",))
-        assert e.scope == ("panel",)
-
-    def test_middle_press(self) -> None:
-        e = MouseAreaMiddlePress(id="area")
-        assert e.id == "area"
-
-    def test_middle_release(self) -> None:
-        e = MouseAreaMiddleRelease(id="area")
-        assert e.id == "area"
-
-    def test_double_click(self) -> None:
-        e = MouseAreaDoubleClick(id="area")
-        assert e.id == "area"
-
-    def test_enter(self) -> None:
-        e = MouseAreaEnter(id="area")
-        assert e.id == "area"
-
-    def test_exit(self) -> None:
-        e = MouseAreaExit(id="area")
-        assert e.id == "area"
-
-    def test_move(self) -> None:
-        e = MouseAreaMove(id="area", x=10.5, y=20.5)
-        assert e.x == 10.5
-        assert e.y == 20.5
-
-    def test_scroll(self) -> None:
-        e = MouseAreaScroll(id="area", delta_x=1.0, delta_y=-2.0)
-        assert e.delta_x == 1.0
-        assert e.delta_y == -2.0
-
-
-# ---------------------------------------------------------------------------
-# Canvas events
-# ---------------------------------------------------------------------------
-
-
-class TestCanvasEvents:
-    """Construct every canvas event type."""
+class TestPointerEvents:
+    """Construct every unified pointer event type."""
 
     def test_press(self) -> None:
-        e = CanvasPress(id="draw", x=100.0, y=200.0, button="left")
+        e = Press(id="area", x=100.0, y=200.0, button="left")
         assert e.button == "left"
+        assert e.pointer == "mouse"
+
+    def test_press_right(self) -> None:
+        e = Press(id="area", x=0.0, y=0.0, button="right", scope=("panel",))
+        assert e.button == "right"
+        assert e.scope == ("panel",)
 
     def test_release(self) -> None:
-        e = CanvasRelease(id="draw", x=100.0, y=200.0, button="right")
+        e = Release(id="area", x=100.0, y=200.0, button="right")
         assert e.button == "right"
 
     def test_move(self) -> None:
-        e = CanvasMove(id="draw", x=150.0, y=250.0)
-        assert e.x == 150.0
+        e = Move(id="area", x=10.5, y=20.5)
+        assert e.x == 10.5
+        assert e.y == 20.5
 
-    def test_scroll(self) -> None:
-        e = CanvasScroll(id="draw", x=100.0, y=200.0, delta_x=0.0, delta_y=-3.0)
-        assert e.delta_y == -3.0
+    def test_pointer_scroll(self) -> None:
+        e = PointerScroll(id="area", x=0.0, y=0.0, delta_x=1.0, delta_y=-2.0)
+        assert e.delta_x == 1.0
+        assert e.delta_y == -2.0
+
+    def test_double_click(self) -> None:
+        e = DoubleClick(id="area", x=50.0, y=50.0)
+        assert e.id == "area"
+        assert e.pointer == "mouse"
+
+    def test_resize(self) -> None:
+        e = Resize(id="content", width=800.0, height=600.0, scope=("panel",))
+        assert e.width == 800.0
+        assert e.height == 600.0
+        assert e.scope == ("panel",)
+
+    def test_touch_press(self) -> None:
+        e = Press(id="canvas", x=100.0, y=200.0, pointer="touch", finger=1)
+        assert e.pointer == "touch"
+        assert e.finger == 1
 
 
 # ---------------------------------------------------------------------------
@@ -386,19 +355,6 @@ class TestDiagnosticEvent:
         assert e.element_id == "star-0"
         assert e.code == "MISSING_A11Y"
         assert e.message == "Interactive element has no a11y label"
-
-
-# ---------------------------------------------------------------------------
-# Sensor events
-# ---------------------------------------------------------------------------
-
-
-class TestSensorEvents:
-    def test_sensor_resize(self) -> None:
-        e = SensorResize(id="content", width=800.0, height=600.0, scope=("panel",))
-        assert e.width == 800.0
-        assert e.height == 600.0
-        assert e.scope == ("panel",)
 
 
 # ---------------------------------------------------------------------------
@@ -793,12 +749,12 @@ class TestTarget:
         e = Input(id="email", value="test@example.com", scope=("form",))
         assert target(e) == "form/email"
 
-    def test_with_sensor_resize(self) -> None:
-        e = SensorResize(id="content", width=800.0, height=600.0, scope=("panel",))
+    def test_with_resize(self) -> None:
+        e = Resize(id="content", width=800.0, height=600.0, scope=("panel",))
         assert target(e) == "panel/content"
 
-    def test_with_canvas_press(self) -> None:
-        e = CanvasPress(id="draw", x=10.0, y=20.0, button="left", scope=("editor",))
+    def test_with_press(self) -> None:
+        e = Press(id="draw", x=10.0, y=20.0, button="left", scope=("editor",))
         assert target(e) == "editor/draw"
 
 

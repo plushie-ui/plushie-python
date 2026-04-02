@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from plushie.events import (
-    CanvasPress,
     Click,
     Enter,
+    Press,
     Select,
     WidgetEvent,
 )
@@ -269,26 +269,6 @@ class TestDispatchThroughWidgets:
         result, _new_reg = dispatch_through_widgets(reg, event)
         assert result is event
 
-    def test_canvas_internal_auto_consumed(self) -> None:
-        """Canvas-internal events are auto-consumed when a handler chain
-        exists but no handler captures them."""
-        reg = {
-            ("main", "form/widget"): RegistryEntry(
-                definition=IgnoreAll(), state={}, props={}
-            )
-        }
-        # CanvasPress is a canvas-internal event
-        event = CanvasPress(
-            id="btn",
-            x=0.0,
-            y=0.0,
-            button="left",
-            window_id="main",
-            scope=("widget", "form"),
-        )
-        result, _new_reg = dispatch_through_widgets(reg, event)
-        assert result is None  # auto-consumed
-
     def test_consumed_returns_none(self) -> None:
         reg = {
             ("main", "form/widget"): RegistryEntry(
@@ -391,16 +371,14 @@ class TestDispatchThroughWidgets:
         result, _ = dispatch_through_widgets(reg, event)
         assert result is event
 
-    def test_raw_canvas_event_not_consumed(self) -> None:
-        """Canvas events from raw canvases (no handler chain) pass through."""
-        # Registry has a widget, but the event's scope doesn't match it.
-        # No handler chain is built, so auto-consume doesn't apply.
+    def test_unhandled_press_passes_through(self) -> None:
+        """Pointer events from unmatched scope pass through to update()."""
         reg = {
             ("main", "other_widget"): RegistryEntry(
                 definition=IgnoreAll(), state={}, props={}
             )
         }
-        event = CanvasPress(
+        event = Press(
             id="raw_canvas",
             x=0.0,
             y=0.0,
@@ -409,7 +387,7 @@ class TestDispatchThroughWidgets:
             scope=(),
         )
         result, _ = dispatch_through_widgets(reg, event)
-        assert result is event  # NOT consumed -- passes through to update()
+        assert result is event
 
 
 # ---------------------------------------------------------------------------
