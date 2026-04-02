@@ -58,13 +58,13 @@ from plushie.events import (
     PaneFocusCycle,
     PaneResized,
     Paste,
-    PointerScroll,
     Press,
     Release,
     RendererError,
     Resize,
     Scroll,
     ScrollData,
+    Scrolled,
     Select,
     Slide,
     SlideRelease,
@@ -745,7 +745,7 @@ def decode_message(
     | Select
     | Slide
     | SlideRelease
-    | Scroll
+    | Scrolled
     | Paste
     | Sort
     | Open
@@ -756,7 +756,7 @@ def decode_message(
     | Press
     | Release
     | Move
-    | PointerScroll
+    | Scroll
     | DoubleClick
     | Resize
     | Focused
@@ -950,7 +950,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    if family == "scroll" and "absolute_x" in data:
+    if family in ("scroll", "scrolled") and "absolute_x" in data:
         local_id, scope = split_scoped_id(wire_id)
         sd = ScrollData(
             absolute_x=float(data.get("absolute_x", 0)),
@@ -962,7 +962,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             content_width=float(data.get("content_width", 0)),
             content_height=float(data.get("content_height", 0)),
         )
-        return Scroll(
+        return Scrolled(
             id=local_id,
             data=sd,
             window_id=_extract_window_id(msg),
@@ -1078,7 +1078,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     if family == "scroll":
         local_id, scope = split_scoped_id(wire_id)
         mods = _parse_modifiers(data.get("modifiers"))
-        return PointerScroll(
+        return Scroll(
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),

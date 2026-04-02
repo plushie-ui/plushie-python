@@ -37,8 +37,8 @@ from plushie.events import (
     Paste,
     Press,
     Resize,
-    Scroll,
     ScrollData,
+    Scrolled,
     Select,
     Slide,
     SlideRelease,
@@ -225,10 +225,10 @@ class TestScrollMatch:
             content_width=400.0,
             content_height=600.0,
         )
-        event = Scroll(id="log_view", data=data)
+        event = Scrolled(id="log_view", data=data)
         model = Model()
         match event:
-            case Scroll(id="log_view", data=viewport):
+            case Scrolled(id="log_view", data=viewport):
                 at_bottom = viewport.relative_y >= 0.99
                 model = replace(model, auto_scroll=at_bottom)
         assert model.auto_scroll is False  # 0.75 < 0.99

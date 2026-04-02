@@ -49,12 +49,12 @@ from plushie.events import (
     PaneFocusCycle,
     PaneResized,
     Paste,
-    PointerScroll,
     Press,
     Release,
     Resize,
     Scroll,
     ScrollData,
+    Scrolled,
     Select,
     Slide,
     SlideRelease,
@@ -179,7 +179,7 @@ class TestWidgetEvents:
             content_width=800.0,
             content_height=1200.0,
         )
-        e = Scroll(id="log", data=sd)
+        e = Scrolled(id="log", data=sd)
         assert e.data.absolute_x == 10.0
         assert e.data.content_height == 1200.0
 
@@ -247,7 +247,7 @@ class TestPointerEvents:
         assert e.y == 20.5
 
     def test_pointer_scroll(self) -> None:
-        e = PointerScroll(id="area", x=0.0, y=0.0, delta_x=1.0, delta_y=-2.0)
+        e = Scroll(id="area", x=0.0, y=0.0, delta_x=1.0, delta_y=-2.0)
         assert e.delta_x == 1.0
         assert e.delta_y == -2.0
 

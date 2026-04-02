@@ -206,10 +206,10 @@ class SlideRelease:
 
 
 @dataclass(frozen=True, slots=True)
-class Scroll:
+class Scrolled:
     """A scrollable widget's viewport changed position.
 
-    Wire family: ``scroll``.
+    Wire family: ``scrolled``.
 
     Attributes:
         data: Full scroll viewport state including offsets, ratios,
@@ -509,10 +509,10 @@ class Move:
 
 
 @dataclass(frozen=True, slots=True)
-class PointerScroll:
+class Scroll:
     """Pointer wheel scrolled within a widget.
 
-    Wire family: ``scroll``. Replaces mouse_area scroll and canvas_scroll.
+    Wire family: ``scroll``.
 
     Attributes:
         x: Horizontal cursor position.
@@ -1535,7 +1535,7 @@ def target(
     | Select
     | Slide
     | SlideRelease
-    | Scroll
+    | Scrolled
     | Paste
     | Sort
     | Open
@@ -1552,7 +1552,7 @@ def target(
     | Press
     | Release
     | Move
-    | PointerScroll
+    | Scroll
     | DoubleClick
     | Resize
     | PaneResized
@@ -1596,7 +1596,7 @@ type ScopedWidgetEvent = (
     | Select
     | Slide
     | SlideRelease
-    | Scroll
+    | Scrolled
     | Paste
     | Sort
     | Open
@@ -1613,13 +1613,13 @@ type ScopedWidgetEvent = (
     | Press
     | Release
     | Move
-    | PointerScroll
+    | Scroll
     | DoubleClick
     | Resize
 )
 """Union of all widget events that carry ``id`` and ``scope``."""
 
-type PointerEvent = Press | Release | Move | PointerScroll | DoubleClick
+type PointerEvent = Press | Release | Move | Scroll | DoubleClick
 """Union of all unified pointer events."""
 
 type PaneEvent = PaneResized | PaneDragged | PaneClicked | PaneFocusCycle
@@ -1759,7 +1759,6 @@ __all__ = [
     "Paste",
     "PointerButton",
     "PointerEvent",
-    "PointerScroll",
     "PointerType",
     "Press",
     "Release",
@@ -1770,6 +1769,7 @@ __all__ = [
     "Scroll",
     "ScrollData",
     "ScrollUnit",
+    "Scrolled",
     "Select",
     "Slide",
     "SlideRelease",

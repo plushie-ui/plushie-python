@@ -45,11 +45,11 @@ from plushie.events import (
     PaneFocusCycle,
     PaneResized,
     Paste,
-    PointerScroll,
     Press,
     Release,
     Resize,
     Scroll,
+    Scrolled,
     Select,
     Slide,
     SlideRelease,
@@ -607,7 +607,7 @@ class TestDecodeWidgetEvents:
             },
         }
         result = decode_message(raw)
-        assert isinstance(result, Scroll)
+        assert isinstance(result, Scrolled)
         assert result.data.absolute_y == 100
         assert result.data.content_height == 600
 
@@ -741,7 +741,7 @@ class TestDecodePointerEvents:
             "data": {"x": 0, "y": 0, "delta_x": 0, "delta_y": -3.0},
         }
         result = decode_message(raw)
-        assert isinstance(result, PointerScroll)
+        assert isinstance(result, Scroll)
         assert result.delta_y == -3.0
 
     def test_double_click(self) -> None:
