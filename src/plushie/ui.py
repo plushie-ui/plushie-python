@@ -95,7 +95,7 @@ def window(id: str, /, *children: Any, **kwargs: Any) -> Node:
         **kwargs: Window props (title, size, width, height, position,
             min_size, max_size, maximized, fullscreen, visible, resizable,
             closeable, minimizable, decorations, transparent, blur, level,
-            exit_on_close_request, scale_factor).
+            exit_on_close_request, scale_factor, theme).
     """
     return _named_container("window", id, *children, **kwargs)
 

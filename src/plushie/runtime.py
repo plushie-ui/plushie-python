@@ -137,6 +137,7 @@ _WINDOW_PROP_KEYS = frozenset(
         "level",
         "exit_on_close_request",
         "scale_factor",
+        "theme",
     }
 )
 
