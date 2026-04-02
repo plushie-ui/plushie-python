@@ -58,6 +58,31 @@ from dataclasses import dataclass
 from typing import Any
 
 
+def _parse_target(widget_id: str) -> tuple[str | None, str]:
+    """Parse a window-qualified widget path.
+
+    Supports ``"window_id#widget_path"`` syntax where the ``#``
+    separator splits the window scope from the widget path.
+
+    Returns ``(window_id, target)`` where window_id is ``None``
+    when no qualifier is present.
+    """
+    if "#" in widget_id:
+        parts = widget_id.split("#", 1)
+        if parts[0]:
+            return parts[0], parts[1]
+    return None, widget_id
+
+
+def _targeted_payload(op: str, widget_id: str, **extra: Any) -> dict[str, Any]:
+    """Build a widget_op payload, extracting window_id from ``#`` syntax."""
+    window_id, target = _parse_target(widget_id)
+    payload: dict[str, Any] = {"op": op, "target": target, **extra}
+    if window_id is not None:
+        payload["window_id"] = window_id
+    return payload
+
+
 @dataclass(frozen=True, slots=True)
 class Command:
     """A side-effect descriptor returned from ``update()``.
@@ -138,8 +163,12 @@ class Command:
 
     @staticmethod
     def focus(widget_id: str) -> Command:
-        """Move keyboard focus to *widget_id*."""
-        return Command(type="widget_op", payload={"op": "focus", "target": widget_id})
+        """Move keyboard focus to *widget_id*.
+
+        Supports window-qualified paths: ``"main#email"`` targets
+        widget ``"email"`` in window ``"main"``.
+        """
+        return Command(type="widget_op", payload=_targeted_payload("focus", widget_id))
 
     @staticmethod
     def focus_next() -> Command:
@@ -153,9 +182,9 @@ class Command:
 
     @staticmethod
     def select_all(widget_id: str) -> Command:
-        """Select all text in *widget_id*."""
+        """Select all text in *widget_id*. Supports ``"window#widget"``."""
         return Command(
-            type="widget_op", payload={"op": "select_all", "target": widget_id}
+            type="widget_op", payload=_targeted_payload("select_all", widget_id)
         )
 
     @staticmethod
@@ -197,18 +226,18 @@ class Command:
 
     @staticmethod
     def scroll_to(widget_id: str, offset_y: float) -> Command:
-        """Scroll *widget_id* to absolute *offset_y*."""
+        """Scroll *widget_id* to absolute *offset_y*. Supports ``"window#widget"``."""
         return Command(
             type="widget_op",
-            payload={"op": "scroll_to", "target": widget_id, "offset_y": offset_y},
+            payload=_targeted_payload("scroll_to", widget_id, offset_y=offset_y),
         )
 
     @staticmethod
     def snap_to(widget_id: str, x: float = 0.0, y: float = 0.0) -> Command:
-        """Snap *widget_id* to absolute offset instantly (no smooth scroll)."""
+        """Snap *widget_id* to absolute offset instantly. Supports ``"window#widget"``."""
         return Command(
             type="widget_op",
-            payload={"op": "snap_to", "target": widget_id, "x": x, "y": y},
+            payload=_targeted_payload("snap_to", widget_id, x=x, y=y),
         )
 
     @staticmethod

@@ -144,15 +144,20 @@ def _process_commands(
 
 
 def _parse_id_selector(selector: str) -> tuple[str | None, str] | None:
-    if not selector.startswith("#"):
+    """Parse an ID selector, optionally window-qualified.
+
+    Formats:
+    - ``"#save"`` -> (None, "save")
+    - ``"main#save"`` -> ("main", "save")
+    - ``"main#form/save"`` -> ("main", "form/save")
+    """
+    if "#" not in selector:
         return None
 
-    raw = selector[1:]
-    if "::" in raw:
-        window_id, widget_id = raw.split("::", 1)
-        return window_id, widget_id
-
-    return None, raw
+    parts = selector.split("#", 1)
+    window_id = parts[0] if parts[0] else None
+    widget_id = parts[1]
+    return window_id, widget_id
 
 
 def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
@@ -201,7 +206,7 @@ def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
                     }
                 if len(local_matches) > 1:
                     raise ValueError(
-                        f'selector "{selector}" is ambiguous across windows; prefix it with "#<window_id>::" or use the full scoped id'
+                        f'selector "{selector}" is ambiguous across windows; prefix it with "<window_id>#<widget_id>" or use the full scoped id'
                     )
                 if not local_matches and not exact_matches:
                     available = _collect_widget_ids(tree)
@@ -213,7 +218,7 @@ def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
                     raise ValueError(f'widget not found: "{selector}".{hint}')
             elif len(exact_matches) > 1:
                 raise ValueError(
-                    f'selector "{selector}" matches multiple windows; prefix it with "#<window_id>::"'
+                    f'selector "{selector}" matches multiple windows; prefix it with "<window_id>#<widget_id>"'
                 )
             elif not exact_matches:
                 available = _collect_widget_ids(tree)
