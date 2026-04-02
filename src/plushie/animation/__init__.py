@@ -69,17 +69,10 @@ from plushie.animation.spring import PRESETS, Spring
 from plushie.animation.transition import Transition
 from plushie.animation.tween import FINISHED, Tween, interpolate
 
-# Backwards compat: Animation was the old name for Tween
-Animation = Tween
-
-# Re-export the old spring easing function under its original name
-from plushie.animation.easing import ease_out_elastic as spring  # noqa: E402
-
 __all__ = [
     "FINISHED",
     "NAMED_EASINGS",
     "PRESETS",
-    "Animation",
     "Easing",
     "EasingSpec",
     "Sequence",
@@ -120,5 +113,4 @@ __all__ = [
     "ease_out_quint",
     "interpolate",
     "linear",
-    "spring",
 ]

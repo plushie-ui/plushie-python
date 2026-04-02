@@ -3,18 +3,18 @@
 Native widgets are backed by a Rust crate implementing the
 ``WidgetExtension`` trait.  The Rust crate is compiled into a custom
 plushie binary, and the widget communicates via the standard wire
-protocol.  Use :class:`NativeWidgetDef` to describe the widget, then
+protocol.  Use :class:`NativeWidget` to describe the widget, then
 :func:`build_node` and :func:`build_command` to produce wire-compatible
 nodes and commands at runtime.
 
 Example::
 
     from plushie.native_widget import (
-        NativeWidgetDef, PropDef, CommandDef, ParamDef,
+        NativeWidget, PropDef, CommandDef, ParamDef,
         build_node, build_command,
     )
 
-    gauge_def = NativeWidgetDef(
+    gauge_def = NativeWidget(
         kind="gauge",
         rust_crate="native/my_gauge",
         rust_constructor="my_gauge::GaugeExtension::new()",
@@ -113,7 +113,7 @@ class CommandDef:
 
 
 @dataclass(frozen=True, slots=True)
-class NativeWidgetDef:
+class NativeWidget:
     """Definition of a Rust-backed native widget.
 
     Describes the Rust crate, constructor, props, and commands that a
@@ -141,7 +141,7 @@ class NativeWidgetDef:
 # -- Validation ---------------------------------------------------------------
 
 
-def validate(ext_def: NativeWidgetDef) -> list[str]:
+def validate(ext_def: NativeWidget) -> list[str]:
     """Validate an native widget definition.
 
     Returns an empty list when valid, or a list of human-readable error
@@ -170,7 +170,7 @@ def validate(ext_def: NativeWidgetDef) -> list[str]:
     return errors
 
 
-def validate_all(widgets: list[NativeWidgetDef]) -> list[str]:
+def validate_all(widgets: list[NativeWidget]) -> list[str]:
     """Validate a list of native widget definitions, including cross-widget checks.
 
     Runs :func:`validate` on each widget individually, then checks
@@ -217,18 +217,18 @@ def validate_all(widgets: list[NativeWidgetDef]) -> list[str]:
 # -- Runtime helpers ----------------------------------------------------------
 
 
-def prop_names(ext_def: NativeWidgetDef) -> list[str]:
+def prop_names(ext_def: NativeWidget) -> list[str]:
     """Return the declared property names from a native widget definition."""
     return [p.name for p in ext_def.props]
 
 
-def command_names(ext_def: NativeWidgetDef) -> list[str]:
+def command_names(ext_def: NativeWidget) -> list[str]:
     """Return the declared command names from a native widget definition."""
     return [c.name for c in ext_def.commands]
 
 
 def build_node(
-    ext_def: NativeWidgetDef,
+    ext_def: NativeWidget,
     id: str,
     props: dict[str, Any] | None = None,
     *,
@@ -258,7 +258,7 @@ def build_node(
 
 
 def build_command(
-    ext_def: NativeWidgetDef,
+    ext_def: NativeWidget,
     node_id: str,
     op: str,
     payload: dict[str, Any] | None = None,
@@ -288,7 +288,7 @@ def build_command(
 
 
 def generate_cargo_toml(
-    widgets: list[NativeWidgetDef],
+    widgets: list[NativeWidget],
     binary_name: str = "plushie-renderer",
     *,
     build_dir: str = ".",
@@ -361,7 +361,7 @@ path = "src/main.rs"
 """
 
 
-def generate_main_rs(widgets: list[NativeWidgetDef]) -> str:
+def generate_main_rs(widgets: list[NativeWidget]) -> str:
     """Generate main.rs registering all native widgets.
 
     Produces the Rust entry point that creates a ``PlushieAppBuilder``,
@@ -392,7 +392,7 @@ fn main() -> plushie_ext::iced::Result {{
 __all__ = [
     "RESERVED_PROP_NAMES",
     "CommandDef",
-    "NativeWidgetDef",
+    "NativeWidget",
     "ParamDef",
     "ParamType",
     "PropDef",

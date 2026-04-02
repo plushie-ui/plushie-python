@@ -8,8 +8,8 @@ from plushie.events import (
     Click,
     Enter,
     Press,
+    RawEvent,
     Select,
-    WidgetEvent,
 )
 from plushie.subscriptions import Subscription
 from plushie.tree import normalize
@@ -299,7 +299,7 @@ class TestDispatchThroughWidgets:
         assert result.id == "stars"
 
     def test_emit_custom_event_produces_widget_event(self) -> None:
-        """Custom event names produce WidgetEvent (no typed class)."""
+        """Custom event names produce RawEvent (no typed class)."""
         reg = {
             ("main", "picker"): RegistryEntry(
                 definition=CustomEmitter(),
@@ -313,7 +313,7 @@ class TestDispatchThroughWidgets:
             scope=("picker",),
         )
         result, _, _changed = dispatch_through_widgets(reg, event)
-        assert isinstance(result, WidgetEvent)
+        assert isinstance(result, RawEvent)
         assert result.kind == "change"
         assert result.data == {"hue": 180.0, "sat": 0.5}
 
@@ -415,7 +415,7 @@ class TestEventSpecs:
     def test_valid_data_event_passes(self) -> None:
         reg = self._make_reg()
         result, _, _changed = dispatch_through_widgets(reg, self._click("ring"))
-        assert isinstance(result, WidgetEvent)
+        assert isinstance(result, RawEvent)
         assert result.kind == "change"
         assert result.data == {"hue": 180.0, "saturation": 0.5}
 
@@ -458,7 +458,7 @@ class TestEventSpecs:
             scope=("w",),
         )
         result, _, _changed = dispatch_through_widgets(reg, event)
-        assert isinstance(result, WidgetEvent)
+        assert isinstance(result, RawEvent)
         assert result.kind == "cleared"
 
     def test_undeclared_event_name_raises(self) -> None:
@@ -601,7 +601,7 @@ class TestEventSpecs:
             )
         }
         result, _, _changed = dispatch_through_widgets(reg, self._click("ring"))
-        assert isinstance(result, WidgetEvent)
+        assert isinstance(result, RawEvent)
         assert result.kind == "change"
 
 

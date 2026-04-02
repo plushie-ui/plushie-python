@@ -37,7 +37,7 @@ from plushie.connection import (
     _normalize_expected_widgets,
     _validate_required_extensions,
 )
-from plushie.native_widget import NativeWidgetDef
+from plushie.native_widget import NativeWidget
 from plushie.protocol import PROTOCOL_VERSION, decode_message
 from plushie.types import HelloInfo
 
@@ -100,7 +100,7 @@ class TestHelloExtensionValidation:
             extensions=(),
         )
         expected = (
-            NativeWidgetDef(
+            NativeWidget(
                 kind="gauge",
                 rust_crate="native/gauge",
                 rust_constructor="gauge::Gauge::new()",

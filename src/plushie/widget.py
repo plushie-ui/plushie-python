@@ -61,13 +61,13 @@ from plushie.events import (
     Open,
     OptionHovered,
     Paste,
+    RawEvent,
     Select,
     Slide,
     SlideRelease,
     Sort,
     Submit,
     Toggle,
-    WidgetEvent,
     split_scoped_id,
 )
 from plushie.subscriptions import Subscription
@@ -221,7 +221,7 @@ def _build_emitted_event(
     makes widget emissions indistinguishable from real widget events in
     the consumer's ``update()``.
 
-    For unrecognized kinds, falls back to :class:`WidgetEvent`.
+    For unrecognized kinds, falls back to :class:`RawEvent`.
 
     If *event_specs* is provided, validates the emitted data against
     the widget's declared event specs before constructing the event.
@@ -244,8 +244,8 @@ def _build_emitted_event(
         # carrier == "none"
         return cls(id=id, window_id=window_id, scope=scope)
 
-    # Custom event -> WidgetEvent
-    return WidgetEvent(
+    # Custom event -> RawEvent
+    return RawEvent(
         kind=kind,
         id=id,
         window_id=window_id,

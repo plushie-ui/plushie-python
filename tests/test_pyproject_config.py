@@ -14,7 +14,7 @@ from plushie.__main__ import (
     _parse_extensions,
     _resolve_artifacts,
 )
-from plushie.native_widget import NativeWidgetDef
+from plushie.native_widget import NativeWidget
 
 # ===================================================================
 # _load_pyproject_config
@@ -108,7 +108,7 @@ class TestLoadPyprojectConfig:
 
 
 class TestParseExtensions:
-    """Converting raw extension dicts into NativeWidgetDef objects."""
+    """Converting raw extension dicts into NativeWidget objects."""
 
     def test_minimal_extension(self) -> None:
         raw: list[dict[str, Any]] = [
@@ -120,7 +120,7 @@ class TestParseExtensions:
         ]
         exts = _parse_extensions(raw)
         assert len(exts) == 1
-        assert isinstance(exts[0], NativeWidgetDef)
+        assert isinstance(exts[0], NativeWidget)
         assert exts[0].kind == "spark"
         assert exts[0].rust_crate == "native/spark"
         assert exts[0].rust_constructor == "spark::new()"

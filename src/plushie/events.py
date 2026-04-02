@@ -37,20 +37,14 @@ from plushie.types import KeyModifiers
 # Helper types
 # ---------------------------------------------------------------------------
 
-type MouseButton = Literal["left", "right", "middle", "back", "forward"] | str
-"""Mouse button identifier.
-
-Standard buttons use literal strings. Non-standard buttons use
-arbitrary string names from the renderer.
-"""
-
 type PointerType = Literal["mouse", "touch", "pen"]
 """Pointer device type."""
 
 type PointerButton = Literal["left", "right", "middle", "back", "forward"] | str
 """Pointer button identifier.
 
-Same values as MouseButton, but used in the unified pointer event types.
+Standard buttons use literal strings. Non-standard buttons use
+arbitrary string names from the renderer.
 """
 
 type ScrollUnit = Literal["line", "pixel"]
@@ -403,7 +397,7 @@ class Exit:
 
 
 @dataclass(frozen=True, slots=True)
-class WidgetEvent:
+class RawEvent:
     """Catch-all for uncommon or future widget event types.
 
     Used when the wire ``family`` does not match any of the typed event
@@ -1344,7 +1338,7 @@ def target(
     | Close
     | OptionHovered
     | KeyBinding
-    | WidgetEvent
+    | RawEvent
     | Focused
     | Blurred
     | Drag
@@ -1413,7 +1407,7 @@ type ScopedWidgetEvent = (
     | Close
     | OptionHovered
     | KeyBinding
-    | WidgetEvent
+    | RawEvent
     | Focused
     | Blurred
     | Drag
@@ -1535,7 +1529,6 @@ __all__ = [
     "KeyPress",
     "KeyRelease",
     "ModifiersChanged",
-    "MouseButton",
     "Move",
     "Open",
     "OptionHovered",
@@ -1549,6 +1542,7 @@ __all__ = [
     "PointerEvent",
     "PointerType",
     "Press",
+    "RawEvent",
     "Release",
     "RendererError",
     "Resize",
@@ -1573,7 +1567,6 @@ __all__ = [
     "TransitionComplete",
     "TreeHash",
     "WidgetCommandError",
-    "WidgetEvent",
     "WindowCloseRequested",
     "WindowClosed",
     "WindowEvent",

@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from plushie.native_widget import NativeWidgetDef
+    from plushie.native_widget import NativeWidget
 
 from plushie.app import App
 
@@ -221,15 +221,15 @@ def _cmd_download(args: argparse.Namespace) -> None:
         print(f"downloaded WASM bundle: {path}")
 
 
-def _parse_extensions(raw: list[dict[str, Any]]) -> list[NativeWidgetDef]:
-    """Parse a list of raw extension dicts into ``NativeWidgetDef`` objects.
+def _parse_extensions(raw: list[dict[str, Any]]) -> list[NativeWidget]:
+    """Parse a list of raw extension dicts into ``NativeWidget`` objects.
 
     Works for both JSON config files and pyproject.toml ``[tool.plushie]``
     extension entries.
     """
-    from plushie.native_widget import CommandDef, NativeWidgetDef, ParamDef, PropDef
+    from plushie.native_widget import CommandDef, NativeWidget, ParamDef, PropDef
 
-    extensions: list[NativeWidgetDef] = []
+    extensions: list[NativeWidget] = []
     for ext_data in raw:
         props = [PropDef(p["name"], p["prop_type"]) for p in ext_data.get("props", [])]
         commands = [
@@ -240,7 +240,7 @@ def _parse_extensions(raw: list[dict[str, Any]]) -> list[NativeWidgetDef]:
             for c in ext_data.get("commands", [])
         ]
         extensions.append(
-            NativeWidgetDef(
+            NativeWidget(
                 kind=ext_data["kind"],
                 rust_crate=ext_data["rust_crate"],
                 rust_constructor=ext_data["rust_constructor"],
@@ -292,7 +292,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
     # 1. pyproject.toml [tool.plushie] extensions
     # 2. JSON config file (--config flag or plushie_extensions.json)
     # 3. Stock build (no extensions)
-    extensions: list[NativeWidgetDef] = []
+    extensions: list[NativeWidget] = []
 
     pyproject_extensions = pyproject_cfg.get("extensions", [])
     if pyproject_extensions:
@@ -478,7 +478,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
         print("warning: could not install -- binary not found at expected path")
 
 
-def _check_extension_versions(extensions: list[NativeWidgetDef]) -> None:
+def _check_extension_versions(extensions: list[NativeWidget]) -> None:
     """Check extension crate plushie-ext version compatibility.
 
     Reads each extension's Cargo.toml, extracts the plushie-ext

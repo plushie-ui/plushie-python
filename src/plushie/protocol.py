@@ -55,6 +55,7 @@ from plushie.events import (
     PointerButton,
     PointerType,
     Press,
+    RawEvent,
     Release,
     RendererError,
     Resize,
@@ -73,7 +74,6 @@ from plushie.events import (
     TransitionComplete,
     TreeHash,
     WidgetCommandError,
-    WidgetEvent,
     WindowClosed,
     WindowCloseRequested,
     WindowFocused,
@@ -747,7 +747,7 @@ def decode_message(
     | Close
     | OptionHovered
     | KeyBinding
-    | WidgetEvent
+    | RawEvent
     | Press
     | Release
     | Move
@@ -1553,7 +1553,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- Catch-all: unknown widget event -------
     if wire_id:
         local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
-        return WidgetEvent(
+        return RawEvent(
             kind=family,
             id=local_id,
             window_id=_wid,

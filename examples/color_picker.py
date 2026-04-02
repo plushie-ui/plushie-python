@@ -17,7 +17,7 @@ from typing import Any
 import plushie
 from examples.widgets.color_picker_widget import ColorPickerWidget
 from plushie import ui
-from plushie.events import WidgetEvent
+from plushie.events import RawEvent
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,7 +38,7 @@ class ColorPicker(plushie.App[Model]):
 
     def update(self, model: Model, event: object) -> Model:
         match event:
-            case WidgetEvent(kind="change", id="picker", data=data):
+            case RawEvent(kind="change", id="picker", data=data):
                 return replace(
                     model,
                     hue=data["hue"],

@@ -5,7 +5,7 @@ from __future__ import annotations
 from plushie.commands import Command
 from plushie.native_widget import (
     CommandDef,
-    NativeWidgetDef,
+    NativeWidget,
     ParamDef,
     PropDef,
     build_command,
@@ -21,8 +21,8 @@ from plushie.native_widget import (
 # -- Fixtures ----------------------------------------------------------------
 
 
-def _gauge_def() -> NativeWidgetDef:
-    return NativeWidgetDef(
+def _gauge_def() -> NativeWidget:
+    return NativeWidget(
         kind="gauge",
         rust_crate="native/my_gauge",
         rust_constructor="my_gauge::GaugeExtension::new()",
@@ -39,8 +39,8 @@ def _gauge_def() -> NativeWidgetDef:
     )
 
 
-def _sparkline_def() -> NativeWidgetDef:
-    return NativeWidgetDef(
+def _sparkline_def() -> NativeWidget:
+    return NativeWidget(
         kind="sparkline",
         rust_crate="native/my_sparkline",
         rust_constructor="my_sparkline::SparklineExtension::new()",
@@ -110,7 +110,7 @@ class TestNativeWidgetDef:
         assert len(ext.commands) == 2
 
     def test_defaults(self) -> None:
-        ext = NativeWidgetDef(
+        ext = NativeWidget(
             kind="minimal",
             rust_crate="native/minimal",
             rust_constructor="minimal::Ext::new()",
@@ -135,7 +135,7 @@ class TestValidate:
         assert validate(_gauge_def()) == []
 
     def test_empty_kind(self) -> None:
-        ext = NativeWidgetDef(
+        ext = NativeWidget(
             kind="",
             rust_crate="native/x",
             rust_constructor="x::X::new()",
@@ -144,7 +144,7 @@ class TestValidate:
         assert any("kind must not be empty" in e for e in errors)
 
     def test_duplicate_prop_names(self) -> None:
-        ext = NativeWidgetDef(
+        ext = NativeWidget(
             kind="dupe",
             rust_crate="native/dupe",
             rust_constructor="dupe::D::new()",
@@ -154,7 +154,7 @@ class TestValidate:
         assert any("duplicate" in e and "value" in e for e in errors)
 
     def test_reserved_prop_name(self) -> None:
-        ext = NativeWidgetDef(
+        ext = NativeWidget(
             kind="bad",
             rust_crate="native/bad",
             rust_constructor="bad::B::new()",
@@ -164,7 +164,7 @@ class TestValidate:
         assert any("reserved" in e and "id" in e for e in errors)
 
     def test_reserved_children(self) -> None:
-        ext = NativeWidgetDef(
+        ext = NativeWidget(
             kind="bad",
             rust_crate="native/bad",
             rust_constructor="bad::B::new()",
@@ -174,7 +174,7 @@ class TestValidate:
         assert any("reserved" in e and "children" in e for e in errors)
 
     def test_multiple_errors(self) -> None:
-        ext = NativeWidgetDef(
+        ext = NativeWidget(
             kind="",
             rust_crate="native/bad",
             rust_constructor="bad::B::new()",
@@ -201,7 +201,7 @@ class TestValidateAll:
 
     def test_kind_collision(self) -> None:
         a = _gauge_def()
-        b = NativeWidgetDef(
+        b = NativeWidget(
             kind="gauge",
             rust_crate="native/other_gauge",
             rust_constructor="other::Gauge::new()",
@@ -210,12 +210,12 @@ class TestValidateAll:
         assert any("gauge" in e and "claimed by both" in e for e in errors)
 
     def test_crate_name_collision(self) -> None:
-        a = NativeWidgetDef(
+        a = NativeWidget(
             kind="foo",
             rust_crate="native/shared",
             rust_constructor="shared::Foo::new()",
         )
-        b = NativeWidgetDef(
+        b = NativeWidget(
             kind="bar",
             rust_crate="vendor/shared",
             rust_constructor="shared::Bar::new()",
@@ -224,7 +224,7 @@ class TestValidateAll:
         assert any("crate name" in e and "shared" in e for e in errors)
 
     def test_per_extension_errors_propagated(self) -> None:
-        bad = NativeWidgetDef(
+        bad = NativeWidget(
             kind="",
             rust_crate="native/bad",
             rust_constructor="bad::B::new()",
@@ -236,12 +236,12 @@ class TestValidateAll:
 
     def test_both_collisions_reported(self) -> None:
         """Two extensions with the same kind AND same crate name."""
-        a = NativeWidgetDef(
+        a = NativeWidget(
             kind="widget",
             rust_crate="native/same_crate",
             rust_constructor="same_crate::A::new()",
         )
-        b = NativeWidgetDef(
+        b = NativeWidget(
             kind="widget",
             rust_crate="vendor/same_crate",
             rust_constructor="same_crate::B::new()",
@@ -261,7 +261,7 @@ class TestPropNames:
         assert prop_names(_gauge_def()) == ["value", "min", "max", "color"]
 
     def test_empty(self) -> None:
-        ext = NativeWidgetDef(
+        ext = NativeWidget(
             kind="x", rust_crate="native/x", rust_constructor="x::X::new()"
         )
         assert prop_names(ext) == []
@@ -272,7 +272,7 @@ class TestCommandNames:
         assert command_names(_gauge_def()) == ["set_value", "reset"]
 
     def test_empty(self) -> None:
-        ext = NativeWidgetDef(
+        ext = NativeWidget(
             kind="x", rust_crate="native/x", rust_constructor="x::X::new()"
         )
         assert command_names(ext) == []

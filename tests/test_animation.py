@@ -6,7 +6,6 @@ import pytest
 
 from plushie.animation import (
     FINISHED,
-    Animation,
     Sequence,
     Spring,
     Transition,
@@ -17,10 +16,10 @@ from plushie.animation import (
     ease_in_out_quad,
     ease_in_quad,
     ease_out,
+    ease_out_elastic,
     ease_out_quad,
     interpolate,
     linear,
-    spring,
 )
 
 
@@ -63,12 +62,12 @@ class TestEasingFunctions:
         assert ease_in_out_quad(0.5) == 0.5
 
     def test_spring_boundaries(self) -> None:
-        assert spring(0.0) == 0.0
-        assert spring(1.0) == 1.0
+        assert ease_out_elastic(0.0) == 0.0
+        assert ease_out_elastic(1.0) == 1.0
 
     def test_spring_overshoots(self) -> None:
         # Spring should overshoot past 1.0 at some point
-        overshoot = any(spring(t / 100) > 1.0 for t in range(1, 100))
+        overshoot = any(ease_out_elastic(t / 100) > 1.0 for t in range(1, 100))
         assert overshoot
 
 
@@ -94,7 +93,7 @@ class TestInterpolate:
 
 class TestAnimationNew:
     def test_creates_with_defaults(self) -> None:
-        anim = Animation.new(0.0, 1.0, 300)
+        anim = Tween.new(0.0, 1.0, 300)
         assert anim.from_val == 0.0
         assert anim.to_val == 1.0
         assert anim.duration_ms == 300
@@ -103,87 +102,82 @@ class TestAnimationNew:
 
     def test_rejects_zero_duration(self) -> None:
         try:
-            Animation.new(0.0, 1.0, 0)
+            Tween.new(0.0, 1.0, 0)
             msg = "expected ValueError"
             raise AssertionError(msg)
         except ValueError:
             pass
 
     def test_custom_easing(self) -> None:
-        anim = Animation.new(0.0, 1.0, 300, easing=ease_out)
+        anim = Tween.new(0.0, 1.0, 300, easing=ease_out)
         assert anim.easing is ease_out
 
 
 class TestAnimationLifecycle:
     def test_start_sets_timestamp(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000)
+        anim = Tween.new(0.0, 100.0, 1000)
         started = anim.start(500)
         assert started.started_at == 500
         assert started.value() == 0.0
 
     def test_advance_before_start_returns_unchanged(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000)
+        anim = Tween.new(0.0, 100.0, 1000)
         val, result = anim.advance(999)
         assert val == 0.0
         assert result is anim
 
     def test_advance_midway(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000).start(0)
+        anim = Tween.new(0.0, 100.0, 1000).start(0)
         val, result = anim.advance(500)
         assert val == 50.0
-        assert isinstance(result, Animation)
+        assert isinstance(result, Tween)
         assert result.value() == 50.0
 
     def test_advance_to_completion(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000).start(0)
+        anim = Tween.new(0.0, 100.0, 1000).start(0)
         val, result = anim.advance(1000)
         assert val == 100.0
         assert result is FINISHED
 
     def test_advance_past_end(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000).start(0)
+        anim = Tween.new(0.0, 100.0, 1000).start(0)
         val, result = anim.advance(2000)
         assert val == 100.0
         assert result is FINISHED
 
     def test_finished_not_started(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000)
+        anim = Tween.new(0.0, 100.0, 1000)
         assert anim.finished() is False
 
     def test_finished_after_reaching_target(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000).start(0)
+        anim = Tween.new(0.0, 100.0, 1000).start(0)
         # Advance to just before end -- not finished yet
         _, mid = anim.advance(500)
-        assert isinstance(mid, Animation)
+        assert isinstance(mid, Tween)
         assert mid.finished() is False
 
     def test_restart_resets(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000).start(0)
+        anim = Tween.new(0.0, 100.0, 1000).start(0)
         _, mid = anim.advance(500)
-        assert isinstance(mid, Animation)
+        assert isinstance(mid, Tween)
         restarted = mid.start(1000)
         assert restarted.value() == 0.0
         assert restarted.started_at == 1000
 
     def test_with_easing(self) -> None:
-        anim = Animation.new(0.0, 100.0, 1000, easing=ease_in_quad).start(0)
+        anim = Tween.new(0.0, 100.0, 1000, easing=ease_in_quad).start(0)
         val, _ = anim.advance(500)
         # ease_in_quad(0.5) = 0.25, so 0 + 100 * 0.25 = 25.0
         assert val == 25.0
 
     def test_is_frozen(self) -> None:
-        anim = Animation.new(0.0, 1.0, 100)
+        anim = Tween.new(0.0, 1.0, 100)
         try:
             anim.from_val = 99.0  # type: ignore[misc]
             msg = "expected FrozenInstanceError"
             raise AssertionError(msg)
         except AttributeError:
             pass
-
-
-class TestTweenAlias:
-    def test_animation_is_tween(self) -> None:
-        assert Animation is Tween
 
 
 class TestTransition:

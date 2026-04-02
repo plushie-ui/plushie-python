@@ -30,7 +30,7 @@ from typing import Any
 
 from plushie.binary import PlushieNotFoundError, resolve
 from plushie.framing import MsgpackFraming
-from plushie.native_widget import NativeWidgetDef
+from plushie.native_widget import NativeWidget
 from plushie.protocol import (
     PROTOCOL_VERSION,
     advance_frame_msg,
@@ -76,12 +76,12 @@ def _next_request_id() -> str:
 
 
 def _normalize_expected_widgets(
-    expected: list[str | NativeWidgetDef] | tuple[str | NativeWidgetDef, ...] | None,
+    expected: list[str | NativeWidget] | tuple[str | NativeWidget, ...] | None,
 ) -> tuple[str, ...]:
     if not expected:
         return ()
     return tuple(
-        ext.kind if isinstance(ext, NativeWidgetDef) else str(ext) for ext in expected
+        ext.kind if isinstance(ext, NativeWidget) else str(ext) for ext in expected
     )
 
 
@@ -134,8 +134,8 @@ class Connection:
         process: subprocess.Popen[bytes],
         *,
         session: str = "",
-        expected_widgets: list[str | NativeWidgetDef]
-        | tuple[str | NativeWidgetDef, ...]
+        expected_widgets: list[str | NativeWidget]
+        | tuple[str | NativeWidget, ...]
         | None = None,
         _spawn_args: list[str] | None = None,
         _spawn_env: dict[str, str] | None = None,
@@ -169,8 +169,8 @@ class Connection:
         json: bool = False,
         max_sessions: int | None = None,
         session: str = "",
-        expected_widgets: list[str | NativeWidgetDef]
-        | tuple[str | NativeWidgetDef, ...]
+        expected_widgets: list[str | NativeWidget]
+        | tuple[str | NativeWidget, ...]
         | None = None,
         extra_args: list[str] | None = None,
         env: dict[str, str] | None = None,
@@ -242,8 +242,8 @@ class Connection:
         adapter: Any,
         *,
         session: str = "",
-        expected_widgets: list[str | NativeWidgetDef]
-        | tuple[str | NativeWidgetDef, ...]
+        expected_widgets: list[str | NativeWidget]
+        | tuple[str | NativeWidget, ...]
         | None = None,
     ) -> _IoStreamConnection:
         """Create a Connection-like object backed by an iostream adapter.
@@ -1223,8 +1223,8 @@ class _IoStreamConnection:
         adapter: Any,
         *,
         session: str = "",
-        expected_widgets: list[str | NativeWidgetDef]
-        | tuple[str | NativeWidgetDef, ...]
+        expected_widgets: list[str | NativeWidget]
+        | tuple[str | NativeWidget, ...]
         | None = None,
     ) -> None:
         self._adapter = adapter

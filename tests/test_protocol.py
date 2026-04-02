@@ -40,6 +40,7 @@ from plushie.events import (
     PaneResized,
     Paste,
     Press,
+    RawEvent,
     Release,
     Resize,
     Scroll,
@@ -55,7 +56,6 @@ from plushie.events import (
     Toggle,
     TreeHash,
     WidgetCommandError,
-    WidgetEvent,
     WindowClosed,
     WindowCloseRequested,
     WindowFocused,
@@ -1516,7 +1516,7 @@ class TestDecodePassthrough:
             "value": "something",
         }
         result = decode_message(raw)
-        assert isinstance(result, WidgetEvent)
+        assert isinstance(result, RawEvent)
         assert result.kind == "custom_future_event"
 
     def test_captured_flag_on_subscription_events(self) -> None:

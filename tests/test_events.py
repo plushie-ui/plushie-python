@@ -44,6 +44,7 @@ from plushie.events import (
     PaneResized,
     Paste,
     Press,
+    RawEvent,
     Release,
     Resize,
     Scroll,
@@ -61,7 +62,6 @@ from plushie.events import (
     TimerTick,
     Toggle,
     TreeHash,
-    WidgetEvent,
     WindowClosed,
     WindowCloseRequested,
     WindowFocused,
@@ -198,7 +198,7 @@ class TestWidgetEvents:
         assert e.value == "ctrl+s"
 
     def test_widget_event_catchall(self) -> None:
-        e = WidgetEvent(
+        e = RawEvent(
             kind="custom_event",
             id="widget",
             value="some_val",

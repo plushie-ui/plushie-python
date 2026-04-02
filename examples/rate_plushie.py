@@ -25,7 +25,7 @@ import plushie
 from examples.widgets.star_rating import StarRating
 from examples.widgets.theme_toggle import ThemeToggle
 from plushie import ui
-from plushie.events import Click, Input, Submit, WidgetEvent
+from plushie.events import Click, Input, RawEvent, Submit
 from plushie.types import Border, StyleMap, Theme
 
 
@@ -169,13 +169,13 @@ class RatePlushie(plushie.App[Model]):
     def update(self, model: Model, event: object) -> Model:
         match event:
             # Star rating emits :select with the number of stars.
-            case WidgetEvent(kind="select", id="stars", data=data):
+            case RawEvent(kind="select", id="stars", data=data):
                 stars = data.get("value", 0)
                 errors = {k: v for k, v in model.errors.items() if k != "rating"}
                 return replace(model, rating=stars, errors=errors)
 
             # Theme toggle emits :toggle with the new state.
-            case WidgetEvent(kind="toggle", id="theme-toggle", data=data):
+            case RawEvent(kind="toggle", id="theme-toggle", data=data):
                 return replace(model, dark_mode=data.get("value", False))
 
             case Input(id="review-name", value=v):
