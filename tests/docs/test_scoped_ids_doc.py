@@ -24,8 +24,10 @@ def test_normalize_builds_scoped_ids():
             "sidebar",
             ui.container(
                 "form",
-                ui.text_input("email", ""),
-                ui.button("save", "Save"),
+                ui.column(
+                    ui.text_input("email", ""),
+                    ui.button("save", "Save"),
+                ),
             ),
         )
     )

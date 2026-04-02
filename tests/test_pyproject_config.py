@@ -173,20 +173,21 @@ class TestParseExtensions:
 
 
 class TestWidgetConfigInSettings:
-    """The widget_config key passes through to the wire message."""
+    """The widget_config key maps to extension_config on the wire."""
 
-    def test_widget_config_forwarded(self) -> None:
+    def test_widget_config_forwarded_as_extension_config(self) -> None:
         from plushie.protocol import settings
 
         widget_cfg = {"sparkline": {"color": "red"}}
         msg = settings({"widget_config": widget_cfg})
-        assert msg["settings"]["widget_config"] == widget_cfg
+        assert msg["settings"]["extension_config"] == widget_cfg
+        assert "widget_config" not in msg["settings"]
 
     def test_widget_config_absent_when_not_set(self) -> None:
         from plushie.protocol import settings
 
         msg = settings({})
-        assert "widget_config" not in msg["settings"]
+        assert "extension_config" not in msg["settings"]
 
 
 # ===================================================================

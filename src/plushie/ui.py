@@ -75,6 +75,16 @@ def _named_container(type_name: str, id: str, /, *children: Any, **kwargs: Any) 
     return _node(id, type_name, kwargs, _flatten_children(children))
 
 
+def _single_child_container(
+    type_name: str, id: str, /, *children: Any, **kwargs: Any
+) -> Node:
+    """Build a named container that accepts at most one child."""
+    flat = _flatten_children(children)
+    if len(flat) > 1:
+        raise ValueError(f"{type_name} {id!r} accepts at most 1 child, got {len(flat)}")
+    return _node(id, type_name, kwargs, flat)
+
+
 def _anon_container(type_name: str, /, *children: Any, **kwargs: Any) -> Node:
     """Build an anonymous container node (no positional id)."""
     id = kwargs.pop("id", None)
@@ -97,7 +107,7 @@ def window(id: str, /, *children: Any, **kwargs: Any) -> Node:
             closeable, minimizable, decorations, transparent, blur, level,
             exit_on_close_request, scale_factor, theme).
     """
-    return _named_container("window", id, *children, **kwargs)
+    return _single_child_container("window", id, *children, **kwargs)
 
 
 def container(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -110,7 +120,7 @@ def container(id: str, /, *children: Any, **kwargs: Any) -> Node:
             max_height, center, clip, align_x, align_y, background,
             color, border, shadow, style, a11y).
     """
-    return _named_container("container", id, *children, **kwargs)
+    return _single_child_container("container", id, *children, **kwargs)
 
 
 def scrollable(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -124,18 +134,23 @@ def scrollable(id: str, /, *children: Any, **kwargs: Any) -> Node:
             scrollbar_color, scroller_color, anchor, on_scroll,
             auto_scroll, a11y).
     """
-    return _named_container("scrollable", id, *children, **kwargs)
+    return _single_child_container("scrollable", id, *children, **kwargs)
 
 
 def overlay(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Overlay container -- renders children on top of each other.
+    """Overlay container -- positions a popup over a base widget.
+
+    Requires exactly 2 children: the base widget and the overlay content.
 
     Args:
         id: Overlay identifier.
-        *children: Child widgets.
-        **kwargs: Overlay props.
+        *children: Exactly 2 child widgets (base, overlay).
+        **kwargs: Overlay props (position, gap, offset_x, offset_y).
     """
-    return _named_container("overlay", id, *children, **kwargs)
+    flat = _flatten_children(children)
+    if len(flat) != 2:
+        raise ValueError(f"overlay {id!r} requires exactly 2 children, got {len(flat)}")
+    return _node(id, "overlay", kwargs, flat)
 
 
 def pin(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -146,7 +161,7 @@ def pin(id: str, /, *children: Any, **kwargs: Any) -> Node:
         *children: Child widgets.
         **kwargs: Pin props.
     """
-    return _named_container("pin", id, *children, **kwargs)
+    return _single_child_container("pin", id, *children, **kwargs)
 
 
 def floating(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -157,7 +172,7 @@ def floating(id: str, /, *children: Any, **kwargs: Any) -> Node:
         *children: Child widgets.
         **kwargs: Floating props.
     """
-    return _named_container("float", id, *children, **kwargs)
+    return _single_child_container("float", id, *children, **kwargs)
 
 
 def pointer_area(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -168,7 +183,7 @@ def pointer_area(id: str, /, *children: Any, **kwargs: Any) -> Node:
         *children: Child widgets.
         **kwargs: Pointer area props.
     """
-    return _named_container("pointer_area", id, *children, **kwargs)
+    return _single_child_container("pointer_area", id, *children, **kwargs)
 
 
 def sensor(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -179,7 +194,7 @@ def sensor(id: str, /, *children: Any, **kwargs: Any) -> Node:
         *children: Child widgets.
         **kwargs: Sensor props.
     """
-    return _named_container("sensor", id, *children, **kwargs)
+    return _single_child_container("sensor", id, *children, **kwargs)
 
 
 def themer(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -190,7 +205,7 @@ def themer(id: str, /, *children: Any, **kwargs: Any) -> Node:
         *children: Child widgets.
         **kwargs: Themer props (theme).
     """
-    return _named_container("themer", id, *children, **kwargs)
+    return _single_child_container("themer", id, *children, **kwargs)
 
 
 def tooltip(id: str, tip: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -203,7 +218,10 @@ def tooltip(id: str, tip: str, /, *children: Any, **kwargs: Any) -> Node:
         **kwargs: Tooltip props (position, gap, padding,
             snap_within_viewport, delay, style, a11y).
     """
-    return _node(id, "tooltip", {"tip": tip, **kwargs}, _flatten_children(children))
+    flat = _flatten_children(children)
+    if len(flat) > 1:
+        raise ValueError(f"tooltip {id!r} accepts at most 1 child, got {len(flat)}")
+    return _node(id, "tooltip", {"tip": tip, **kwargs}, flat)
 
 
 def pane_grid(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -288,11 +306,17 @@ def keyed_column(*children: Any, **kwargs: Any) -> Node:
 def responsive(*children: Any, **kwargs: Any) -> Node:
     """Responsive container -- adapts layout to available space.
 
+    Accepts at most 1 child.
+
     Args:
-        *children: Child widgets.
+        *children: Child widget (at most 1).
         **kwargs: Responsive props. Optional ``id=``.
     """
-    return _anon_container("responsive", *children, **kwargs)
+    id = kwargs.pop("id", None)
+    flat = _flatten_children(children)
+    if len(flat) > 1:
+        raise ValueError(f"responsive accepts at most 1 child, got {len(flat)}")
+    return _node(id, "responsive", kwargs, flat)
 
 
 # ---------------------------------------------------------------------------

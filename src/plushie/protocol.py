@@ -124,6 +124,9 @@ def settings(
     """
     inner = dict(settings_dict)
     inner.setdefault("protocol_version", PROTOCOL_VERSION)
+    # Map user-facing key to the renderer's wire key.
+    if "widget_config" in inner:
+        inner["extension_config"] = inner.pop("widget_config")
     return {"type": "settings", "session": session, "settings": inner}
 
 

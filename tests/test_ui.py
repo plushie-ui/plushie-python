@@ -36,19 +36,21 @@ class TestWindow:
         node = ui.window("main", title="Counter")
         _assert_node(node, id="main", type="window", props={"title": "Counter"})
 
-    def test_with_children(self) -> None:
+    def test_with_child(self) -> None:
         node = ui.window(
             "main",
-            ui.text("hello"),
-            ui.button("btn", "Click"),
+            ui.column(ui.text("hello"), ui.button("btn", "Click")),
             title="App",
         )
-        _assert_node(node, id="main", type="window", children_count=2)
+        _assert_node(node, id="main", type="window", children_count=1)
         assert node["props"]["title"] == "App"
 
-    def test_none_children_filtered(self) -> None:
-        node = ui.window("main", ui.text("hi"), None, ui.text("bye"))
-        _assert_node(node, id="main", type="window", children_count=2)
+    def test_rejects_multiple_children(self) -> None:
+        try:
+            ui.window("main", ui.text("a"), ui.text("b"))
+            raise AssertionError("expected ValueError")
+        except ValueError:
+            pass
 
 
 class TestContainer:
@@ -69,8 +71,15 @@ class TestScrollable:
 
 class TestOverlay:
     def test_basic(self) -> None:
-        node = ui.overlay("ov")
-        _assert_node(node, id="ov", type="overlay")
+        node = ui.overlay("ov", ui.text("base"), ui.text("popup"))
+        _assert_node(node, id="ov", type="overlay", children_count=2)
+
+    def test_rejects_wrong_child_count(self) -> None:
+        try:
+            ui.overlay("ov", ui.text("only_one"))
+            raise AssertionError("expected ValueError")
+        except ValueError:
+            pass
 
 
 class TestPin:
@@ -466,8 +475,7 @@ class TestChildrenFlattening:
         assert len(node["children"]) == 2
 
     def test_nested_generators(self) -> None:
-        node = ui.window(
-            "main",
+        node = ui.column(
             [ui.text(f"item-{i}") for i in range(3)],
         )
         assert len(node["children"]) == 3

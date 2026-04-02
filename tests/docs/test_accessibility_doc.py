@@ -184,15 +184,17 @@ class TestCrossWidgetRelationships:
         tree = normalize(
             ui.container(
                 "form",
-                ui.text("email-label", "Email"),
-                ui.text("email-help", "We'll send a confirmation"),
-                ui.text_input(
-                    "email",
-                    "",
-                    a11y={
-                        "labelled_by": "email-label",
-                        "described_by": "email-help",
-                    },
+                ui.column(
+                    ui.text("email-label", "Email"),
+                    ui.text("email-help", "We'll send a confirmation"),
+                    ui.text_input(
+                        "email",
+                        "",
+                        a11y={
+                            "labelled_by": "email-label",
+                            "described_by": "email-help",
+                        },
+                    ),
                 ),
             )
         )
