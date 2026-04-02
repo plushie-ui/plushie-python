@@ -28,7 +28,7 @@ are generated Python-side.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Literal
 
 from plushie.types import KeyModifiers
@@ -302,6 +302,98 @@ class KeyBinding:
 
 
 @dataclass(frozen=True, slots=True)
+class Focused:
+    """A widget or canvas element received keyboard focus.
+
+    Wire family: ``focused``.
+    """
+
+    id: str
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class Blurred:
+    """A widget or canvas element lost keyboard focus.
+
+    Wire family: ``blurred``.
+    """
+
+    id: str
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class Drag:
+    """A widget or canvas element is being dragged.
+
+    Wire family: ``drag``.
+
+    Attributes:
+        x: Current horizontal drag position.
+        y: Current vertical drag position.
+        delta_x: Horizontal movement since last drag event.
+        delta_y: Vertical movement since last drag event.
+        button: The mouse button name (e.g. ``"left"``).
+    """
+
+    id: str
+    x: float
+    y: float
+    delta_x: float
+    delta_y: float
+    button: str = "left"
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class DragEnd:
+    """Drag ended on a widget or canvas element.
+
+    Wire family: ``drag_end``.
+
+    Attributes:
+        x: Final horizontal position.
+        y: Final vertical position.
+        button: The mouse button name.
+    """
+
+    id: str
+    x: float
+    y: float
+    button: str = "left"
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class Enter:
+    """Pointer entered a widget's bounds.
+
+    Wire family: ``enter``.
+    """
+
+    id: str
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class Exit:
+    """Pointer left a widget's bounds.
+
+    Wire family: ``exit``.
+    """
+
+    id: str
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class WidgetEvent:
     """Catch-all for uncommon or future widget event types.
 
@@ -534,256 +626,6 @@ class CanvasScroll:
     scope: tuple[str, ...] = ()
 
 
-# ---------------------------------------------------------------------------
-# Canvas shape events -- scoped
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementEnter:
-    """Mouse entered an interactive canvas element's bounds.
-
-    Wire family: ``canvas_element_enter``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        x: Horizontal cursor position.
-        y: Vertical cursor position.
-        captured: Whether a subscription already consumed this event.
-    """
-
-    id: str
-    element_id: str
-    x: float
-    y: float
-    window_id: str = ""
-    captured: bool = False
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementLeave:
-    """Mouse left an interactive canvas element's bounds.
-
-    Wire family: ``canvas_element_leave``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        captured: Whether a subscription already consumed this event.
-    """
-
-    id: str
-    element_id: str
-    window_id: str = ""
-    captured: bool = False
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementClick:
-    """An interactive canvas element was clicked.
-
-    Wire family: ``canvas_element_click``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        x: Horizontal click position.
-        y: Vertical click position.
-        button: The mouse button name, or ``"keyboard"`` when activated
-            via Enter/Space.
-        captured: Whether a subscription already consumed this event.
-    """
-
-    id: str
-    element_id: str
-    x: float
-    y: float
-    button: str
-    window_id: str = ""
-    captured: bool = False
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementDrag:
-    """An interactive canvas element is being dragged.
-
-    Wire family: ``canvas_element_drag``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        x: Current horizontal drag position.
-        y: Current vertical drag position.
-        delta_x: Horizontal movement since last drag event.
-        delta_y: Vertical movement since last drag event.
-        captured: Whether a subscription already consumed this event.
-    """
-
-    id: str
-    element_id: str
-    x: float
-    y: float
-    delta_x: float
-    delta_y: float
-    window_id: str = ""
-    captured: bool = False
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementDragEnd:
-    """Drag ended on an interactive canvas element.
-
-    Wire family: ``canvas_element_drag_end``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        x: Final horizontal position.
-        y: Final vertical position.
-        captured: Whether a subscription already consumed this event.
-    """
-
-    id: str
-    element_id: str
-    x: float
-    y: float
-    window_id: str = ""
-    captured: bool = False
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementFocused:
-    """An interactive canvas element received keyboard focus.
-
-    Wire family: ``canvas_element_focused``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        captured: Whether a subscription already consumed this event.
-    """
-
-    id: str
-    element_id: str
-    window_id: str = ""
-    captured: bool = False
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementBlurred:
-    """An interactive canvas element lost keyboard focus.
-
-    Wire family: ``canvas_element_blurred``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        captured: Whether a subscription already consumed this event.
-    """
-
-    id: str
-    element_id: str
-    window_id: str = ""
-    captured: bool = False
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementKeyPress:
-    """A key was pressed while a canvas element has focus.
-
-    Wire family: ``canvas_element_key_press``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        key: The logical key name (e.g. ``"ArrowRight"``, ``"Enter"``).
-        modifiers: Modifier state (string-keyed bool map from wire).
-    """
-
-    id: str
-    element_id: str
-    key: str
-    modifiers: dict[str, bool] = field(default_factory=dict)
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasElementKeyRelease:
-    """A key was released while a canvas element has focus.
-
-    Wire family: ``canvas_element_key_release``.
-
-    Attributes:
-        element_id: The interactive element's identifier within the canvas.
-        key: The logical key name.
-        modifiers: Modifier state (string-keyed bool map from wire).
-    """
-
-    id: str
-    element_id: str
-    key: str
-    modifiers: dict[str, bool] = field(default_factory=dict)
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasFocused:
-    """The canvas widget gained iced focus (no coordinates).
-
-    Wire family: ``canvas_focused``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasBlurred:
-    """The canvas widget lost iced focus (no coordinates).
-
-    Wire family: ``canvas_blurred``.
-    """
-
-    id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasGroupFocused:
-    """A focusable group within the canvas was entered.
-
-    Wire family: ``canvas_group_focused``.
-
-    Attributes:
-        group_id: The focusable group's identifier within the canvas.
-    """
-
-    id: str
-    group_id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CanvasGroupBlurred:
-    """A focusable group within the canvas was exited.
-
-    Wire family: ``canvas_group_blurred``.
-
-    Attributes:
-        group_id: The focusable group's identifier within the canvas.
-    """
-
-    id: str
-    group_id: str
-    window_id: str = ""
-    scope: tuple[str, ...] = ()
-
-
 @dataclass(frozen=True, slots=True)
 class Diagnostic:
     """Validation warning from the renderer.
@@ -914,7 +756,9 @@ class PaneFocusCycle:
 class KeyPress:
     """A key was pressed.
 
-    Wire family: ``key_press``. Fired from keyboard subscriptions.
+    Wire family: ``key_press``. Fired from keyboard subscriptions
+    (global, with ``id=None``) or from widget-scoped key events
+    (with ``id`` and ``scope`` populated).
 
     Attributes:
         key: The logical key name (e.g. ``"a"``, ``"Enter"``, ``"ArrowUp"``).
@@ -931,6 +775,9 @@ class KeyPress:
         captured: Whether a widget already consumed this event.
         window_id: The window that was focused when the key was pressed,
             or ``""`` when absent.
+        id: Widget ID for widget-scoped key events, ``None`` for
+            subscription (global) key events.
+        scope: Ancestor container IDs for widget-scoped key events.
     """
 
     key: str
@@ -942,13 +789,17 @@ class KeyPress:
     repeat: bool = False
     captured: bool = False
     window_id: str = ""
+    id: str | None = None
+    scope: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
 class KeyRelease:
     """A key was released.
 
-    Wire family: ``key_release``. Fired from keyboard subscriptions.
+    Wire family: ``key_release``. Fired from keyboard subscriptions
+    (global, with ``id=None``) or from widget-scoped key events
+    (with ``id`` and ``scope`` populated).
 
     Attributes:
         key: The logical key name.
@@ -960,6 +811,9 @@ class KeyRelease:
         captured: Whether a widget already consumed this event.
         window_id: The window that was focused when the key was released,
             or ``""`` when absent.
+        id: Widget ID for widget-scoped key events, ``None`` for
+            subscription (global) key events.
+        scope: Ancestor container IDs for widget-scoped key events.
     """
 
     key: str
@@ -970,6 +824,8 @@ class KeyRelease:
     text: str | None = None
     captured: bool = False
     window_id: str = ""
+    id: str | None = None
+    scope: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -1762,6 +1618,12 @@ def target(
     | OptionHovered
     | KeyBinding
     | WidgetEvent
+    | Focused
+    | Blurred
+    | Drag
+    | DragEnd
+    | Enter
+    | Exit
     | MouseAreaRightPress
     | MouseAreaRightRelease
     | MouseAreaMiddlePress
@@ -1775,19 +1637,6 @@ def target(
     | CanvasRelease
     | CanvasMove
     | CanvasScroll
-    | CanvasElementEnter
-    | CanvasElementLeave
-    | CanvasElementClick
-    | CanvasElementDrag
-    | CanvasElementDragEnd
-    | CanvasElementFocused
-    | CanvasElementBlurred
-    | CanvasElementKeyPress
-    | CanvasElementKeyRelease
-    | CanvasFocused
-    | CanvasBlurred
-    | CanvasGroupFocused
-    | CanvasGroupBlurred
     | SensorResize
     | PaneResized
     | PaneDragged
@@ -1838,6 +1687,12 @@ type ScopedWidgetEvent = (
     | OptionHovered
     | KeyBinding
     | WidgetEvent
+    | Focused
+    | Blurred
+    | Drag
+    | DragEnd
+    | Enter
+    | Exit
 )
 """Union of all widget events that carry ``id`` and ``scope``."""
 
@@ -1856,25 +1711,6 @@ type MouseAreaEvent = (
 
 type CanvasEvent = CanvasPress | CanvasRelease | CanvasMove | CanvasScroll
 """Union of all raw canvas events."""
-
-type CanvasElementEvent = (
-    CanvasElementEnter
-    | CanvasElementLeave
-    | CanvasElementClick
-    | CanvasElementDrag
-    | CanvasElementDragEnd
-    | CanvasElementFocused
-    | CanvasElementBlurred
-    | CanvasElementKeyPress
-    | CanvasElementKeyRelease
-)
-"""Union of all interactive canvas element events."""
-
-type CanvasLifecycleEvent = CanvasFocused | CanvasBlurred
-"""Union of canvas focus lifecycle events (no coordinates)."""
-
-type CanvasGroupEvent = CanvasGroupFocused | CanvasGroupBlurred
-"""Union of canvas group focus events."""
 
 type PaneEvent = PaneResized | PaneDragged | PaneClicked | PaneFocusCycle
 """Union of all pane_grid events."""
@@ -1935,9 +1771,6 @@ type Event = (
     ScopedWidgetEvent
     | MouseAreaEvent
     | CanvasEvent
-    | CanvasElementEvent
-    | CanvasLifecycleEvent
-    | CanvasGroupEvent
     | Diagnostic
     | SensorResize
     | PaneEvent
@@ -1960,57 +1793,33 @@ type Event = (
 # ---------------------------------------------------------------------------
 
 __all__ = [
-    # System events
     "AllWindowsClosed",
     "AnimationFrame",
-    # Error / announce
     "Announce",
-    # Runtime events
     "AsyncResult",
-    # Canvas lifecycle events
-    "CanvasBlurred",
-    # Canvas element events
-    "CanvasElementBlurred",
-    "CanvasElementClick",
-    "CanvasElementDrag",
-    "CanvasElementDragEnd",
-    "CanvasElementEnter",
-    "CanvasElementEvent",
-    "CanvasElementFocused",
-    "CanvasElementKeyPress",
-    "CanvasElementKeyRelease",
-    "CanvasElementLeave",
-    # Union types
+    "Blurred",
     "CanvasEvent",
-    "CanvasFocused",
-    # Canvas group events
-    "CanvasGroupBlurred",
-    "CanvasGroupEvent",
-    "CanvasGroupFocused",
-    "CanvasLifecycleEvent",
-    # Canvas events
     "CanvasMove",
     "CanvasPress",
     "CanvasRelease",
     "CanvasScroll",
-    # Widget events
     "Click",
     "Close",
-    # Diagnostic
     "Diagnostic",
+    "Drag",
+    "DragEnd",
     "DuplicateNodeIds",
-    # Effect
     "EffectResult",
-    # Helper types
     "EffectStatus",
+    "Enter",
     "Event",
-    # Window events
+    "Exit",
     "FileDropped",
     "FileHovered",
     "FilesHoveredLeft",
+    "Focused",
     "FocusedWidget",
     "ImageList",
-    # IME events
     "ImeClose",
     "ImeCommit",
     "ImeEvent",
@@ -2020,11 +1829,9 @@ __all__ = [
     "KeyBinding",
     "KeyEvent",
     "KeyLocation",
-    # Key events
     "KeyPress",
     "KeyRelease",
     "ModifiersChanged",
-    # MouseArea events
     "MouseAreaDoubleClick",
     "MouseAreaEnter",
     "MouseAreaEvent",
@@ -2036,7 +1843,6 @@ __all__ = [
     "MouseAreaRightRelease",
     "MouseAreaScroll",
     "MouseButton",
-    # Mouse events
     "MouseButtonPress",
     "MouseButtonRelease",
     "MouseEnter",
@@ -2046,7 +1852,6 @@ __all__ = [
     "MouseWheel",
     "Open",
     "OptionHovered",
-    # Pane events
     "PaneClicked",
     "PaneDragged",
     "PaneEvent",
@@ -2060,7 +1865,6 @@ __all__ = [
     "ScrollData",
     "ScrollUnit",
     "Select",
-    # Sensor
     "SensorResize",
     "Slide",
     "SlideRelease",
@@ -2074,7 +1878,6 @@ __all__ = [
     "TimerTick",
     "Toggle",
     "TouchEvent",
-    # Touch events
     "TouchLift",
     "TouchLost",
     "TouchMove",

@@ -9,19 +9,7 @@ from plushie.events import (
     AnimationFrame,
     Announce,
     AsyncResult,
-    CanvasBlurred,
-    CanvasElementBlurred,
-    CanvasElementClick,
-    CanvasElementDrag,
-    CanvasElementDragEnd,
-    CanvasElementEnter,
-    CanvasElementFocused,
-    CanvasElementKeyPress,
-    CanvasElementKeyRelease,
-    CanvasElementLeave,
-    CanvasFocused,
-    CanvasGroupBlurred,
-    CanvasGroupFocused,
+    Blurred,
     CanvasMove,
     CanvasPress,
     CanvasRelease,
@@ -29,11 +17,16 @@ from plushie.events import (
     Click,
     Close,
     Diagnostic,
+    Drag,
+    DragEnd,
     DuplicateNodeIds,
     EffectResult,
+    Enter,
+    Exit,
     FileDropped,
     FileHovered,
     FilesHoveredLeft,
+    Focused,
     FocusedWidget,
     ImageList,
     ImeClose,
@@ -307,102 +300,73 @@ class TestCanvasEvents:
 
 
 # ---------------------------------------------------------------------------
-# Canvas element events
+# Unified focus/drag/enter/exit events
 # ---------------------------------------------------------------------------
 
 
-class TestCanvasElementEvents:
-    """Construct every canvas element event type."""
-
-    def test_enter(self) -> None:
-        e = CanvasElementEnter(id="canvas", element_id="bar-1", x=10.0, y=20.0)
-        assert e.element_id == "bar-1"
-        assert e.captured is False
-
-    def test_leave(self) -> None:
-        e = CanvasElementLeave(id="canvas", element_id="bar-1", captured=True)
-        assert e.captured is True
-
-    def test_click(self) -> None:
-        e = CanvasElementClick(
-            id="canvas", element_id="bar-1", x=10.0, y=20.0, button="left"
-        )
-        assert e.button == "left"
-
-    def test_click_keyboard(self) -> None:
-        e = CanvasElementClick(
-            id="canvas", element_id="star", x=50.0, y=50.0, button="keyboard"
-        )
-        assert e.button == "keyboard"
-
-    def test_drag(self) -> None:
-        e = CanvasElementDrag(
-            id="canvas",
-            element_id="handle",
-            x=100.0,
-            y=200.0,
-            delta_x=5.0,
-            delta_y=-3.0,
-        )
-        assert e.delta_x == 5.0
-        assert e.delta_y == -3.0
-
-    def test_drag_end(self) -> None:
-        e = CanvasElementDragEnd(id="canvas", element_id="handle", x=105.0, y=197.0)
-        assert e.x == 105.0
+class TestUnifiedCanvasEvents:
+    """Test the unified event types that replace canvas element events."""
 
     def test_focused(self) -> None:
-        e = CanvasElementFocused(id="canvas", element_id="bar-1")
-        assert e.captured is False
+        e = Focused(id="bar-1", scope=("canvas",))
+        assert e.id == "bar-1"
+        assert e.scope == ("canvas",)
 
     def test_blurred(self) -> None:
-        e = CanvasElementBlurred(id="canvas", element_id="bar-1")
-        assert e.captured is False
+        e = Blurred(id="bar-1", scope=("canvas",))
+        assert e.id == "bar-1"
 
-    def test_key_press(self) -> None:
-        e = CanvasElementKeyPress(
-            id="canvas", element_id="item1", key="ArrowRight", scope=("form",)
-        )
-        assert e.element_id == "item1"
-        assert e.key == "ArrowRight"
-        assert e.scope == ("form",)
+    def test_drag(self) -> None:
+        e = Drag(id="handle", x=100.0, y=200.0, delta_x=5.0, delta_y=-3.0)
+        assert e.delta_x == 5.0
+        assert e.delta_y == -3.0
+        assert e.button == "left"
 
-    def test_key_release(self) -> None:
-        e = CanvasElementKeyRelease(id="canvas", element_id="item1", key="Enter")
-        assert e.element_id == "item1"
-        assert e.key == "Enter"
-        assert e.scope == ()
+    def test_drag_end(self) -> None:
+        e = DragEnd(id="handle", x=105.0, y=197.0)
+        assert e.x == 105.0
+        assert e.button == "left"
 
-
-# ---------------------------------------------------------------------------
-# Canvas lifecycle events
-# ---------------------------------------------------------------------------
-
-
-class TestCanvasLifecycleEvents:
-    def test_canvas_focused(self) -> None:
-        e = CanvasFocused(id="canvas")
-        assert e.id == "canvas"
-        assert e.scope == ()
-
-    def test_canvas_blurred(self) -> None:
-        e = CanvasBlurred(id="canvas", scope=("panel",))
+    def test_enter(self) -> None:
+        e = Enter(id="area", scope=("panel",))
+        assert e.id == "area"
         assert e.scope == ("panel",)
 
+    def test_exit(self) -> None:
+        e = Exit(id="area", scope=("panel",))
+        assert e.id == "area"
 
-# ---------------------------------------------------------------------------
-# Canvas group events
-# ---------------------------------------------------------------------------
+    def test_key_press_widget_scoped(self) -> None:
+        e = KeyPress(
+            key="ArrowRight",
+            modified_key="ArrowRight",
+            modifiers=KeyModifiers(),
+            id="item1",
+            scope=("canvas", "form"),
+        )
+        assert e.id == "item1"
+        assert e.key == "ArrowRight"
+        assert e.scope == ("canvas", "form")
 
+    def test_key_press_subscription(self) -> None:
+        e = KeyPress(
+            key="Enter",
+            modified_key="Enter",
+            modifiers=KeyModifiers(),
+        )
+        assert e.id is None
+        assert e.scope == ()
 
-class TestCanvasGroupEvents:
-    def test_group_focused(self) -> None:
-        e = CanvasGroupFocused(id="canvas", group_id="toolbar")
-        assert e.group_id == "toolbar"
-
-    def test_group_blurred(self) -> None:
-        e = CanvasGroupBlurred(id="canvas", group_id="toolbar")
-        assert e.group_id == "toolbar"
+    def test_key_release_widget_scoped(self) -> None:
+        e = KeyRelease(
+            key="Enter",
+            modified_key="Enter",
+            modifiers=KeyModifiers(),
+            id="item1",
+            scope=("canvas",),
+        )
+        assert e.id == "item1"
+        assert e.scope == ("canvas",)
 
 
 # ---------------------------------------------------------------------------

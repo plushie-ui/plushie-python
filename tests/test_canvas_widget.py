@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from plushie.events import (
-    CanvasElementClick,
-    CanvasElementEnter,
+    CanvasPress,
     Click,
+    Enter,
     Select,
     WidgetEvent,
 )
@@ -42,10 +42,10 @@ class StarRating(WidgetDef):
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
 
     def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
-        if isinstance(event, CanvasElementEnter):
-            return EventAction.update_state({**state, "hovered": event.element_id})
-        if isinstance(event, CanvasElementClick):
-            return EventAction.emit("select", {"value": event.element_id})
+        if isinstance(event, Enter):
+            return EventAction.update_state({**state, "hovered": event.id})
+        if isinstance(event, Click):
+            return EventAction.emit("select", {"value": event.id})
         return EventAction.ignored()
 
 
@@ -91,7 +91,7 @@ class CustomEmitter(WidgetDef):
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
 
     def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
-        if isinstance(event, CanvasElementClick):
+        if isinstance(event, Click):
             return EventAction.emit("change", {"hue": 180.0, "sat": 0.5})
         return EventAction.ignored()
 
@@ -108,7 +108,7 @@ class ToggleEmitter(WidgetDef):
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
 
     def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
-        if isinstance(event, CanvasElementClick):
+        if isinstance(event, Click):
             new_on = not state["on"]
             return EventAction.emit("toggle", new_on, state={"on": new_on})
         return EventAction.ignored()
@@ -152,8 +152,8 @@ class ValidatedWidget(WidgetDef):
         return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
 
     def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
-        if isinstance(event, CanvasElementClick):
-            eid = event.element_id
+        if isinstance(event, Click):
+            eid = event.id
             if eid == "ring":
                 return EventAction.emit("change", {"hue": 180.0, "saturation": 0.5})
             if eid == "star":
@@ -277,10 +277,9 @@ class TestDispatchThroughWidgets:
                 definition=IgnoreAll(), state={}, props={}
             )
         }
-        # CanvasElementClick is a canvas-internal event
-        event = CanvasElementClick(
+        # CanvasPress is a canvas-internal event
+        event = CanvasPress(
             id="btn",
-            element_id="shape",
             x=0.0,
             y=0.0,
             button="left",
@@ -308,14 +307,10 @@ class TestDispatchThroughWidgets:
                 props={"max": 5},
             )
         }
-        event = CanvasElementClick(
-            id="stars",
-            element_id="star3",
-            x=10.0,
-            y=10.0,
-            button="left",
+        event = Click(
+            id="star3",
             window_id="main",
-            scope=(),
+            scope=("stars",),
         )
         result, _new_reg = dispatch_through_widgets(reg, event)
         assert isinstance(result, Select)
@@ -332,14 +327,10 @@ class TestDispatchThroughWidgets:
                 props={},
             )
         }
-        event = CanvasElementClick(
-            id="picker",
-            element_id="ring",
-            x=10.0,
-            y=10.0,
-            button="left",
+        event = Click(
+            id="ring",
             window_id="main",
-            scope=(),
+            scope=("picker",),
         )
         result, _ = dispatch_through_widgets(reg, event)
         assert isinstance(result, WidgetEvent)
@@ -357,14 +348,10 @@ class TestDispatchThroughWidgets:
                 props={},
             )
         }
-        event = CanvasElementClick(
-            id="sw",
-            element_id="switch",
-            x=5.0,
-            y=5.0,
-            button="left",
+        event = Click(
+            id="switch",
             window_id="main",
-            scope=(),
+            scope=("sw",),
         )
         result, new_reg = dispatch_through_widgets(reg, event)
         assert isinstance(result, Toggle)
@@ -382,13 +369,10 @@ class TestDispatchThroughWidgets:
                 props={"max": 5},
             )
         }
-        event = CanvasElementEnter(
-            id="stars",
-            element_id="star2",
-            x=10.0,
-            y=10.0,
+        event = Enter(
+            id="star2",
             window_id="main",
-            scope=(),
+            scope=("stars",),
         )
         result, new_reg = dispatch_through_widgets(reg, event)
         assert result is None  # consumed by update_state
@@ -416,9 +400,8 @@ class TestDispatchThroughWidgets:
                 definition=IgnoreAll(), state={}, props={}
             )
         }
-        event = CanvasElementClick(
+        event = CanvasPress(
             id="raw_canvas",
-            element_id="shape",
             x=0.0,
             y=0.0,
             button="left",
@@ -444,15 +427,11 @@ class TestEventSpecs:
             )
         }
 
-    def _click(self, element_id: str) -> CanvasElementClick:
-        return CanvasElementClick(
-            id="picker",
-            element_id=element_id,
-            x=0.0,
-            y=0.0,
-            button="left",
+    def _click(self, element_id: str) -> Click:
+        return Click(
+            id=element_id,
             window_id="main",
-            scope=(),
+            scope=("picker",),
         )
 
     def test_valid_data_event_passes(self) -> None:
@@ -495,14 +474,10 @@ class TestEventSpecs:
         reg = {
             ("main", "w"): RegistryEntry(definition=ClearWidget(), state={}, props={})
         }
-        event = CanvasElementClick(
-            id="w",
-            element_id="x",
-            x=0.0,
-            y=0.0,
-            button="left",
+        event = Click(
+            id="x",
             window_id="main",
-            scope=(),
+            scope=("w",),
         )
         result, _ = dispatch_through_widgets(reg, event)
         assert isinstance(result, WidgetEvent)
@@ -528,14 +503,10 @@ class TestEventSpecs:
                 return EventAction.emit("chaneg", {"x": 1.0})  # typo!
 
         reg = {("main", "w"): RegistryEntry(definition=BadWidget(), state={}, props={})}
-        event = CanvasElementClick(
-            id="w",
-            element_id="x",
-            x=0.0,
-            y=0.0,
-            button="left",
+        event = Click(
+            id="x",
             window_id="main",
-            scope=(),
+            scope=("w",),
         )
         import pytest
 
@@ -566,14 +537,10 @@ class TestEventSpecs:
                 definition=IncompleteWidget(), state={}, props={}
             )
         }
-        event = CanvasElementClick(
-            id="w",
-            element_id="x",
-            x=0.0,
-            y=0.0,
-            button="left",
+        event = Click(
+            id="x",
             window_id="main",
-            scope=(),
+            scope=("w",),
         )
         import pytest
 
@@ -604,14 +571,10 @@ class TestEventSpecs:
                 definition=WrongTypeWidget(), state={}, props={}
             )
         }
-        event = CanvasElementClick(
-            id="w",
-            element_id="x",
-            x=0.0,
-            y=0.0,
-            button="left",
+        event = Click(
+            id="x",
             window_id="main",
-            scope=(),
+            scope=("w",),
         )
         import pytest
 
@@ -642,14 +605,10 @@ class TestEventSpecs:
         reg = {
             ("main", "w"): RegistryEntry(definition=ClickEmitter(), state={}, props={})
         }
-        event = CanvasElementClick(
-            id="w",
-            element_id="x",
-            x=0.0,
-            y=0.0,
-            button="left",
+        event = Click(
+            id="x",
             window_id="main",
-            scope=(),
+            scope=("w",),
         )
         result, _ = dispatch_through_widgets(reg, event)
         assert isinstance(result, Click)

@@ -55,19 +55,6 @@ from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from plushie.events import (
-    CanvasBlurred,
-    CanvasElementBlurred,
-    CanvasElementClick,
-    CanvasElementDrag,
-    CanvasElementDragEnd,
-    CanvasElementEnter,
-    CanvasElementFocused,
-    CanvasElementKeyPress,
-    CanvasElementKeyRelease,
-    CanvasElementLeave,
-    CanvasFocused,
-    CanvasGroupBlurred,
-    CanvasGroupFocused,
     CanvasMove,
     CanvasPress,
     CanvasRelease,
@@ -97,19 +84,6 @@ logger = logging.getLogger("plushie")
 # Raw canvases (not managed by a WidgetDef) bypass the handler chain
 # entirely, so their events pass through to update() normally.
 _CANVAS_INTERNAL_TYPES: tuple[type, ...] = (
-    CanvasBlurred,
-    CanvasElementBlurred,
-    CanvasElementClick,
-    CanvasElementDrag,
-    CanvasElementDragEnd,
-    CanvasElementEnter,
-    CanvasElementFocused,
-    CanvasElementKeyPress,
-    CanvasElementKeyRelease,
-    CanvasElementLeave,
-    CanvasFocused,
-    CanvasGroupBlurred,
-    CanvasGroupFocused,
     CanvasMove,
     CanvasPress,
     CanvasRelease,

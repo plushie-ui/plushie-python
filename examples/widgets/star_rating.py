@@ -22,7 +22,7 @@ from typing import Any
 from plushie import canvas as c
 from plushie import ui
 from plushie.canvas_widget import CanvasWidgetDef, EventAction, EventActionResult
-from plushie.events import CanvasElementClick, CanvasElementEnter, CanvasElementLeave
+from plushie.events import Click, Enter, Exit
 
 STAR_COUNT = 5
 
@@ -35,15 +35,15 @@ class StarRating(CanvasWidgetDef):
 
     def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
         match event:
-            case CanvasElementClick(element_id=eid) if eid.startswith("star-"):
+            case Click(id=eid) if eid.startswith("star-"):
                 n = int(eid.removeprefix("star-"))
                 return EventAction.emit("select", n + 1)
 
-            case CanvasElementEnter(element_id=eid) if eid.startswith("star-"):
+            case Enter(id=eid) if eid.startswith("star-"):
                 n = int(eid.removeprefix("star-"))
                 return EventAction.update_state({"hover": n + 1})
 
-            case CanvasElementLeave():
+            case Exit():
                 return EventAction.update_state({"hover": None})
 
             case _:

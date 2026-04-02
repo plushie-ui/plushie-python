@@ -18,19 +18,7 @@ from plushie.events import (
     AllWindowsClosed,
     AnimationFrame,
     Announce,
-    CanvasBlurred,
-    CanvasElementBlurred,
-    CanvasElementClick,
-    CanvasElementDrag,
-    CanvasElementDragEnd,
-    CanvasElementEnter,
-    CanvasElementFocused,
-    CanvasElementKeyPress,
-    CanvasElementKeyRelease,
-    CanvasElementLeave,
-    CanvasFocused,
-    CanvasGroupBlurred,
-    CanvasGroupFocused,
+    Blurred,
     CanvasMove,
     CanvasPress,
     CanvasRelease,
@@ -38,11 +26,16 @@ from plushie.events import (
     Click,
     Close,
     Diagnostic,
+    Drag,
+    DragEnd,
     DuplicateNodeIds,
     EffectResult,
+    Enter,
+    Exit,
     FileDropped,
     FileHovered,
     FilesHoveredLeft,
+    Focused,
     FocusedWidget,
     ImageList,
     ImeClose,
@@ -781,19 +774,12 @@ def decode_message(
     | CanvasRelease
     | CanvasMove
     | CanvasScroll
-    | CanvasElementEnter
-    | CanvasElementLeave
-    | CanvasElementClick
-    | CanvasElementDrag
-    | CanvasElementDragEnd
-    | CanvasElementFocused
-    | CanvasElementBlurred
-    | CanvasElementKeyPress
-    | CanvasElementKeyRelease
-    | CanvasFocused
-    | CanvasBlurred
-    | CanvasGroupFocused
-    | CanvasGroupBlurred
+    | Focused
+    | Blurred
+    | Drag
+    | DragEnd
+    | Enter
+    | Exit
     | Diagnostic
     | SensorResize
     | PaneResized
@@ -1183,147 +1169,60 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    # ------- Canvas element events (scoped) -------
+    # ------- Unified canvas/widget events (scoped) -------
 
-    if family == "canvas_element_enter":
+    if family == "focused":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasElementEnter(
+        return Focused(
             id=local_id,
-            element_id=str(data.get("element_id", "")),
-            x=float(data.get("x", 0)),
-            y=float(data.get("y", 0)),
             window_id=_extract_window_id(msg),
-            captured=captured,
             scope=scope,
         )
 
-    if family == "canvas_element_leave":
+    if family == "blurred":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasElementLeave(
+        return Blurred(
             id=local_id,
-            element_id=str(data.get("element_id", "")),
             window_id=_extract_window_id(msg),
-            captured=captured,
             scope=scope,
         )
 
-    if family == "canvas_element_click":
+    if family == "drag":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasElementClick(
+        return Drag(
             id=local_id,
-            element_id=str(data.get("element_id", "")),
-            x=float(data.get("x", 0)),
-            y=float(data.get("y", 0)),
-            button=str(data.get("button", "left")),
-            window_id=_extract_window_id(msg),
-            captured=captured,
-            scope=scope,
-        )
-
-    if family == "canvas_element_drag":
-        local_id, scope = split_scoped_id(wire_id)
-        return CanvasElementDrag(
-            id=local_id,
-            element_id=str(data.get("element_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
+            button=str(data.get("button", "left")),
             window_id=_extract_window_id(msg),
-            captured=captured,
             scope=scope,
         )
 
-    if family == "canvas_element_drag_end":
+    if family == "drag_end":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasElementDragEnd(
+        return DragEnd(
             id=local_id,
-            element_id=str(data.get("element_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            window_id=_extract_window_id(msg),
-            captured=captured,
-            scope=scope,
-        )
-
-    if family == "canvas_element_focused":
-        local_id, scope = split_scoped_id(wire_id)
-        return CanvasElementFocused(
-            id=local_id,
-            element_id=str(data.get("element_id", "")),
-            window_id=_extract_window_id(msg),
-            captured=captured,
-            scope=scope,
-        )
-
-    if family == "canvas_element_blurred":
-        local_id, scope = split_scoped_id(wire_id)
-        return CanvasElementBlurred(
-            id=local_id,
-            element_id=str(data.get("element_id", "")),
-            window_id=_extract_window_id(msg),
-            captured=captured,
-            scope=scope,
-        )
-
-    if family == "canvas_element_key_press":
-        local_id, scope = split_scoped_id(wire_id)
-        mods = data.get("modifiers", {})
-        return CanvasElementKeyPress(
-            id=local_id,
-            element_id=str(data.get("element_id", "")),
-            key=str(data.get("key", "")),
-            modifiers=mods if isinstance(mods, dict) else {},
+            button=str(data.get("button", "left")),
             window_id=_extract_window_id(msg),
             scope=scope,
         )
 
-    if family == "canvas_element_key_release":
+    if family == "enter":
         local_id, scope = split_scoped_id(wire_id)
-        mods = data.get("modifiers", {})
-        return CanvasElementKeyRelease(
-            id=local_id,
-            element_id=str(data.get("element_id", "")),
-            key=str(data.get("key", "")),
-            modifiers=mods if isinstance(mods, dict) else {},
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    # ------- Canvas lifecycle events (scoped, no coordinates) -------
-
-    if family == "canvas_focused":
-        local_id, scope = split_scoped_id(wire_id)
-        return CanvasFocused(
+        return Enter(
             id=local_id,
             window_id=_extract_window_id(msg),
             scope=scope,
         )
 
-    if family == "canvas_blurred":
+    if family == "exit":
         local_id, scope = split_scoped_id(wire_id)
-        return CanvasBlurred(
+        return Exit(
             id=local_id,
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    # ------- Canvas group events (scoped) -------
-
-    if family == "canvas_group_focused":
-        local_id, scope = split_scoped_id(wire_id)
-        return CanvasGroupFocused(
-            id=local_id,
-            group_id=str(data.get("group_id", "")),
-            window_id=_extract_window_id(msg),
-            scope=scope,
-        )
-
-    if family == "canvas_group_blurred":
-        local_id, scope = split_scoped_id(wire_id)
-        return CanvasGroupBlurred(
-            id=local_id,
-            group_id=str(data.get("group_id", "")),
             window_id=_extract_window_id(msg),
             scope=scope,
         )
@@ -1393,10 +1292,25 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    # ------- Key events (global subscription) -------
+    # ------- Key events (global subscription or widget-scoped) -------
 
     if family == "key_press":
         mods = _parse_modifiers(modifiers_raw)
+        if wire_id:
+            local_id, scope = split_scoped_id(wire_id)
+            return KeyPress(
+                key=str(data.get("key", "")),
+                modified_key=str(data.get("modified_key", data.get("key", ""))),
+                modifiers=mods,
+                physical_key=data.get("physical_key"),
+                location=data.get("location", "standard"),
+                text=data.get("text"),
+                repeat=bool(data.get("repeat", False)),
+                captured=captured,
+                window_id=_extract_window_id(msg),
+                id=local_id,
+                scope=scope,
+            )
         return KeyPress(
             key=str(data.get("key", "")),
             modified_key=str(data.get("modified_key", data.get("key", ""))),
@@ -1411,6 +1325,20 @@ def _decode_event(msg: dict[str, Any]) -> Any:
 
     if family == "key_release":
         mods = _parse_modifiers(modifiers_raw)
+        if wire_id:
+            local_id, scope = split_scoped_id(wire_id)
+            return KeyRelease(
+                key=str(data.get("key", "")),
+                modified_key=str(data.get("modified_key", data.get("key", ""))),
+                modifiers=mods,
+                physical_key=data.get("physical_key"),
+                location=data.get("location", "standard"),
+                text=data.get("text"),
+                captured=captured,
+                window_id=_extract_window_id(msg),
+                id=local_id,
+                scope=scope,
+            )
         return KeyRelease(
             key=str(data.get("key", "")),
             modified_key=str(data.get("modified_key", data.get("key", ""))),

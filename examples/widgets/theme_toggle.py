@@ -19,7 +19,7 @@ from typing import Any
 from plushie import canvas as c
 from plushie import ui
 from plushie.canvas_widget import CanvasWidgetDef, EventAction, EventActionResult
-from plushie.events import CanvasElementClick, TimerTick
+from plushie.events import Click, TimerTick
 from plushie.subscriptions import Subscription
 
 TRACK_W = 64
@@ -35,7 +35,7 @@ class ThemeToggle(CanvasWidgetDef):
 
     def handle_event(self, event: Any, state: dict[str, Any]) -> EventActionResult:
         match event:
-            case CanvasElementClick():
+            case Click():
                 new_target = 1.0 if state["target"] == 0.0 else 0.0
                 new_state = {"progress": state["progress"], "target": new_target}
                 return EventAction.emit("toggle", new_target >= 0.5, state=new_state)

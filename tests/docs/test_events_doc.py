@@ -14,7 +14,6 @@ from plushie.commands import Command
 from plushie.events import (
     AnimationFrame,
     AsyncResult,
-    CanvasElementClick,
     CanvasMove,
     CanvasPress,
     Click,
@@ -338,12 +337,10 @@ class TestCanvasMoveMatch:
 
 class TestCanvasElementClickMatch:
     def test_element_click_match(self) -> None:
-        event = CanvasElementClick(
-            id="chart", element_id="bar-jan", x=15.0, y=70.0, button="left"
-        )
+        event = Click(id="bar-jan", window_id="main", scope=("chart",))
         model = Model()
         match event:
-            case CanvasElementClick(id="chart", element_id=element_id):
+            case Click(id=element_id, scope=("chart", *_)):
                 model = replace(model, selected_bar=element_id)
         assert model.selected_bar == "bar-jan"
 
