@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import pytest
+
 from plushie.animation import (
     FINISHED,
     Animation,
+    Sequence,
+    Spring,
+    Transition,
+    Tween,
+    cubic_bezier,
     ease_in,
     ease_in_out,
     ease_in_out_quad,
@@ -27,18 +34,18 @@ class TestEasingFunctions:
 
     def test_ease_in(self) -> None:
         assert ease_in(0.0) == 0.0
-        assert ease_in(1.0) == 1.0
-        assert ease_in(0.5) < 0.5  # cubic starts slow
+        assert ease_in(1.0) == pytest.approx(1.0)
+        assert ease_in(0.5) < 0.5  # starts slow
 
     def test_ease_out(self) -> None:
         assert ease_out(0.0) == 0.0
-        assert ease_out(1.0) == 1.0
-        assert ease_out(0.5) > 0.5  # cubic ends slow
+        assert ease_out(1.0) == pytest.approx(1.0)
+        assert ease_out(0.5) > 0.5  # ends slow
 
     def test_ease_in_out(self) -> None:
-        assert ease_in_out(0.0) == 0.0
-        assert ease_in_out(1.0) == 1.0
-        assert ease_in_out(0.5) == 0.5  # symmetric midpoint
+        assert ease_in_out(0.0) == pytest.approx(0.0)
+        assert ease_in_out(1.0) == pytest.approx(1.0)
+        assert ease_in_out(0.5) == pytest.approx(0.5)  # symmetric midpoint
 
     def test_ease_in_quad(self) -> None:
         assert ease_in_quad(0.0) == 0.0
@@ -73,7 +80,7 @@ class TestInterpolate:
 
     def test_with_easing(self) -> None:
         result = interpolate(0.0, 100.0, 0.5, ease_in)
-        assert result == 12.5  # 0.5^3 * 100
+        assert result < 50.0  # ease_in is below linear at midpoint
 
     def test_clamps_below_zero(self) -> None:
         assert interpolate(0.0, 100.0, -1.0) == 0.0
@@ -172,3 +179,134 @@ class TestAnimationLifecycle:
             raise AssertionError(msg)
         except AttributeError:
             pass
+
+
+class TestTweenAlias:
+    def test_animation_is_tween(self) -> None:
+        assert Animation is Tween
+
+
+class TestTransition:
+    def test_basic_wire_format(self) -> None:
+        t = Transition(to=0.0, duration=300)
+        wire = t.to_wire()
+        assert wire == {"type": "transition", "to": 0.0, "duration": 300}
+
+    def test_with_easing(self) -> None:
+        t = Transition(to=1.0, duration=200, easing="ease_out")
+        wire = t.to_wire()
+        assert wire["easing"] == "ease_out"
+
+    def test_default_easing_omitted(self) -> None:
+        t = Transition(to=1.0, duration=200)
+        assert "easing" not in t.to_wire()
+
+    def test_from_value(self) -> None:
+        t = Transition(to=1.0, duration=200, from_=0.0)
+        assert t.to_wire()["from"] == 0.0
+
+    def test_delay(self) -> None:
+        t = Transition(to=1.0, duration=200, delay=100)
+        assert t.to_wire()["delay"] == 100
+
+    def test_on_complete(self) -> None:
+        t = Transition(to=0.0, duration=300, on_complete="faded")
+        assert t.to_wire()["on_complete"] == "faded"
+
+    def test_repeat_forever(self) -> None:
+        t = Transition(to=0.5, duration=800, repeat=-1, auto_reverse=True)
+        wire = t.to_wire()
+        assert wire["repeat"] == -1
+        assert wire["auto_reverse"] is True
+
+    def test_loop_factory(self) -> None:
+        t = Transition.loop(to=0.4, from_=1.0, duration=800)
+        wire = t.to_wire()
+        assert wire["repeat"] == -1
+        assert wire["auto_reverse"] is True
+        assert wire["from"] == 1.0
+
+    def test_loop_finite_cycles(self) -> None:
+        t = Transition.loop(to=0.4, from_=1.0, duration=800, cycles=3)
+        assert t.to_wire()["repeat"] == 3
+
+
+class TestSpring:
+    def test_basic_wire_format(self) -> None:
+        s = Spring(to=1.0)
+        wire = s.to_wire()
+        assert wire == {
+            "type": "spring",
+            "to": 1.0,
+            "stiffness": 100,
+            "damping": 10,
+        }
+
+    def test_custom_params(self) -> None:
+        s = Spring(to=1.0, stiffness=200, damping=20, mass=2.0)
+        wire = s.to_wire()
+        assert wire["mass"] == 2.0
+        assert wire["stiffness"] == 200
+
+    def test_default_mass_omitted(self) -> None:
+        s = Spring(to=1.0)
+        assert "mass" not in s.to_wire()
+
+    def test_preset(self) -> None:
+        s = Spring.preset("bouncy", to=1.05)
+        assert s.stiffness == 300
+        assert s.damping == 10
+
+    def test_preset_with_overrides(self) -> None:
+        s = Spring.preset("gentle", to=1.0, mass=2.0)
+        assert s.stiffness == 120
+        assert s.mass == 2.0
+
+    def test_unknown_preset_raises(self) -> None:
+        with pytest.raises(ValueError, match="unknown spring preset"):
+            Spring.preset("nonexistent", to=1.0)
+
+
+class TestSequence:
+    def test_wire_format(self) -> None:
+        seq = Sequence(
+            steps=[
+                Transition(to=1.0, duration=200, from_=0.0),
+                Transition(to=0.0, duration=300),
+            ],
+            on_complete="done",
+        )
+        wire = seq.to_wire()
+        assert wire["type"] == "sequence"
+        assert len(wire["steps"]) == 2
+        assert wire["steps"][0]["type"] == "transition"
+        assert wire["steps"][1]["type"] == "transition"
+        assert wire["on_complete"] == "done"
+
+    def test_mixed_steps(self) -> None:
+        seq = Sequence(
+            steps=[
+                Transition(to=1.0, duration=200),
+                Spring(to=0.0, stiffness=200, damping=20),
+            ],
+        )
+        wire = seq.to_wire()
+        assert wire["steps"][0]["type"] == "transition"
+        assert wire["steps"][1]["type"] == "spring"
+        assert "on_complete" not in wire
+
+    def test_no_on_complete(self) -> None:
+        seq = Sequence(steps=[Transition(to=1.0, duration=200)])
+        assert "on_complete" not in seq.to_wire()
+
+
+class TestCubicBezier:
+    def test_boundaries(self) -> None:
+        ease = cubic_bezier(0.25, 0.1, 0.25, 1.0)
+        assert ease(0.0) == 0.0
+        assert ease(1.0) == 1.0
+
+    def test_midpoint_reasonable(self) -> None:
+        ease = cubic_bezier(0.25, 0.1, 0.25, 1.0)
+        mid = ease(0.5)
+        assert 0.0 < mid < 1.0

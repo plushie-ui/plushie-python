@@ -93,6 +93,7 @@ from plushie.events import (
     TouchLost,
     TouchMove,
     TouchPress,
+    TransitionComplete,
     TreeHash,
     WidgetCommandError,
     WidgetEvent,
@@ -1589,6 +1590,17 @@ def _decode_event(msg: dict[str, Any]) -> Any:
 
     if family == "animation_frame":
         return AnimationFrame(timestamp=int(data.get("timestamp", 0)))
+
+    if family == "transition_complete":
+        local_id, scope = split_scoped_id(wire_id)
+        tag_raw = data.get("tag")
+        return TransitionComplete(
+            id=local_id,
+            tag=str(tag_raw) if tag_raw is not None else None,
+            prop=data.get("prop"),
+            window_id=_extract_window_id(msg),
+            scope=scope,
+        )
 
     if family == "theme_changed":
         return ThemeChanged(theme=str(value or ""))

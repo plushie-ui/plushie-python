@@ -672,6 +672,31 @@ class AppFixture[M]:
         self._interact("pane_focus_cycle", selector)
 
     # -------------------------------------------------------------------
+    # Animation helpers
+    # -------------------------------------------------------------------
+
+    def advance_frame(self, timestamp: int) -> None:
+        """Advance the renderer animation clock.
+
+        Drives renderer-side transitions/springs to the given timestamp
+        (milliseconds). In mock mode, renderer-side animations resolve
+        instantly; this is primarily useful in headless/windowed mode.
+
+        Args:
+            timestamp: Animation clock timestamp in milliseconds.
+        """
+        self._interact("advance_frame", None, payload={"timestamp": timestamp})
+
+    def skip_transitions(self) -> None:
+        """Skip all active renderer-side transitions to completion.
+
+        Advances the animation clock 10 seconds forward, which is
+        sufficient to complete any reasonable animation. Useful in tests
+        that trigger animations but only care about the final state.
+        """
+        self.advance_frame(10_000)
+
+    # -------------------------------------------------------------------
     # Queries
     # -------------------------------------------------------------------
 

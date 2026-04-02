@@ -1455,6 +1455,28 @@ class AnimationFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class TransitionComplete:
+    """A renderer-side animation finished.
+
+    Wire family: ``transition_complete``. Fired when a Transition or
+    Sequence with an ``on_complete`` tag finishes its animation.
+
+    Attributes:
+        id: Widget that owns the animated property.
+        tag: The ``on_complete`` tag from the animation descriptor.
+        prop: The property name that completed (e.g. ``"opacity"``).
+        window_id: Window containing the widget.
+        scope: Ancestor container IDs (nearest first).
+    """
+
+    id: str
+    tag: str | None
+    prop: str | None
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ThemeChanged:
     """The OS theme preference changed at runtime.
 
@@ -1894,6 +1916,7 @@ type WindowEvent = (
 type SystemEvent = (
     AnimationFrame
     | ThemeChanged
+    | TransitionComplete
     | AllWindowsClosed
     | SystemInfo
     | SystemTheme
@@ -2056,6 +2079,7 @@ __all__ = [
     "TouchLost",
     "TouchMove",
     "TouchPress",
+    "TransitionComplete",
     "TreeHash",
     "WidgetCommandError",
     "WidgetEvent",
