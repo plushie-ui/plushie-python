@@ -331,7 +331,7 @@ class TestPointerMoveMatch:
         assert model.strokes == ((5.0, 10.0),)
 
 
-class TestCanvasElementClickMatch:
+class TestScopedClickMatch:
     def test_element_click_match(self) -> None:
         event = Click(id="bar-jan", window_id="main", scope=("chart",))
         model = Model()
@@ -491,8 +491,8 @@ class TestPointerPressMatch:
         assert model.mouse_down is True
 
 
-class TestTouchPressMatch:
-    def test_touch_press_match(self) -> None:
+class TestPointerTouchPressMatch:
+    def test_touch_pointer_press_match(self) -> None:
         event = Press(
             id="main",
             x=50.0,
