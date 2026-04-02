@@ -52,6 +52,8 @@ from plushie.events import (
     PaneFocusCycle,
     PaneResized,
     Paste,
+    PointerButton,
+    PointerType,
     Press,
     Release,
     RendererError,
@@ -846,6 +848,23 @@ def _parse_modifiers(raw: dict[str, Any] | None) -> KeyModifiers:
     )
 
 
+_POINTER_TYPES = {"mouse", "touch", "pen"}
+
+
+def _parse_pointer_type(raw: Any) -> PointerType:
+    """Parse a wire pointer type string, defaulting to ``"mouse"``."""
+    if raw in _POINTER_TYPES:
+        return raw  # type: ignore[return-value]
+    return "mouse"
+
+
+def _parse_pointer_button(raw: Any) -> PointerButton:
+    """Parse a wire button string, defaulting to ``"left"``."""
+    if isinstance(raw, str) and raw:
+        return raw  # type: ignore[return-value]
+    return "left"
+
+
 def _extract_window_id(msg: dict[str, Any]) -> str:
     """Extract window_id from a wire event, defaulting to empty string.
 
@@ -1033,8 +1052,8 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            button=str(data.get("button", "left")),
-            pointer=str(data.get("pointer", "mouse")),
+            button=_parse_pointer_button(data.get("button")),
+            pointer=_parse_pointer_type(data.get("pointer")),
             modifiers=mods,
             finger=data.get("finger"),
             window_id=_wid,
@@ -1048,8 +1067,8 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            button=str(data.get("button", "left")),
-            pointer=str(data.get("pointer", "mouse")),
+            button=_parse_pointer_button(data.get("button")),
+            pointer=_parse_pointer_type(data.get("pointer")),
             modifiers=mods,
             finger=data.get("finger"),
             window_id=_wid,
@@ -1063,7 +1082,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            pointer=str(data.get("pointer", "mouse")),
+            pointer=_parse_pointer_type(data.get("pointer")),
             modifiers=mods,
             finger=data.get("finger"),
             window_id=_wid,
@@ -1079,7 +1098,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             y=float(data.get("y", 0)),
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
-            pointer=str(data.get("pointer", "mouse")),
+            pointer=_parse_pointer_type(data.get("pointer")),
             modifiers=mods,
             window_id=_wid,
             scope=scope,
@@ -1092,7 +1111,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            pointer=str(data.get("pointer", "mouse")),
+            pointer=_parse_pointer_type(data.get("pointer")),
             modifiers=mods,
             window_id=_wid,
             scope=scope,
@@ -1134,7 +1153,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             y=float(data.get("y", 0)),
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
-            button=str(data.get("button", "left")),
+            button=_parse_pointer_button(data.get("button")),
             window_id=_wid,
             scope=scope,
         )
@@ -1145,7 +1164,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            button=str(data.get("button", "left")),
+            button=_parse_pointer_button(data.get("button")),
             window_id=_wid,
             scope=scope,
         )

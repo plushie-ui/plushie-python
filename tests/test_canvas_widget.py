@@ -266,7 +266,7 @@ class TestDispatchThroughWidgets:
             )
         }
         event = Click(id="btn", window_id="main", scope=("widget", "form"))
-        result, _new_reg = dispatch_through_widgets(reg, event)
+        result, _new_reg, _changed = dispatch_through_widgets(reg, event)
         assert result is event
 
     def test_consumed_returns_none(self) -> None:
@@ -276,7 +276,7 @@ class TestDispatchThroughWidgets:
             )
         }
         event = Click(id="btn", window_id="main", scope=("widget", "form"))
-        result, _new_reg = dispatch_through_widgets(reg, event)
+        result, _new_reg, _changed = dispatch_through_widgets(reg, event)
         assert result is None
 
     def test_emit_replaces_event(self) -> None:
@@ -292,7 +292,7 @@ class TestDispatchThroughWidgets:
             window_id="main",
             scope=("stars",),
         )
-        result, _new_reg = dispatch_through_widgets(reg, event)
+        result, _new_reg, _changed = dispatch_through_widgets(reg, event)
         assert isinstance(result, Select)
         assert result.value == "star3"
         assert result.window_id == "main"
@@ -312,7 +312,7 @@ class TestDispatchThroughWidgets:
             window_id="main",
             scope=("picker",),
         )
-        result, _ = dispatch_through_widgets(reg, event)
+        result, _, _changed = dispatch_through_widgets(reg, event)
         assert isinstance(result, WidgetEvent)
         assert result.kind == "change"
         assert result.data == {"hue": 180.0, "sat": 0.5}
@@ -333,7 +333,7 @@ class TestDispatchThroughWidgets:
             window_id="main",
             scope=("sw",),
         )
-        result, new_reg = dispatch_through_widgets(reg, event)
+        result, new_reg, _changed = dispatch_through_widgets(reg, event)
         assert isinstance(result, Toggle)
         assert result.value is True
         assert result.id == "sw"
@@ -354,13 +354,13 @@ class TestDispatchThroughWidgets:
             window_id="main",
             scope=("stars",),
         )
-        result, new_reg = dispatch_through_widgets(reg, event)
+        result, new_reg, _changed = dispatch_through_widgets(reg, event)
         assert result is None  # consumed by update_state
         assert new_reg[("main", "stars")].state["hovered"] == "star2"
 
     def test_empty_registry_passes_through(self) -> None:
         event = Click(id="btn", window_id="main", scope=())
-        result, _ = dispatch_through_widgets({}, event)
+        result, _, _changed = dispatch_through_widgets({}, event)
         assert result is event
 
     def test_no_scope_passes_through(self) -> None:
@@ -368,7 +368,7 @@ class TestDispatchThroughWidgets:
             ("main", "stars"): RegistryEntry(definition=IgnoreAll(), state={}, props={})
         }
         event = Click(id="other", window_id="main")
-        result, _ = dispatch_through_widgets(reg, event)
+        result, _, _changed = dispatch_through_widgets(reg, event)
         assert result is event
 
     def test_unhandled_press_passes_through(self) -> None:
@@ -386,7 +386,7 @@ class TestDispatchThroughWidgets:
             window_id="main",
             scope=(),
         )
-        result, _ = dispatch_through_widgets(reg, event)
+        result, _, _changed = dispatch_through_widgets(reg, event)
         assert result is event
 
 
@@ -414,14 +414,14 @@ class TestEventSpecs:
 
     def test_valid_data_event_passes(self) -> None:
         reg = self._make_reg()
-        result, _ = dispatch_through_widgets(reg, self._click("ring"))
+        result, _, _changed = dispatch_through_widgets(reg, self._click("ring"))
         assert isinstance(result, WidgetEvent)
         assert result.kind == "change"
         assert result.data == {"hue": 180.0, "saturation": 0.5}
 
     def test_valid_value_event_produces_typed(self) -> None:
         reg = self._make_reg()
-        result, _ = dispatch_through_widgets(reg, self._click("star"))
+        result, _, _changed = dispatch_through_widgets(reg, self._click("star"))
         assert isinstance(result, Select)
         assert result.value == 3
 
@@ -457,7 +457,7 @@ class TestEventSpecs:
             window_id="main",
             scope=("w",),
         )
-        result, _ = dispatch_through_widgets(reg, event)
+        result, _, _changed = dispatch_through_widgets(reg, event)
         assert isinstance(result, WidgetEvent)
         assert result.kind == "cleared"
 
@@ -588,7 +588,7 @@ class TestEventSpecs:
             window_id="main",
             scope=("w",),
         )
-        result, _ = dispatch_through_widgets(reg, event)
+        result, _, _changed = dispatch_through_widgets(reg, event)
         assert isinstance(result, Click)
 
     def test_no_event_specs_skips_validation(self) -> None:
@@ -600,7 +600,7 @@ class TestEventSpecs:
                 props={},
             )
         }
-        result, _ = dispatch_through_widgets(reg, self._click("ring"))
+        result, _, _changed = dispatch_through_widgets(reg, self._click("ring"))
         assert isinstance(result, WidgetEvent)
         assert result.kind == "change"
 

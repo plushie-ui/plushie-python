@@ -353,7 +353,7 @@ class Drag:
     y: float
     delta_x: float
     delta_y: float
-    button: str = "left"
+    button: PointerButton = "left"
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -373,7 +373,7 @@ class DragEnd:
     id: str
     x: float
     y: float
-    button: str = "left"
+    button: PointerButton = "left"
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -449,8 +449,8 @@ class Press:
     id: str
     x: float
     y: float
-    button: str = "left"
-    pointer: str = "mouse"
+    button: PointerButton = "left"
+    pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
     finger: int | None = None
     window_id: str = ""
@@ -476,8 +476,8 @@ class Release:
     id: str
     x: float
     y: float
-    button: str = "left"
-    pointer: str = "mouse"
+    button: PointerButton = "left"
+    pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
     finger: int | None = None
     window_id: str = ""
@@ -501,7 +501,7 @@ class Move:
     id: str
     x: float
     y: float
-    pointer: str = "mouse"
+    pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
     finger: int | None = None
     window_id: str = ""
@@ -528,7 +528,7 @@ class Scroll:
     y: float
     delta_x: float
     delta_y: float
-    pointer: str = "mouse"
+    pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
     window_id: str = ""
     scope: tuple[str, ...] = ()
@@ -550,7 +550,7 @@ class DoubleClick:
     id: str
     x: float
     y: float
-    pointer: str = "mouse"
+    pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
     window_id: str = ""
     scope: tuple[str, ...] = ()

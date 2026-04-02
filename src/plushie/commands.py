@@ -189,23 +189,18 @@ class Command:
 
     @staticmethod
     def select_range(widget_id: str, start: int, end: int) -> Command:
-        """Select text from *start* to *end* in *widget_id*."""
+        """Select text from *start* to *end* in *widget_id*. Supports ``"window#widget"``."""
         return Command(
             type="widget_op",
-            payload={
-                "op": "select_range",
-                "target": widget_id,
-                "start": start,
-                "end": end,
-            },
+            payload=_targeted_payload("select_range", widget_id, start=start, end=end),
         )
 
     @staticmethod
     def move_cursor_to(widget_id: str, position: int) -> Command:
-        """Move the text cursor to *position* in *widget_id*."""
+        """Move the text cursor to *position* in *widget_id*. Supports ``"window#widget"``."""
         return Command(
             type="widget_op",
-            payload={"op": "move_cursor_to", "target": widget_id, "position": position},
+            payload=_targeted_payload("move_cursor_to", widget_id, position=position),
         )
 
     @staticmethod
@@ -242,17 +237,17 @@ class Command:
 
     @staticmethod
     def snap_to_end(widget_id: str) -> Command:
-        """Snap *widget_id* to the end of its content."""
+        """Snap *widget_id* to the end of its content. Supports ``"window#widget"``."""
         return Command(
-            type="widget_op", payload={"op": "snap_to_end", "target": widget_id}
+            type="widget_op", payload=_targeted_payload("snap_to_end", widget_id)
         )
 
     @staticmethod
     def scroll_by(widget_id: str, x: float = 0.0, y: float = 0.0) -> Command:
-        """Scroll *widget_id* by a relative offset."""
+        """Scroll *widget_id* by a relative offset. Supports ``"window#widget"``."""
         return Command(
             type="widget_op",
-            payload={"op": "scroll_by", "target": widget_id, "x": x, "y": y},
+            payload=_targeted_payload("scroll_by", widget_id, x=x, y=y),
         )
 
     @staticmethod
@@ -295,14 +290,12 @@ class Command:
 
     @staticmethod
     def focus_element(canvas_id: str, element_id: str) -> Command:
-        """Move keyboard focus to a canvas element identified by *element_id*."""
+        """Move keyboard focus to a canvas element. Supports ``"window#canvas"``."""
         return Command(
             type="widget_op",
-            payload={
-                "op": "focus_element",
-                "target": canvas_id,
-                "element_id": element_id,
-            },
+            payload=_targeted_payload(
+                "focus_element", canvas_id, element_id=element_id
+            ),
         )
 
     @staticmethod

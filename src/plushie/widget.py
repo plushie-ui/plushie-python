@@ -555,7 +555,7 @@ def derive_registry(tree: dict[str, Any] | None) -> WidgetRegistry:
 def _handles_events(cls: type) -> bool:
     """Check whether a widget class participates in event dispatch.
 
-    Render-only widgets (no event_specs, no handle_event override, no
+    View-only widgets (no event_specs, no handle_event override, no
     subscribe override) are transparent layout wrappers that don't need
     to be in the handler registry.
     """
@@ -609,25 +609,25 @@ def _collect_entries(
 def dispatch_through_widgets(
     registry: WidgetRegistry,
     event: Any,
-) -> tuple[Any | None, WidgetRegistry]:
+) -> tuple[Any | None, WidgetRegistry, bool]:
     """Dispatch an event through the widget handler chain.
 
     Builds an ordered list of handlers from the event's scope (innermost
     to outermost) and walks it following iced's captured/ignored model.
 
-    Returns ``(event_or_none, updated_registry)``. If no handler captures,
-    the original event passes through. If captured, returns the transformed
-    event or ``None``.
+    Returns ``(event_or_none, updated_registry, state_changed)``.
+    If no handler captures, the original event passes through with
+    ``state_changed=False``.
     """
     if not registry:
-        return event, registry
+        return event, registry, False
 
     scope = getattr(event, "scope", None)
     event_id = getattr(event, "id", None)
     window_id = getattr(event, "window_id", None)
 
     if scope is None or not isinstance(scope, tuple):
-        return event, registry
+        return event, registry, False
 
     chain = _build_handler_chain(
         registry, str(window_id) if isinstance(window_id, str) else None, scope
@@ -641,7 +641,7 @@ def dispatch_through_widgets(
             chain = [(target_id, entry)]
 
     if not chain:
-        return event, registry
+        return event, registry, False
 
     return _walk_chain(registry, event, chain)
 
@@ -678,8 +678,13 @@ def _walk_chain(
     registry: WidgetRegistry,
     event: Any,
     chain: list[tuple[WidgetKey, RegistryEntry]],
-) -> tuple[Any | None, WidgetRegistry]:
-    """Walk the handler chain, dispatching through each widget."""
+) -> tuple[Any | None, WidgetRegistry, bool]:
+    """Walk the handler chain, dispatching through each widget.
+
+    Returns ``(event_or_none, registry, state_changed)`` where
+    ``state_changed`` is True if any widget's internal state was updated.
+    """
+    state_changed = False
     for widget_key, entry in chain:
         try:
             action = entry.definition.handle_event(event, entry.state)
@@ -697,15 +702,16 @@ def _walk_chain(
             continue
 
         if isinstance(action, _Consumed):
-            return None, registry
+            return None, registry, state_changed
 
         if isinstance(action, _UpdateState):
             entry.state = action.state
-            return None, registry
+            return None, registry, True
 
         if isinstance(action, _Emit):
             if action.state is not None:
                 entry.state = action.state
+                state_changed = True
 
             emit_window_id, emit_id, emit_scope = _resolve_emit_identity(
                 event, widget_key
@@ -721,7 +727,7 @@ def _walk_chain(
                 widget_name=widget_cls.__name__,
             )
 
-    return event, registry
+    return event, registry, state_changed
 
 
 def _resolve_emit_identity(
@@ -829,7 +835,7 @@ def maybe_handle_timer(
             widget_name=widget_cls.__name__,
         )
         # Dispatch through remaining scope chain
-        result_event, registry = dispatch_through_widgets(registry, emitted)
+        result_event, registry, _changed = dispatch_through_widgets(registry, emitted)
         return True, result_event, registry
 
     if isinstance(action, (_Consumed, _UpdateState)):

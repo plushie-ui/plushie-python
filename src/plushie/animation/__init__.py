@@ -29,6 +29,7 @@ from __future__ import annotations
 from plushie.animation.easing import (
     NAMED_EASINGS,
     Easing,
+    EasingSpec,
     by_name,
     cubic_bezier,
     ease_in,
@@ -80,6 +81,7 @@ __all__ = [
     "PRESETS",
     "Animation",
     "Easing",
+    "EasingSpec",
     "Sequence",
     "Spring",
     "Transition",

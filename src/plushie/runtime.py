@@ -663,19 +663,16 @@ class Runtime:
                     event = routed_event
                 else:
                     # Widget handled internally -- re-render for state changes
-                    new_tree = self._render_and_sync(self._model)
-                    if new_tree is not None:
-                        self._tree = new_tree
-                        self._sync_windows(new_tree)
+                    self._rerender_after_widget_state_change(self._widget_registry)
                     return
             # If not handled, fall through to normal dispatch
 
         # Dispatch through widget handlers
         old_registry = self._widget_registry
-        event, self._widget_registry = self._route_through_widgets(event)
+        event, self._widget_registry, state_changed = self._route_through_widgets(event)
         if event is None:
             # Event consumed. If widget state changed, re-render.
-            if self._widget_registry is not old_registry:
+            if state_changed:
                 self._rerender_after_widget_state_change(old_registry)
             return
 
@@ -705,10 +702,15 @@ class Runtime:
         self._sync_subscriptions(new_model, extra_subs=widget_subs)
         self._sync_windows(new_tree)
 
-    def _route_through_widgets(self, event: Any) -> tuple[Any | None, WidgetRegistry]:
-        """Dispatch event through widget handler chain."""
+    def _route_through_widgets(
+        self, event: Any
+    ) -> tuple[Any | None, WidgetRegistry, bool]:
+        """Dispatch event through widget handler chain.
+
+        Returns ``(event_or_none, registry, state_changed)``.
+        """
         if not self._widget_registry:
-            return event, self._widget_registry
+            return event, self._widget_registry, False
         from plushie.widget import dispatch_through_widgets
 
         return dispatch_through_widgets(self._widget_registry, event)
@@ -825,7 +827,9 @@ class Runtime:
         Used by interact_step where events are batched and a single
         snapshot follows after all events are processed.
         """
-        event, self._widget_registry = self._route_through_widgets(event)
+        event, self._widget_registry, _state_changed = self._route_through_widgets(
+            event
+        )
         if event is None:
             return
 

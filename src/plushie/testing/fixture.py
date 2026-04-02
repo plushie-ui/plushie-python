@@ -690,7 +690,10 @@ class AppFixture[M]:
         Args:
             timestamp: Animation clock timestamp in milliseconds.
         """
-        self._interact("advance_frame", None, payload={"timestamp": timestamp})
+        from plushie.protocol import advance_frame_msg
+
+        msg = advance_frame_msg(timestamp, session=self._session_id)
+        self._pool.send(self._session_id, msg)
 
     def skip_transitions(self) -> None:
         """Skip all active renderer-side transitions to completion.

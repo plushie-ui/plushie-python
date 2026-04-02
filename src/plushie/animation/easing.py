@@ -317,6 +317,9 @@ def cubic_bezier(x1: float, y1: float, x2: float, y2: float) -> Easing:
     are the two intermediate control points.
 
     Uses Newton-Raphson iteration to solve for the bezier parameter.
+
+    The returned function carries a ``_bezier_points`` attribute with
+    the control points for wire encoding.
     """
 
     def _bezier_easing(t: float) -> float:
@@ -327,6 +330,7 @@ def cubic_bezier(x1: float, y1: float, x2: float, y2: float) -> Easing:
         s = _newton_raphson(t, x1, x2, t, 8)
         return _bezier_eval(s, y1, y2)
 
+    _bezier_easing._bezier_points = (x1, y1, x2, y2)  # type: ignore[attr-defined]
     return _bezier_easing
 
 
@@ -406,22 +410,34 @@ def by_name(name: str) -> Easing:
     return _EASING_MAP[name]
 
 
-def encode_easing(
-    easing: str | Easing | tuple[str, float, float, float, float],
-) -> str | dict[str, list[float]]:
+type EasingSpec = str | Easing
+"""An easing specification: a named curve string or a callable.
+
+Pass a string name (e.g. ``"ease_out"``) for renderer-side transitions,
+or an ``Easing`` callable for SDK-side tween interpolation. Callables
+created by :func:`cubic_bezier` are wire-encodable.
+"""
+
+
+def encode_easing(easing: EasingSpec) -> str | dict[str, list[float]]:
     """Encode an easing value for the wire protocol.
 
     Accepts:
-    - A string name (e.g. ``"ease_out"``) -- passed through
-    - A cubic bezier tuple ``("cubic_bezier", x1, y1, x2, y2)``
-    - An ``Easing`` callable (looked up by identity in the named map)
+    - A string name (e.g. ``"ease_out"``) -- passed through as-is
+    - A named easing function (e.g. ``ease_out``) -- resolved to its name
+    - A ``cubic_bezier()`` result -- encoded as ``{"cubic_bezier": [x1, y1, x2, y2]}``
 
-    Returns a string name or ``{"cubic_bezier": [x1, y1, x2, y2]}``.
+    Returns a string name or a cubic bezier descriptor dict.
+
+    Raises:
+        ValueError: If the easing callable is not a named curve or cubic bezier.
     """
     if isinstance(easing, str):
         return easing
-    if isinstance(easing, tuple) and len(easing) == 5 and easing[0] == "cubic_bezier":
-        return {"cubic_bezier": list(easing[1:])}
+    # Check for cubic_bezier closure (carries control points)
+    points = getattr(easing, "_bezier_points", None)
+    if points is not None:
+        return {"cubic_bezier": list(points)}
     # Try to find the callable in the named map
     for name, fn in _EASING_MAP.items():
         if fn is easing:
