@@ -1648,14 +1648,14 @@ class EffectResult:
     Wire type: ``effect_response``.
 
     Attributes:
-        request_id: Correlates with the originating Effect command's ID.
+        tag: The tag from the originating effect command.
         status: Result status: ``"ok"``, ``"cancelled"``, or ``"error"``.
         result: Result data when status is ``"ok"`` (shape depends on
             effect kind), ``None`` otherwise.
         error: Error message when status is ``"error"``, ``None`` otherwise.
     """
 
-    request_id: str
+    tag: str
     status: EffectStatus
     result: Any = None
     error: str | None = None

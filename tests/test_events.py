@@ -734,7 +734,7 @@ class TestErrorEvents:
 class TestEffectResult:
     def test_ok(self) -> None:
         e = EffectResult(
-            request_id="req-1",
+            tag="import",
             status="ok",
             result={"path": "/tmp/file.txt"},
         )
@@ -743,11 +743,11 @@ class TestEffectResult:
         assert e.error is None
 
     def test_cancelled(self) -> None:
-        e = EffectResult(request_id="req-2", status="cancelled")
+        e = EffectResult(tag="save", status="cancelled")
         assert e.result is None
 
     def test_error(self) -> None:
-        e = EffectResult(request_id="req-3", status="error", error="permission denied")
+        e = EffectResult(tag="read", status="error", error="permission denied")
         assert e.error == "permission denied"
 
 

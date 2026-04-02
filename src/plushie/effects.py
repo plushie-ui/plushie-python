@@ -1,13 +1,15 @@
 """Platform effect requests (file dialogs, clipboard, notifications).
 
 Effects are asynchronous I/O operations that require the renderer to
-interact with the OS on behalf of the Python app.  Each function returns
-a ``Command`` struct.  Dispatch it from ``update()`` like any other
-command.  The result arrives later as an ``EffectResult`` event.
+interact with the OS on behalf of the Python app. Each function takes
+a ``tag`` as the first argument and returns a ``Command`` struct.
+Dispatch it from ``update()`` like any other command. The result
+arrives later as an ``EffectResult`` event. Pattern match on the tag
+to identify which effect the response belongs to.
 
-The ``request_id`` is auto-generated with a monotonic counter and
-embedded in the command payload.  Match on it in the result event to
-correlate requests and responses.
+Only one effect per tag can be in flight at a time. Starting a new
+effect with a tag that already has a pending request discards the
+previous one.
 
 Usage::
 
@@ -16,10 +18,15 @@ Usage::
     def update(self, model, event):
         match event:
             case Click(id="open"):
-                cmd = effects.file_open(title="Pick a file")
-                return replace(model, pending=cmd.payload["id"]), cmd
-            case EffectResult(request_id=rid, result=result) if rid == model.pending:
-                return replace(model, file=result, pending=None)
+                return replace(model), effects.file_open("import", title="Pick a file")
+            case EffectResult(tag="import", status="ok", result=result):
+                return replace(model, file=result)
+            case EffectResult(tag="import", status="cancelled"):
+                return model
+
+Timeouts: each effect has a default timeout. If the renderer does not
+respond in time, ``EffectResult(tag=tag, status="error", error="timeout")``
+arrives in ``update()``.
 """
 
 from __future__ import annotations
@@ -29,13 +36,13 @@ from typing import Any
 
 from plushie.commands import Command
 
-# Thread-safe auto-incrementing counter for effect request IDs.
+# Thread-safe auto-incrementing counter for internal wire IDs.
 _counter_lock = threading.Lock()
 _counter = 0
 
 
-def _generate_id() -> str:
-    """Generate a unique, monotonically increasing effect request ID."""
+def _generate_wire_id() -> str:
+    """Generate a unique internal wire ID for renderer correlation."""
     global _counter
     with _counter_lock:
         _counter += 1
@@ -43,7 +50,7 @@ def _generate_id() -> str:
 
 
 def _reset_counter() -> None:
-    """Reset the ID counter.  For testing only."""
+    """Reset the ID counter. For testing only."""
     global _counter
     with _counter_lock:
         _counter = 0
@@ -67,17 +74,18 @@ DEFAULT_TIMEOUTS: dict[str, int] = {
 }
 
 
-def request(kind: str, **opts: Any) -> Command:
-    """Generic effect request.  Returns a command struct.
+def request(tag: str, kind: str, **opts: Any) -> Command:
+    """Generic effect request. Returns a command struct.
 
-    *kind* must be one of the supported effect types.  Extra keyword
-    arguments are sent as the effect payload.  The effect ID is
-    auto-generated and stored in the command payload as ``"id"``.
+    Args:
+        tag: Identifies this effect in the ``EffectResult`` event.
+        kind: Effect type (e.g. ``"file_open"``, ``"clipboard_read"``).
+        **opts: Effect-specific payload parameters.
     """
-    request_id = _generate_id()
+    wire_id = _generate_wire_id()
     return Command(
         type="effect",
-        payload={"id": request_id, "kind": kind, "opts": opts},
+        payload={"id": wire_id, "tag": tag, "kind": kind, "opts": opts},
     )
 
 
@@ -87,16 +95,22 @@ def request(kind: str, **opts: Any) -> Command:
 
 
 def file_open(
+    tag: str,
+    /,
     *,
     title: str | None = None,
     directory: str | None = None,
     filters: list[tuple[str, str]] | None = None,
     default_name: str | None = None,
 ) -> Command:
-    """Open-file dialog.  Returns a command.
+    """Open-file dialog. Returns a command.
 
-    *filters* is a list of ``(label, pattern)`` tuples, e.g.
-    ``[("Images", "*.png"), ("All", "*.*")]``.
+    Args:
+        tag: Effect tag for result matching.
+        title: Dialog title.
+        directory: Starting directory path.
+        filters: List of ``(label, pattern)`` tuples.
+        default_name: Default file name.
     """
     opts: dict[str, Any] = {}
     if title is not None:
@@ -107,16 +121,18 @@ def file_open(
         opts["filters"] = filters
     if default_name is not None:
         opts["default_name"] = default_name
-    return request("file_open", **opts)
+    return request(tag, "file_open", **opts)
 
 
 def file_open_multiple(
+    tag: str,
+    /,
     *,
     title: str | None = None,
     directory: str | None = None,
     filters: list[tuple[str, str]] | None = None,
 ) -> Command:
-    """Multi-file open dialog.  Returns a command."""
+    """Multi-file open dialog. Returns a command."""
     opts: dict[str, Any] = {}
     if title is not None:
         opts["title"] = title
@@ -124,17 +140,19 @@ def file_open_multiple(
         opts["directory"] = directory
     if filters is not None:
         opts["filters"] = filters
-    return request("file_open_multiple", **opts)
+    return request(tag, "file_open_multiple", **opts)
 
 
 def file_save(
+    tag: str,
+    /,
     *,
     title: str | None = None,
     directory: str | None = None,
     filters: list[tuple[str, str]] | None = None,
     default_name: str | None = None,
 ) -> Command:
-    """Save-file dialog.  Returns a command."""
+    """Save-file dialog. Returns a command."""
     opts: dict[str, Any] = {}
     if title is not None:
         opts["title"] = title
@@ -144,35 +162,39 @@ def file_save(
         opts["filters"] = filters
     if default_name is not None:
         opts["default_name"] = default_name
-    return request("file_save", **opts)
+    return request(tag, "file_save", **opts)
 
 
 def directory_select(
+    tag: str,
+    /,
     *,
     title: str | None = None,
     directory: str | None = None,
 ) -> Command:
-    """Directory picker.  Returns a command."""
+    """Directory picker. Returns a command."""
     opts: dict[str, Any] = {}
     if title is not None:
         opts["title"] = title
     if directory is not None:
         opts["directory"] = directory
-    return request("directory_select", **opts)
+    return request(tag, "directory_select", **opts)
 
 
 def directory_select_multiple(
+    tag: str,
+    /,
     *,
     title: str | None = None,
     directory: str | None = None,
 ) -> Command:
-    """Multi-directory picker.  Returns a command."""
+    """Multi-directory picker. Returns a command."""
     opts: dict[str, Any] = {}
     if title is not None:
         opts["title"] = title
     if directory is not None:
         opts["directory"] = directory
-    return request("directory_select_multiple", **opts)
+    return request(tag, "directory_select_multiple", **opts)
 
 
 # ------------------------------------------------------------------
@@ -180,42 +202,44 @@ def directory_select_multiple(
 # ------------------------------------------------------------------
 
 
-def clipboard_read() -> Command:
-    """Read clipboard contents.  Returns a command."""
-    return request("clipboard_read")
+def clipboard_read(tag: str, /) -> Command:
+    """Read clipboard contents. Returns a command."""
+    return request(tag, "clipboard_read")
 
 
-def clipboard_write(text: str) -> Command:
-    """Write *text* to the clipboard.  Returns a command."""
-    return request("clipboard_write", text=text)
+def clipboard_write(tag: str, text: str, /) -> Command:
+    """Write *text* to the clipboard. Returns a command."""
+    return request(tag, "clipboard_write", text=text)
 
 
-def clipboard_read_html() -> Command:
-    """Read HTML content from the clipboard.  Returns a command."""
-    return request("clipboard_read_html")
+def clipboard_read_html(tag: str, /) -> Command:
+    """Read HTML content from the clipboard. Returns a command."""
+    return request(tag, "clipboard_read_html")
 
 
-def clipboard_write_html(html: str, alt_text: str | None = None) -> Command:
-    """Write HTML content to the clipboard.  Returns a command."""
+def clipboard_write_html(
+    tag: str, html: str, /, alt_text: str | None = None
+) -> Command:
+    """Write HTML content to the clipboard. Returns a command."""
     opts: dict[str, Any] = {"html": html}
     if alt_text is not None:
         opts["alt_text"] = alt_text
-    return request("clipboard_write_html", **opts)
+    return request(tag, "clipboard_write_html", **opts)
 
 
-def clipboard_clear() -> Command:
-    """Clear the clipboard.  Returns a command."""
-    return request("clipboard_clear")
+def clipboard_clear(tag: str, /) -> Command:
+    """Clear the clipboard. Returns a command."""
+    return request(tag, "clipboard_clear")
 
 
-def clipboard_read_primary() -> Command:
-    """Read primary clipboard (middle-click paste on Linux).  Returns a command."""
-    return request("clipboard_read_primary")
+def clipboard_read_primary(tag: str, /) -> Command:
+    """Read primary clipboard (middle-click paste on Linux). Returns a command."""
+    return request(tag, "clipboard_read_primary")
 
 
-def clipboard_write_primary(text: str) -> Command:
-    """Write *text* to the primary clipboard.  Returns a command."""
-    return request("clipboard_write_primary", text=text)
+def clipboard_write_primary(tag: str, text: str, /) -> Command:
+    """Write *text* to the primary clipboard. Returns a command."""
+    return request(tag, "clipboard_write_primary", text=text)
 
 
 # ------------------------------------------------------------------
@@ -224,17 +248,20 @@ def clipboard_write_primary(text: str) -> Command:
 
 
 def notification(
+    tag: str,
     title: str,
     body: str,
+    /,
     *,
     icon: str | None = None,
     timeout: int | None = None,
     urgency: str | None = None,
     sound: str | None = None,
 ) -> Command:
-    """Show an OS notification.  Returns a command.
+    """Show an OS notification. Returns a command.
 
     Args:
+        tag: Effect tag for result matching.
         title: Notification title.
         body: Notification body text.
         icon: Icon name or path.
@@ -251,7 +278,7 @@ def notification(
         opts["urgency"] = urgency
     if sound is not None:
         opts["sound"] = sound
-    return request("notification", **opts)
+    return request(tag, "notification", **opts)
 
 
 def default_timeout(kind: str) -> int | None:

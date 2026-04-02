@@ -669,7 +669,7 @@ class TestStreamChunkMatch:
 
 class TestEffectResultMatch:
     def test_effect_ok(self) -> None:
-        event = EffectResult(request_id="ef_1", status="ok", result={"path": "/f.txt"})
+        event = EffectResult(tag="import", status="ok", result={"path": "/f.txt"})
         match event:
             case EffectResult(status="ok", result=result):
                 matched_path = result["path"]
@@ -678,7 +678,7 @@ class TestEffectResultMatch:
         assert matched_path == "/f.txt"
 
     def test_effect_cancelled(self) -> None:
-        event = EffectResult(request_id="ef_1", status="cancelled")
+        event = EffectResult(tag="import", status="cancelled")
         match event:
             case EffectResult(status="cancelled"):
                 matched = True
@@ -687,7 +687,7 @@ class TestEffectResultMatch:
         assert matched
 
     def test_effect_error(self) -> None:
-        event = EffectResult(request_id="ef_1", status="error", error="err")
+        event = EffectResult(tag="import", status="error", error="err")
         match event:
             case EffectResult(status="error", error=reason):
                 matched_reason = reason

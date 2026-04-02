@@ -27,7 +27,6 @@ from plushie.events import (
     Close,
     Diagnostic,
     DuplicateNodeIds,
-    EffectResult,
     FileDropped,
     FileHovered,
     FilesHoveredLeft,
@@ -446,6 +445,8 @@ class TestParseQueryResponse:
 
 
 class TestParseEffectResponse:
+    """parse_effect_response returns a tagged tuple for the runtime to resolve."""
+
     def test_ok(self) -> None:
         raw = {
             "type": "effect_response",
@@ -453,17 +454,18 @@ class TestParseEffectResponse:
             "status": "ok",
             "result": {"path": "/tmp/file.txt"},
         }
-        result = parse_effect_response(raw)
-        assert isinstance(result, EffectResult)
-        assert result.request_id == "req1"
-        assert result.status == "ok"
-        assert result.result == {"path": "/tmp/file.txt"}
+        marker, wire_id, status, result, error = parse_effect_response(raw)
+        assert marker == "_effect_response"
+        assert wire_id == "req1"
+        assert status == "ok"
+        assert result == {"path": "/tmp/file.txt"}
+        assert error is None
 
     def test_cancelled(self) -> None:
         raw = {"type": "effect_response", "id": "req2", "status": "cancelled"}
-        result = parse_effect_response(raw)
-        assert result.status == "cancelled"
-        assert result.result is None
+        _, _, status, result, _ = parse_effect_response(raw)
+        assert status == "cancelled"
+        assert result is None
 
     def test_error(self) -> None:
         raw = {
@@ -472,9 +474,9 @@ class TestParseEffectResponse:
             "status": "error",
             "error": "permission denied",
         }
-        result = parse_effect_response(raw)
-        assert result.status == "error"
-        assert result.error == "permission denied"
+        _, _, status, _, error = parse_effect_response(raw)
+        assert status == "error"
+        assert error == "permission denied"
 
 
 # ===================================================================
@@ -503,7 +505,9 @@ class TestDecodeEffectResponse:
     def test_via_decode_message(self) -> None:
         raw = {"type": "effect_response", "id": "r1", "status": "ok", "result": None}
         result = decode_message(raw)
-        assert isinstance(result, EffectResult)
+        assert isinstance(result, tuple)
+        assert result[0] == "_effect_response"
+        assert result[1] == "r1"
 
 
 class TestDecodeWidgetEvents:

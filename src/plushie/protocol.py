@@ -721,20 +721,25 @@ def parse_query_response(msg: dict[str, Any]) -> dict[str, Any]:
 
 def parse_effect_response(
     msg: dict[str, Any],
-) -> EffectResult:
-    """Parse an effect_response message into an ``EffectResult`` event.
+) -> tuple[str, str, str, Any, str | None]:
+    """Parse an effect_response message into wire components.
+
+    The runtime maps the wire ID to the user's tag before creating
+    an ``EffectResult``. Returns a tagged tuple that the runtime
+    intercepts in the event loop.
 
     Args:
         msg: Deserialized effect_response message.
 
     Returns:
-        Populated ``EffectResult`` instance.
+        ``("_effect_response", wire_id, status, result, error)`` tuple.
     """
-    return EffectResult(
-        request_id=msg["id"],
-        status=msg["status"],
-        result=msg.get("result"),
-        error=msg.get("error"),
+    return (
+        "_effect_response",
+        msg["id"],
+        msg["status"],
+        msg.get("result"),
+        msg.get("error"),
     )
 
 
@@ -833,11 +838,14 @@ def decode_message(
     | TreeHash
     | DuplicateNodeIds
     | Announce
+    | tuple[str, str, str, Any, str | None]
     | dict[str, Any]
 ):
     """Decode an inbound wire message dict into the appropriate event or response.
 
     Dispatches on the ``type`` field, then on ``family`` for events.
+    Effect responses return a ``("_effect_response", wire_id, status,
+    result, error)`` tuple for the runtime to resolve tags.
     Returns the original dict for unrecognized message types (e.g.
     ``interact_response``, ``query_response``).
 

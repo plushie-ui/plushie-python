@@ -268,8 +268,8 @@ class Runtime:
         self._async_tasks: dict[str, tuple[Future[Any], int]] = {}
         self._nonce_counter: int = 0
 
-        # Pending effect requests: request_id -> Timer
-        self._pending_effects: dict[str, threading.Timer] = {}
+        # Pending effect requests: wire_id -> {"tag": str, "timer": Timer}
+        self._pending_effects: dict[str, dict[str, Any]] = {}
 
         # Pending send_after timers: event_key -> Timer
         self._pending_timers: dict[Any, threading.Timer] = {}
@@ -615,8 +615,16 @@ class Runtime:
                 self._store_coalescable(c_key, event)
                 continue
 
-            # Internal runtime events (tuples from task/stream/coalesce)
+            # Internal runtime events (tuples from task/stream/coalesce/effect)
             if isinstance(event, tuple) and event and isinstance(event[0], str):
+                if event[0] == "_effect_response" and len(event) == 5:
+                    self._flush_coalescables()
+                    resolved = self._resolve_effect_response(
+                        event[1], event[2], event[3], event[4]
+                    )
+                    if resolved is not None:
+                        self._run_update(resolved)
+                    continue
                 if event[0] == "_async_result" and len(event) == 4:
                     self._flush_coalescables()
                     self._handle_async_result(event[1], event[2], event[3])
@@ -642,9 +650,8 @@ class Runtime:
         app = self._app
         model = self._model
 
-        # Cancel effect timeout if this is an EffectResult
-        if isinstance(event, EffectResult):
-            self._cancel_pending_effect(event.request_id)
+        # Effect results are handled as _effect_response tuples in the
+        # event loop, before reaching _run_update.
 
         # Route canvas widget timer events to the widget handler
         if isinstance(event, TimerTick) and self._widget_registry:
@@ -912,7 +919,7 @@ class Runtime:
             return
 
         if t == "effect":
-            self._send_effect(p["id"], p["kind"], p.get("opts", {}))
+            self._send_effect(p["id"], p["tag"], p["kind"], p.get("opts", {}))
             return
 
         if t == "widget_op":
@@ -1109,42 +1116,65 @@ class Runtime:
     # Effect tracking
     # -------------------------------------------------------------------
 
-    def _send_effect(self, request_id: str, kind: str, opts: dict[str, Any]) -> None:
+    def _send_effect(
+        self, wire_id: str, tag: str, kind: str, opts: dict[str, Any]
+    ) -> None:
         """Send an effect request to the renderer with timeout tracking."""
-        msg = effect_msg(request_id, kind, opts, session=self._conn.session)
+        # One-per-tag enforcement: cancel existing effect with same tag
+        self._cancel_pending_effect_by_tag(tag)
+
+        msg = effect_msg(wire_id, kind, opts, session=self._conn.session)
         self._conn.send(msg)
 
         timeout_ms = DEFAULT_TIMEOUTS.get(kind, _EFFECT_TIMEOUT_MS)
 
         def timeout_fire() -> None:
-            self._pending_effects.pop(request_id, None)
-            self._queue.put(
-                EffectResult(
-                    request_id=request_id,
-                    status="error",
-                    result=None,
-                    error="timeout",
+            entry = self._pending_effects.pop(wire_id, None)
+            if entry is not None:
+                self._queue.put(
+                    EffectResult(
+                        tag=entry["tag"],
+                        status="error",
+                        result=None,
+                        error="timeout",
+                    )
                 )
-            )
 
         timer = threading.Timer(timeout_ms / 1000.0, timeout_fire)
         timer.daemon = True
         timer.start()
-        self._pending_effects[request_id] = timer
+        self._pending_effects[wire_id] = {"tag": tag, "timer": timer}
 
-    def _cancel_pending_effect(self, request_id: str) -> None:
-        """Cancel the timeout timer for a resolved effect."""
-        timer = self._pending_effects.pop(request_id, None)
-        if timer is not None:
-            timer.cancel()
+    def _resolve_effect_response(
+        self, wire_id: str, status: str, result: Any, error: str | None
+    ) -> EffectResult | None:
+        """Map a wire effect response to an EffectResult with the user's tag."""
+        from plushie.events import EffectStatus
+
+        entry = self._pending_effects.pop(wire_id, None)
+        if entry is None:
+            return None
+        entry["timer"].cancel()
+        typed_status: EffectStatus = status  # type: ignore[assignment]
+        return EffectResult(
+            tag=entry["tag"], status=typed_status, result=result, error=error
+        )
+
+    def _cancel_pending_effect_by_tag(self, tag: str) -> None:
+        """Cancel a pending effect by tag (one-per-tag enforcement)."""
+        for wire_id, entry in list(self._pending_effects.items()):
+            if entry["tag"] == tag:
+                entry["timer"].cancel()
+                del self._pending_effects[wire_id]
+                return
 
     def _flush_pending_effects(self, reason: str) -> None:
         """Flush all pending effects (e.g. on renderer restart)."""
-        for request_id, timer in list(self._pending_effects.items()):
-            timer.cancel()
+        for _wire_id, entry in list(self._pending_effects.items()):
+            entry["timer"].cancel()
             self._run_update(
                 EffectResult(
-                    request_id=request_id,
+                    tag=entry["tag"],
                     status="error",
                     result=None,
                     error=reason,
@@ -1538,8 +1568,8 @@ class Runtime:
         self._subscriptions.clear()
 
         # Cancel all pending effects
-        for timer in self._pending_effects.values():
-            timer.cancel()
+        for entry in self._pending_effects.values():
+            entry["timer"].cancel()
         self._pending_effects.clear()
 
         # Shutdown executor (don't wait for tasks)
