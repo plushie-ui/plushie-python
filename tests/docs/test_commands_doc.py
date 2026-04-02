@@ -844,19 +844,19 @@ def test_subscription_on_window_event():
 def test_subscription_on_pointer_move():
     """Subscription.on_pointer_move() subscribes to mouse movement."""
     sub = Subscription.on_pointer_move("mouse")
-    assert sub.kind == "on_mouse_move"
+    assert sub.kind == "on_pointer_move"
 
 
 def test_subscription_on_pointer_button():
     """Subscription.on_pointer_button() subscribes to mouse clicks."""
     sub = Subscription.on_pointer_button("mbutton")
-    assert sub.kind == "on_mouse_button"
+    assert sub.kind == "on_pointer_button"
 
 
 def test_subscription_on_pointer_scroll():
     """Subscription.on_pointer_scroll() subscribes to scroll events."""
     sub = Subscription.on_pointer_scroll("mscroll")
-    assert sub.kind == "on_mouse_scroll"
+    assert sub.kind == "on_pointer_scroll"
 
 
 def test_subscription_on_touch():

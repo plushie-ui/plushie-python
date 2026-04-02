@@ -137,7 +137,7 @@ class Subscription:
         ``id=window_id`` and ``scope=()``.
         """
         return Subscription(
-            kind="on_mouse_move", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_pointer_move", tag=tag, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
@@ -150,7 +150,7 @@ class Subscription:
         and ``scope=()``.
         """
         return Subscription(
-            kind="on_mouse_button", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_pointer_button", tag=tag, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
@@ -162,7 +162,7 @@ class Subscription:
         Delivers ``Scroll`` events with ``id=window_id`` and ``scope=()``.
         """
         return Subscription(
-            kind="on_mouse_scroll", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_pointer_scroll", tag=tag, max_rate=max_rate, window_id=window
         )
 
     @staticmethod

@@ -76,7 +76,7 @@ class TestPerSubscriptionRate:
 
     def test_mouse_move_rate(self) -> None:
         sub = Subscription.on_pointer_move("mouse", max_rate=30)
-        assert sub.kind == "on_mouse_move"
+        assert sub.kind == "on_pointer_move"
         assert sub.max_rate == 30
 
     def test_animation_frame_rate(self) -> None:
