@@ -160,15 +160,15 @@ def floating(id: str, /, *children: Any, **kwargs: Any) -> Node:
     return _named_container("float", id, *children, **kwargs)
 
 
-def mouse_area(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Mouse area container -- captures mouse events for children.
+def pointer_area(id: str, /, *children: Any, **kwargs: Any) -> Node:
+    """Pointer area container -- captures pointer events for children.
 
     Args:
-        id: Mouse area identifier.
+        id: Pointer area identifier.
         *children: Child widgets.
-        **kwargs: Mouse area props.
+        **kwargs: Pointer area props.
     """
-    return _named_container("mouse_area", id, *children, **kwargs)
+    return _named_container("pointer_area", id, *children, **kwargs)
 
 
 def sensor(id: str, /, *children: Any, **kwargs: Any) -> Node:
@@ -703,11 +703,11 @@ __all__ = [
     "image",
     "keyed_column",
     "markdown",
-    "mouse_area",
     "overlay",
     "pane_grid",
     "pick_list",
     "pin",
+    "pointer_area",
     "progress_bar",
     "qr_code",
     "radio",

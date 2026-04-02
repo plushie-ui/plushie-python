@@ -85,10 +85,10 @@ class TestFloating:
         _assert_node(node, id="f", type="float")
 
 
-class TestMouseArea:
+class TestPointerArea:
     def test_basic(self) -> None:
-        node = ui.mouse_area("ma")
-        _assert_node(node, id="ma", type="mouse_area")
+        node = ui.pointer_area("pa")
+        _assert_node(node, id="pa", type="pointer_area")
 
 
 class TestSensor:
