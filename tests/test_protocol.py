@@ -502,7 +502,7 @@ class TestDecodeWidgetEvents:
         assert isinstance(result, Click)
         assert result.id == "btn1"
         assert result.window_id == "main"
-        assert result.scope == ()
+        assert result.scope == ("main",)
 
     def test_click_scoped(self) -> None:
         raw = {
@@ -515,7 +515,7 @@ class TestDecodeWidgetEvents:
         assert isinstance(result, Click)
         assert result.id == "save"
         assert result.window_id == "main"
-        assert result.scope == ("section", "form")
+        assert result.scope == ("section", "form", "main")
 
     def test_input(self) -> None:
         raw = {
@@ -852,7 +852,7 @@ class TestDecodeUnifiedEvents:
         assert isinstance(result, KeyPress)
         assert result.id == "canvas1"
         assert result.key == "ArrowRight"
-        assert result.scope == ("scope1",)
+        assert result.scope == ("scope1", "main")
 
     def test_key_release_widget_scoped(self) -> None:
         raw = {
@@ -866,7 +866,7 @@ class TestDecodeUnifiedEvents:
         assert isinstance(result, KeyRelease)
         assert result.id == "canvas1"
         assert result.key == "Enter"
-        assert result.scope == ()
+        assert result.scope == ("main",)
 
 
 class TestDecodeDiagnostic:
@@ -1541,7 +1541,7 @@ class TestDecodeScopedIdSplitting:
         result = decode_message(raw)
         assert isinstance(result, Click)
         assert result.id == "save"
-        assert result.scope == ()
+        assert result.scope == ("main",)
 
     def test_single_scope(self) -> None:
         raw = {
@@ -1553,7 +1553,7 @@ class TestDecodeScopedIdSplitting:
         result = decode_message(raw)
         assert isinstance(result, Click)
         assert result.id == "save"
-        assert result.scope == ("form",)
+        assert result.scope == ("form", "main")
 
     def test_deep_scope(self) -> None:
         raw = {
@@ -1565,4 +1565,4 @@ class TestDecodeScopedIdSplitting:
         result = decode_message(raw)
         assert isinstance(result, Click)
         assert result.id == "save"
-        assert result.scope == ("section", "form", "app")
+        assert result.scope == ("section", "form", "app", "main")

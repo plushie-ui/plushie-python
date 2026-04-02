@@ -732,11 +732,15 @@ class TestTarget:
         assert target(e) == "save"
 
     def test_single_scope(self) -> None:
-        e = Click(id="save", scope=("form",))
+        e = Click(id="save", window_id="main", scope=("form", "main"))
         assert target(e) == "form/save"
 
     def test_deep_scope(self) -> None:
-        e = Click(id="save", scope=("section", "form", "app"))
+        e = Click(
+            id="save",
+            window_id="main",
+            scope=("section", "form", "app", "main"),
+        )
         assert target(e) == "app/form/section/save"
 
     def test_roundtrip(self) -> None:
@@ -746,16 +750,39 @@ class TestTarget:
         assert target(e) == wire_id
 
     def test_with_input_event(self) -> None:
-        e = Input(id="email", value="test@example.com", scope=("form",))
+        e = Input(
+            id="email",
+            value="test@example.com",
+            window_id="main",
+            scope=("form", "main"),
+        )
         assert target(e) == "form/email"
 
     def test_with_resize(self) -> None:
-        e = Resize(id="content", width=800.0, height=600.0, scope=("panel",))
+        e = Resize(
+            id="content",
+            width=800.0,
+            height=600.0,
+            window_id="main",
+            scope=("panel", "main"),
+        )
         assert target(e) == "panel/content"
 
     def test_with_press(self) -> None:
-        e = Press(id="draw", x=10.0, y=20.0, button="left", scope=("editor",))
+        e = Press(
+            id="draw",
+            x=10.0,
+            y=20.0,
+            button="left",
+            window_id="main",
+            scope=("editor", "main"),
+        )
         assert target(e) == "editor/draw"
+
+    def test_no_window_id_no_stripping(self) -> None:
+        """Without window_id, scope passes through unchanged."""
+        e = Click(id="save", scope=("form",))
+        assert target(e) == "form/save"
 
 
 # ---------------------------------------------------------------------------

@@ -876,6 +876,21 @@ def _extract_window_id(msg: dict[str, Any]) -> str:
     return wid if isinstance(wid, str) else ""
 
 
+def _split_scoped_with_window(
+    wire_id: str, msg: dict[str, Any]
+) -> tuple[str, str, tuple[str, ...]]:
+    """Split a wire ID and append window_id to the end of the scope tuple.
+
+    Returns ``(local_id, window_id, scope)`` where scope includes the
+    window_id as its last element when present.
+    """
+    local_id, scope = split_scoped_id(wire_id)
+    window_id = _extract_window_id(msg)
+    if window_id:
+        scope = (*scope, window_id)
+    return local_id, window_id, scope
+
+
 def _decode_event(msg: dict[str, Any]) -> Any:
     """Dispatch an event message on family."""
     family = msg.get("family", "")
@@ -889,69 +904,69 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- Widget events (scoped) -------
 
     if family == "click":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Click(
             id=local_id,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "input":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Input(
             id=local_id,
             value=str(value or ""),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "submit":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Submit(
             id=local_id,
             value=str(value or ""),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "toggle":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Toggle(
             id=local_id,
             value=bool(value),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "select":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Select(
             id=local_id,
             value=str(value or ""),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "slide":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Slide(
             id=local_id,
             value=float(value or 0),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "slide_release":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return SlideRelease(
             id=local_id,
             value=float(value or 0),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family in ("scroll", "scrolled") and "absolute_x" in data:
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         sd = ScrollData(
             absolute_x=float(data.get("absolute_x", 0)),
             absolute_y=float(data.get("absolute_y", 0)),
@@ -965,56 +980,56 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return Scrolled(
             id=local_id,
             data=sd,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "paste":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Paste(
             id=local_id,
             value=str(value or ""),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "sort":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         column = data.get("column", "") if isinstance(data, dict) else str(value or "")
         return Sort(
             id=local_id,
             value=str(column),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "open":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Open(
             id=local_id,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "close":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Close(
             id=local_id,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "option_hovered":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return OptionHovered(
             id=local_id,
             value=str(value or ""),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "key_binding":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         # Wire sends binding name in `data` (string) or `data.binding` (dict).
         if isinstance(data, dict):
             binding = str(data.get("binding", ""))
@@ -1025,14 +1040,14 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return KeyBinding(
             id=local_id,
             value=binding,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     # ------- Unified pointer events (scoped) -------
 
     if family == "press":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         mods = _parse_modifiers(data.get("modifiers"))
         return Press(
             id=local_id,
@@ -1042,12 +1057,12 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             pointer=str(data.get("pointer", "mouse")),
             modifiers=mods,
             finger=data.get("finger"),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "release":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         mods = _parse_modifiers(data.get("modifiers"))
         return Release(
             id=local_id,
@@ -1057,12 +1072,12 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             pointer=str(data.get("pointer", "mouse")),
             modifiers=mods,
             finger=data.get("finger"),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "move":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         mods = _parse_modifiers(data.get("modifiers"))
         return Move(
             id=local_id,
@@ -1071,12 +1086,12 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             pointer=str(data.get("pointer", "mouse")),
             modifiers=mods,
             finger=data.get("finger"),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "scroll":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         mods = _parse_modifiers(data.get("modifiers"))
         return Scroll(
             id=local_id,
@@ -1086,12 +1101,12 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             delta_y=float(data.get("delta_y", 0)),
             pointer=str(data.get("pointer", "mouse")),
             modifiers=mods,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "double_click":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         mods = _parse_modifiers(data.get("modifiers"))
         return DoubleClick(
             id=local_id,
@@ -1099,40 +1114,40 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             y=float(data.get("y", 0)),
             pointer=str(data.get("pointer", "mouse")),
             modifiers=mods,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "resize":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Resize(
             id=local_id,
             width=float(data.get("width", 0)),
             height=float(data.get("height", 0)),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     # ------- Unified focus/drag/enter/exit events (scoped) -------
 
     if family == "focused":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Focused(
             id=local_id,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "blurred":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Blurred(
             id=local_id,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "drag":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Drag(
             id=local_id,
             x=float(data.get("x", 0)),
@@ -1140,34 +1155,34 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
             button=str(data.get("button", "left")),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "drag_end":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return DragEnd(
             id=local_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
             button=str(data.get("button", "left")),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "enter":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Enter(
             id=local_id,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "exit":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Exit(
             id=local_id,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
@@ -1184,43 +1199,43 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- Pane events (scoped) -------
 
     if family == "pane_resized":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return PaneResized(
             id=local_id,
             split=data.get("split"),
             ratio=float(data.get("ratio", 0)),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "pane_dragged":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return PaneDragged(
             id=local_id,
             pane=data.get("pane"),
             target=data.get("target"),
             action=str(data.get("action", "")),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             region=data.get("region"),
             edge=data.get("edge"),
             scope=scope,
         )
 
     if family == "pane_clicked":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return PaneClicked(
             id=local_id,
             pane=data.get("pane"),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
     if family == "pane_focus_cycle":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return PaneFocusCycle(
             id=local_id,
             pane=data.get("pane"),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
@@ -1229,7 +1244,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     if family == "key_press":
         mods = _parse_modifiers(modifiers_raw)
         if wire_id:
-            local_id, scope = split_scoped_id(wire_id)
+            local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
             return KeyPress(
                 key=str(data.get("key", "")),
                 modified_key=str(data.get("modified_key", data.get("key", ""))),
@@ -1239,7 +1254,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
                 text=data.get("text"),
                 repeat=bool(data.get("repeat", False)),
                 captured=captured,
-                window_id=_extract_window_id(msg),
+                window_id=_wid,
                 id=local_id,
                 scope=scope,
             )
@@ -1258,7 +1273,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     if family == "key_release":
         mods = _parse_modifiers(modifiers_raw)
         if wire_id:
-            local_id, scope = split_scoped_id(wire_id)
+            local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
             return KeyRelease(
                 key=str(data.get("key", "")),
                 modified_key=str(data.get("modified_key", data.get("key", ""))),
@@ -1267,7 +1282,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
                 location=data.get("location", "standard"),
                 text=data.get("text"),
                 captured=captured,
-                window_id=_extract_window_id(msg),
+                window_id=_wid,
                 id=local_id,
                 scope=scope,
             )
@@ -1460,13 +1475,13 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return AnimationFrame(timestamp=int(data.get("timestamp", 0)))
 
     if family == "transition_complete":
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         tag_raw = data.get("tag")
         return TransitionComplete(
             id=local_id,
             tag=str(tag_raw) if tag_raw is not None else None,
             prop=data.get("prop"),
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             scope=scope,
         )
 
@@ -1508,11 +1523,11 @@ def _decode_event(msg: dict[str, Any]) -> Any:
 
     # ------- Catch-all: unknown widget event -------
     if wire_id:
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return WidgetEvent(
             kind=family,
             id=local_id,
-            window_id=_extract_window_id(msg),
+            window_id=_wid,
             value=value,
             data=data if data else None,
             scope=scope,

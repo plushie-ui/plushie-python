@@ -1566,19 +1566,27 @@ def target(
     separators, producing the forward-order path suitable for
     ``Command.focus()`` and other ID-based operations.
 
+    The window_id at the end of the scope tuple (added by the protocol
+    decoder) is stripped before constructing the path.
+
     Args:
-        event: Any event that carries ``id`` and ``scope`` fields.
+        event: Any event that carries ``id``, ``scope``, and
+            ``window_id`` fields.
 
     Returns:
         The full path string (e.g. ``"form/section/save"``).
 
     Examples:
-        >>> target(Click(id="save", scope=("section", "form")))
+        >>> target(Click(id="save", scope=("section", "form", "main"), window_id="main"))
         'form/section/save'
         >>> target(Click(id="save"))
         'save'
     """
     scope = event.scope
+    window_id = getattr(event, "window_id", "")
+    # Strip window_id from the end of scope if present
+    if scope and window_id and scope[-1] == window_id:
+        scope = scope[:-1]
     if not scope:
         return event.id
     return "/".join((*reversed(scope), event.id))
