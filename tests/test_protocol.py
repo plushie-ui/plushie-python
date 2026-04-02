@@ -31,12 +31,6 @@ from plushie.events import (
     KeyPress,
     KeyRelease,
     ModifiersChanged,
-    MouseButtonPress,
-    MouseButtonRelease,
-    MouseEnter,
-    MouseLeave,
-    MouseMove,
-    MouseWheel,
     Move,
     Open,
     OptionHovered,
@@ -59,10 +53,6 @@ from plushie.events import (
     SystemTheme,
     ThemeChanged,
     Toggle,
-    TouchLift,
-    TouchLost,
-    TouchMove,
-    TouchPress,
     TreeHash,
     WidgetCommandError,
     WidgetEvent,
@@ -1030,9 +1020,9 @@ class TestDecodeMouseEvents:
             "data": {"x": 100.5, "y": 200.3},
         }
         result = decode_message(raw)
-        assert isinstance(result, MouseMove)
+        assert isinstance(result, Move)
         assert result.x == 100.5
-        assert result.window_id == ""
+        assert result.pointer == "mouse"
 
     def test_cursor_moved_with_window_id(self) -> None:
         raw = {
@@ -1044,16 +1034,17 @@ class TestDecodeMouseEvents:
             "data": {"x": 50.0, "y": 75.0},
         }
         result = decode_message(raw)
-        assert isinstance(result, MouseMove)
+        assert isinstance(result, Move)
         assert result.window_id == "canvas_win"
+        assert result.id == "canvas_win"
 
     def test_cursor_entered(self) -> None:
         raw = {"type": "event", "family": "cursor_entered", "id": "", "tag": "m"}
-        assert isinstance(decode_message(raw), MouseEnter)
+        assert isinstance(decode_message(raw), Enter)
 
     def test_cursor_left(self) -> None:
         raw = {"type": "event", "family": "cursor_left", "id": "", "tag": "m"}
-        assert isinstance(decode_message(raw), MouseLeave)
+        assert isinstance(decode_message(raw), Exit)
 
     def test_button_pressed(self) -> None:
         raw = {
@@ -1064,8 +1055,9 @@ class TestDecodeMouseEvents:
             "value": "left",
         }
         result = decode_message(raw)
-        assert isinstance(result, MouseButtonPress)
+        assert isinstance(result, Press)
         assert result.button == "left"
+        assert result.pointer == "mouse"
 
     def test_button_released(self) -> None:
         raw = {
@@ -1076,7 +1068,7 @@ class TestDecodeMouseEvents:
             "value": "right",
         }
         result = decode_message(raw)
-        assert isinstance(result, MouseButtonRelease)
+        assert isinstance(result, Release)
         assert result.button == "right"
 
     def test_wheel_scrolled(self) -> None:
@@ -1088,8 +1080,8 @@ class TestDecodeMouseEvents:
             "data": {"delta_x": 0, "delta_y": -3, "unit": "pixel"},
         }
         result = decode_message(raw)
-        assert isinstance(result, MouseWheel)
-        assert result.unit == "pixel"
+        assert isinstance(result, Scroll)
+        assert result.delta_y == -3
 
 
 class TestDecodeTouchEvents:
@@ -1102,8 +1094,9 @@ class TestDecodeTouchEvents:
             "data": {"id": 1, "x": 50, "y": 60},
         }
         result = decode_message(raw)
-        assert isinstance(result, TouchPress)
-        assert result.finger_id == 1
+        assert isinstance(result, Press)
+        assert result.pointer == "touch"
+        assert result.finger == 1
 
     def test_finger_moved(self) -> None:
         raw = {
@@ -1113,7 +1106,9 @@ class TestDecodeTouchEvents:
             "tag": "t",
             "data": {"id": 2, "x": 55, "y": 65},
         }
-        assert isinstance(decode_message(raw), TouchMove)
+        result = decode_message(raw)
+        assert isinstance(result, Move)
+        assert result.pointer == "touch"
 
     def test_finger_lifted(self) -> None:
         raw = {
@@ -1123,7 +1118,9 @@ class TestDecodeTouchEvents:
             "tag": "t",
             "data": {"id": 1, "x": 50, "y": 60},
         }
-        assert isinstance(decode_message(raw), TouchLift)
+        result = decode_message(raw)
+        assert isinstance(result, Release)
+        assert result.pointer == "touch"
 
     def test_finger_lost(self) -> None:
         raw = {
@@ -1133,7 +1130,9 @@ class TestDecodeTouchEvents:
             "tag": "t",
             "data": {"id": 3, "x": 0, "y": 0},
         }
-        assert isinstance(decode_message(raw), TouchLost)
+        result = decode_message(raw)
+        assert isinstance(result, Release)
+        assert result.pointer == "touch"
 
 
 class TestDecodeImeEvents:

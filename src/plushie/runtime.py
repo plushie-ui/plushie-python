@@ -39,7 +39,6 @@ from plushie.events import (
     AllWindowsClosed,
     AsyncResult,
     EffectResult,
-    MouseMove,
     Move,
     StreamChunk,
     TimerTick,
@@ -197,11 +196,9 @@ def _find_window_node(tree: Node, window_id: str) -> Node | None:
 def coalesce_key(event: Any) -> Any | None:
     """Return the coalescing key for an event, or None if not coalescable.
 
-    High-frequency events (mouse moves, pointer moves, pointer scroll)
-    are collapsed so only the latest value is processed per flush cycle.
+    High-frequency events (pointer moves, pointer scroll) are collapsed
+    so only the latest value is processed per flush cycle.
     """
-    if isinstance(event, MouseMove):
-        return ("mouse_move",)
     if isinstance(event, Move):
         return ("move", event.window_id, event.id)
     return None

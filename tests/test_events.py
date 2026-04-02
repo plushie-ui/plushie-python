@@ -35,12 +35,6 @@ from plushie.events import (
     KeyPress,
     KeyRelease,
     ModifiersChanged,
-    MouseButtonPress,
-    MouseButtonRelease,
-    MouseEnter,
-    MouseLeave,
-    MouseMove,
-    MouseWheel,
     Move,
     Open,
     OptionHovered,
@@ -66,10 +60,6 @@ from plushie.events import (
     ThemeChanged,
     TimerTick,
     Toggle,
-    TouchLift,
-    TouchLost,
-    TouchMove,
-    TouchPress,
     TreeHash,
     WidgetEvent,
     WindowClosed,
@@ -440,59 +430,33 @@ class TestKeyEvents:
 # ---------------------------------------------------------------------------
 
 
-class TestMouseEvents:
-    def test_mouse_move(self) -> None:
-        e = MouseMove(x=100.0, y=200.0)
-        assert e.captured is False
+class TestSubscriptionPointerEvents:
+    """Subscription pointer events use unified types with id=window_id."""
 
-    def test_mouse_enter(self) -> None:
-        e = MouseEnter()
-        assert e.captured is False
+    def test_move_as_subscription(self) -> None:
+        e = Move(id="main", x=100.0, y=200.0, pointer="mouse", window_id="main")
+        assert e.pointer == "mouse"
+        assert e.scope == ()
 
-    def test_mouse_leave(self) -> None:
-        e = MouseLeave(captured=True)
-        assert e.captured is True
-
-    def test_button_press(self) -> None:
-        e = MouseButtonPress(button="left")
+    def test_press_as_subscription(self) -> None:
+        e = Press(
+            id="main", x=0.0, y=0.0, button="left", pointer="mouse", window_id="main"
+        )
         assert e.button == "left"
+        assert e.scope == ()
 
-    def test_button_release(self) -> None:
-        e = MouseButtonRelease(button="right")
-        assert e.button == "right"
-
-    def test_mouse_wheel(self) -> None:
-        e = MouseWheel(delta_x=0.0, delta_y=-3.0, unit="pixel")
-        assert e.unit == "pixel"
-        assert e.delta_y == -3.0
-
-    def test_mouse_wheel_default_unit(self) -> None:
-        e = MouseWheel(delta_x=0.0, delta_y=1.0)
-        assert e.unit == "line"
-
-
-# ---------------------------------------------------------------------------
-# Touch events
-# ---------------------------------------------------------------------------
-
-
-class TestTouchEvents:
-    def test_touch_press(self) -> None:
-        e = TouchPress(finger_id=0, x=100.0, y=200.0)
-        assert e.finger_id == 0
-        assert e.captured is False
-
-    def test_touch_move(self) -> None:
-        e = TouchMove(finger_id=1, x=110.0, y=210.0, captured=True)
-        assert e.captured is True
-
-    def test_touch_lift(self) -> None:
-        e = TouchLift(finger_id=0, x=100.0, y=200.0)
-        assert e.finger_id == 0
-
-    def test_touch_lost(self) -> None:
-        e = TouchLost(finger_id=2, x=50.0, y=60.0)
-        assert e.finger_id == 2
+    def test_touch_press_as_subscription(self) -> None:
+        e = Press(
+            id="main",
+            x=100.0,
+            y=200.0,
+            button="left",
+            pointer="touch",
+            finger=0,
+            window_id="main",
+        )
+        assert e.pointer == "touch"
+        assert e.finger == 0
 
 
 # ---------------------------------------------------------------------------

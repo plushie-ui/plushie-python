@@ -39,10 +39,10 @@ class TestRendererSubscriptions:
         ("on_key_press", Subscription.on_key_press),
         ("on_key_release", Subscription.on_key_release),
         ("on_modifiers_changed", Subscription.on_modifiers_changed),
-        ("on_mouse_move", Subscription.on_mouse_move),
-        ("on_mouse_button", Subscription.on_mouse_button),
-        ("on_mouse_scroll", Subscription.on_mouse_scroll),
-        ("on_touch", Subscription.on_touch),
+        ("on_mouse_move", Subscription.on_pointer_move),
+        ("on_mouse_button", Subscription.on_pointer_button),
+        ("on_mouse_scroll", Subscription.on_pointer_scroll),
+        ("on_touch", Subscription.on_pointer_touch),
         ("on_ime", Subscription.on_ime),
         ("on_window_event", Subscription.on_window_event),
         ("on_window_open", Subscription.on_window_open),
@@ -127,7 +127,7 @@ class TestWindowScoping:
             "editor",
             [
                 Subscription.on_key_press("keys"),
-                Subscription.on_mouse_move("mouse", max_rate=60),
+                Subscription.on_pointer_move("mouse", max_rate=60),
             ],
         )
         assert len(subs) == 2

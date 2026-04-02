@@ -16,7 +16,6 @@ from plushie.commands import Command
 from plushie.events import (
     AsyncResult,
     Click,
-    MouseMove,
     Move,
     TimerTick,
 )
@@ -220,10 +219,6 @@ class TestExtractWindowProps:
 
 class TestCoalesceKey:
     """Event coalescing key generation."""
-
-    def test_mouse_move(self) -> None:
-        event = MouseMove(x=10.0, y=20.0)
-        assert coalesce_key(event) == ("mouse_move",)
 
     def test_pointer_move(self) -> None:
         event = Move(id="area1", x=10.0, y=20.0, window_id="main")
@@ -448,8 +443,8 @@ class TestSubscriptionKeys:
 
     def test_max_rate_not_in_key(self) -> None:
         """max_rate is not part of the key -- same sub, different rate."""
-        s1 = Subscription.on_mouse_move("m", max_rate=30)
-        s2 = Subscription.on_mouse_move("m", max_rate=60)
+        s1 = Subscription.on_pointer_move("m", max_rate=30)
+        s2 = Subscription.on_pointer_move("m", max_rate=60)
         assert s1.key == s2.key
 
 

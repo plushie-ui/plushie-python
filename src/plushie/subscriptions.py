@@ -25,7 +25,7 @@ window::
 
     Subscription.for_window("editor", [
         Subscription.on_key_press("editor_keys"),
-        Subscription.on_mouse_move("editor_mouse", max_rate=60),
+        Subscription.on_pointer_move("editor_mouse", max_rate=60),
     ])
 """
 
@@ -124,45 +124,56 @@ class Subscription:
         )
 
     # ------------------------------------------------------------------
-    # Mouse
+    # Pointer (mouse, touch, pen)
     # ------------------------------------------------------------------
 
     @staticmethod
-    def on_mouse_move(
+    def on_pointer_move(
         tag: str, *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
-        """Subscribe to mouse movement events (also delivers enter/leave)."""
+        """Subscribe to pointer movement events (also delivers enter/leave).
+
+        Delivers ``Move``, ``Enter``, and ``Exit`` events with
+        ``id=window_id`` and ``scope=()``.
+        """
         return Subscription(
             kind="on_mouse_move", tag=tag, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
-    def on_mouse_button(
+    def on_pointer_button(
         tag: str, *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
-        """Subscribe to mouse button press and release events."""
+        """Subscribe to pointer button press and release events.
+
+        Delivers ``Press`` and ``Release`` events with ``id=window_id``
+        and ``scope=()``.
+        """
         return Subscription(
             kind="on_mouse_button", tag=tag, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
-    def on_mouse_scroll(
+    def on_pointer_scroll(
         tag: str, *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
-        """Subscribe to mouse scroll (wheel) events."""
+        """Subscribe to pointer scroll (wheel) events.
+
+        Delivers ``Scroll`` events with ``id=window_id`` and ``scope=()``.
+        """
         return Subscription(
             kind="on_mouse_scroll", tag=tag, max_rate=max_rate, window_id=window
         )
 
-    # ------------------------------------------------------------------
-    # Touch
-    # ------------------------------------------------------------------
-
     @staticmethod
-    def on_touch(
+    def on_pointer_touch(
         tag: str, *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
-        """Subscribe to touch events (pressed, moved, lifted, lost)."""
+        """Subscribe to touch pointer events.
+
+        Delivers ``Press``, ``Move``, and ``Release`` events with
+        ``pointer="touch"`` and ``id=window_id``.
+        """
         return Subscription(
             kind="on_touch", tag=tag, max_rate=max_rate, window_id=window
         )
@@ -315,7 +326,7 @@ class Subscription:
 
             Subscription.for_window("editor", [
                 Subscription.on_key_press("editor_keys"),
-                Subscription.on_mouse_move("editor_mouse", max_rate=60),
+                Subscription.on_pointer_move("editor_mouse", max_rate=60),
             ])
         """
         return [replace(sub, window_id=window_id) for sub in subscriptions]

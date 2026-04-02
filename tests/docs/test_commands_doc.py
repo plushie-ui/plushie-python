@@ -841,27 +841,27 @@ def test_subscription_on_window_event():
     assert sub.kind == "on_window_event"
 
 
-def test_subscription_on_mouse_move():
-    """Subscription.on_mouse_move() subscribes to mouse movement."""
-    sub = Subscription.on_mouse_move("mouse")
+def test_subscription_on_pointer_move():
+    """Subscription.on_pointer_move() subscribes to mouse movement."""
+    sub = Subscription.on_pointer_move("mouse")
     assert sub.kind == "on_mouse_move"
 
 
-def test_subscription_on_mouse_button():
-    """Subscription.on_mouse_button() subscribes to mouse clicks."""
-    sub = Subscription.on_mouse_button("mbutton")
+def test_subscription_on_pointer_button():
+    """Subscription.on_pointer_button() subscribes to mouse clicks."""
+    sub = Subscription.on_pointer_button("mbutton")
     assert sub.kind == "on_mouse_button"
 
 
-def test_subscription_on_mouse_scroll():
-    """Subscription.on_mouse_scroll() subscribes to scroll events."""
-    sub = Subscription.on_mouse_scroll("mscroll")
+def test_subscription_on_pointer_scroll():
+    """Subscription.on_pointer_scroll() subscribes to scroll events."""
+    sub = Subscription.on_pointer_scroll("mscroll")
     assert sub.kind == "on_mouse_scroll"
 
 
 def test_subscription_on_touch():
-    """Subscription.on_touch() subscribes to touch events."""
-    sub = Subscription.on_touch("touch")
+    """Subscription.on_pointer_touch() subscribes to touch events."""
+    sub = Subscription.on_pointer_touch("touch")
     assert sub.kind == "on_touch"
 
 
@@ -902,14 +902,14 @@ def test_subscription_on_event():
 
 def test_subscription_max_rate():
     """Renderer subscriptions accept a max_rate keyword."""
-    sub = Subscription.on_mouse_move("mouse", max_rate=30)
+    sub = Subscription.on_pointer_move("mouse", max_rate=30)
 
     assert sub.max_rate == 30
 
     sub_frame = Subscription.on_animation_frame("frame", max_rate=60)
     assert sub_frame.max_rate == 60
 
-    sub_zero = Subscription.on_mouse_move("mouse", max_rate=0)
+    sub_zero = Subscription.on_pointer_move("mouse", max_rate=0)
     assert sub_zero.max_rate == 0
 
 

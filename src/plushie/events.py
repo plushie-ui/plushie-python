@@ -773,204 +773,6 @@ class ModifiersChanged:
 
 
 # ---------------------------------------------------------------------------
-# Mouse events -- global (subscription)
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class MouseMove:
-    """The mouse cursor moved to a new position.
-
-    Wire family: ``cursor_moved``.
-
-    Attributes:
-        x: Horizontal cursor position.
-        y: Vertical cursor position.
-        captured: Whether a widget already consumed this event.
-        window_id: The window the cursor is over, or ``""`` if absent.
-    """
-
-    x: float
-    y: float
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class MouseEnter:
-    """The mouse cursor entered the application window.
-
-    Wire family: ``cursor_entered``.
-
-    Attributes:
-        captured: Whether a widget already consumed this event.
-        window_id: The window the cursor entered, or ``""`` if absent.
-    """
-
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class MouseLeave:
-    """The mouse cursor left the application window.
-
-    Wire family: ``cursor_left``.
-
-    Attributes:
-        captured: Whether a widget already consumed this event.
-        window_id: The window the cursor left, or ``""`` if absent.
-    """
-
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class MouseButtonPress:
-    """A mouse button was pressed (global subscription).
-
-    Wire family: ``button_pressed``.
-
-    Attributes:
-        button: The mouse button identifier.
-        captured: Whether a widget already consumed this event.
-        window_id: The window with focus, or ``""`` if absent.
-    """
-
-    button: str
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class MouseButtonRelease:
-    """A mouse button was released (global subscription).
-
-    Wire family: ``button_released``.
-
-    Attributes:
-        button: The mouse button identifier.
-        captured: Whether a widget already consumed this event.
-        window_id: The window with focus, or ``""`` if absent.
-    """
-
-    button: str
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class MouseWheel:
-    """The mouse wheel was scrolled (global subscription).
-
-    Wire family: ``wheel_scrolled``.
-
-    Attributes:
-        delta_x: Horizontal scroll delta.
-        delta_y: Vertical scroll delta.
-        unit: Whether deltas are in lines or pixels.
-        captured: Whether a widget already consumed this event.
-        window_id: The window the cursor is over, or ``""`` if absent.
-    """
-
-    delta_x: float
-    delta_y: float
-    unit: ScrollUnit = "line"
-    captured: bool = False
-    window_id: str = ""
-
-
-# ---------------------------------------------------------------------------
-# Touch events -- global (subscription)
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class TouchPress:
-    """A finger touched the screen.
-
-    Wire family: ``finger_pressed``.
-
-    Attributes:
-        finger_id: Unique identifier for the finger.
-        x: Horizontal touch position.
-        y: Vertical touch position.
-        captured: Whether a widget already consumed this event.
-        window_id: The window receiving the touch, or ``""`` if absent.
-    """
-
-    finger_id: int
-    x: float
-    y: float
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class TouchMove:
-    """A finger moved on the screen.
-
-    Wire family: ``finger_moved``.
-
-    Attributes:
-        finger_id: Unique identifier for the finger.
-        x: Current horizontal touch position.
-        y: Current vertical touch position.
-        captured: Whether a widget already consumed this event.
-        window_id: The window receiving the touch, or ``""`` if absent.
-    """
-
-    finger_id: int
-    x: float
-    y: float
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class TouchLift:
-    """A finger was lifted from the screen.
-
-    Wire family: ``finger_lifted``.
-
-    Attributes:
-        finger_id: Unique identifier for the finger.
-        x: Final horizontal touch position.
-        y: Final vertical touch position.
-        captured: Whether a widget already consumed this event.
-        window_id: The window receiving the touch, or ``""`` if absent.
-    """
-
-    finger_id: int
-    x: float
-    y: float
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class TouchLost:
-    """Touch tracking was interrupted by the OS.
-
-    Wire family: ``finger_lost``.
-
-    Attributes:
-        finger_id: Unique identifier for the finger.
-        x: Last known horizontal touch position.
-        y: Last known vertical touch position.
-        captured: Whether a widget already consumed this event.
-        window_id: The window receiving the touch, or ``""`` if absent.
-    """
-
-    finger_id: int
-    x: float
-    y: float
-    captured: bool = False
-    window_id: str = ""
-
-
-# ---------------------------------------------------------------------------
 # IME events -- global (subscription)
 # ---------------------------------------------------------------------------
 
@@ -1636,19 +1438,6 @@ type PaneEvent = PaneResized | PaneDragged | PaneClicked | PaneFocusCycle
 type KeyEvent = KeyPress | KeyRelease | ModifiersChanged
 """Union of all keyboard events."""
 
-type MouseEvent = (
-    MouseMove
-    | MouseEnter
-    | MouseLeave
-    | MouseButtonPress
-    | MouseButtonRelease
-    | MouseWheel
-)
-"""Union of all global mouse subscription events."""
-
-type TouchEvent = TouchPress | TouchMove | TouchLift | TouchLost
-"""Union of all touch events."""
-
 type ImeEvent = ImeOpen | ImePreedit | ImeCommit | ImeClose
 """Union of all IME events."""
 
@@ -1690,8 +1479,6 @@ type Event = (
     | Diagnostic
     | PaneEvent
     | KeyEvent
-    | MouseEvent
-    | TouchEvent
     | ImeEvent
     | WindowEvent
     | SystemEvent
@@ -1749,13 +1536,6 @@ __all__ = [
     "KeyRelease",
     "ModifiersChanged",
     "MouseButton",
-    "MouseButtonPress",
-    "MouseButtonRelease",
-    "MouseEnter",
-    "MouseEvent",
-    "MouseLeave",
-    "MouseMove",
-    "MouseWheel",
     "Move",
     "Open",
     "OptionHovered",
@@ -1790,11 +1570,6 @@ __all__ = [
     "ThemeChanged",
     "TimerTick",
     "Toggle",
-    "TouchEvent",
-    "TouchLift",
-    "TouchLost",
-    "TouchMove",
-    "TouchPress",
     "TransitionComplete",
     "TreeHash",
     "WidgetCommandError",

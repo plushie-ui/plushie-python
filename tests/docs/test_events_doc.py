@@ -27,8 +27,6 @@ from plushie.events import (
     KeyBinding,
     KeyPress,
     ModifiersChanged,
-    MouseButtonPress,
-    MouseMove,
     Move,
     Open,
     OptionHovered,
@@ -48,7 +46,6 @@ from plushie.events import (
     ThemeChanged,
     TimerTick,
     Toggle,
-    TouchPress,
     WindowCloseRequested,
     WindowFocused,
     WindowResized,
@@ -472,35 +469,42 @@ class TestImeCommitMatch:
 # -- Mouse events (global) --------------------------------------------------
 
 
-class TestMouseMoveMatch:
-    def test_mouse_move_match(self) -> None:
-        event = MouseMove(x=100.0, y=200.0)
+class TestSubscriptionPointerMoveMatch:
+    def test_subscription_move_match(self) -> None:
+        event = Move(id="main", x=100.0, y=200.0, pointer="mouse", window_id="main")
         model = Model()
         match event:
-            case MouseMove(x=x, y=y):
+            case Move(x=x, y=y):
                 model = replace(model, cursor=(x, y))
         assert model.cursor == (100.0, 200.0)
 
 
-class TestMouseButtonPressMatch:
-    def test_mouse_button_left_match(self) -> None:
-        event = MouseButtonPress(button="left")
+class TestPointerPressMatch:
+    def test_pointer_press_left_match(self) -> None:
+        event = Press(
+            id="main", x=0.0, y=0.0, button="left", pointer="mouse", window_id="main"
+        )
         model = Model()
         match event:
-            case MouseButtonPress(button="left"):
+            case Press(button="left"):
                 model = replace(model, mouse_down=True)
         assert model.mouse_down is True
 
 
-# -- Touch events ------------------------------------------------------------
-
-
 class TestTouchPressMatch:
     def test_touch_press_match(self) -> None:
-        event = TouchPress(finger_id=0, x=50.0, y=75.0)
+        event = Press(
+            id="main",
+            x=50.0,
+            y=75.0,
+            button="left",
+            pointer="touch",
+            finger=0,
+            window_id="main",
+        )
         model = Model()
         match event:
-            case TouchPress(x=x, y=y):
+            case Press(pointer="touch", x=x, y=y):
                 model = replace(model, touch_start=(x, y))
         assert model.touch_start == (50.0, 75.0)
 

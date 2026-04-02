@@ -44,12 +44,6 @@ from plushie.events import (
     KeyPress,
     KeyRelease,
     ModifiersChanged,
-    MouseButtonPress,
-    MouseButtonRelease,
-    MouseEnter,
-    MouseLeave,
-    MouseMove,
-    MouseWheel,
     Move,
     Open,
     OptionHovered,
@@ -74,10 +68,6 @@ from plushie.events import (
     SystemTheme,
     ThemeChanged,
     Toggle,
-    TouchLift,
-    TouchLost,
-    TouchMove,
-    TouchPress,
     TransitionComplete,
     TreeHash,
     WidgetCommandError,
@@ -773,16 +763,6 @@ def decode_message(
     | KeyPress
     | KeyRelease
     | ModifiersChanged
-    | MouseMove
-    | MouseEnter
-    | MouseLeave
-    | MouseButtonPress
-    | MouseButtonRelease
-    | MouseWheel
-    | TouchPress
-    | TouchMove
-    | TouchLift
-    | TouchLost
     | ImeOpen
     | ImePreedit
     | ImeCommit
@@ -1303,76 +1283,103 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             modifiers=mods, captured=captured, window_id=sub_window_id
         )
 
-    # ------- Mouse events (global subscription) -------
+    # ------- Pointer subscription events (mouse/touch) -------
+    # Delivered as unified pointer types with id=window_id, scope=().
 
     if family == "cursor_moved":
-        return MouseMove(
+        return Move(
+            id=sub_window_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            captured=captured,
+            pointer="mouse",
+            modifiers=_parse_modifiers(modifiers_raw),
             window_id=sub_window_id,
         )
 
     if family == "cursor_entered":
-        return MouseEnter(captured=captured, window_id=sub_window_id)
+        return Enter(id=sub_window_id, window_id=sub_window_id)
 
     if family == "cursor_left":
-        return MouseLeave(captured=captured, window_id=sub_window_id)
+        return Exit(id=sub_window_id, window_id=sub_window_id)
 
     if family == "button_pressed":
-        return MouseButtonPress(
-            button=str(value or "left"), captured=captured, window_id=sub_window_id
-        )
-
-    if family == "button_released":
-        return MouseButtonRelease(
-            button=str(value or "left"), captured=captured, window_id=sub_window_id
-        )
-
-    if family == "wheel_scrolled":
-        return MouseWheel(
-            delta_x=float(data.get("delta_x", 0)),
-            delta_y=float(data.get("delta_y", 0)),
-            unit=data.get("unit", "line"),
-            captured=captured,
+        return Press(
+            id=sub_window_id,
+            x=0.0,
+            y=0.0,
+            button=str(value or "left"),
+            pointer="mouse",
+            modifiers=_parse_modifiers(modifiers_raw),
             window_id=sub_window_id,
         )
 
-    # ------- Touch events (global subscription) -------
+    if family == "button_released":
+        return Release(
+            id=sub_window_id,
+            x=0.0,
+            y=0.0,
+            button=str(value or "left"),
+            pointer="mouse",
+            modifiers=_parse_modifiers(modifiers_raw),
+            window_id=sub_window_id,
+        )
+
+    if family == "wheel_scrolled":
+        return Scroll(
+            id=sub_window_id,
+            x=0.0,
+            y=0.0,
+            delta_x=float(data.get("delta_x", 0)),
+            delta_y=float(data.get("delta_y", 0)),
+            pointer="mouse",
+            modifiers=_parse_modifiers(modifiers_raw),
+            window_id=sub_window_id,
+        )
 
     if family == "finger_pressed":
-        return TouchPress(
-            finger_id=int(data.get("id", 0)),
+        return Press(
+            id=sub_window_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            captured=captured,
+            button="left",
+            pointer="touch",
+            finger=int(data.get("id", 0)),
+            modifiers=_parse_modifiers(modifiers_raw),
             window_id=sub_window_id,
         )
 
     if family == "finger_moved":
-        return TouchMove(
-            finger_id=int(data.get("id", 0)),
+        return Move(
+            id=sub_window_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            captured=captured,
+            pointer="touch",
+            finger=int(data.get("id", 0)),
+            modifiers=_parse_modifiers(modifiers_raw),
             window_id=sub_window_id,
         )
 
     if family == "finger_lifted":
-        return TouchLift(
-            finger_id=int(data.get("id", 0)),
+        return Release(
+            id=sub_window_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            captured=captured,
+            button="left",
+            pointer="touch",
+            finger=int(data.get("id", 0)),
+            modifiers=_parse_modifiers(modifiers_raw),
             window_id=sub_window_id,
         )
 
     if family == "finger_lost":
-        return TouchLost(
-            finger_id=int(data.get("id", 0)),
+        return Release(
+            id=sub_window_id,
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
-            captured=captured,
+            button="left",
+            pointer="touch",
+            finger=int(data.get("id", 0)),
+            modifiers=_parse_modifiers(modifiers_raw),
             window_id=sub_window_id,
         )
 
