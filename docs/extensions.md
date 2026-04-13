@@ -21,7 +21,7 @@ An extension has two halves:
 1. **Python side:** define the widget's props, commands, and (for native
    widgets) the Rust crate and constructor using `ExtensionDef`.
 
-2. **Rust side:** implement the `WidgetExtension` trait from `plushie-ext`.
+2. **Rust side:** implement the `WidgetExtension` trait from `plushie-widget-sdk`.
    This receives tree nodes from Python and returns `iced::Element`s for
    rendering.
 
@@ -64,7 +64,7 @@ This gives you:
 
 ```rust
 // native/my_sparkline/src/lib.rs
-use plushie_ext::prelude::*;
+use plushie_widget_sdk::prelude::*;
 
 pub struct SparklineExtension;
 
@@ -597,12 +597,12 @@ def test_build_command_creates_extension_command():
 
 ### Rust-side tests
 
-Test pure logic functions using `plushie_ext::testing`:
+Test pure logic functions using `plushie_widget_sdk::testing`:
 
 ```rust
 #[cfg(test)]
 mod tests {
-    use plushie_ext::testing::*;
+    use plushie_widget_sdk::testing::*;
     use super::*;
 
     #[test]
@@ -708,7 +708,7 @@ via `Widget::state()` or `canvas::Program`), and a `GenerationCounter` in
 `ExtensionCaches` tracks when your data changes.
 
 ```rust
-use plushie_ext::prelude::*;
+use plushie_widget_sdk::prelude::*;
 use iced::widget::canvas;
 
 /// Stored in ExtensionCaches (Send + Sync).
@@ -966,7 +966,7 @@ use iced::advanced::widget::{self, Widget};
 use iced::advanced::{layout, mouse, renderer, Clipboard, Layout, Shell};
 use iced::event;
 use iced::{Element, Length, Rectangle, Size, Theme};
-use plushie_ext::prelude::*;
+use plushie_widget_sdk::prelude::*;
 
 struct MyWidget<'a> {
     node_id: String,
@@ -1057,7 +1057,7 @@ The Widget trait is part of plushie-iced, not the Python SDK.
 
 ## Prop helpers reference
 
-The `plushie_ext::prop_helpers` module (re-exported via `prelude::*`) provides
+The `plushie_widget_sdk::prop_helpers` module (re-exported via `prelude::*`) provides
 typed accessors for reading props from `TreeNode`. Use these instead of
 manually traversing `serde_json::Value`:
 
@@ -1269,7 +1269,7 @@ def clear(node_id: str) -> Command:
 
 ```rust
 // native/my_sparkline/src/lib.rs
-use plushie_ext::prelude::*;
+use plushie_widget_sdk::prelude::*;
 
 pub struct SparklineExtension;
 
