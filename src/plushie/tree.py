@@ -2,13 +2,13 @@
 
 Provides the core tree operations for the plushie SDK:
 
-- **normalize** -- assign auto-IDs, resolve scoped IDs, validate
+- **normalize** - assign auto-IDs, resolve scoped IDs, validate
   constraints, resolve a11y cross-references.
-- **diff** -- produce minimal patch operations (replace_node,
+- **diff** - produce minimal patch operations (replace_node,
   update_props, insert_child, remove_child) for incremental
   renderer updates.
-- **find / find_all / exists / ids** -- tree search utilities.
-- **text_of** -- extract display text from a node.
+- **find / find_all / exists / ids** - tree search utilities.
+- **text_of** - extract display text from a node.
 
 Tree nodes are plain dicts with the shape::
 
@@ -75,9 +75,9 @@ def normalize(
     """Normalize a UI tree into canonical node shape.
 
     Accepts:
-    - ``None`` -- returns an empty root container.
-    - A single node dict -- normalizes and returns it.
-    - A list of node dicts -- wraps in a root container (the root
+    - ``None`` - returns an empty root container.
+    - A single node dict. Normalizes and returns it.
+    - A list of node dicts. Wraps in a root container (the root
       does not create a scope boundary).
 
     Args:
@@ -252,7 +252,7 @@ def _normalize_with_scope(
         "children": normalized_children,
     }
 
-    # Preserve meta if present -- never sent on the wire, not compared in diffs.
+    # Preserve meta if present. Never sent on the wire, not compared in diffs.
     if meta is not None:
         result["meta"] = meta
 
@@ -352,10 +352,10 @@ def diff(old: Node | None, new: Node | None) -> list[PatchOp]:
 
     Patch operations (applied sequentially by the renderer):
 
-    - ``replace_node`` -- replace entire subtree at ``path``.
-    - ``update_props`` -- merge changed/removed props at ``path``.
-    - ``insert_child`` -- insert a child node at ``path`` + ``index``.
-    - ``remove_child`` -- remove the child at ``path`` + ``index``.
+    - ``replace_node`` - replace entire subtree at ``path``.
+    - ``update_props`` - merge changed/removed props at ``path``.
+    - ``insert_child`` - insert a child node at ``path`` + ``index``.
+    - ``remove_child`` - remove the child at ``path`` + ``index``.
 
     ``path`` is a list of child indices from the root. An empty path
     ``[]`` means the root node.
@@ -387,7 +387,7 @@ def _diff_node(old: Node, new: Node, path: list[int]) -> list[PatchOp]:
 
     child_ops = _diff_children(old["children"], new["children"], path)
     if child_ops is None:
-        # Reordered -- replace the whole node
+        # Reordered; replace the whole node
         return [{"op": "replace_node", "path": path, "node": new}]
 
     prop_ops = _diff_props(old["props"], new["props"], path)

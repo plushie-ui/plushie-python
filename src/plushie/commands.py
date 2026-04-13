@@ -1,7 +1,7 @@
 """Command data types returned from ``update()``.
 
 Commands describe side effects that the runtime executes after ``update``
-returns.  They are pure data -- inspectable, testable, serializable.
+returns.  They are pure data: inspectable, testable, serializable.
 Nothing executes inside ``update``.
 
 The lifecycle is: ``update`` returns ``(model, command)``, the runtime

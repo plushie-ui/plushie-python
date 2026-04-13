@@ -214,7 +214,7 @@ class TestTreeQueryHelpers:
 
 
 class TestAsyncPatterns:
-    """Doc section: Testing async workflows -- unit test level."""
+    """Doc section: Testing async workflows: unit test level."""
 
     def test_clicking_fetch_starts_async_load(self) -> None:
         app = MyApp()

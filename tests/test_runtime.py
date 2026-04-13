@@ -1,4 +1,4 @@
-"""Tests for plushie.runtime -- non-binary logic tests.
+"""Tests for plushie.runtime: non-binary logic tests.
 
 Tests the pure-logic parts of the runtime: unwrap_result, window
 detection, coalescing, subscription diffing, and the App ABC.
@@ -442,7 +442,7 @@ class TestSubscriptionKeys:
         assert s1.key != s2.key
 
     def test_max_rate_not_in_key(self) -> None:
-        """max_rate is not part of the key -- same sub, different rate."""
+        """max_rate is not part of the key: same sub, different rate."""
         s1 = Subscription.on_pointer_move("m", max_rate=30)
         s2 = Subscription.on_pointer_move("m", max_rate=60)
         assert s1.key == s2.key

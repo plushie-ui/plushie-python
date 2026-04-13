@@ -1,4 +1,4 @@
-"""Clock -- demonstrates subscriptions and timer events.
+"""Clock: demonstrates subscriptions and timer events.
 
 Features exercised:
 
@@ -25,7 +25,7 @@ from plushie.subscriptions import Subscription
 
 @dataclass(frozen=True, slots=True)
 class Model:
-    """Clock model -- tracks current time and running state."""
+    """Clock model: tracks current time and running state."""
 
     hours: int = 0
     minutes: int = 0

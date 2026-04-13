@@ -1,4 +1,4 @@
-"""Tests for plushie.script -- .plushie script parser and runner.
+"""Tests for plushie.script: .plushie script parser and runner.
 
 Tests header parsing, instruction parsing, comment/blank handling,
 separator detection, quoted string extraction, ScriptRunner dispatch,

@@ -246,7 +246,7 @@ class Runtime:
         self._model: Any = None
         self._tree: Node | None = None
 
-        # Event queue -- all events (renderer + injected + internal) flow here.
+        # Event queue: all events (renderer + injected + internal) flow here.
         self._queue: Queue[Any] = Queue()
 
         # Running flag
@@ -476,7 +476,7 @@ class Runtime:
 
         if self._pending_interact is not None:
             raise RuntimeError(
-                "interact already in progress -- concurrent calls are not supported"
+                "interact already in progress, concurrent calls are not supported"
             )
 
         rid = f"interact_{self._next_nonce()}"
@@ -558,10 +558,10 @@ class Runtime:
                 self._running = False
                 break
 
-            # HelloInfo from the renderer -- log and continue
+            # HelloInfo from the renderer; log and continue
             if isinstance(event, HelloInfo):
                 logger.info(
-                    "plushie runtime: renderer connected -- %s v%s (%s, %s)",
+                    "plushie runtime: renderer connected, %s v%s (%s, %s)",
                     event.name,
                     event.version,
                     event.backend,
@@ -569,7 +569,7 @@ class Runtime:
                 )
                 continue
 
-            # Diagnostic events -- intercept, never deliver to update()
+            # Diagnostic events: intercept, never deliver to update()
             if isinstance(event, _Diagnostic):
                 logger.warning(
                     "plushie runtime: prop validation diagnostic: %s", event.message
@@ -578,7 +578,7 @@ class Runtime:
                     self._diagnostics.append(event)
                 continue
 
-            # Effect stub ack -- unblock the waiting caller
+            # Effect stub ack; unblock the waiting caller
             if isinstance(event, dict) and event.get("type") in (
                 "effect_stub_registered",
                 "effect_stub_unregistered",
@@ -589,13 +589,13 @@ class Runtime:
                     ack.set()
                 continue
 
-            # Interact step -- batch events with apply_event, then snapshot
+            # Interact step: batch events with apply_event, then snapshot
             if isinstance(event, dict) and event.get("type") == "interact_step":
                 self._flush_coalescables()
                 self._handle_interact_step(event.get("events", []))
                 continue
 
-            # Interact response -- final events, full update cycle, unblock caller
+            # Interact response: final events, full update cycle, unblock caller
             if isinstance(event, dict) and event.get("type") == "interact_response":
                 self._flush_coalescables()
                 self._handle_interact_response(event)
@@ -662,7 +662,7 @@ class Runtime:
                 if routed_event is not None:
                     event = routed_event
                 else:
-                    # Widget handled internally -- re-render for state changes
+                    # Widget handled internally; re-render for state changes
                     self._rerender_after_widget_state_change(self._widget_registry)
                     return
             # If not handled, fall through to normal dispatch
@@ -755,7 +755,7 @@ class Runtime:
                 count = self._consecutive_errors + 1
                 if count <= 10:
                     logger.error(
-                        "plushie runtime: update() returned None -- "
+                        "plushie runtime: update() returned None. "
                         "forgot a catch-all? Add 'case _: return model'"
                     )
                 return None
@@ -770,7 +770,7 @@ class Runtime:
                 )
             elif count == 101:
                 logger.warning(
-                    "plushie runtime: 100+ consecutive update errors -- "
+                    "plushie runtime: 100+ consecutive update errors. "
                     "suppressing further logs"
                 )
             elif count % 1000 == 0:
@@ -851,7 +851,7 @@ class Runtime:
         wrapped = {"type": "event", **event_map}
         decoded = decode_message(wrapped)
         if isinstance(decoded, dict):
-            return None  # unrecognized -- skip
+            return None  # unrecognized; skip
         return decoded
 
     def _handle_interact_step(self, events: list[dict[str, Any]]) -> None:
@@ -930,7 +930,7 @@ class Runtime:
             return
 
         if t == "exit":
-            logger.info("plushie runtime: exit command received -- stopping")
+            logger.info("plushie runtime: exit command received, stopping")
             self._running = False
             return
 
@@ -1253,7 +1253,7 @@ class Runtime:
         new_sorted_keys = sorted(new_by_key.keys())
 
         if new_sorted_keys == self._subscription_keys:
-            # Keys unchanged -- check for max_rate updates only
+            # Keys unchanged; check for max_rate updates only
             self._update_max_rates(new_by_key)
             return
 
@@ -1526,11 +1526,11 @@ class Runtime:
                 )
                 continue
 
-            # Success -- re-send full snapshot and re-sync everything
+            # Success: re-send full snapshot and re-sync everything
             logger.info("plushie runtime: renderer reconnected")
             tree = self._safe_view(self._model)
             if tree is None:
-                # view() failed -- keep the previous tree so window
+                # view() failed; keep the previous tree so window
                 # sync still has something to work with (matches Elixir
                 # which falls back to state.tree on safe_view error).
                 tree = self._tree

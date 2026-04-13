@@ -7,9 +7,9 @@ Auto-discovered via the ``pytest11`` entry point. Provides a shared
 Backend selection respects the ``PLUSHIE_TEST_BACKEND`` environment
 variable:
 
-- ``mock`` (default) -- lightweight rendering, no display server
-- ``headless`` -- real rendering, software backend
-- ``windowed`` -- real iced windows (needs Xvfb or a display)
+- ``mock`` (default) - lightweight rendering, no display server
+- ``headless`` - real rendering, software backend
+- ``windowed`` - real iced windows (needs Xvfb or a display)
 
 Usage::
 
@@ -75,7 +75,7 @@ def pytest_configure(config: pytest.Config) -> None:
         )
     except Exception:
         logger.warning(
-            "plushie test pool failed to start -- integration tests will be skipped",
+            "plushie test pool failed to start, integration tests will be skipped",
             exc_info=True,
         )
         _pool = None

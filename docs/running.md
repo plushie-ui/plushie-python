@@ -2,7 +2,7 @@
 
 Plushie's **renderer** draws windows and handles input. Your Python
 code (the **host**) manages state and builds the UI tree. They talk
-over a wire protocol -- locally through a pipe, remotely over SSH,
+over a wire protocol: locally through a pipe, remotely over SSH,
 or through any transport you provide. This guide covers all the ways
 to connect them.
 
@@ -100,7 +100,7 @@ not the server). How you get it there depends on your project:
 | Your project uses | Renderer needed | How to get it |
 |---|---|---|
 | Built-in widgets only | Precompiled | `python -m plushie download` or GitHub release |
-| Pure Python extensions | Precompiled | Same -- composites don't need a custom build |
+| Pure Python extensions | Precompiled | Same (composites don't need a custom build) |
 | Native Rust extensions | Custom build | `python -m plushie build` targeting your laptop's architecture |
 
 The server does not need the renderer at all. It only needs your Python
@@ -132,7 +132,7 @@ Plushie handles these without losing your model state.
 
 If the renderer crashes (segfault, GPU error, out of memory), the
 host detects it and restarts automatically with exponential backoff.
-Your model state is preserved -- the new renderer receives fresh
+Your model state is preserved. The new renderer receives fresh
 settings, a full snapshot of the current UI, and re-synced
 subscriptions and windows. The user sees a brief flicker, then the
 UI is back.
@@ -408,13 +408,13 @@ PLUSHIE_TEST_BACKEND=windowed pytest        # real windows (needs display)
 ## Demo: collab
 
 The [collab demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/collab)
-demonstrates all transport modes in one app -- native desktop, exec mode,
+demonstrates all transport modes in one app: native desktop, exec mode,
 shared-state WebSocket, and SSH. Multiple clients share a single counter
 and notes in real time.
 
 ## Next steps
 
-- [Getting started](getting-started.md) -- setup, first app
-- [Testing](testing.md) -- three-backend test framework
-- [Extensions](extensions.md) -- custom widgets
-- [Accessibility](accessibility.md) -- a11y props and patterns
+- [Getting started](getting-started.md) - setup, first app
+- [Testing](testing.md) - three-backend test framework
+- [Extensions](extensions.md) - custom widgets
+- [Accessibility](accessibility.md) - a11y props and patterns

@@ -177,7 +177,7 @@ class TodoApp(plushie.App[Model]):
             title="Todos",
         )
 
-    # Full view (step 6 -- filters + extracted helpers)
+    # Full view (step 6, filters + extracted helpers)
     def view(self, model: Model) -> dict[str, Any]:
         visible = _visible_items(model)
 

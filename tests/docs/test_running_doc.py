@@ -53,7 +53,7 @@ class DashboardApp(App[dict[str, Any]]):
 
 
 class TestSettingsRateLimiting:
-    """Doc section: Event rate limiting -- Global default."""
+    """Doc section: Event rate limiting: Global default."""
 
     def test_settings_returns_event_rate(self) -> None:
         app = SettingsApp()
@@ -72,7 +72,7 @@ class TestSettingsRateLimiting:
 
 
 class TestPerSubscriptionRate:
-    """Doc section: Event rate limiting -- Per-subscription."""
+    """Doc section: Event rate limiting: Per-subscription."""
 
     def test_mouse_move_rate(self) -> None:
         sub = Subscription.on_pointer_move("mouse", max_rate=30)
@@ -95,7 +95,7 @@ class TestPerSubscriptionRate:
 
 
 class TestPerWidgetRate:
-    """Doc section: Event rate limiting -- Per-widget."""
+    """Doc section: Event rate limiting: Per-widget."""
 
     def test_slider_event_rate(self) -> None:
         node = ui.slider("volume", (0, 100), 50, event_rate=15)
@@ -134,7 +134,7 @@ class TestIoStreamAdapter:
 
 
 class TestMsgpackFraming:
-    """Doc section: Framing -- MsgpackFraming encode + feed round-trip."""
+    """Doc section: Framing: MsgpackFraming encode + feed round-trip."""
 
     def test_encode_decode_round_trip(self) -> None:
         msg = {"type": "snapshot", "tree": {"id": "root"}}
@@ -151,19 +151,19 @@ class TestMsgpackFraming:
         encoded = MsgpackFraming.encode(msg)
 
         framing = MsgpackFraming()
-        # Feed first half -- should return nothing
+        # Feed first half; should return nothing
         half = len(encoded) // 2
         messages = framing.feed(encoded[:half])
         assert messages == []
 
-        # Feed the rest -- now should decode
+        # Feed the rest; now should decode
         messages = framing.feed(encoded[half:])
         assert len(messages) == 1
         assert messages[0]["hello"] == "world"
 
 
 class TestJsonFraming:
-    """Doc section: Framing -- JsonFraming encode + feed round-trip."""
+    """Doc section: Framing: JsonFraming encode + feed round-trip."""
 
     def test_encode_decode_round_trip(self) -> None:
         msg = {"type": "settings", "theme": "dark"}

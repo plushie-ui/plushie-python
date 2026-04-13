@@ -1,4 +1,4 @@
-"""Tests for plushie.framing -- wire framing encode/decode."""
+"""Tests for plushie.framing: wire framing encode/decode."""
 
 from __future__ import annotations
 

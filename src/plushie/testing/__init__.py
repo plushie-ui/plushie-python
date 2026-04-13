@@ -2,8 +2,8 @@
 
 Provides:
 
-- ``AppFixture`` -- synchronous test driver for plushie apps
-- ``Element`` -- wrapper for renderer query results
+- ``AppFixture`` - synchronous test driver for plushie apps
+- ``Element`` - wrapper for renderer query results
 
 Usage::
 

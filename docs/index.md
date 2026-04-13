@@ -3,7 +3,7 @@
 Build native desktop apps in Python.
 
 Plushie is a desktop GUI framework that lets you write your entire
-application in Python -- state, events, UI -- and get native windows
+application in Python (state, events, UI) and get native windows
 on Linux, macOS, and Windows. Rendering is powered by
 [iced](https://github.com/iced-rs/iced), a cross-platform GUI library
 for Rust, which plushie drives as a precompiled binary behind the scenes.
@@ -74,25 +74,25 @@ python -m plushie run counter:Counter
 
 ## Guides
 
-- [Getting started](getting-started.md) -- setup, first app, CLI commands, dev mode
-- [Tutorial](tutorial.md) -- build a todo app step by step
-- [App](app.md) -- the Python API contract, multi-window
-- [Layout](layout.md) -- length, padding, alignment, spacing
-- [Events](events.md) -- full event taxonomy
-- [Commands](commands.md) -- async work, timers, widget ops
-- [Effects](effects.md) -- native platform features
-- [Theming](theming.md) -- themes, custom palettes, styling
-- [Composition patterns](composition-patterns.md) -- tabs, sidebars, modals, cards
-- [Scoped IDs](scoped-ids.md) -- hierarchical ID namespacing
-- [Testing](testing.md) -- three-backend test framework and pixel regression
-- [Accessibility](accessibility.md) -- accesskit integration, a11y props
-- [Extensions](extensions.md) -- custom widgets, Rust extensions
-- [Running](running.md) -- remote rendering, transports, deployment
+- [Getting started](getting-started.md) - setup, first app, CLI commands, dev mode
+- [Tutorial](tutorial.md) - build a todo app step by step
+- [App](app.md) - the Python API contract, multi-window
+- [Layout](layout.md) - length, padding, alignment, spacing
+- [Events](events.md) - full event taxonomy
+- [Commands](commands.md) - async work, timers, widget ops
+- [Effects](effects.md) - native platform features
+- [Theming](theming.md) - themes, custom palettes, styling
+- [Composition patterns](composition-patterns.md) - tabs, sidebars, modals, cards
+- [Scoped IDs](scoped-ids.md) - hierarchical ID namespacing
+- [Testing](testing.md) - three-backend test framework and pixel regression
+- [Accessibility](accessibility.md) - accesskit integration, a11y props
+- [Extensions](extensions.md) - custom widgets, Rust extensions
+- [Running](running.md) - remote rendering, transports, deployment
 
 ## Reference
 
-- [CLI reference](cli.md) -- all commands and flags
-- [Standalone executables](standalone.md) -- PyInstaller, Nuitka, Briefcase
+- [CLI reference](cli.md) - all commands and flags
+- [Standalone executables](standalone.md) - PyInstaller, Nuitka, Briefcase
 
 ## Links
 

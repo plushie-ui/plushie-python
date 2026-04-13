@@ -91,7 +91,7 @@ def _tab_style(active: bool) -> StyleMap:
 
 
 class TestTabBar:
-    """Doc section: Tab bar -- view structure and tab switching."""
+    """Doc section: Tab bar: view structure and tab switching."""
 
     def test_view_contains_tab_buttons(self) -> None:
         app = TabApp()

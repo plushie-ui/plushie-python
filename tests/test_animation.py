@@ -151,7 +151,7 @@ class TestAnimationLifecycle:
 
     def test_finished_after_reaching_target(self) -> None:
         anim = Tween.new(0.0, 100.0, 1000).start(0)
-        # Advance to just before end -- not finished yet
+        # Advance to just before end; not finished yet
         _, mid = anim.advance(500)
         assert isinstance(mid, Tween)
         assert mid.finished() is False

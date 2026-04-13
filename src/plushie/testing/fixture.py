@@ -1124,7 +1124,7 @@ class AppFixture[M]:
     def _dispatch_event(self, event: Any) -> None:
         """Process a single event through app.update + sync command processing."""
         if event is None or isinstance(event, dict):
-            # Raw dict events we don't recognize -- skip
+            # Raw dict events we don't recognize; skip
             return
 
         try:
@@ -1179,7 +1179,7 @@ class AppFixture[M]:
         if suggestions and widget_type in suggestions:
             suggested = suggestions[widget_type]
             raise TypeError(
-                f"cannot {action} a {widget_type} widget -- use {suggested}() instead"
+                f"cannot {action} a {widget_type} widget, use {suggested}() instead"
             )
         # Not in allowed set but no specific suggestion
         if allowed_types:

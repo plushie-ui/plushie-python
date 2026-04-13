@@ -1,4 +1,4 @@
-"""Tests for plushie.transport -- iostream adapter tests.
+"""Tests for plushie.transport: iostream adapter tests.
 
 Tests the IoStreamAdapter with in-memory pipe-like streams, verifying
 frame encoding/decoding, event routing, and lifecycle management.
@@ -41,7 +41,7 @@ class _PipeReader:
             self._data_ready.set()
 
     def read(self, n: int = 4096) -> bytes:
-        """Blocking read -- waits for data or close."""
+        """Blocking read: waits for data or close."""
         while True:
             with self._lock:
                 if self._buffer:

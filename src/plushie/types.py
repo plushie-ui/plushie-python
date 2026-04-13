@@ -24,9 +24,9 @@ type Length = int | float | Literal["fill", "shrink"] | dict[str, int]
 
 Accepted forms:
 - Numeric pixel value (``int`` or ``float``)
-- ``"fill"`` -- expand to fill available space
-- ``"shrink"`` -- shrink to content size
-- ``{"fill_portion": n}`` -- fill a weighted portion of available space
+- ``"fill"`` - expand to fill available space
+- ``"shrink"`` - shrink to content size
+- ``{"fill_portion": n}`` - fill a weighted portion of available space
 """
 
 type Padding = int | float | tuple[float, float] | tuple[float, float, float, float]
@@ -888,7 +888,7 @@ class A11y:
     """Accessibility annotation for widget nodes.
 
     Overrides the auto-inferred accessibility semantics on the renderer
-    side. Most widgets need no explicit annotation -- the renderer derives
+    side. Most widgets need no explicit annotation; the renderer derives
     roles and labels from widget types and props automatically.
 
     All fields default to ``None`` (unset = use auto-inferred value).

@@ -1,6 +1,6 @@
 """Wire protocol encode/decode for all plushie message types.
 
-This module is pure functions operating on plain dicts -- no I/O.
+This module is pure functions operating on plain dicts. No I/O.
 Message builders produce dicts ready for ``MsgpackFraming.encode``
 or ``JsonFraming.encode``. The ``decode_message`` function converts
 an inbound dict (already deserialized by the framing layer) into
@@ -599,8 +599,8 @@ def encode_selector(selector: str) -> dict[str, str]:
 
     Selector syntax:
 
-    - ``"#widget_id"`` -- find by node ID (strips leading ``#``)
-    - ``"text content"`` -- find by text content (content, label, value)
+    - ``"#widget_id"`` - find by node ID (strips leading ``#``)
+    - ``"text content"`` - find by text content (content, label, value)
 
     Args:
         selector: Selector string.
@@ -1562,7 +1562,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             scope=scope,
         )
 
-    # Truly unknown -- pass through
+    # Truly unknown; pass through
     return msg
 
 

@@ -5,10 +5,10 @@ Pure data structure supporting single, multi, and range selection modes.
 Modes
 -----
 
-- ``"single"`` -- at most one item selected at a time.
-- ``"multi"`` -- multiple items selectable; ``extend=True`` adds to
+- ``"single"`` - at most one item selected at a time.
+- ``"multi"`` - multiple items selectable; ``extend=True`` adds to
   the set.
-- ``"range"`` -- like multi, but :meth:`Selection.range_select` selects
+- ``"range"`` - like multi, but :meth:`Selection.range_select` selects
   a contiguous slice of the *order* list between the anchor and target.
 
 Example::
@@ -57,7 +57,7 @@ class Selection:
         """Create a new empty selection.
 
         Args:
-            mode: Selection mode -- ``"single"``, ``"multi"``, or
+            mode: Selection mode. ``"single"``, ``"multi"``, or
                 ``"range"``.
             order: Ordered sequence of item IDs for range selection.
 

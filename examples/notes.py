@@ -1,4 +1,4 @@
-"""Notes -- state helpers composition example.
+"""Notes: state helpers composition example.
 
 Demonstrates all five state helpers working together:
 

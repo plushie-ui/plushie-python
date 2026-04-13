@@ -2,13 +2,13 @@
 
 Provides commands matching the Elixir mix tasks:
 
-- ``run`` -- resolve binary, spawn renderer, start runtime, block
-- ``connect`` -- stdio transport mode (for ``plushie --exec``)
-- ``download`` -- fetch precompiled binary
-- ``build`` -- build custom binary with extensions
-- ``inspect`` -- init app, call view, normalize, print as JSON
-- ``script`` -- run ``.plushie`` test scripts
-- ``replay`` -- replay a script with real windows
+- ``run`` - resolve binary, spawn renderer, start runtime, block
+- ``connect`` - stdio transport mode (for ``plushie --exec``)
+- ``download`` - fetch precompiled binary
+- ``build`` - build custom binary with extensions
+- ``inspect`` - init app, call view, normalize, print as JSON
+- ``script`` - run ``.plushie`` test scripts
+- ``replay`` - replay a script with real windows
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def _import_app(spec: str) -> type[App[Any]]:
     """
     if ":" not in spec:
         print(
-            f"error: invalid app specifier {spec!r} -- expected module:Class",
+            f"error: invalid app specifier {spec!r}, expected module:Class",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -311,7 +311,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
     )
 
     if not extensions:
-        # Stock build (no extensions) -- build vanilla binary from source
+        # Stock build (no extensions). Build vanilla binary from source
         if source is None:
             config_path = args.config or "plushie_extensions.json"
             print("no extensions found and PLUSHIE_SOURCE_PATH not set")
@@ -398,7 +398,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
     # Check extension crate plushie-ext version compatibility
     _check_extension_versions(extensions)
 
-    # Generate build files -- workspace at _plushie_build/ in the project root.
+    # Generate build files (workspace at _plushie_build/ in the project root).
     # Must be at the project root level so extension crates (e.g. native/gauge/)
     # are hierarchically below the workspace root, which Cargo requires.
     build_dir = "_plushie_build"
@@ -475,7 +475,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
             print(f"installed: {bin_path}")
     else:
         print(f"built: {built_path}")
-        print("warning: could not install -- binary not found at expected path")
+        print("warning: could not install, binary not found at expected path")
 
 
 def _check_extension_versions(extensions: list[NativeWidget]) -> None:
@@ -484,7 +484,7 @@ def _check_extension_versions(extensions: list[NativeWidget]) -> None:
     Reads each extension's Cargo.toml, extracts the plushie-ext
     dependency version, and warns if the major.minor doesn't match
     the SDK's binary version.  A mismatch would cause a cryptic Cargo
-    resolution failure -- this gives a clear warning instead.
+    resolution failure. This gives a clear warning instead.
     """
     import os
     import re
@@ -590,7 +590,7 @@ def _build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
         prog="plushie",
-        description="plushie -- native desktop GUI framework for Python",
+        description="plushie: native desktop GUI framework for Python",
     )
     parser.add_argument(
         "-v",

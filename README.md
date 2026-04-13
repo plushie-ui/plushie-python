@@ -2,11 +2,20 @@
 
 Build native desktop apps in Python. **[Pre-1.0](#status)**
 
-Plushie is a desktop GUI framework that allows you to write your entire
-application in Python -- state, events, UI -- and get native windows
-on Linux, macOS, and Windows. Rendering is powered by
-[iced](https://github.com/iced-rs/iced), a cross-platform GUI library
-for Rust, which plushie drives as a precompiled binary behind the scenes.
+Write your entire application in Python (state, events, UI) and get
+native windows on Linux, macOS, and Windows. Available on
+[PyPI](https://pypi.org/project/plushie/) as `plushie`. The
+[renderer](https://github.com/plushie-ui/plushie-rust) is built on
+[Iced](https://github.com/iced-rs/iced) and ships as a precompiled
+binary, no Rust toolchain required.
+
+SDKs are also available for
+[Elixir](https://github.com/plushie-ui/plushie-elixir),
+[Gleam](https://github.com/plushie-ui/plushie-gleam),
+[Ruby](https://github.com/plushie-ui/plushie-ruby), and
+[TypeScript](https://github.com/plushie-ui/plushie-typescript).
+
+## Quick start
 
 <!-- test: test_readme_counter_init, test_readme_counter_increment, test_readme_counter_decrement, test_readme_counter_unknown_event, test_readme_counter_view_structure, test_readme_counter_view_after_increment -- keep this code block in sync with tests/docs/test_readme.py -->
 
@@ -57,85 +66,82 @@ if __name__ == "__main__":
     plushie.run(Counter)
 ```
 
-```bash
-python -m plushie run counter:Counter
-```
-
-This is one of [9 examples](examples/) included in the repo, from a
-minimal counter to a full widget catalog. Edit them while the GUI is
-running and see changes instantly. For complete project demos,
-including native Rust extensions, see the
-[plushie-demos](https://github.com/plushie-ui/plushie-demos/tree/main/python)
-repository.
-
-## Getting started
-
-Install plushie:
+Install and run:
 
 ```bash
 pip install plushie
-```
-
-Then:
-
-```bash
 python -m plushie download              # download precompiled binary
 python -m plushie run counter:Counter   # run the counter example
 ```
 
-Pin to an exact version and read the
-[CHANGELOG](CHANGELOG.md) carefully when upgrading.
+The repo includes [several examples](examples/) you can try, from a
+minimal counter to a full widget catalog. Edit them while the GUI is
+running and see changes instantly. For complete project demos,
+including native Rust extensions, see the
+[plushie-demos](https://github.com/plushie-ui/plushie-demos/tree/main/python)
+repo.
 
-The precompiled binary requires no Rust toolchain. To build from
-source instead, install [rustup](https://rustup.rs/) and run
-`python -m plushie build`. See the
-[getting started guide](docs/getting-started.md) for the full
-walkthrough.
+To add Plushie to your own project, see the
+[getting started guide](docs/getting-started.md), or browse the
+[docs](docs/) for all guides and references.
+
+## How it works
+
+Under the hood, a renderer built on
+[iced](https://github.com/iced-rs/iced) handles window drawing and
+platform integration. Your Python code sends widget trees to the
+renderer over stdin; the renderer draws native windows and sends
+user events back over stdout.
+
+You don't need Rust to use plushie. The renderer is a precompiled
+binary, similar to how your app talks to a database without you
+writing C. If you ever need custom native rendering, the
+[extension system](docs/extensions.md) lets you write Rust for just
+those parts.
+
+The same protocol works over a local pipe, an SSH connection, or
+any bidirectional byte stream - your code doesn't need to change.
+See the [running guide](docs/running.md) for deployment options.
 
 ## Features
 
-- **38 built-in widget types** -- buttons, text inputs, sliders,
-  tables, markdown, canvas, and more. Easy to build your own.
-  [Layout guide](docs/layout.md)
-- **22 built-in themes** -- light, dark, dracula, nord, solarized,
-  gruvbox, catppuccin, tokyo night, kanagawa, and more. Custom
-  palettes and per-widget style overrides.
-  [Theming guide](docs/theming.md)
-- **Multi-window** -- declare window nodes in your widget tree;
-  the framework opens, closes, and manages them automatically.
-  [App guide](docs/app.md)
-- **Platform effects** -- native file dialogs, clipboard, OS
-  notifications. [Effects guide](docs/effects.md)
-- **Accessibility** -- screen reader support via
-  [accesskit](https://accesskit.dev) on all platforms.
-  [Accessibility guide](docs/accessibility.md)
-- **Live reload** -- edit code, see changes instantly. Use
-  `python -m plushie run myapp:App --watch`.
-- **Extensions** -- multiple paths to custom widgets:
-  - **Compose** existing widgets into higher-level components with
-    pure Python. No Rust, no binary rebuild.
-  - **Draw** on the canvas with shape primitives for charts, gauges,
-    diagrams, and other custom 2D rendering.
-  - **Native** -- implement `WidgetExtension` in Rust for full
-    control over rendering, state, and event handling.
-  - [Extensions guide](docs/extensions.md)
-- **Remote rendering** -- native desktop UI for apps running on
-  servers or embedded devices. Dashboards, admin tools, IoT
-  diagnostics -- over SSH with configurable event throttling.
-  [Running guide](docs/running.md)
+- **Elm architecture** - init, update, view. State lives in
+  Python, pure functions, predictable updates
+- **Built-in widgets** - layout, input, display, and interactive
+  widgets out of the box
+- **Canvas** - shapes, paths, gradients, transforms, and
+  interactive elements for custom 2D drawing
+- **Themes** - dark, light, nord, catppuccin, tokyo night, and
+  more, with custom palettes and per-widget style overrides
+- **Animation** - renderer-side transitions, springs, and
+  sequences with no wire traffic per frame
+- **Multi-window** - declare windows in your view; the framework
+  manages the rest
+- **Platform effects** - native file dialogs, clipboard, OS
+  notifications
+- **Accessibility** - keyboard navigation, screen readers, and
+  focus management via [AccessKit](https://accesskit.dev)
+- **Custom widgets** - compose existing widgets in pure Python,
+  draw on the canvas, or extend with native Rust
+- **Hot reload** - edit code, see changes instantly with full
+  state preservation
+- **Remote rendering** - app on a server or embedded device,
+  renderer on a display machine over SSH or any byte stream
+- **Fault-tolerant** - renderer crashes auto-recover; app
+  exceptions are caught and state reverted
 
-## Testing
+## Testing and automation
 
-Plushie ships a test framework with three interchangeable backends.
-Write your tests once, run them at whatever fidelity you need:
+Tests run through the real renderer binary, not mocks. Interact like
+a user: click, type, find elements, assert on text. Three
+interchangeable backends:
 
-- **Mock** -- millisecond tests, no display server. Uses a shared
-  mock process for fast logic and interaction testing.
-- **Headless** -- real rendering via
-  [tiny-skia](https://github.com/linebender/tiny-skia), no display
-  server needed. Supports screenshots for pixel regression in CI.
-- **Windowed** -- real windows with GPU rendering. Platform effects,
-  real input, the works.
+- **Mock** - millisecond tests, no display server
+- **Headless** - real rendering via
+  [tiny-skia](https://github.com/linebender/tiny-skia), supports
+  screenshots for pixel regression in CI
+- **Windowed** - real windows with GPU rendering, platform effects,
+  real input
 
 ```python
 import pytest
@@ -172,93 +178,12 @@ PLUSHIE_TEST_BACKEND=windowed pytest      # real windows (needs display)
 See the [testing guide](docs/testing.md) for the full API, backend
 details, and CI configuration.
 
-## How it works
-
-Under the hood, a renderer built on
-[iced](https://github.com/iced-rs/iced) handles window drawing and
-platform integration. Your Python code sends widget trees to the
-renderer over stdin; the renderer draws native windows and sends
-user events back over stdout.
-
-You don't need Rust to use plushie. The renderer is a precompiled
-binary, similar to how your app talks to a database without you
-writing C. If you ever need custom native rendering, the
-[extension system](docs/extensions.md) lets you write Rust for just
-those parts.
-
-The same protocol works over a local pipe, an SSH connection, or
-any bidirectional byte stream -- your code doesn't need to change.
-See the [running guide](docs/running.md) for deployment options.
-
 ## Status
 
-Pre-1.0. The core works -- 38 widget types, event system, 22 themes,
-multi-window, testing framework, accessibility -- but the API is
-still evolving:
-
-- Pin to an exact version and read the
-  [CHANGELOG](CHANGELOG.md) when upgrading.
-- The extension system is the least stable part of the API.
-
-## Documentation
-
-Guides are in [`docs/`](docs/):
-
-- [Getting started](docs/getting-started.md) -- setup, first app, CLI commands, dev mode
-- [Tutorial](docs/tutorial.md) -- build a todo app step by step
-- [App](docs/app.md) -- the Python API contract, multi-window
-- [Layout](docs/layout.md) -- length, padding, alignment, spacing
-- [Events](docs/events.md) -- full event taxonomy
-- [Commands and subscriptions](docs/commands.md) -- async work, timers, widget ops
-- [Effects](docs/effects.md) -- native platform features
-- [Theming](docs/theming.md) -- themes, custom palettes, styling
-- [Composition patterns](docs/composition-patterns.md) -- tabs, sidebars, modals, cards, state helpers
-- [Scoped IDs](docs/scoped-ids.md) -- hierarchical ID namespacing
-- [Testing](docs/testing.md) -- three-backend test framework and pixel regression
-- [Accessibility](docs/accessibility.md) -- accesskit integration, a11y props
-- [Extensions](docs/extensions.md) -- custom widgets, Rust extensions, publishing packages
-- [Running](docs/running.md) -- remote rendering, transports, deployment
-- [CLI reference](docs/cli.md) -- all commands and flags
-- [Standalone executables](docs/standalone.md) -- PyInstaller, Nuitka, Briefcase
-
-## Development
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-python -m plushie download              # renderer binary for test suite
-./preflight                              # run all CI checks locally
-```
-
-Use a local `.venv`; `pyright` is configured to resolve types from it.
-`./preflight` mirrors CI and stops on first failure: format, lint, type
-check, test, doc verification, and docs build.
-
-## System requirements
-
-The precompiled binary (`python -m plushie download`) has no additional
-dependencies beyond Python 3.12+. To build from source, install a
-Rust toolchain via [rustup](https://rustup.rs/) and the
-platform-specific libraries:
-
-- **Linux (Debian/Ubuntu):**
-  `sudo apt-get install libxkbcommon-dev libwayland-dev libx11-dev cmake fontconfig pkg-config`
-- **Linux (Arch):**
-  `sudo pacman -S libxkbcommon wayland libx11 cmake fontconfig pkgconf`
-- **macOS:** `xcode-select --install`
-- **Windows:**
-  [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-  with "Desktop development with C++"
-
-## Links
-
-| | |
-|---|---|
-| Python SDK | [github.com/plushie-ui/plushie-python](https://github.com/plushie-ui/plushie-python) |
-| Elixir SDK | [github.com/plushie-ui/plushie-elixir](https://github.com/plushie-ui/plushie-elixir) |
-| Renderer | [github.com/plushie-ui/plushie-rust](https://github.com/plushie-ui/plushie-rust) |
-| Demo projects | [github.com/plushie-ui/plushie-demos](https://github.com/plushie-ui/plushie-demos) |
+Pre-1.0. The core works (built-in widgets, event system, themes,
+multi-window, testing framework, accessibility) but the API is
+still evolving. Pin to an exact version and read the
+[CHANGELOG](CHANGELOG.md) when upgrading.
 
 ## License
 

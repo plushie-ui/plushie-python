@@ -9,7 +9,7 @@ or pixel-accurate screenshots.
 
 ## Unit testing
 
-`update()` is pure, `view()` returns dicts. Plain pytest -- no framework
+`update()` is pure, `view()` returns dicts. Plain pytest, no framework
 needed.
 
 ### Testing `update()`
@@ -135,7 +135,7 @@ mismatch. Update after intentional changes:
 PLUSHIE_UPDATE_SNAPSHOTS=1 pytest
 ```
 
-This is a pure JSON comparison -- distinct from the framework's
+This is a pure JSON comparison, distinct from the framework's
 `assert_tree_hash()` (which uses SHA-256 hashes of the tree via a backend
 session) and `assert_screenshot()` (which compares pixel data).
 
@@ -156,8 +156,8 @@ def test_clicking_increment_updates_counter(plushie_pool):
 ```
 
 `AppFixture` starts a session, processes commands synchronously, and
-tears down on exit. The default backend is `mock` -- the plushie binary in
-`--mock` mode (lightweight rendering, no display). Sessions are pooled for
+tears down on exit. The default backend is `mock`, the plushie binary in
+`--mock` mode with lightweight rendering and no display. Sessions are pooled for
 performance via the `plushie_pool` pytest fixture.
 
 
@@ -181,8 +181,8 @@ app.assert_text("#save_btn", "Save")
 
 Two selector forms:
 
-- **`"#id"`** -- find by widget ID. The `#` prefix is required.
-- **`"text content"`** -- find by text content (checks `content`, `label`,
+- **`"#id"`** - find by widget ID. The `#` prefix is required.
+- **`"text content"`** - find by text content (checks `content`, `label`,
   `value`, `placeholder` props in that order, depth-first).
 
 ```python
@@ -231,7 +231,7 @@ the `AppFixture` instance.
 Interacting with the wrong widget type raises with an actionable hint:
 
 ```
-TypeError: cannot click a checkbox widget -- use toggle() instead
+TypeError: cannot click a checkbox widget, use toggle() instead
 ```
 
 ### Additional interactions
@@ -337,16 +337,16 @@ changing assertions.
 | **Real rendering** | No | Yes (tiny-skia) | Yes (GPU) |
 | **Real windows** | No | No | Yes |
 
-- **`mock`** -- shared `plushie --mock` process with session
+- **`mock`** - shared `plushie --mock` process with session
   multiplexing. Tests app logic, tree structure, and wire protocol.
   No rendering, no display, sub-millisecond. The right default for
   90% of tests.
 
-- **`headless`** -- `plushie --headless` with software rendering via
+- **`headless`** - `plushie --headless` with software rendering via
   tiny-skia (no display server). Pixel screenshots for visual
   regression. Catches rendering bugs that mock mode cannot.
 
-- **`windowed`** -- `plushie` with real iced windows and GPU rendering.
+- **`windowed`** - `plushie` with real iced windows and GPU rendering.
   Effects execute, subscriptions fire, screenshots capture exactly
   what a user sees. Needs a display server (Xvfb or headless Weston).
 
@@ -442,28 +442,28 @@ def test_save_counter_screenshot(plushie_pool):
 
 ### JSON tree snapshots
 
-Pure JSON comparison at the unit test level -- no backend or session needed.
+Pure JSON comparison at the unit test level, no backend or session needed.
 See the [Unit testing](#json-tree-snapshots) section above.
 
 ### When to use each
 
-- **`assert_tree_hash`** -- always appropriate. Catches structural regressions
+- **`assert_tree_hash`** - always appropriate. Catches structural regressions
   (widgets appearing/disappearing, prop changes, nesting changes). Works on
   every backend. Use liberally.
 
-- **`assert_screenshot`** -- after bumping iced, changing the renderer,
+- **`assert_screenshot`** - after bumping iced, changing the renderer,
   modifying themes, or any change that affects visual output. Produces
   meaningful assertions on the headless and windowed backends (no-op on
   mock). Include alongside `assert_tree_hash` for critical views.
 
-- **JSON tree snapshots** -- for unit tests of `view()` output. No framework
+- **JSON tree snapshots** - for unit tests of `view()` output. No framework
   overhead. Good for documenting what a view produces for a given model state.
 
 
 ## Script-based testing
 
 `.plushie` scripts provide a declarative format for describing interaction
-sequences. The format is a superset of iced's `.ice` test scripts -- the
+sequences. The format is a superset of iced's `.ice` test scripts. The
 core instructions (`click`, `type`, `expect`, `snapshot`) use the same
 syntax. Plushie adds `assert_text`, `assert_model`, `screenshot`, `wait`, and
 a header section for app configuration.
@@ -571,7 +571,7 @@ def test_fetching_data_loads_results(plushie_pool):
     with AppFixture(MyApp, plushie_pool) as app:
         app.click("#fetch")
         # On mock, the task command already executed synchronously.
-        # await_async() is a no-op -- the model is already updated.
+        # await_async() is a no-op; the model is already updated.
         app.await_async()
         assert len(app.model.results) > 0
 ```
@@ -620,7 +620,7 @@ pprint.pprint(app.tree)
 
 ```python
 app.click("#my-checkbox")
-# TypeError: cannot click a checkbox widget -- use toggle() instead
+# TypeError: cannot click a checkbox widget, use toggle() instead
 ```
 
 Use the correct interaction method for the widget type. See the

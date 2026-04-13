@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.5.0 -- 2026-03-23
+## v0.5.0 - 2026-03-23
 
 Initial release of the plushie Python SDK. Full feature parity with
 the plushie-elixir and plushie-gleam SDKs, verified by cross-SDK audit.
@@ -114,13 +114,13 @@ the plushie-elixir and plushie-gleam SDKs, verified by cross-SDK audit.
 
 ### CLI
 
-- `run` -- run apps with `--mode`, `--json`, `--watch`, `--daemon`
-- `connect` -- stdio transport for remote rendering
-- `download` -- native binary and WASM with `--force`, `--bin`, `--wasm`
-- `build` -- stock and extension builds with `--release`, `--verbose`
-- `inspect` -- print initial UI tree as JSON
-- `script` -- run `.plushie` test scripts
-- `replay` -- replay scripts with real windows
+- `run` - run apps with `--mode`, `--json`, `--watch`, `--daemon`
+- `connect` - stdio transport for remote rendering
+- `download` - native binary and WASM with `--force`, `--bin`, `--wasm`
+- `build` - stock and extension builds with `--release`, `--verbose`
+- `inspect` - print initial UI tree as JSON
+- `script` - run `.plushie` test scripts
+- `replay` - replay scripts with real windows
 
 ### Documentation
 

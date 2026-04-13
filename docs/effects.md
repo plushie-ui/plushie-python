@@ -42,7 +42,7 @@ def update(self, model, event):
 ```
 
 Every effect function returns a `Command` dataclass. The command must be
-returned from `update` as part of a `(model, command)` tuple -- discarding
+returned from `update` as part of a `(model, command)` tuple. Discarding
 it silently does nothing. The effect ID is auto-generated (e.g. `"ef_1"`)
 and embedded in the command payload. You can extract it via
 `cmd.payload["id"]` if you need to correlate a specific response.
@@ -51,7 +51,7 @@ Result keys come from the renderer as string keys (e.g.
 `{"path": path}`, not attribute access).
 
 The result arrives as an `EffectResult(request_id=id, status=status, ...)`
-event in a subsequent `update` call. Effects are asynchronous -- the model
+event in a subsequent `update` call. Effects are asynchronous; the model
 is not blocked waiting for the result.
 
 ### Transport

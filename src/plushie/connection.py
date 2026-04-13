@@ -741,7 +741,7 @@ class Connection:
                 all_events.extend(final_events)
                 break
 
-            # Unexpected message type -- treat as final
+            # Unexpected message type; treat as final
             logger.warning(
                 "unexpected message during interact: type=%s",
                 resp_type,
@@ -899,7 +899,7 @@ class Connection:
                 self._event_queue.put(decoded)
                 return
 
-        # Response types -- route to pending request queue
+        # Response types: route to pending request queue
         response_types = (
             "query_response",
             "interact_response",
@@ -1152,7 +1152,7 @@ _ENV_WHITELIST_EXACT = frozenset(
     }
 )
 
-# Prefixes -- any variable starting with one of these is forwarded.
+# Prefixes: any variable starting with one of these is forwarded.
 _ENV_WHITELIST_PREFIXES = (
     "LC_",
     "MESA_",

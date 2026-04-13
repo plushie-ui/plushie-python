@@ -16,10 +16,10 @@ fields on group nodes.
 Path commands: move_to, line_to, bezier_to, quadratic_to, arc, arc_to,
 ellipse, rounded_rect, close.
 
-Transforms: translate, rotate, scale, scale_uniform -- value objects for
+Transforms: translate, rotate, scale, scale_uniform. Value objects for
 the group ``transforms`` list.
 
-Clipping: clip(x, y, w, h) -- value object for the group ``clip`` field.
+Clipping: clip(x, y, w, h). Value object for the group ``clip`` field.
 
 Stroke helper: stroke(color, width, ...).
 """

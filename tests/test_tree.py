@@ -1,4 +1,4 @@
-"""Tests for plushie.tree -- normalization, diffing, and search."""
+"""Tests for plushie.tree: normalization, diffing, and search."""
 
 from __future__ import annotations
 
@@ -180,7 +180,7 @@ class TestNormalizeScopedIds:
             ],
         )
         result = normalize(tree)
-        # Window nodes don't create scope -- children get no prefix
+        # Window nodes don't create scope; children get no prefix
         # (scope stays whatever was passed in, which is "" at root)
         assert result["children"][0]["id"] == "btn"
 
@@ -223,7 +223,7 @@ class TestNormalizeScopedIds:
             ),
         ]
         result = normalize(nodes)
-        # Root "root" is a synthetic wrapper -- children get their own scope
+        # Root "root" is a synthetic wrapper; children get their own scope
         assert result["children"][0]["children"][0]["id"] == "a/x"
         assert result["children"][1]["children"][0]["id"] == "b/y"
 
@@ -317,7 +317,7 @@ class TestNormalizeA11yRefs:
             ],
         )
         result = normalize(tree)
-        # Window doesn't scope, so "" scope -- ref stays as-is
+        # Window doesn't scope, so "" scope; ref stays as-is
         assert result["children"][0]["props"]["a11y"]["labelled_by"] == "label"
 
     def test_no_a11y_prop_unchanged(self) -> None:

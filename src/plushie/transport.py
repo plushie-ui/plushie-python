@@ -300,7 +300,7 @@ class _WebSocketReader:
         return result
 
     def close(self) -> None:
-        """No-op -- WebSocket lifecycle managed by WebSocketAdapter."""
+        """No-op: WebSocket lifecycle managed by WebSocketAdapter."""
 
 
 class _WebSocketWriter:
@@ -315,10 +315,10 @@ class _WebSocketWriter:
         return len(data)
 
     def flush(self) -> None:
-        """No-op -- WebSocket messages are sent immediately."""
+        """No-op: WebSocket messages are sent immediately."""
 
     def close(self) -> None:
-        """No-op -- WebSocket lifecycle managed by WebSocketAdapter."""
+        """No-op: WebSocket lifecycle managed by WebSocketAdapter."""
 
 
 __all__ = [

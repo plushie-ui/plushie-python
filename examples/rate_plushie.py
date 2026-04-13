@@ -1,4 +1,4 @@
-"""Rate Plushie -- app rating page with custom canvas widgets.
+"""Rate Plushie: app rating page with custom canvas widgets.
 
 Demonstrates custom canvas widgets (StarRating, ThemeToggle) composed
 with styled containers. The "Dark humor" toggle animates a face emoji

@@ -4,7 +4,7 @@ Widgets manage internal state, produce view trees as either canvas
 shapes or compositions of built-in widgets, transform raw events into
 semantic widget events, and follow iced's captured/ignored dispatch model.
 
-**Canvas widget** -- renders custom shapes::
+**Canvas widget** (renders custom shapes)::
 
     from plushie.widget import WidgetDef, EventAction
 
@@ -22,7 +22,7 @@ semantic widget events, and follow iced's captured/ignored dispatch model.
                 case _:
                     return EventAction.ignored()
 
-**Composite widget** -- composes built-in widgets::
+**Composite widget** (composes built-in widgets)::
 
     class NoteCard(WidgetDef):
         def init(self, props):
@@ -80,8 +80,8 @@ logger = logging.getLogger("plushie")
 # ---------------------------------------------------------------------------
 
 # Maps wire family names to (event_class, carrier) where carrier is:
-#   "none"  -- no payload (just id/scope/window_id)
-#   "value" -- scalar in the event's `value` field
+#   "none"  - no payload (just id/scope/window_id)
+#   "value" - scalar in the event's `value` field
 _BUILTIN_EVENT_MAP: dict[str, tuple[type, str]] = {
     "click": (Click, "none"),
     "input": (Input, "value"),
@@ -141,7 +141,7 @@ class EventSpec:
     def __post_init__(self) -> None:
         if self.fields is not None and self.value_type is not None:
             raise ValueError(
-                "EventSpec cannot have both fields and value_type -- "
+                "EventSpec cannot have both fields and value_type. "
                 "use fields for structured data or value_type for scalars"
             )
 
@@ -174,7 +174,7 @@ def _validate_emit(
         )
 
     if spec is None:
-        # Built-in event -- no custom spec to validate against
+        # Built-in event; no custom spec to validate against
         return
 
     # Data-carrier: check all declared fields are present
@@ -294,17 +294,17 @@ class EventAction:
 
     @staticmethod
     def ignored() -> _Ignored:
-        """Event not captured -- continue to next handler."""
+        """Event not captured: continue to next handler."""
         return _Ignored()
 
     @staticmethod
     def consumed() -> _Consumed:
-        """Event captured -- suppress without output."""
+        """Event captured: suppress without output."""
         return _Consumed()
 
     @staticmethod
     def update_state(state: dict[str, Any]) -> _UpdateState:
-        """Event captured -- update internal state, no output."""
+        """Event captured: update internal state, no output."""
         return _UpdateState(state=state)
 
     @staticmethod
@@ -314,7 +314,7 @@ class EventAction:
         *,
         state: dict[str, Any] | None = None,
     ) -> _Emit:
-        """Event captured -- emit a semantic widget event.
+        """Event captured: emit a semantic widget event.
 
         Args:
             kind: Event family name (e.g. ``"select"``, ``"change"``).
@@ -344,7 +344,7 @@ class WidgetDef(ABC):
     Override ``handle_event`` for interactive widgets that need to
     intercept canvas element events, transform them into semantic
     widget events, or manage internal state.  The default returns
-    ``EventAction.ignored()`` (transparent -- events pass through
+    ``EventAction.ignored()`` (transparent, events pass through
     to the app's ``update()``).
 
     Override ``subscribe`` for timer-based updates.
@@ -366,7 +366,7 @@ class WidgetDef(ABC):
     """Custom event declarations for emit-time validation.
 
     Maps event family names to :class:`EventSpec` instances.  Empty
-    dict (the default) disables validation -- all event names are
+    dict (the default) disables validation. All event names are
     accepted.
     """
 
@@ -749,7 +749,7 @@ def _resolve_emit_identity(
     if isinstance(scope, tuple) and not scope and event_id:
         return widget_key[0], event_id, ()
 
-    # Timer or other non-widget event -- split the widget ID
+    # Timer or other non-widget event; split the widget ID
     local_id, parent_scope = split_scoped_id(widget_key[1])
     return widget_key[0], local_id, parent_scope
 

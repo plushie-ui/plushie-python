@@ -14,11 +14,11 @@ Usage::
 
 Presets:
 
-- ``"gentle"``   -- stiffness=120, damping=14 (slow, smooth)
-- ``"snappy"``   -- stiffness=200, damping=20 (quick, minimal overshoot)
-- ``"bouncy"``   -- stiffness=300, damping=10 (quick with overshoot)
-- ``"stiff"``    -- stiffness=400, damping=30 (very quick, crisp)
-- ``"molasses"`` -- stiffness=60,  damping=12 (slow, heavy)
+- ``"gentle"``   - stiffness=120, damping=14 (slow, smooth)
+- ``"snappy"``   - stiffness=200, damping=20 (quick, minimal overshoot)
+- ``"bouncy"``   - stiffness=300, damping=10 (quick with overshoot)
+- ``"stiff"``    - stiffness=400, damping=30 (very quick, crisp)
+- ``"molasses"`` - stiffness=60,  damping=12 (slow, heavy)
 """
 
 from __future__ import annotations

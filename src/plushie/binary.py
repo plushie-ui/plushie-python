@@ -271,7 +271,7 @@ def _is_native_binary(path: str) -> bool:
         # ELF (Linux)
         if header[:4] == b"\x7fELF":
             return True
-        # Mach-O (macOS) -- both 32 and 64 bit, both endiannesses
+        # Mach-O (macOS), both 32 and 64 bit, both endiannesses
         if header[:4] in (
             b"\xfe\xed\xfa\xce",
             b"\xfe\xed\xfa\xcf",
@@ -372,7 +372,7 @@ def resolve() -> str:
 
     Resolution order:
 
-    1. ``PLUSHIE_BINARY_PATH`` environment variable -- if set but the
+    1. ``PLUSHIE_BINARY_PATH`` environment variable. If set but the
        file does not exist, raises immediately (explicit config should
        not silently fall through).
     2. Custom extension build in ``build/*/target/``.
@@ -410,7 +410,7 @@ def resolve() -> str:
         if downloaded.is_file():
             return str(downloaded)
     except RuntimeError:
-        # Platform detection failed -- skip this step
+        # Platform detection failed; skip this step
         pass
 
     # Step 4: bundled binary (PyInstaller / Nuitka / Briefcase)
@@ -491,9 +491,7 @@ def download(
         dest = dest_dir / name
 
     if dest.is_file() and not force:
-        logger.info(
-            "binary already exists at %s -- use force=True to re-download", dest
-        )
+        logger.info("binary already exists at %s (use force=True to re-download)", dest)
         return str(dest)
 
     logger.info("downloading plushie binary from %s", url)
@@ -558,7 +556,7 @@ def download_wasm(
 
     if js_path.is_file() and wasm_path.is_file() and not force:
         logger.info(
-            "WASM files already exist in %s -- use force=True to re-download",
+            "WASM files already exist in %s (use force=True to re-download)",
             dest_dir,
         )
         return str(dest_dir)

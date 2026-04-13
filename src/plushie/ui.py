@@ -92,7 +92,7 @@ def _anon_container(type_name: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 # ---------------------------------------------------------------------------
-# Named containers (12) -- id is first positional arg, creates scope
+# Named containers (12): id is first positional arg, creates scope
 # ---------------------------------------------------------------------------
 
 
@@ -111,7 +111,7 @@ def window(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def container(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Container layout -- wraps children with padding, sizing, and styling.
+    """Container layout: wraps children with padding, sizing, and styling.
 
     Args:
         id: Container identifier.
@@ -124,7 +124,7 @@ def container(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def scrollable(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Scrollable container -- wraps children in a scrollable viewport.
+    """Scrollable container: wraps children in a scrollable viewport.
 
     Args:
         id: Scrollable identifier (for programmatic scroll control).
@@ -138,7 +138,7 @@ def scrollable(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def overlay(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Overlay container -- positions a popup over a base widget.
+    """Overlay container: positions a popup over a base widget.
 
     Requires exactly 2 children: the base widget and the overlay content.
 
@@ -154,7 +154,7 @@ def overlay(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def pin(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Pin container -- positions children at absolute coordinates.
+    """Pin container: positions children at absolute coordinates.
 
     Args:
         id: Pin identifier.
@@ -165,7 +165,7 @@ def pin(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def floating(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Floating container -- positions children relative to the viewport.
+    """Floating container: positions children relative to the viewport.
 
     Args:
         id: Floating identifier.
@@ -176,7 +176,7 @@ def floating(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def pointer_area(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Pointer area container -- captures pointer events for children.
+    """Pointer area container: captures pointer events for children.
 
     Args:
         id: Pointer area identifier.
@@ -187,7 +187,7 @@ def pointer_area(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def sensor(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Sensor container -- reports size/position changes.
+    """Sensor container: reports size/position changes.
 
     Args:
         id: Sensor identifier.
@@ -198,7 +198,7 @@ def sensor(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def themer(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Themer container -- applies a local theme to children.
+    """Themer container: applies a local theme to children.
 
     Args:
         id: Themer identifier.
@@ -209,7 +209,7 @@ def themer(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def tooltip(id: str, tip: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Tooltip container -- shows a popup tip on hover.
+    """Tooltip container: shows a popup tip on hover.
 
     Args:
         id: Tooltip identifier.
@@ -225,7 +225,7 @@ def tooltip(id: str, tip: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def pane_grid(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Pane grid container -- resizable split panes.
+    """Pane grid container: resizable split panes.
 
     Args:
         id: Pane grid identifier.
@@ -236,7 +236,7 @@ def pane_grid(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 def table(id: str, /, *children: Any, **kwargs: Any) -> Node:
-    """Table container -- tabular layout with sortable columns.
+    """Table container: tabular layout with sortable columns.
 
     Args:
         id: Table identifier.
@@ -247,12 +247,12 @@ def table(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
 
 # ---------------------------------------------------------------------------
-# Anonymous containers (6) -- no positional id, keyword id= optional
+# Anonymous containers (6): no positional id, keyword id= optional
 # ---------------------------------------------------------------------------
 
 
 def column(*children: Any, **kwargs: Any) -> Node:
-    """Column layout -- arranges children vertically.
+    """Column layout: arranges children vertically.
 
     Args:
         *children: Child widgets.
@@ -263,7 +263,7 @@ def column(*children: Any, **kwargs: Any) -> Node:
 
 
 def row(*children: Any, **kwargs: Any) -> Node:
-    """Row layout -- arranges children horizontally.
+    """Row layout: arranges children horizontally.
 
     Args:
         *children: Child widgets.
@@ -274,7 +274,7 @@ def row(*children: Any, **kwargs: Any) -> Node:
 
 
 def stack(*children: Any, **kwargs: Any) -> Node:
-    """Stack layout -- overlays children on top of each other.
+    """Stack layout: overlays children on top of each other.
 
     Args:
         *children: Child widgets.
@@ -284,7 +284,7 @@ def stack(*children: Any, **kwargs: Any) -> Node:
 
 
 def grid(*children: Any, **kwargs: Any) -> Node:
-    """Grid layout -- arranges children in a grid.
+    """Grid layout: arranges children in a grid.
 
     Args:
         *children: Child widgets.
@@ -294,7 +294,7 @@ def grid(*children: Any, **kwargs: Any) -> Node:
 
 
 def keyed_column(*children: Any, **kwargs: Any) -> Node:
-    """Keyed column -- like column but children are matched by key.
+    """Keyed column: like column but children are matched by key.
 
     Args:
         *children: Child widgets.
@@ -304,7 +304,7 @@ def keyed_column(*children: Any, **kwargs: Any) -> Node:
 
 
 def responsive(*children: Any, **kwargs: Any) -> Node:
-    """Responsive container -- adapts layout to available space.
+    """Responsive container: adapts layout to available space.
 
     Accepts at most 1 child.
 
@@ -320,12 +320,12 @@ def responsive(*children: Any, **kwargs: Any) -> Node:
 
 
 # ---------------------------------------------------------------------------
-# Layout primitives (2) -- auto-id
+# Layout primitives (2): auto-id
 # ---------------------------------------------------------------------------
 
 
 def space(**kwargs: Any) -> Node:
-    """Empty space -- invisible spacer widget.
+    """Empty space: invisible spacer widget.
 
     Args:
         **kwargs: Space props (width, height, a11y).
@@ -343,7 +343,7 @@ def rule(**kwargs: Any) -> Node:
 
 
 # ---------------------------------------------------------------------------
-# Interactive leaf widgets (10) -- id is first positional arg
+# Interactive leaf widgets (10): id is first positional arg
 # ---------------------------------------------------------------------------
 
 
@@ -400,7 +400,7 @@ def toggler(id: str, is_toggled: bool, /, **kwargs: Any) -> Node:
 
 
 def radio(id: str, value: str, selected: str | None, /, **kwargs: Any) -> Node:
-    """Radio button -- one-of-many selection.
+    """Radio button: one-of-many selection.
 
     Args:
         id: Radio identifier.
@@ -514,7 +514,7 @@ def text_editor(id: str, content: str, /, **kwargs: Any) -> Node:
 
 
 # ---------------------------------------------------------------------------
-# Display with auto-id sugar (3) -- @overload for 1-arg vs 2-arg forms
+# Display with auto-id sugar (3): @overload for 1-arg vs 2-arg forms
 # ---------------------------------------------------------------------------
 
 
@@ -642,12 +642,12 @@ def progress_bar(*args: Any, **kwargs: Any) -> Node:
 
 
 # ---------------------------------------------------------------------------
-# Display leaf widgets (5) -- id required
+# Display leaf widgets (5): id required
 # ---------------------------------------------------------------------------
 
 
 def image(id: str, source: str | dict[str, str], /, **kwargs: Any) -> Node:
-    """Image display -- raster image from file path or in-memory handle.
+    """Image display: raster image from file path or in-memory handle.
 
     Args:
         id: Image identifier.
@@ -660,7 +660,7 @@ def image(id: str, source: str | dict[str, str], /, **kwargs: Any) -> Node:
 
 
 def svg(id: str, source: str, /, **kwargs: Any) -> Node:
-    """SVG display -- vector image from file path.
+    """SVG display: vector image from file path.
 
     Args:
         id: SVG identifier.

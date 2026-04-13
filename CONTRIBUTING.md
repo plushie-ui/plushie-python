@@ -45,11 +45,11 @@ python -m plushie download
 
 Three backends are available:
 
-- **mock** (default) -- no rendering, synthetic events, fastest
+- **mock** (default) - no rendering, synthetic events, fastest
   (~ms per test). No display server needed.
-- **headless** -- real rendering via tiny-skia, no display server
+- **headless** - real rendering via tiny-skia, no display server
   (~100ms per test).
-- **windowed** -- real iced windows, needs a display server or Xvfb
+- **windowed** - real iced windows, needs a display server or Xvfb
   (~seconds per test).
 
 Select with the `PLUSHIE_TEST_BACKEND` environment variable:
@@ -185,7 +185,7 @@ test in `tests/docs/` to confirm the docs stay accurate.
 3. Push and open a PR against `main`.
 4. PRs require all CI checks to pass (lint, type check, tests on
    mock and headless backends).
-5. Keep PRs focused -- one logical change per PR.
+5. Keep PRs focused: one logical change per PR.
 
 ## Releasing
 

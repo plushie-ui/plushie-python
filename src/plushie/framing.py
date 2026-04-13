@@ -54,7 +54,7 @@ class MsgpackFraming:
         """Encode a message dict as a length-prefixed msgpack frame.
 
         Binary values (``bytes`` / ``bytearray``) in the message are
-        preserved as native msgpack binary type -- no base64 encoding.
+        preserved as native msgpack binary type (no base64 encoding).
 
         Raises ``FramingError`` if the encoded payload exceeds 64 MiB.
         """

@@ -9,10 +9,10 @@ For complete working examples with Rust extensions, see the
 [plushie-demos](https://github.com/plushie-ui/plushie-demos/tree/main/python)
 repository:
 
-- [gauge-demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/gauge-demo)
-  -- native gauge widget with extension commands (`set_value`, `animate_to`)
-- [sparkline-dashboard](https://github.com/plushie-ui/plushie-demos/tree/main/python/sparkline-dashboard)
-  -- render-only canvas sparkline with timer-driven live data
+- [gauge-demo](https://github.com/plushie-ui/plushie-demos/tree/main/python/gauge-demo):
+  native gauge widget with extension commands (`set_value`, `animate_to`).
+- [sparkline-dashboard](https://github.com/plushie-ui/plushie-demos/tree/main/python/sparkline-dashboard):
+  render-only canvas sparkline with timer-driven live data.
 
 ## Quick start
 
@@ -55,9 +55,9 @@ def push_sparkline(node_id: str, value: float):
 
 This gives you:
 
-- `sparkline(id, data=..., color=..., capacity=...)` -- builds a widget
+- `sparkline(id, data=..., color=..., capacity=...)` - builds a widget
   node dict with typed props
-- `push_sparkline(node_id, value)` -- returns a `Command` targeting the
+- `push_sparkline(node_id, value)` - returns a `Command` targeting the
   Rust extension
 - Validation via `validate(sparkline_def)` to catch duplicate or reserved
   prop names
@@ -138,7 +138,7 @@ def view(model):
     ])
 ```
 
-### Canvas widgets -- canvas-based widgets with internal state
+### Canvas widgets: canvas-based widgets with internal state
 
 Use `CanvasWidgetDef` for widgets that render via canvas shapes,
 manage their own internal state, and transform raw canvas events into
@@ -146,14 +146,14 @@ semantic events. No Rust code needed.
 
 Canvas widgets have three capabilities that composite widgets do not:
 
-- **Internal state** -- initialized by `init()`, managed by the runtime.
+- **Internal state** - initialized by `init()`, managed by the runtime.
   The widget tree is the source of truth; state is keyed by scoped
   widget ID.
-- **Event transformation** -- `handle_event()` intercepts events at the
+- **Event transformation** - `handle_event()` intercepts events at the
   widget's scope boundary before they reach `update()`. Raw canvas
   events become semantic events that are indistinguishable from built-in
   widget events.
-- **Widget-scoped subscriptions** -- `subscribe()` returns subscriptions
+- **Widget-scoped subscriptions** - `subscribe()` returns subscriptions
   scoped to this widget instance. Timer events route to `handle_event()`,
   not the app's `update()`.
 
@@ -188,8 +188,8 @@ def view(model):
 | Return | Effect |
 |--------|--------|
 | `EventAction.ignored(state)` | Event passes through to `update()` unchanged |
-| `EventAction.consumed(state)` | Event suppressed -- neither app nor other widgets see it |
-| `EventAction.update_state(state)` | Internal state updated, no output -- triggers re-render |
+| `EventAction.consumed(state)` | Event suppressed; neither app nor other widgets see it |
+| `EventAction.update_state(state)` | Internal state updated, no output (triggers re-render) |
 | `EventAction.emit(kind, data)` | Emit a WidgetEvent; id/scope filled in by the runtime |
 
 #### Subscriptions
@@ -400,11 +400,11 @@ Mark events with a `CoalesceHint` to control buffering. Events without a
 hint are always delivered immediately.
 
 ```rust
-// Latest value wins -- position tracking, state snapshots
+// Latest value wins: position tracking, state snapshots
 let event = OutgoingEvent::extension_event("cursor_pos", node_id, data)
     .with_coalesce(CoalesceHint::Replace);
 
-// Deltas sum -- scroll, velocity, counters
+// Deltas sum: scroll, velocity, counters
 let event = OutgoingEvent::extension_event("pan_scroll", node_id, data)
     .with_coalesce(CoalesceHint::Accumulate(
         vec!["delta_x".into(), "delta_y".into()]
@@ -717,7 +717,7 @@ struct SparklineData {
     generation: GenerationCounter,
 }
 
-/// Stored in canvas Program::State (not Send, not Sync -- iced manages it).
+/// Stored in canvas Program::State (not Send, not Sync; iced manages it).
 struct SparklineState {
     last_generation: u64,
     cache: canvas::Cache,
@@ -781,9 +781,9 @@ call `.bump()` to increment, and `.get()` to read the current value.
 
 `WidgetEnv` (and the underlying `RenderCtx`) provides access to:
 
-- `env.theme` -- the current iced `Theme`
-- `env.window_id` -- the window ID (`&str`) this render pass is for
-- `env.scale_factor` -- DPI scale factor (`f32`) for the current window
+- `env.theme` - the current iced `Theme`
+- `env.window_id` - the window ID (`&str`) this render pass is for
+- `env.scale_factor` - DPI scale factor (`f32`) for the current window
 
 Extensions doing DPI-aware rendering or per-window adaptation can use
 `window_id` and `scale_factor` directly.
@@ -793,7 +793,7 @@ Extensions doing DPI-aware rendering or per-window adaptation can use
 
 Every event sent over the wire carries a `family` string that identifies
 what kind of interaction produced it. Extension authors need to know these
-strings when implementing `handle_event` -- the `family` parameter tells
+strings when implementing `handle_event` because the `family` parameter tells
 you what happened.
 
 ### Widget events (node ID in `id` field)
@@ -1227,7 +1227,7 @@ renderer binary.
 
 #### Example: Sparkline (complete Python + Rust)
 
-**Python side** -- defines the extension and provides the API:
+**Python side** (defines the extension and provides the API):
 
 ```python
 # my_sparkline/__init__.py
@@ -1265,7 +1265,7 @@ def clear(node_id: str) -> Command:
     return build_command(sparkline_def, node_id, "clear", {})
 ```
 
-**Rust side** -- renders a polyline from a ring buffer of samples:
+**Rust side** (renders a polyline from a ring buffer of samples):
 
 ```rust
 // native/my_sparkline/src/lib.rs

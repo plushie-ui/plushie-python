@@ -260,7 +260,7 @@ class TestProcessCommands:
 
         app = InfiniteApp()
         cmd = Command.task(lambda: 1, "inc")
-        # Should not hang -- depth limit stops it
+        # Should not hang; depth limit stops it
         result = _process_commands(app, 0, [cmd])  # type: ignore[arg-type]
         assert isinstance(result, int)
         assert result > 0

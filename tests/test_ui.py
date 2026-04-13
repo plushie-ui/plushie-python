@@ -497,7 +497,7 @@ class TestChildrenFlattening:
 class TestPropsFiltering:
     def test_none_props_stripped(self) -> None:
         """None values in kwargs should not appear in props."""
-        # We pass None explicitly through kwargs -- it should be stripped
+        # We pass None explicitly through kwargs; it should be stripped
         # by _node which filters None-valued props.
         # Widget builders pass kwargs directly, but _node cleans them.
         # Let's verify via a container with no kwargs at all.

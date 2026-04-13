@@ -4,9 +4,9 @@ Two approaches to animation:
 
 **Renderer-side descriptors** (preferred for widget properties):
 
-- :class:`Transition` -- timed animation with easing curves
-- :class:`Spring` -- physics-based spring with presets
-- :class:`Sequence` -- chain of transitions and springs
+- :class:`Transition` - timed animation with easing curves
+- :class:`Spring` - physics-based spring with presets
+- :class:`Sequence` - chain of transitions and springs
 
 These run at full frame rate on the renderer with zero wire traffic.
 Use them as prop values in your view::
@@ -18,7 +18,7 @@ Use them as prop values in your view::
 
 **SDK-side tween** (for canvas, physics, model-driven values):
 
-- :class:`Tween` -- stateful interpolator managed in your model
+- :class:`Tween` - stateful interpolator managed in your model
 
 Use with ``on_animation_frame`` subscriptions for frame-by-frame
 control.

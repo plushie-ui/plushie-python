@@ -1,4 +1,4 @@
-"""Todo app -- demonstrates dynamic lists, scoped IDs, and commands.
+"""Todo app: demonstrates dynamic lists, scoped IDs, and commands.
 
 Features exercised:
 

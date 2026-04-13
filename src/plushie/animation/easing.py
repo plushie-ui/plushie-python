@@ -423,9 +423,9 @@ def encode_easing(easing: EasingSpec) -> str | dict[str, list[float]]:
     """Encode an easing value for the wire protocol.
 
     Accepts:
-    - A string name (e.g. ``"ease_out"``) -- passed through as-is
-    - A named easing function (e.g. ``ease_out``) -- resolved to its name
-    - A ``cubic_bezier()`` result -- encoded as ``{"cubic_bezier": [x1, y1, x2, y2]}``
+    - A string name (e.g. ``"ease_out"``) - passed through as-is
+    - A named easing function (e.g. ``ease_out``) - resolved to its name
+    - A ``cubic_bezier()`` result - encoded as ``{"cubic_bezier": [x1, y1, x2, y2]}``
 
     Returns a string name or a cubic bezier descriptor dict.
 

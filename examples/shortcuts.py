@@ -1,4 +1,4 @@
-"""Shortcuts -- keyboard event logging with a scrollable log.
+"""Shortcuts: keyboard event logging with a scrollable log.
 
 Demonstrates:
 
@@ -27,7 +27,7 @@ MAX_LOG_ENTRIES = 50
 
 @dataclass(frozen=True, slots=True)
 class Model:
-    """Shortcuts model -- tracks key event log and count."""
+    """Shortcuts model: tracks key event log and count."""
 
     log: tuple[str, ...] = ()
     count: int = 0

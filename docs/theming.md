@@ -105,7 +105,7 @@ Oklch-based color math.
 
 If the auto-generated shades don't match your design, you can override
 individual shades by passing extra keyword arguments to `Theme.custom()`.
-Only the shades you specify are replaced -- the rest keep their generated
+Only the shades you specify are replaced; the rest keep their generated
 values.
 
 ### Why override shades?
@@ -232,10 +232,10 @@ ui.container("card", style=card_style,
 
 <!-- test: test_border_construction, test_border_to_wire, test_shadow_construction, test_shadow_to_wire -- keep this section in sync with the test -->
 
-- `background` -- hex color for the widget background
-- `text_color` -- hex color for text
-- `border` -- a `Border` dataclass (color, width, radius)
-- `shadow` -- a `Shadow` dataclass (color, offset, blur_radius)
+- `background` - hex color for the widget background
+- `text_color` - hex color for text
+- `border` - a `Border` dataclass (color, width, radius)
+- `shadow` - a `Shadow` dataclass (color, offset, blur_radius)
 
 ### Status overrides
 
@@ -269,7 +269,7 @@ a specific look.
 
 ### Presets and style maps together
 
-Style maps don't replace presets -- they complement them. Use presets
+Style maps don't replace presets; they complement them. Use presets
 for standard looks and style maps when you need custom appearance:
 
 <!-- test: test_style_map_cta_button -- keep this code block in sync with the test -->
@@ -359,5 +359,5 @@ ui.column(
 )
 ```
 
-There is no global density setting or built-in density module -- your app
+There is no global density setting or built-in density module. Your app
 decides how to handle it.

@@ -22,7 +22,7 @@ from plushie.events import RawEvent
 
 @dataclass(frozen=True, slots=True)
 class Model:
-    """Color picker model -- tracks HSV values."""
+    """Color picker model: tracks HSV values."""
 
     hue: float = 0.0
     saturation: float = 1.0

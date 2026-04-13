@@ -125,8 +125,8 @@ python -m plushie run examples.catalog:Catalog
 
 App rating page with custom canvas-drawn widgets composed into a styled UI.
 Features a 5-star rating built from path-drawn star geometry and an animated
-theme toggle -- a smiley face that rotates upside down when "Dark humor"
-is enabled. The entire page theme flips at the animation midpoint.
+theme toggle (a smiley face that rotates upside down when "Dark humor"
+is enabled). The entire page theme flips at the animation midpoint.
 
 Demonstrates: custom canvas widgets as reusable modules, the interactive
 shape wrapper, canvas transforms for rotation, timer-based animation via

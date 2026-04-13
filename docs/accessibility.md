@@ -8,7 +8,7 @@ AT-SPI/Orca on Linux, and UI Automation/NVDA/JAWS on Windows.
 
 Screen reader users, keyboard-only users, and other AT users interact with
 the same widgets and receive the same events as mouse users. No special
-event handling is needed in your `update()` -- AT actions produce the same
+event handling is needed in your `update()`. AT actions produce the same
 `Click(id=id)`, `Input(id=id, value=val)`, etc. events as direct
 interaction.
 
@@ -18,16 +18,16 @@ interaction.
 Iced's fork (`v0.14.0-a11y-accesskit` branch) provides native accessibility
 support. Three pieces work together:
 
-1. **iced widgets report `Accessible` metadata** -- each widget implements
+1. **iced widgets report `Accessible` metadata** - each widget implements
    the `Accessible` trait via iced's `operate()` mechanism. Widgets declare
    their role, label, and state to the accessibility system automatically.
 
-2. **TreeBuilder assembles the accesskit tree** -- `iced_winit::a11y`
+2. **TreeBuilder assembles the accesskit tree** - `iced_winit::a11y`
    contains a `TreeBuilder` that walks the widget tree during `operate()`,
    collecting `Accessible` metadata and building an accesskit `TreeUpdate`.
-   This happens natively inside iced -- plushie does not build the tree.
+   This happens natively inside iced; plushie does not build the tree.
 
-3. **AT actions become native iced events** -- when an AT triggers an action
+3. **AT actions become native iced events** - when an AT triggers an action
    (e.g. a screen reader user activates a button), iced translates it to a
    native event. The renderer maps it to a standard plushie event and sends
    it to Python over the wire protocol.
@@ -55,14 +55,14 @@ This means:
 
 - **Standard widgets** get correct accessibility semantics automatically
   from iced's own `Accessible` implementations.
-- **Extension widgets** get free a11y support without any code -- they are
+- **Extension widgets** get free a11y support without any code. They are
   already iced `Element`s that participate in `operate()`.
 - **The `a11y` prop** lets Python override or augment the inferred semantics
   when auto-inference is insufficient.
 - **`HiddenInterceptor`** is a companion wrapper that excludes widgets from
   the AT tree when `hidden: True` is set.
 
-Accessibility is compiled unconditionally -- there are no feature flags to
+Accessibility is compiled unconditionally. There are no feature flags to
 toggle it.
 
 
@@ -113,7 +113,7 @@ extracted from the prop that makes sense for each widget type:
 
 If a widget has no auto-inferred label and no `a11y` label override, the
 screen reader sees the role with no name. This is fine for structural
-containers but not for interactive widgets -- always give buttons, inputs,
+containers but not for interactive widgets. Always give buttons, inputs,
 and toggles either a visible label or an `a11y` label.
 
 ### State
@@ -135,7 +135,7 @@ Widget state is extracted from existing props automatically:
 ## The a11y prop
 
 For cases where auto-inference is insufficient, every widget accepts an
-`a11y` prop -- a dict of fields that override or augment the inferred
+`a11y` prop, a dict of fields that override or augment the inferred
 semantics.
 
 ### Fields
@@ -145,7 +145,7 @@ semantics.
 | `role` | `str` | Override the inferred role (see [available roles](#available-roles)) |
 | `label` | `str` | Accessible name (what the screen reader announces) |
 | `description` | `str` | Longer description (secondary announcement) |
-| `live` | `"off"` / `"polite"` / `"assertive"` | Live region -- AT announces content changes |
+| `live` | `"off"` / `"polite"` / `"assertive"` | Live region (AT announces content changes) |
 | `hidden` | `bool` | Exclude from accessibility tree entirely |
 | `expanded` | `bool` | Expanded/collapsed state (menus, disclosures) |
 | `required` | `bool` | Mark form field as required |
@@ -167,7 +167,7 @@ semantics.
 | `size_of_set` | `int` | Total items in the set |
 | `has_popup` | `str` | Popup type: `"listbox"`, `"menu"`, `"dialog"`, `"tree"`, `"grid"` |
 
-All fields are optional -- only include what you need.
+All fields are optional. Only include what you need.
 
 ### Using the a11y prop
 
@@ -186,7 +186,7 @@ ui.button("close", "X", a11y={"label": "Close dialog"})
 ui.container("search_results", a11y={"role": "region", "label": "Search results"},
     children=[...])
 
-# Live regions -- AT announces changes automatically
+# Live regions: AT announces changes automatically
 ui.text("save_status", f"{model.saved_count} items saved", a11y={"live": "polite"})
 
 # Decorative elements hidden from AT
@@ -239,20 +239,20 @@ Unknown role strings are accepted but mapped to `Unknown`.
 ### Every interactive widget needs a name
 
 Screen readers announce a widget's role and its label. A button with no
-label is announced as just "button" -- useless. Make sure every button,
+label is announced as just "button", which is useless. Make sure every button,
 input, checkbox, and toggle has either:
 
 - A visible label prop that auto-inference picks up, or
 - An `a11y={"label": "..."}` override
 
 ```python
-# Good -- label is auto-inferred from the button's label prop
+# Good: label is auto-inferred from the button's label prop
 ui.button("save", "Save document")
 
-# Good -- terse label with explicit a11y override for clarity
+# Good: terse label with explicit a11y override for clarity
 ui.button("close", "X", a11y={"label": "Close dialog"})
 
-# Bad -- screen reader just announces "button" with no name
+# Bad: screen reader just announces "button" with no name
 ui.button("do_thing", "")
 ```
 
@@ -314,9 +314,9 @@ ui.column(children=[
 When content changes and you want the screen reader to announce it
 without the user navigating to it, use live regions:
 
-- `"polite"` -- announced after the current speech finishes (status
+- `"polite"` - announced after the current speech finishes (status
   messages, save confirmations, non-urgent updates)
-- `"assertive"` -- interrupts current speech (errors, urgent alerts)
+- `"assertive"` - interrupts current speech (errors, urgent alerts)
 
 ```python
 # Status bar that announces changes
@@ -433,7 +433,7 @@ label text from the `email-label` widget and the description from
 from `email-error`.
 
 Use `labelled_by` instead of `label` when a visible text widget already
-provides the label -- it avoids duplicating the string and keeps the
+provides the label. This avoids duplicating the string and keeps the
 label in sync if you change the visible text.
 
 ### Hiding decorative content
@@ -461,16 +461,16 @@ ui.image("status_icon", icon_path, alt="Status: online")
 
 ### Canvas widgets
 
-Canvas draws arbitrary shapes -- accesskit cannot infer anything from raw
+Canvas draws arbitrary shapes, and accesskit cannot infer anything from raw
 geometry. Always provide alternative text:
 
 ```python
-# Static chart -- describe the content
+# Static chart: describe the content
 ui.canvas("chart",
     layers={"data": chart_shapes},
     a11y={"role": "image", "label": "Sales chart: Q1 revenue up 15%, Q2 flat"})
 
-# Interactive canvas -- describe the interaction model
+# Interactive canvas: describe the interaction model
 ui.canvas("drawing",
     layers={"shapes": shapes},
     a11y={"role": "image", "label": f"Drawing canvas, {len(shapes)} shapes"})
@@ -857,25 +857,25 @@ For contributors working on the accessibility internals:
 
 The iced fork adds native accessibility support. Key additions:
 
-- **`Accessible` trait** -- widgets implement this to report their role,
+- **`Accessible` trait** - widgets implement this to report their role,
   label, and state to accesskit. Most built-in widgets already implement it.
-- **`TreeBuilder`** in `iced_winit` -- walks the widget tree via `operate()`,
+- **`TreeBuilder`** in `iced_winit` - walks the widget tree via `operate()`,
   collecting `Accessible` metadata and building an accesskit `TreeUpdate`.
-- **Per-window adapters** -- each window gets an accesskit adapter connecting
+- **Per-window adapters** - each window gets an accesskit adapter connecting
   to the platform's AT layer.
-- **AT action routing** -- AT actions are translated to native iced events,
+- **AT action routing** - AT actions are translated to native iced events,
   which the renderer maps to plushie wire events.
 
 ### A11yOverride wrapper widget
 
 `a11y_widget.rs` in plushie contains two wrapper widgets:
 
-- **`A11yOverride`** -- wraps any iced `Element` and intercepts `operate()`
+- **`A11yOverride`** - wraps any iced `Element` and intercepts `operate()`
   to apply Python-side overrides from the `a11y` prop (role, label,
   description, live, expanded, required, level, busy, invalid, modal,
   read_only, mnemonic, toggled, selected, value, orientation, labelled_by,
   described_by, error_message).
-- **`HiddenInterceptor`** -- wraps an `Element` and suppresses it from the
+- **`HiddenInterceptor`** - wraps an `Element` and suppresses it from the
   accessibility tree when `hidden: True` is set.
 
 These wrappers are applied automatically by the renderer when building the
@@ -888,5 +888,5 @@ When the renderer builds the iced widget tree from a plushie snapshot or
 patch, it checks each node's `a11y` prop. If present (and not just
 `hidden: True`), the rendered widget is wrapped in `A11yOverride`. If
 `hidden: True`, it is wrapped in `HiddenInterceptor`. Nodes without an
-`a11y` prop are rendered as-is -- iced's native `Accessible` trait provides
+`a11y` prop are rendered as-is; iced's native `Accessible` trait provides
 their baseline accessibility semantics.

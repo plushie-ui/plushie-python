@@ -30,7 +30,7 @@ pyinstaller --onefile \
 
 At runtime, PyInstaller extracts bundled files to a temporary
 directory stored in `sys._MEIPASS`. The plushie SDK checks this
-location automatically during binary resolution -- no configuration
+location automatically during binary resolution. No configuration
 needed.
 
 If you need explicit control, set the environment variable:

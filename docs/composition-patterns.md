@@ -2,8 +2,8 @@
 
 Plushie provides primitives, not pre-built composites. There is no `TabBar`
 widget, no `Modal` widget, no `Card` widget. Instead, you compose the same
-building blocks -- `row`, `column`, `container`, `stack`, `button`, `text`,
-`rule`, `mouse_area`, `space` -- with `StyleMap` to build any UI pattern you
+building blocks (`row`, `column`, `container`, `stack`, `button`, `text`,
+`rule`, `mouse_area`, `space`) with `StyleMap` to build any UI pattern you
 need.
 
 This guide shows how. Every pattern is copy-pasteable and produces a polished
@@ -304,7 +304,7 @@ def _tool_style(toggled: bool) -> StyleMap:
 The toolbar is a `container` with a light background wrapping a `row`. Button
 groups are visually separated by vertical `rule` widgets. A `space(width="fill")`
 between the main group and the help button pushes the help button to
-the far right -- a common toolbar layout technique.
+the far right, a common toolbar layout technique.
 
 Toggle-style buttons (bold, italic, underline) pass their current state to
 `_tool_style()`. When toggled on, they get a depressed look via a darker
@@ -401,7 +401,7 @@ class ModalApp(plushie.App[ModalModel]):
 `stack` layers its children front-to-back. The main content is layer 0.
 When `show_modal` is true, the overlay container appears as layer 1 on top.
 
-The overlay is a full-size container with `background="#00000088"` -- the
+The overlay is a full-size container with `background="#00000088"`. The
 last two hex digits (`88`) set ~53% opacity, dimming everything behind it.
 Setting `center=True` on the overlay centres its single child: the dialog
 card.
@@ -425,7 +425,7 @@ a soft drop shadow.
 ## 5. Card
 
 A container with rounded corners, a border, an optional shadow, and an
-optional header section. The simplest composition pattern -- it is just a
+optional header section. The simplest composition pattern: just a
 styled container.
 
 ### Code
@@ -671,7 +671,7 @@ separator text nodes. The loop iterates over the path segments with their
 index. For every segment except the last, it appends a clickable button and
 a ">" separator to the list. The list is then unpacked into the `row` call.
 
-The last segment is rendered as plain `text` -- no click handler, no hover
+The last segment is rendered as plain `text` with no click handler, no hover
 state. This signals "you are here" without needing a disabled button.
 
 The crumb buttons use a fully transparent background (`#00000000`) so they
@@ -805,7 +805,7 @@ selection state.
 
 Canvas handles custom visuals and hit testing. Built-in widgets handle
 text editing, scrolling, and popup positioning. Complex components compose
-both -- the canvas draws what iced's widget set cannot, and built-in widgets
+both: the canvas draws what iced's widget set cannot, and built-in widgets
 handle what canvas cannot.
 
 ### Canvas-only: custom toggle switch
@@ -863,8 +863,8 @@ class ToggleApp(plushie.App[ToggleModel]):
 #### How it works
 
 The canvas accepts a `layers` dict mapping layer names to lists of shapes.
-Each layer contains shapes -- here a single group with a rounded rect
-background and a circle knob. The `id`, `on_click`, `cursor`, and `a11y`
+Each layer contains shapes (here a single group with a rounded rect
+background and a circle knob). The `id`, `on_click`, `cursor`, and `a11y`
 fields on the group enable click events, set the pointer cursor, and
 provide a11y metadata. On click, the host toggles `dark_mode` and the view
 re-renders with new positions and colours.
@@ -966,7 +966,7 @@ to 30fps.
 ### Canvas + built-in: custom styled text input
 
 Stack a canvas behind a `text_input` to draw a custom background. The
-canvas is purely decorative -- the text_input handles cursor, selection,
+canvas is purely decorative; the text_input handles cursor, selection,
 IME, and clipboard.
 
 #### Code
@@ -1016,8 +1016,8 @@ class SearchApp(plushie.App[SearchModel]):
 #### How it works
 
 The `stack` layers the canvas background behind the text_input. The
-canvas draws the rounded rect and search icon -- purely visual, no
-interactive field needed. The `text_input` sits on top in a padded
+canvas draws the rounded rect and search icon (purely visual, no
+interactive field needed). The `text_input` sits on top in a padded
 container so it clears the icon area. Clicks in the text area hit the
 text_input (it is on top in the stack).
 
@@ -1085,7 +1085,7 @@ functions returning plain dicts.
 ## State helpers
 
 Plushie provides optional state management modules for common UI patterns.
-None of these are required -- your model can be any type. They exist because
+None of these are required; your model can be any type. They exist because
 these patterns come up repeatedly in desktop apps and getting them right from
 scratch is tedious.
 
@@ -1257,7 +1257,7 @@ result = query(records,
 
 Use `query()` when you have tabular data that needs filtering, sorting,
 grouping, or pagination in the UI. It is a query pipeline over lists, not a
-database -- keep data sets small enough to fit in memory.
+database. Keep data sets small enough to fit in memory.
 
 ### General philosophy
 

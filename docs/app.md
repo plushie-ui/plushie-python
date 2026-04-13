@@ -44,7 +44,7 @@ def init(self) -> tuple[Model, Command]:
 ```
 
 The model can be any type, but frozen dataclasses work best. The runtime
-does not inspect or modify the model -- it is fully owned by the app.
+does not inspect or modify the model; it is fully owned by the app.
 
 ### update
 
@@ -82,18 +82,18 @@ command API.
 
 Events are frozen dataclasses under `plushie.events`. Common types:
 
-- `Click(id=id)` -- button press
-- `Input(id=id, value=val)` -- text input change
-- `Select(id=id, value=val)` -- selection change
-- `Toggle(id=id, value=val)` -- checkbox/toggler change
-- `Submit(id=id, value=val)` -- form field submission
-- `KeyPress(key=key, modifiers=mods)` -- keyboard event (via subscription)
-- `KeyRelease(key=key, modifiers=mods)` -- keyboard release (via subscription)
-- `WindowCloseRequested(window_id=id)` -- window close requested
-- `WindowResized(window_id=id, width=w, height=h)` -- window resized
-- `CanvasPress(id=id, x=x, y=y, button=btn)` -- canvas interaction
-- `SensorResize(id=id, width=w, height=h)` -- sensor size change
-- `PaneClicked(id=id, pane=pane)` -- pane grid click
+- `Click(id=id)` - button press
+- `Input(id=id, value=val)` - text input change
+- `Select(id=id, value=val)` - selection change
+- `Toggle(id=id, value=val)` - checkbox/toggler change
+- `Submit(id=id, value=val)` - form field submission
+- `KeyPress(key=key, modifiers=mods)` - keyboard event (via subscription)
+- `KeyRelease(key=key, modifiers=mods)` - keyboard release (via subscription)
+- `WindowCloseRequested(window_id=id)` - window close requested
+- `WindowResized(window_id=id, width=w, height=h)` - window resized
+- `CanvasPress(id=id, x=x, y=y, button=btn)` - canvas interaction
+- `SensorResize(id=id, width=w, height=h)` - sensor size change
+- `PaneClicked(id=id, pane=pane)` - pane grid click
 
 ### view
 
@@ -235,12 +235,12 @@ def settings(self) -> dict[str, Any]:
 
 Supported keys:
 
-- `default_font` -- a font specification dict (same format as font props)
-- `default_text_size` -- a number (pixels)
-- `antialiasing` -- boolean
-- `fonts` -- list of font file paths to load
-- `vsync` -- boolean (default `True`). Controls vertical sync.
-- `scale_factor` -- number (default `1.0`). Global UI scale factor applied
+- `default_font` - a font specification dict (same format as font props)
+- `default_text_size` - a number (pixels)
+- `antialiasing` - boolean
+- `fonts` - list of font file paths to load
+- `vsync` - boolean (default `True`). Controls vertical sync.
+- `scale_factor` - number (default `1.0`). Global UI scale factor applied
   to all windows.
 
 To follow the OS light/dark preference automatically, set the window
@@ -303,7 +303,7 @@ def test_view_renders_todo_list():
     model = Model(todos=(Todo(id="1", text="Buy milk"),), input_value="", filter="all")
     app = TodoApp()
     tree = app.view(model)
-    # tree is a plain dict -- inspect it directly
+    # tree is a plain dict; inspect it directly
 ```
 
 Since `update` is a pure function and `view` returns plain dicts, no
@@ -312,7 +312,7 @@ special test infrastructure is needed. The renderer is not involved.
 ## Multi-window
 
 Plushie supports multiple windows driven declaratively from `view()`.
-Windows are nodes in the tree -- if a window node is present, the window
+Windows are nodes in the tree: if a window node is present, the window
 is open; if it disappears, the window closes.
 
 ### Returning multiple windows
@@ -348,9 +348,9 @@ needed). The runtime normalizes both forms internally.
 Each window node has an `id` (like all nodes). The renderer uses this ID
 to track which OS window corresponds to which tree node:
 
-- **New ID appears** -- renderer opens a new OS window.
-- **Existing ID present** -- renderer updates that window's content.
-- **ID disappears** -- renderer closes that OS window.
+- **New ID appears** - renderer opens a new OS window.
+- **Existing ID present** - renderer updates that window's content.
+- **ID disappears** - renderer closes that OS window.
 
 Window IDs must be stable strings. Do not generate random IDs per render
 or the renderer will close and reopen the window on every update.
@@ -527,7 +527,7 @@ before reaching the wire. Understanding this pipeline helps when
 debugging unexpected behaviour or writing custom extensions.
 
 1. **Widget builders** (`plushie.ui` functions) return plain dicts with
-   raw Python values -- strings, ints, tuples, dicts. No encoding
+   raw Python values (strings, ints, tuples, dicts). No encoding
    happens here.
 
 2. **Tree normalization** walks the tree and converts Python-native values

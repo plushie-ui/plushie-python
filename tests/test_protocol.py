@@ -1,4 +1,4 @@
-"""Tests for plushie.protocol -- message builders and event decoder."""
+"""Tests for plushie.protocol: message builders and event decoder."""
 
 from __future__ import annotations
 
@@ -455,7 +455,7 @@ class TestParseEffectResponse:
 
 
 # ===================================================================
-# decode_message -- event dispatch for EVERY family
+# decode_message: event dispatch for EVERY family
 # ===================================================================
 
 

@@ -188,7 +188,7 @@ class TestDownloadDir:
 
 
 class TestResolve:
-    """Tests for resolve() -- the resolution chain."""
+    """Tests for resolve(): the resolution chain."""
 
     def test_env_var_valid(self, tmp_path: Path) -> None:
         """PLUSHIE_BINARY_PATH points to an existing file."""
@@ -201,7 +201,7 @@ class TestResolve:
             assert result == str(binary)
 
     def test_env_var_missing_file(self) -> None:
-        """PLUSHIE_BINARY_PATH set but file does not exist -- fail fast."""
+        """PLUSHIE_BINARY_PATH set but file does not exist: fail fast."""
         with (
             mock_patch.dict(
                 os.environ, {"PLUSHIE_BINARY_PATH": "/nonexistent/plushie"}

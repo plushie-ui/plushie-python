@@ -1,4 +1,4 @@
-"""Tests for plushie.dev_server -- file watching and live reload.
+"""Tests for plushie.dev_server: file watching and live reload.
 
 Tests the DevServer construction, module import/reimport helpers,
 file change detection, debounce logic, reload error handling, and
@@ -161,7 +161,7 @@ class TestReload:
 
         # The runtime's app should have been replaced
         assert isinstance(runtime._app, _DummyApp)
-        # The model is preserved -- view was called with the original model
+        # The model is preserved; view was called with the original model
         runtime._conn.send_snapshot.assert_called_once()
 
     def test_reload_updates_tree(self) -> None:
@@ -228,7 +228,7 @@ class TestFileChangeDetection:
     def test_check_changes_detects_new_file(self, tmp_path: Any) -> None:
         mtimes: dict[str, float] = {}
 
-        # Initial scan -- empty dir, no changes
+        # Initial scan: empty dir, no changes
         assert not _check_changes(str(tmp_path), mtimes)
 
         # Add a .py file

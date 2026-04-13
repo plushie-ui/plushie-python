@@ -109,15 +109,15 @@ A native window appears with the count and two buttons.
 Plushie follows the Elm architecture. Your app class implements
 callbacks on a `plushie.App` subclass:
 
-- **`init()`** -- returns the initial model (any Python object;
+- **`init()`** - returns the initial model (any Python object;
   frozen dataclasses recommended).
-- **`update(model, event)`** -- takes the current model and an event,
+- **`update(model, event)`** - takes the current model and an event,
   returns the new model. Pure function. To run side effects, return
   `(model, command)` instead. See [Commands](commands.md).
-- **`view(model)`** -- takes the model and returns a UI tree as a
+- **`view(model)`** - takes the model and returns a UI tree as a
   plain dict. Plushie diffs trees and sends only patches to the
   renderer.
-- **`subscribe(model)`** (optional) -- returns a list of active
+- **`subscribe(model)`** (optional) - returns a list of active
   subscriptions (timers, keyboard events).
 
 See [App](app.md) for the full callback API.
@@ -241,11 +241,11 @@ if __name__ == "__main__":
 
 ## Next steps
 
-- [Tutorial: building a todo app](tutorial.md) -- step-by-step guide
+- [Tutorial: building a todo app](tutorial.md) - step-by-step guide
 - Browse the [examples](https://github.com/plushie-ui/plushie-python/tree/main/examples) for patterns
-- [App](app.md) -- full callback API
-- [Layout](layout.md) -- sizing and positioning widgets
-- [Commands](commands.md) -- async work, file dialogs, effects
-- [Events](events.md) -- complete event taxonomy
-- [Testing](testing.md) -- writing tests against your UI
-- [Theming](theming.md) -- custom themes and palettes
+- [App](app.md) - full callback API
+- [Layout](layout.md) - sizing and positioning widgets
+- [Commands](commands.md) - async work, file dialogs, effects
+- [Events](events.md) - complete event taxonomy
+- [Testing](testing.md) - writing tests against your UI
+- [Theming](theming.md) - custom themes and palettes

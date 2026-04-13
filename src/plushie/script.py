@@ -1,6 +1,6 @@
 """.plushie script parser and runner.
 
-Parses and executes ``.plushie`` test scripts -- a declarative format
+Parses and executes ``.plushie`` test scripts, a declarative format
 for describing interaction sequences. The format has a header (app,
 viewport, theme, backend) separated from the instruction body by
 ``-----``.
@@ -321,7 +321,7 @@ class ScriptRunner:
                 # type "selector" "text"
                 fixture.type_text(args[0], args[1])
             elif len(args) == 1:
-                # type enter  (bare key -- type_key shorthand)
+                # type enter  (bare key, type_key shorthand)
                 fixture.type_key(args[0])
             else:
                 raise ValueError("type requires arguments")
@@ -404,7 +404,7 @@ class ScriptRunner:
                 else:
                     raise ValueError(f"invalid move coordinates: {target!r}")
             else:
-                # Move to a selector -- currently a no-op in mock mode
+                # Move to a selector (currently a no-op in mock mode)
                 # since we don't have widget bounds.
                 logger.debug("move to selector %r (no-op in mock mode)", target)
 

@@ -428,7 +428,7 @@ CanvasElementFocused(id="chart", element_id="bar-jan")
 ```
 
 Hover styles, pressed styles, cursors, and tooltips on shapes are
-handled by the renderer locally -- no round-trip needed. Shape events
+handled by the renderer locally with no round-trip needed. Shape events
 give the host semantic actions (clicks, drags, focus changes) instead
 of raw coordinates.
 
@@ -900,7 +900,7 @@ def update(self, model, event):
 ```
 
 Unknown events are silently ignored. This is important for forward
-compatibility -- new widget types or renderer versions may emit events
+compatibility. New widget types or renderer versions may emit events
 your app does not yet handle.
 
 ## Pattern matching tips
@@ -932,7 +932,7 @@ def update(self, model, event):
 
 ### Scope matching
 
-Widget events include a `scope` field -- a tuple of ancestor container IDs,
+Widget events include a `scope` field, a tuple of ancestor container IDs,
 nearest first. You can pattern match on scope to distinguish events from
 different contexts:
 

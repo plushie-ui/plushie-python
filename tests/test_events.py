@@ -1,4 +1,4 @@
-"""Tests for plushie.events -- event dataclasses and helpers."""
+"""Tests for plushie.events: event dataclasses and helpers."""
 
 from __future__ import annotations
 

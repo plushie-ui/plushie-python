@@ -314,7 +314,7 @@ def test_density_helper():
 
 
 def test_style_map_immutable():
-    """StyleMap is frozen -- builder methods return new instances."""
+    """StyleMap is frozen: builder methods return new instances."""
     base = StyleMap()
     with_bg = base.with_background("#ffffff")
 

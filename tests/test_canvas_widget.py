@@ -427,7 +427,7 @@ class TestEventSpecs:
 
     def test_valid_no_payload_event(self) -> None:
         reg = self._make_reg()
-        # "cleared" has EventSpec() -- no payload expected
+        # "cleared" has EventSpec(), no payload expected
         # The widget emits with None data -> normalized to {}
         # Need a widget that emits "cleared":
 

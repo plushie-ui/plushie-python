@@ -22,11 +22,11 @@ from plushie.events import Click, AsyncResult
 
 def update(self, model, event):
     match event:
-        # No commands -- just return the model:
+        # No commands, just return the model:
         case Click(id="simple"):
             return model
 
-        # With commands -- return a tuple:
+        # With commands, return a tuple:
         case Click(id="save"):
             return replace(model, saving=True), Command.task(
                 lambda: save_to_disk(model), "save_result"
@@ -114,7 +114,7 @@ def update(self, model, event):
 ```
 
 This is convenience sugar. You can achieve the same thing with a bare
-thread and queue -- see [DIY patterns](#diy-patterns) below.
+thread and queue (see [DIY patterns](#diy-patterns) below).
 
 #### Cancelling async work
 
@@ -325,7 +325,7 @@ The `rgba_data` must be a `bytes` object of `width * height * 4` bytes.
 
 Window queries are commands whose results arrive as events in `update()`.
 Despite accepting a `tag` parameter, window property queries use the
-**effect response** transport -- results arrive as
+**effect response** transport. Results arrive as
 `EffectResult(request_id=id, ...)` where `id` is the **window_id string**
 (the `tag` is currently unused for these queries). System queries use a
 separate path where the tag is used.
@@ -583,12 +583,12 @@ from plushie.events import Click, AsyncResult
 
 def update(self, model, event):
     match event:
-        # Step 1: user clicks "deploy" -- validate first
+        # Step 1: user clicks "deploy". Validate first
         case Click(id="deploy"):
             cmd = Command.task(lambda: validate_config(model.config), "validated")
             return replace(model, status="validating"), cmd
 
-        # Step 2: validation result arrives -- if OK, start the build
+        # Step 2: validation result arrives. If OK, start the build
         case AsyncResult(tag="validated", value="ok"):
             cmd = Command.task(lambda: build_release(model.config), "built")
             return replace(model, status="building"), cmd
@@ -596,7 +596,7 @@ def update(self, model, event):
         case AsyncResult(tag="validated", value=("error", reason)):
             return replace(model, status=("failed", reason))
 
-        # Step 3: build result arrives -- if OK, push it
+        # Step 3: build result arrives. If OK, push it
         case AsyncResult(tag="built", value=("ok", artifact)):
             cmd = Command.task(lambda: push_artifact(artifact), "deployed")
             return replace(model, status="deploying"), cmd
@@ -727,7 +727,7 @@ Subscriptions are ongoing event sources. Unlike commands (one-shot),
 subscriptions produce events continuously as long as they are active.
 
 **Important: tag semantics differ by subscription type.** For timer
-subscriptions (`every()`), the tag becomes the event wrapper -- `update()`
+subscriptions (`every()`), the tag becomes the event wrapper, so `update()`
 receives `TimerTick(tag=tag, timestamp=ts)`. For all renderer subscriptions
 (keyboard, mouse, window, etc.), the tag is management-only and does NOT
 appear in the event. Renderer events arrive as their own dataclasses like
@@ -755,7 +755,7 @@ def subscribe(self, model):
 `subscribe()` is called after every `update`. The runtime diffs the
 returned subscription list against the previous one and starts/stops
 subscriptions as needed. Subscriptions are identified by their
-specification -- returning the same `Subscription.every(1000, "tick")` on
+specification. Returning the same `Subscription.every(1000, "tick")` on
 consecutive calls keeps the existing subscription alive; removing it stops
 it.
 
@@ -975,13 +975,13 @@ commands to push data to Rust-rendered sparkline charts in real time.
 The `settings()` callback configures the renderer. Notable settings
 relevant to commands and rendering:
 
-- `vsync` -- boolean (default `True`). Controls vertical sync. Set to
+- `vsync` - boolean (default `True`). Controls vertical sync. Set to
   `False` for uncapped frame rates (useful for benchmarks or animation-heavy
   apps at the cost of higher GPU usage).
-- `scale_factor` -- number (default `1.0`). Global UI scale factor applied
+- `scale_factor` - number (default `1.0`). Global UI scale factor applied
   to all windows. Values greater than 1.0 make the UI larger; less than 1.0
   makes it smaller.
-- `default_event_rate` -- integer. Maximum events per second for coalescable
+- `default_event_rate` - integer. Maximum events per second for coalescable
   event types. Omit for unlimited (default). See [Event rate limiting](#event-rate-limiting).
 
 ```python
@@ -1006,6 +1006,6 @@ native platform operations handled by the renderer (see [effects.md](effects.md)
 | Transport | internal | wire protocol request/response |
 | Return from | `update()` | `update()` (via `plushie.effects` functions) |
 
-Widget operations and window commands are a hybrid -- they are initiated
+Widget operations and window commands are a hybrid: they are initiated
 from the Python side but executed by the renderer. They use the command
 mechanism for the API but effect/effect_response for the transport.

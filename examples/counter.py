@@ -1,4 +1,4 @@
-"""Counter -- the canonical plushie example.
+"""Counter: the canonical plushie example.
 
 Demonstrates the core Elm architecture: a frozen dataclass model, event
 matching on widget clicks, and a view built from ``ui.window``,
@@ -20,7 +20,7 @@ from plushie.events import Click
 
 @dataclass(frozen=True, slots=True)
 class Model:
-    """Counter model -- just an integer count."""
+    """Counter model: just an integer count."""
 
     count: int = 0
 

@@ -1,4 +1,4 @@
-"""Tests for plushie.types -- all shared types, dataclasses, and helpers."""
+"""Tests for plushie.types: all shared types, dataclasses, and helpers."""
 
 from __future__ import annotations
 

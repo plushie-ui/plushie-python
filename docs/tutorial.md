@@ -122,7 +122,7 @@ Let's fix that.
 
 Each todo needs its own row with a checkbox and a delete button.
 We wrap each item in a named container using the todo's ID. This
-creates a **scope** -- children get unique IDs automatically without
+creates a **scope**, so children get unique IDs automatically without
 manual prefixing.
 
 <!-- test: test_tutorial_step3_view_renders_todo_list, test_tutorial_step3_todo_row_structure -- keep this code block in sync with tests/docs/test_tutorial.py -->
@@ -168,7 +168,7 @@ def _todo_row(item: Todo) -> dict[str, Any]:
 Each todo row lives in `container(item.id, ...)` (e.g.,
 `"todo-1"`). Inside it, the checkbox has local id `"toggle"` and
 the button has `"delete"`. On the wire, these become
-`"list/todo-1/toggle"` and `"list/todo-1/delete"` -- unique across
+`"list/todo-1/toggle"` and `"list/todo-1/delete"`, unique across
 all items.
 
 ## Step 4: handling toggle and delete with scope
@@ -219,7 +219,7 @@ case Submit(id="new-todo", value=v) if v.strip():
 ```
 
 Return a `(model, command)` tuple from `update` to schedule a side
-effect. Commands always use the full scoped path -- the text input
+effect. Commands always use the full scoped path. The text input
 is inside the `id="app"` column, so its full path is
 `"app/new-todo"`.
 
@@ -439,8 +439,8 @@ if __name__ == "__main__":
 
 ## Next steps
 
-- [Commands](commands.md) -- async work, file dialogs, timers
-- [Scoped IDs](scoped-ids.md) -- full scoping reference
-- [Composition patterns](composition-patterns.md) -- scaling beyond
+- [Commands](commands.md) - async work, file dialogs, timers
+- [Scoped IDs](scoped-ids.md) - full scoping reference
+- [Composition patterns](composition-patterns.md) - scaling beyond
   a single module
-- [Testing](testing.md) -- unit and integration testing
+- [Testing](testing.md) - unit and integration testing

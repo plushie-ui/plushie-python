@@ -1,4 +1,4 @@
-"""Async fetch -- demonstrates Command.task for background work.
+"""Async fetch: demonstrates Command.task for background work.
 
 Features exercised:
 
@@ -25,7 +25,7 @@ from plushie.events import AsyncResult, Click
 
 @dataclass(frozen=True, slots=True)
 class Model:
-    """Fetch app model -- tracks loading state and fetched data."""
+    """Fetch app model: tracks loading state and fetched data."""
 
     loading: bool = False
     data: str | None = None

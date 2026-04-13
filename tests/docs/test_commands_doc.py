@@ -12,7 +12,7 @@ from plushie.commands import Command
 from plushie.subscriptions import Subscription
 
 # ---------------------------------------------------------------------------
-# Helpers -- minimal model dataclasses used across tests
+# Helpers: minimal model dataclasses used across tests
 # ---------------------------------------------------------------------------
 
 
@@ -748,7 +748,7 @@ def test_command_list_images_query():
 
 
 # ---------------------------------------------------------------------------
-# test_update_testability -- commands are inspectable data
+# test_update_testability: commands are inspectable data
 # ---------------------------------------------------------------------------
 
 
@@ -920,7 +920,7 @@ def test_subscription_every_no_max_rate():
 
 
 # ---------------------------------------------------------------------------
-# test_subscription_lifecycle -- declarative start/stop
+# test_subscription_lifecycle: declarative start/stop
 # ---------------------------------------------------------------------------
 
 
@@ -962,7 +962,7 @@ def test_subscription_key_identity():
 
 
 # ---------------------------------------------------------------------------
-# test_chaining_pattern -- update cycle provides natural chaining
+# test_chaining_pattern: update cycle provides natural chaining
 # ---------------------------------------------------------------------------
 
 

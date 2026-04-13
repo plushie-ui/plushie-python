@@ -203,7 +203,7 @@ class DevServer:
             *paths,
             watch_filter=_python_filter,
             debounce=int(_DEBOUNCE_SECONDS * 1000),
-            stop_event=threading.Event(),  # never set -- runs until daemon exits
+            stop_event=threading.Event(),  # never set; runs until daemon exits
         ):
             if not self._running:
                 break

@@ -144,7 +144,7 @@ class App[M](ABC):
 class _DecoratorApp(App[Any]):
     """Dynamically-built App from decorator registrations.
 
-    Used by ``create_app()`` -- not part of the public API.
+    Used by ``create_app()``. Not part of the public API.
     """
 
     def __init__(

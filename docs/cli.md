@@ -135,7 +135,7 @@ python -m plushie build --verbose             # show cargo output
 - **Rust** 1.92+ (install via [rustup](https://rustup.rs/))
 - **PLUSHIE_SOURCE_PATH** environment variable pointing to the
   plushie Rust source checkout (for stock builds)
-- **wasm-pack** (for `--wasm` only) -- install via
+- **wasm-pack** (for `--wasm` only) - install via
   [wasm-pack.rustwasm.github.io](https://rustwasm.github.io/wasm-pack/)
 
 ### Stock build (no extensions)
@@ -204,7 +204,7 @@ See [Extensions](extensions.md) for the full guide.
 
 The `download` and `build` commands read artifact settings from
 `[tool.plushie]` in `pyproject.toml`. This lets you configure what
-gets downloaded or built -- and where it goes -- without CLI flags.
+gets downloaded or built, and where it goes, without CLI flags.
 
 ```toml
 [tool.plushie]
@@ -245,7 +245,7 @@ Then a bare `python -m plushie download` fetches both the native
 binary (to the standard location) and WASM files (to `static/`).
 
 For the `build` command, `bin_file` controls an additional install
-location -- the binary is always installed to the standard download
+location. The binary is always installed to the standard download
 directory, and also copied to `bin_file` if set.
 
 
