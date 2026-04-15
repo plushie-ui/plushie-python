@@ -82,6 +82,7 @@ from plushie.events import (
     WindowRescaled,
     WindowResized,
     WindowUnfocused,
+    WidgetStatus,
     split_scoped_id,
 )
 from plushie.types import HelloInfo, KeyModifiers
@@ -1178,6 +1179,15 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Blurred(
             id=local_id,
+            window_id=_wid,
+            scope=scope,
+        )
+
+    if family == "status":
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
+        return WidgetStatus(
+            id=local_id,
+            value=str(data.get("value", "")),
             window_id=_wid,
             scope=scope,
         )

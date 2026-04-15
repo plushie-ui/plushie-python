@@ -329,6 +329,21 @@ class Blurred:
 
 
 @dataclass(frozen=True, slots=True)
+class WidgetStatus:
+    """Widget interaction status changed (focus, hover, press, etc.).
+
+    Wire family: ``status``. The runtime intercepts these to track
+    focus state and derive Focused/Blurred events. This event is
+    absorbed by the runtime and not delivered to ``update``.
+    """
+
+    id: str
+    value: str
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class Drag:
     """A widget or canvas element is being dragged.
 
@@ -1367,6 +1382,7 @@ def target(
     | RawEvent
     | Focused
     | Blurred
+    | WidgetStatus
     | Drag
     | DragEnd
     | Enter
@@ -1436,6 +1452,7 @@ type ScopedWidgetEvent = (
     | RawEvent
     | Focused
     | Blurred
+    | WidgetStatus
     | Drag
     | DragEnd
     | Enter
@@ -1597,6 +1614,7 @@ __all__ = [
     "WindowRescaled",
     "WindowResized",
     "WindowUnfocused",
+    "WidgetStatus",
     "split_scoped_id",
     "target",
 ]

@@ -39,9 +39,12 @@ from plushie.events import (
     AllWindowsClosed,
     AsyncResult,
     EffectResult,
+    Focused,
+    Blurred,
     Move,
     StreamChunk,
     TimerTick,
+    WidgetStatus,
 )
 from plushie.events import (
     Diagnostic as _Diagnostic,
@@ -294,6 +297,10 @@ class Runtime:
 
         # Custom widget registry (canvas widgets + composites)
         self._widget_registry: WidgetRegistry = {}
+
+        # Widget status tracking (focus, hover, etc.): widget_id -> status string
+        self._widget_statuses: dict[str, str] = {}
+        self._focused_widget_id: str | None = None
 
         # Consecutive view failure counter
         self._consecutive_view_errors: int = 0
@@ -576,6 +583,12 @@ class Runtime:
                 )
                 with self._diagnostics_lock:
                     self._diagnostics.append(event)
+                continue
+
+            # WidgetStatus events: intercept for focus tracking, derive
+            # Focused/Blurred events from status transitions.
+            if isinstance(event, WidgetStatus):
+                self._handle_widget_status(event)
                 continue
 
             # Effect stub ack; unblock the waiting caller
@@ -1225,6 +1238,41 @@ class Runtime:
             )
 
     # -------------------------------------------------------------------
+    # Widget status tracking
+    # -------------------------------------------------------------------
+
+    def _handle_widget_status(self, event: WidgetStatus) -> None:
+        """Track widget interaction state and derive focus events."""
+        wid = event.id
+        status = event.value
+        prev_status = self._widget_statuses.get(wid)
+        self._widget_statuses[wid] = status
+
+        # Track focused_widget_id
+        if status == "focused":
+            self._focused_widget_id = wid
+        elif prev_status == "focused" and self._focused_widget_id == wid:
+            self._focused_widget_id = None
+
+        # Derive focused/blurred events from status transitions
+        if prev_status != "focused" and status == "focused":
+            self._run_update(
+                Focused(
+                    id=wid,
+                    window_id=event.window_id,
+                    scope=event.scope,
+                )
+            )
+        elif prev_status == "focused" and status != "focused":
+            self._run_update(
+                Blurred(
+                    id=wid,
+                    window_id=event.window_id,
+                    scope=event.scope,
+                )
+            )
+
+    # -------------------------------------------------------------------
     # Subscription diffing
     # -------------------------------------------------------------------
 
@@ -1565,6 +1613,10 @@ class Runtime:
             # Re-sync windows (force all to re-open)
             self._windows = set()
             self._sync_windows(tree)
+
+            # Clear widget status tracking (old renderer state is stale)
+            self._widget_statuses.clear()
+            self._focused_widget_id = None
 
             # Restart reader thread
             self._start_reader()
