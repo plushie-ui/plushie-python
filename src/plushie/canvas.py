@@ -406,6 +406,11 @@ def interactive(
     If the shape is already a group, interactive fields are merged
     directly into it. If it is a leaf shape, it is wrapped as the
     sole child of a new group.
+
+    If no explicit ``a11y`` is provided, a default role is inferred:
+    ``on_click=True`` gets ``role: "button"``, ``draggable=True``
+    gets ``role: "slider"``, and ``focusable=True`` (without click
+    or drag) gets ``role: "group"`` with a label from ``tooltip``.
     """
     opts: dict[str, Any] = {"id": id}
     for key, val in [
@@ -427,6 +432,18 @@ def interactive(
     ]:
         if val is not None:
             opts[key] = val
+
+    # Apply default a11y when not explicitly set
+    if a11y is None:
+        if on_click:
+            opts["a11y"] = {"role": "button"}
+        elif draggable:
+            opts["a11y"] = {"role": "slider"}
+        elif focusable:
+            default_a11y: dict[str, Any] = {"role": "group"}
+            if tooltip is not None:
+                default_a11y["label"] = tooltip
+            opts["a11y"] = default_a11y
 
     if shape.get("type") == "group":
         return {**shape, **opts}
