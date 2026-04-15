@@ -429,6 +429,72 @@ class TestTheme:
         t = Theme.custom("Empty")
         assert t.palette is None
 
+    def test_custom_rejects_unknown_key(self) -> None:
+        with pytest.raises(ValueError, match="unknown key 'not_a_real_key'"):
+            Theme.custom("Bad", not_a_real_key="#ff0000")
+
+    def test_custom_accepts_all_color_shade_keys(self) -> None:
+        t = Theme.custom(
+            "AllShades",
+            primary_base="#000000",
+            primary_weak="#111111",
+            primary_strong="#222222",
+            primary_base_text="#333333",
+            primary_weak_text="#444444",
+            primary_strong_text="#555555",
+            secondary_base="#000000",
+            secondary_weak="#111111",
+            secondary_strong="#222222",
+            secondary_base_text="#333333",
+            secondary_weak_text="#444444",
+            secondary_strong_text="#555555",
+            success_base="#000000",
+            success_weak="#111111",
+            success_strong="#222222",
+            success_base_text="#333333",
+            success_weak_text="#444444",
+            success_strong_text="#555555",
+            warning_base="#000000",
+            warning_weak="#111111",
+            warning_strong="#222222",
+            warning_base_text="#333333",
+            warning_weak_text="#444444",
+            warning_strong_text="#555555",
+            danger_base="#000000",
+            danger_weak="#111111",
+            danger_strong="#222222",
+            danger_base_text="#333333",
+            danger_weak_text="#444444",
+            danger_strong_text="#555555",
+        )
+        assert t.palette is not None
+        assert t.palette["primary_base"] == "#000000"
+        assert t.palette["danger_strong_text"] == "#555555"
+
+    def test_custom_accepts_all_background_shade_keys(self) -> None:
+        t = Theme.custom(
+            "BgShades",
+            background_base="#000000",
+            background_weakest="#111111",
+            background_weaker="#222222",
+            background_weak="#333333",
+            background_neutral="#444444",
+            background_strong="#555555",
+            background_stronger="#666666",
+            background_strongest="#777777",
+            background_base_text="#888888",
+            background_weakest_text="#999999",
+            background_weaker_text="#aaaaaa",
+            background_weak_text="#bbbbbb",
+            background_neutral_text="#cccccc",
+            background_strong_text="#dddddd",
+            background_stronger_text="#eeeeee",
+            background_strongest_text="#ffffff",
+        )
+        assert t.palette is not None
+        assert t.palette["background_base"] == "#000000"
+        assert t.palette["background_strongest_text"] == "#ffffff"
+
     def test_frozen(self) -> None:
         t = Theme.builtin("dark")
         with pytest.raises(AttributeError):

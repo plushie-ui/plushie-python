@@ -744,6 +744,47 @@ BUILTIN_THEMES: tuple[str, ...] = (
 """All built-in theme names recognized by the renderer."""
 
 
+_CORE_SEEDS = frozenset(
+    {
+        "background",
+        "text",
+        "primary",
+        "success",
+        "danger",
+        "warning",
+    }
+)
+
+_COLOR_FAMILIES = ("primary", "secondary", "success", "warning", "danger")
+_COLOR_SHADES = ("base", "weak", "strong")
+_COLOR_SUFFIXES = ("", "_text")
+
+_COLOR_SHADE_KEYS: frozenset[str] = frozenset(
+    f"{family}_{shade}{suffix}"
+    for family in _COLOR_FAMILIES
+    for shade in _COLOR_SHADES
+    for suffix in _COLOR_SUFFIXES
+)
+
+_BG_SHADES = (
+    "background_base",
+    "background_weakest",
+    "background_weaker",
+    "background_weak",
+    "background_neutral",
+    "background_strong",
+    "background_stronger",
+    "background_strongest",
+)
+_BG_SUFFIXES = ("", "_text")
+
+_BG_SHADE_KEYS: frozenset[str] = frozenset(
+    f"{shade}{suffix}" for shade in _BG_SHADES for suffix in _BG_SUFFIXES
+)
+
+_VALID_CUSTOM_KEYS: frozenset[str] = _CORE_SEEDS | _COLOR_SHADE_KEYS | _BG_SHADE_KEYS
+
+
 @dataclass(frozen=True, slots=True)
 class Theme:
     """Theme specification: either a built-in name or a custom palette.
@@ -803,12 +844,20 @@ class Theme:
         The ``base`` parameter specifies a built-in theme to extend from
         instead of starting from scratch.
 
+        Raises ``ValueError`` for unknown shade override keys.
+
         >>> t = Theme.custom("My Theme", primary="#7aa2f7", danger="red")
         >>> t.name
         'My Theme'
         >>> t.palette is not None
         True
         """
+        for key in shade_overrides:
+            if key not in _VALID_CUSTOM_KEYS:
+                valid = ", ".join(sorted(_VALID_CUSTOM_KEYS))
+                raise ValueError(
+                    f"unknown key {key!r} in Theme.custom. Valid keys: base, {valid}"
+                )
         palette: dict[str, str] = {}
         if base is not None:
             palette["base"] = base
