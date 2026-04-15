@@ -22,10 +22,17 @@ the group ``transforms`` list.
 Clipping: clip(x, y, w, h). Value object for the group ``clip`` field.
 
 Stroke helper: stroke(color, width, ...).
+
+Angle convention: all angle-accepting canvas APIs use degrees by
+default, matching the Rust SDK convention. Bare numbers are degrees.
+Use ``(value, "deg")`` or ``(value, "rad")`` tuples for explicit
+units. The wire protocol sends degrees; the renderer converts to
+radians at the rendering boundary.
 """
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -34,6 +41,43 @@ from typing import Any
 
 type Shape = dict[str, Any]
 """A canvas shape descriptor (plain dict with ``"type"`` key)."""
+
+type Angle = float | tuple[float, str]
+"""Angle value for canvas rotation and arc parameters.
+
+Accepted forms:
+- A bare number (degrees, matching the Rust SDK convention)
+- ``(value, "deg")`` for explicit degrees
+- ``(value, "rad")`` for explicit radians
+"""
+
+
+def to_degrees(angle: Angle) -> float:
+    """Convert an Angle value to degrees for the wire protocol.
+
+    Bare numbers are treated as degrees already. Radian values are
+    converted to degrees.
+    """
+    if isinstance(angle, tuple):
+        value, unit = angle
+        if unit == "rad":
+            return value * 180.0 / math.pi
+        return float(value)
+    return float(angle)
+
+
+def to_radians(angle: Angle) -> float:
+    """Convert an Angle value to radians.
+
+    Useful for contexts that need radian values (e.g. trigonometric
+    calculations in application code).
+    """
+    if isinstance(angle, tuple):
+        value, unit = angle
+        if unit == "deg":
+            return value * math.pi / 180.0
+        return float(value)
+    return angle * math.pi / 180.0
 
 
 # ---------------------------------------------------------------------------
@@ -414,10 +458,10 @@ def quadratic_to(cpx: float, cpy: float, x: float, y: float) -> list[Any]:
 
 
 def arc(
-    cx: float, cy: float, r: float, start_angle: float, end_angle: float
+    cx: float, cy: float, r: float, start_angle: Angle, end_angle: Angle
 ) -> list[Any]:
-    """Arc path command."""
-    return ["arc", cx, cy, r, start_angle, end_angle]
+    """Arc path command. Angles in degrees on the wire."""
+    return ["arc", cx, cy, r, to_degrees(start_angle), to_degrees(end_angle)]
 
 
 def arc_to(x1: float, y1: float, x2: float, y2: float, radius: float) -> list[Any]:
@@ -430,12 +474,21 @@ def ellipse(
     cy: float,
     rx: float,
     ry: float,
-    rotation: float,
-    start_angle: float,
-    end_angle: float,
+    rotation: Angle,
+    start_angle: Angle,
+    end_angle: Angle,
 ) -> list[Any]:
-    """Ellipse path command."""
-    return ["ellipse", cx, cy, rx, ry, rotation, start_angle, end_angle]
+    """Ellipse path command. Angles in degrees on the wire."""
+    return [
+        "ellipse",
+        cx,
+        cy,
+        rx,
+        ry,
+        to_degrees(rotation),
+        to_degrees(start_angle),
+        to_degrees(end_angle),
+    ]
 
 
 def rounded_rect(x: float, y: float, w: float, h: float, radius: float) -> list[Any]:
@@ -458,9 +511,9 @@ def translate(x: float, y: float) -> dict[str, Any]:
     return {"type": "translate", "x": x, "y": y}
 
 
-def rotate(angle: float) -> dict[str, Any]:
-    """Rotate transform value (angle in radians)."""
-    return {"type": "rotate", "angle": angle}
+def rotate(angle: Angle) -> dict[str, Any]:
+    """Rotate transform value. Angles in degrees on the wire."""
+    return {"type": "rotate", "angle": to_degrees(angle)}
 
 
 def scale(x: float, y: float) -> dict[str, Any]:
@@ -488,6 +541,7 @@ def clip(x: float, y: float, w: float, h: float) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 __all__ = [
+    "Angle",
     "Shape",
     "arc",
     "arc_to",
@@ -514,5 +568,7 @@ __all__ = [
     "scale",
     "scale_uniform",
     "stroke",
+    "to_degrees",
+    "to_radians",
     "translate",
 ]

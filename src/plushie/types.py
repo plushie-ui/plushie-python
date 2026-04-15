@@ -931,6 +931,42 @@ class A11y:
 
 
 # ---------------------------------------------------------------------------
+# LineHeight
+# ---------------------------------------------------------------------------
+
+type LineHeight = int | float | dict[str, int | float]
+"""Line height for text widgets.
+
+Accepted forms:
+- A number (relative multiplier, e.g. ``1.5``)
+- ``{"relative": n}`` for explicit relative line height
+- ``{"absolute": n}`` for absolute pixel line height
+"""
+
+
+def encode_line_height(
+    value: LineHeight | None,
+) -> int | float | dict[str, int | float] | None:
+    """Encode a line height value for the wire protocol.
+
+    Numbers are passed through as-is (the renderer interprets plain
+    numbers as relative multipliers). Dicts are validated and passed
+    through so the renderer can distinguish the two explicit forms.
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, dict):
+        if "relative" in value or "absolute" in value:
+            return value
+        raise ValueError(
+            f"line_height dict must have 'relative' or 'absolute' key, got: {value!r}"
+        )
+    raise ValueError(f"invalid line_height: {value!r}")
+
+
+# ---------------------------------------------------------------------------
 # HelloInfo
 # ---------------------------------------------------------------------------
 
@@ -940,7 +976,7 @@ class HelloInfo:
     """Information from the renderer's hello handshake message.
 
     Sent by the renderer immediately after receiving Settings. Contains
-    protocol version, renderer capabilities, and registered extensions.
+    protocol version, renderer capabilities, and registered widget types.
     """
 
     protocol: int
@@ -950,6 +986,8 @@ class HelloInfo:
     backend: str
     transport: str
     extensions: tuple[str, ...] = ()
+    native_widgets: tuple[str, ...] = ()
+    widgets: tuple[str, ...] = ()
 
 
 # ---------------------------------------------------------------------------
@@ -1003,6 +1041,7 @@ __all__ = [
     "HelloInfo",
     "KeyModifiers",
     "Length",
+    "LineHeight",
     "Padding",
     "Position",
     "RadiusCorners",
@@ -1014,4 +1053,5 @@ __all__ = [
     "WindowLevel",
     "WindowMode",
     "Wrapping",
+    "encode_line_height",
 ]
