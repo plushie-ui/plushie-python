@@ -224,7 +224,7 @@ def test_command_select_range():
     assert cmd.type == "command"
     assert cmd.payload["family"] == "select_range"
     assert cmd.payload["id"] == "editor"
-    assert cmd.payload["value"] == {"start": 5, "end": 10}
+    assert cmd.payload["value"] == {"start_pos": 5, "end_pos": 10}
 
 
 def test_command_move_cursor_to():
@@ -234,7 +234,7 @@ def test_command_move_cursor_to():
     assert cmd.type == "command"
     assert cmd.payload["family"] == "move_cursor_to"
     assert cmd.payload["id"] == "editor"
-    assert cmd.payload["value"] == {"position": 42}
+    assert cmd.payload["value"] == 42
 
 
 def test_command_move_cursor_to_front():
@@ -261,8 +261,8 @@ def test_command_move_cursor_to_end():
 
 
 def test_command_scroll_to():
-    """Command.scroll_to() scrolls to an absolute vertical position."""
-    cmd = Command.scroll_to("chat_log", 500.0)
+    """Command.scroll_to() scrolls to an absolute position."""
+    cmd = Command.scroll_to("chat_log", 0.0, 500.0)
 
     assert cmd.type == "command"
     assert cmd.payload["family"] == "scroll_to"

@@ -87,14 +87,14 @@ class TestWidgetOps:
         assert cmd.type == "command"
         assert cmd.payload["family"] == "select_range"
         assert cmd.payload["id"] == "editor"
-        assert cmd.payload["value"] == {"start": 5, "end": 10}
+        assert cmd.payload["value"] == {"start_pos": 5, "end_pos": 10}
 
     def test_move_cursor_to(self) -> None:
         cmd = Command.move_cursor_to("input", 7)
         assert cmd.type == "command"
         assert cmd.payload["family"] == "move_cursor_to"
         assert cmd.payload["id"] == "input"
-        assert cmd.payload["value"] == {"position": 7}
+        assert cmd.payload["value"] == 7
 
     def test_move_cursor_to_front(self) -> None:
         cmd = Command.move_cursor_to_front("input")
@@ -109,7 +109,7 @@ class TestWidgetOps:
         assert cmd.payload["id"] == "input"
 
     def test_scroll_to(self) -> None:
-        cmd = Command.scroll_to("log", 100.0)
+        cmd = Command.scroll_to("log", 0.0, 100.0)
         assert cmd.type == "command"
         assert cmd.payload["family"] == "scroll_to"
         assert cmd.payload["id"] == "log"

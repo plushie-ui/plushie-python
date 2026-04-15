@@ -187,13 +187,13 @@ class Command:
         return Command(type="command", payload=payload)
 
     @staticmethod
-    def select_range(widget_id: str, start: int, end: int) -> Command:
-        """Select text from *start* to *end* in *widget_id*. Supports ``"window#widget"``."""
+    def select_range(widget_id: str, start_pos: int, end_pos: int) -> Command:
+        """Select text from *start_pos* to *end_pos* in *widget_id*. Supports ``"window#widget"``."""
         window_id, target = _parse_target(widget_id)
         payload: dict[str, Any] = {
             "family": "select_range",
             "id": target,
-            "value": {"start": start, "end": end},
+            "value": {"start_pos": start_pos, "end_pos": end_pos},
         }
         if window_id is not None:
             payload["window_id"] = window_id
@@ -206,7 +206,7 @@ class Command:
         payload: dict[str, Any] = {
             "family": "move_cursor_to",
             "id": target,
-            "value": {"position": position},
+            "value": position,
         }
         if window_id is not None:
             payload["window_id"] = window_id
@@ -231,13 +231,13 @@ class Command:
         return Command(type="command", payload=payload)
 
     @staticmethod
-    def scroll_to(widget_id: str, offset_y: float) -> Command:
-        """Scroll *widget_id* to absolute *offset_y*. Supports ``"window#widget"``."""
+    def scroll_to(widget_id: str, x: float, y: float) -> Command:
+        """Scroll *widget_id* to absolute (*x*, *y*) offset. Supports ``"window#widget"``."""
         window_id, target = _parse_target(widget_id)
         payload: dict[str, Any] = {
             "family": "scroll_to",
             "id": target,
-            "value": {"x": 0.0, "y": offset_y},
+            "value": {"x": x, "y": y},
         }
         if window_id is not None:
             payload["window_id"] = window_id
