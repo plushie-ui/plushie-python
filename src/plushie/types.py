@@ -345,17 +345,6 @@ class Colors:
 # ---------------------------------------------------------------------------
 
 
-def _to_pascal(value: str) -> str:
-    """Convert an underscore-separated string to PascalCase.
-
-    >>> _to_pascal("semi_bold")
-    'SemiBold'
-    >>> _to_pascal("normal")
-    'Normal'
-    """
-    return "".join(part.capitalize() for part in value.split("_"))
-
-
 def _encode_status_override(override: dict[str, object]) -> dict[str, object]:
     """Encode a status override dict, converting nested dataclass values."""
     result: dict[str, object] = {}
@@ -545,8 +534,8 @@ class Font:
 
     All fields are optional. ``None`` means "use the widget default".
 
-    The wire format encodes weight/style/stretch as PascalCase strings
-    (e.g. ``"SemiBold"``, ``"UltraCondensed"``).
+    The wire format encodes weight/style/stretch as lowercase strings
+    (e.g. ``"semi_bold"``, ``"ultra_condensed"``).
     """
 
     family: str | None = None
@@ -557,18 +546,18 @@ class Font:
     def to_wire(self) -> dict[str, str]:
         """Convert to wire-compatible dict with non-None fields only.
 
-        Weight, style, and stretch are encoded as PascalCase strings
-        (e.g. ``"semi_bold"`` becomes ``"SemiBold"``).
+        Weight, style, and stretch are encoded as lowercase strings
+        matching the wire protocol (e.g. ``"semi_bold"``, ``"italic"``).
         """
         result: dict[str, str] = {}
         if self.family is not None:
             result["family"] = self.family
         if self.weight is not None:
-            result["weight"] = _to_pascal(self.weight)
+            result["weight"] = self.weight
         if self.style is not None:
-            result["style"] = _to_pascal(self.style)
+            result["style"] = self.style
         if self.stretch is not None:
-            result["stretch"] = _to_pascal(self.stretch)
+            result["stretch"] = self.stretch
         return result
 
 

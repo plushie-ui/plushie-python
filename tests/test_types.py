@@ -18,7 +18,6 @@ from plushie.types import (
     StatusOverride,
     StyleMap,
     Theme,
-    _to_pascal,
 )
 
 # ---------------------------------------------------------------------------
@@ -578,17 +577,6 @@ class TestHelloInfo:
 # ---------------------------------------------------------------------------
 
 
-class TestToPascal:
-    def test_single_word(self) -> None:
-        assert _to_pascal("normal") == "Normal"
-
-    def test_multi_word(self) -> None:
-        assert _to_pascal("semi_bold") == "SemiBold"
-
-    def test_three_words(self) -> None:
-        assert _to_pascal("ultra_condensed") == "UltraCondensed"
-
-
 class TestBorderToWire:
     def test_defaults(self) -> None:
         assert Border().to_wire() == {"color": None, "width": 0, "radius": 0}
@@ -635,9 +623,9 @@ class TestFontToWire:
     def test_family_only(self) -> None:
         assert Font(family="Inter").to_wire() == {"family": "Inter"}
 
-    def test_weight_pascal_case(self) -> None:
+    def test_weight_snake_case(self) -> None:
         f = Font(weight="semi_bold")
-        assert f.to_wire() == {"weight": "SemiBold"}
+        assert f.to_wire() == {"weight": "semi_bold"}
 
     def test_all_fields(self) -> None:
         f = Font(
@@ -649,9 +637,9 @@ class TestFontToWire:
         wire = f.to_wire()
         assert wire == {
             "family": "Fira Code",
-            "weight": "Bold",
-            "style": "Italic",
-            "stretch": "UltraCondensed",
+            "weight": "bold",
+            "style": "italic",
+            "stretch": "ultra_condensed",
         }
 
 
