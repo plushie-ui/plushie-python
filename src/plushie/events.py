@@ -1216,6 +1216,65 @@ class RendererError:
 
 
 @dataclass(frozen=True, slots=True)
+class RecoveryFailed:
+    """Dispatched when handle_renderer_exit() raises an exception.
+
+    Contains information about the recovery callback failure so the
+    app can react (show an error, reset to safe state, etc.).
+
+    This event is generated Python-side, never on the wire.
+    """
+
+    kind: str
+    error: str
+    renderer_exit: RendererExitInfo
+
+
+@dataclass(frozen=True, slots=True)
+class RendererExitInfo:
+    """Structured renderer exit reason passed to handle_renderer_exit().
+
+    Use ``build_renderer_exit()`` to construct from raw exit reasons.
+    """
+
+    type: str
+    message: str
+    details: Any = None
+
+
+def build_renderer_exit(reason: Any) -> RendererExitInfo:
+    """Convert a raw renderer exit reason into a structured RendererExitInfo.
+
+    Maps raw reasons to typed exit info:
+    - ``"normal"`` or ``"shutdown"`` -> type ``"shutdown"``
+    - ``"heartbeat_timeout"`` -> type ``"heartbeat_timeout"``
+    - ``{"exit_status": status}`` -> type ``"crash"`` with status as details
+    - anything else -> type ``"crash"`` with the raw reason as details
+    """
+    if reason == "normal":
+        return RendererExitInfo(type="shutdown", message="renderer shut down normally")
+    if reason == "shutdown":
+        return RendererExitInfo(type="shutdown", message="renderer shut down")
+    if reason == "heartbeat_timeout":
+        return RendererExitInfo(
+            type="heartbeat_timeout",
+            message="renderer unresponsive (heartbeat timeout)",
+        )
+    if isinstance(reason, dict) and "exit_status" in reason:
+        status = reason["exit_status"]
+        return RendererExitInfo(
+            type="crash",
+            message=f"renderer crashed with exit status {status}",
+            details=status,
+        )
+    return RendererExitInfo(
+        type="crash",
+        message=f"renderer exited unexpectedly: {reason!r}",
+        details=reason,
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class Announce:
     """Request the system screen reader to announce text.
 
@@ -1505,6 +1564,7 @@ type SystemEvent = (
     | TreeHash
     | CommandError
     | RendererError
+    | RecoveryFailed
 )
 """Union of all system/query response events."""
 
@@ -1582,8 +1642,10 @@ __all__ = [
     "PointerType",
     "Press",
     "RawEvent",
+    "RecoveryFailed",
     "Release",
     "RendererError",
+    "RendererExitInfo",
     "Resize",
     "RuntimeEvent",
     "ScopedWidgetEvent",
@@ -1617,4 +1679,5 @@ __all__ = [
     "WidgetStatus",
     "split_scoped_id",
     "target",
+    "build_renderer_exit",
 ]

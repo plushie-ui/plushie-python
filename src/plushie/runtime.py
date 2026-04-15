@@ -38,17 +38,17 @@ from plushie.effects import DEFAULT_TIMEOUTS
 from plushie.events import (
     AllWindowsClosed,
     AsyncResult,
+    Blurred,
     EffectResult,
     Focused,
-    Blurred,
     Move,
+    RecoveryFailed,
     StreamChunk,
     TimerTick,
     WidgetStatus,
+    build_renderer_exit,
 )
-from plushie.events import (
-    Diagnostic as _Diagnostic,
-)
+from plushie.events import Diagnostic as _Diagnostic
 from plushie.protocol import (
     advance_frame_msg,
     effect_msg,
@@ -306,6 +306,7 @@ class Runtime:
         # Heartbeat watchdog: detects unresponsive renderer
         self._heartbeat_interval_ms: int | None = heartbeat_interval_ms
         self._heartbeat_timer: threading.Timer | None = None
+        self._exit_reason: Any = None
 
         # Consecutive view failure counter
         self._consecutive_view_errors: int = 0
@@ -564,7 +565,9 @@ class Runtime:
             if event is None:
                 # Connection closed / reader thread finished / heartbeat timeout
                 self._cancel_heartbeat()
-                if self._attempt_reconnect():
+                reason = self._exit_reason
+                self._exit_reason = None
+                if self._attempt_reconnect(reason):
                     continue
                 self._fail_pending_interact()
                 logger.info("plushie runtime: connection closed, stopping")
@@ -1309,6 +1312,7 @@ class Runtime:
             "(no message in %dms), triggering restart",
             self._heartbeat_interval_ms,
         )
+        self._exit_reason = "heartbeat_timeout"
         self._queue.put(None)
 
     # -------------------------------------------------------------------
@@ -1569,12 +1573,17 @@ class Runtime:
     _BASE_BACKOFF_MS = 100
     _MAX_BACKOFF_MS = 5000
 
-    def _attempt_reconnect(self) -> bool:
+    def _attempt_reconnect(self, reason: Any = None) -> bool:
         """Attempt to reconnect to the renderer after a crash.
 
         Uses exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms.
         On successful reconnect, re-sends settings and a full snapshot,
         re-syncs subscriptions and windows, and flushes pending effects.
+
+        Args:
+            reason: Raw exit reason (``None``, ``"heartbeat_timeout"``,
+                ``{"exit_status": N}``, etc.). Used to build a typed
+                ``RendererExitInfo`` for ``handle_renderer_exit()``.
 
         Returns:
             ``True`` if reconnection succeeded, ``False`` if all
@@ -1584,13 +1593,23 @@ class Runtime:
         if not hasattr(self._conn, "restart"):
             return False
 
-        # Let the app handle the exit
+        exit_info = build_renderer_exit(reason)
+
+        recovery_error: tuple[str, str] | None = None
         try:
-            self._model = self._app.handle_renderer_exit(
-                self._model, "renderer_crashed"
-            )
-        except Exception:
+            self._model = self._app.handle_renderer_exit(self._model, exit_info)
+        except Exception as exc:
             logger.exception("app.handle_renderer_exit() raised")
+            recovery_error = (type(exc).__name__, str(exc))
+
+        if recovery_error is not None:
+            self._run_update(
+                RecoveryFailed(
+                    kind=recovery_error[0],
+                    error=recovery_error[1],
+                    renderer_exit=exit_info,
+                )
+            )
 
         # Discard stale coalescable events from the old renderer.
         if self._coalesce_timer is not None:

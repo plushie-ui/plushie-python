@@ -45,6 +45,7 @@ from plushie.events import (
     Paste,
     Press,
     RawEvent,
+    RecoveryFailed,
     Release,
     Resize,
     Scroll,
@@ -70,6 +71,7 @@ from plushie.events import (
     WindowRescaled,
     WindowResized,
     WindowUnfocused,
+    build_renderer_exit,
     split_scoped_id,
     target,
 )
@@ -866,3 +868,59 @@ class TestScrollData:
         )
         with pytest.raises(AttributeError):
             sd.absolute_x = 10.0  # type: ignore[misc]
+
+
+class TestBuildRendererExit:
+    def test_normal(self) -> None:
+        info = build_renderer_exit("normal")
+        assert info.type == "shutdown"
+        assert info.message == "renderer shut down normally"
+        assert info.details is None
+
+    def test_shutdown(self) -> None:
+        info = build_renderer_exit("shutdown")
+        assert info.type == "shutdown"
+        assert info.message == "renderer shut down"
+
+    def test_heartbeat_timeout(self) -> None:
+        info = build_renderer_exit("heartbeat_timeout")
+        assert info.type == "heartbeat_timeout"
+        assert "heartbeat" in info.message
+
+    def test_exit_status_dict(self) -> None:
+        info = build_renderer_exit({"exit_status": 1})
+        assert info.type == "crash"
+        assert info.details == 1
+
+    def test_unknown_reason(self) -> None:
+        info = build_renderer_exit("something_else")
+        assert info.type == "crash"
+        assert info.details == "something_else"
+
+    def test_none_reason(self) -> None:
+        info = build_renderer_exit(None)
+        assert info.type == "crash"
+
+    def test_frozen(self) -> None:
+        info = build_renderer_exit("normal")
+        with pytest.raises(AttributeError):
+            info.type = "crash"  # type: ignore[misc]
+
+
+class TestRecoveryFailed:
+    def test_construction(self) -> None:
+        exit_info = build_renderer_exit({"exit_status": 1})
+        event = RecoveryFailed(
+            kind="RuntimeError",
+            error="something broke",
+            renderer_exit=exit_info,
+        )
+        assert event.kind == "RuntimeError"
+        assert event.error == "something broke"
+        assert event.renderer_exit is exit_info
+
+    def test_frozen(self) -> None:
+        exit_info = build_renderer_exit("normal")
+        event = RecoveryFailed(kind="E", error="msg", renderer_exit=exit_info)
+        with pytest.raises(AttributeError):
+            event.kind = "other"  # type: ignore[misc]
