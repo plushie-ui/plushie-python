@@ -710,7 +710,7 @@ def canvas(id: str, /, **kwargs: Any) -> Node:
         id: Canvas identifier.
         **kwargs: Canvas props (layers, shapes, width, height, background,
             interactive, on_press, on_release, on_move, on_scroll, role,
-            arrow_mode, alt, description, a11y).
+            arrow_mode, event_rate, alt, description, a11y).
     """
     return _node(id, "canvas", kwargs)
 
