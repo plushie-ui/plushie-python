@@ -800,117 +800,117 @@ def test_subscription_every():
 
 def test_subscription_on_key_press():
     """Subscription.on_key_press() subscribes to key events."""
-    sub = Subscription.on_key_press("key_event")
+    sub = Subscription.on_key_press()
 
     assert sub.kind == "on_key_press"
-    assert sub.tag == "key_event"
+    assert sub.tag is None
 
 
 def test_subscription_on_key_release():
     """Subscription.on_key_release() subscribes to key release events."""
-    sub = Subscription.on_key_release("keys")
+    sub = Subscription.on_key_release()
     assert sub.kind == "on_key_release"
 
 
 def test_subscription_on_modifiers_changed():
     """Subscription.on_modifiers_changed() subscribes to modifier changes."""
-    sub = Subscription.on_modifiers_changed("mods")
+    sub = Subscription.on_modifiers_changed()
     assert sub.kind == "on_modifiers_changed"
 
 
 def test_subscription_on_window_close():
     """Subscription.on_window_close() subscribes to window close events."""
-    sub = Subscription.on_window_close("wclose")
+    sub = Subscription.on_window_close()
     assert sub.kind == "on_window_close"
 
 
 def test_subscription_on_window_open():
     """Subscription.on_window_open() subscribes to window open events."""
-    sub = Subscription.on_window_open("wopen")
+    sub = Subscription.on_window_open()
     assert sub.kind == "on_window_open"
 
 
 def test_subscription_on_window_resize():
     """Subscription.on_window_resize() subscribes to window resize events."""
-    sub = Subscription.on_window_resize("wresize")
+    sub = Subscription.on_window_resize()
     assert sub.kind == "on_window_resize"
 
 
 def test_subscription_on_window_focus():
     """Subscription.on_window_focus() subscribes to window focus events."""
-    sub = Subscription.on_window_focus("wfocus")
+    sub = Subscription.on_window_focus()
     assert sub.kind == "on_window_focus"
 
 
 def test_subscription_on_window_unfocus():
     """Subscription.on_window_unfocus() subscribes to window unfocus events."""
-    sub = Subscription.on_window_unfocus("wunfocus")
+    sub = Subscription.on_window_unfocus()
     assert sub.kind == "on_window_unfocus"
 
 
 def test_subscription_on_window_move():
     """Subscription.on_window_move() subscribes to window move events."""
-    sub = Subscription.on_window_move("wmove")
+    sub = Subscription.on_window_move()
     assert sub.kind == "on_window_move"
 
 
 def test_subscription_on_window_event():
     """Subscription.on_window_event() is the catch-all for window events."""
-    sub = Subscription.on_window_event("wall")
+    sub = Subscription.on_window_event()
     assert sub.kind == "on_window_event"
 
 
 def test_subscription_on_pointer_move():
     """Subscription.on_pointer_move() subscribes to mouse movement."""
-    sub = Subscription.on_pointer_move("mouse")
+    sub = Subscription.on_pointer_move()
     assert sub.kind == "on_pointer_move"
 
 
 def test_subscription_on_pointer_button():
     """Subscription.on_pointer_button() subscribes to mouse clicks."""
-    sub = Subscription.on_pointer_button("mbutton")
+    sub = Subscription.on_pointer_button()
     assert sub.kind == "on_pointer_button"
 
 
 def test_subscription_on_pointer_scroll():
     """Subscription.on_pointer_scroll() subscribes to scroll events."""
-    sub = Subscription.on_pointer_scroll("mscroll")
+    sub = Subscription.on_pointer_scroll()
     assert sub.kind == "on_pointer_scroll"
 
 
 def test_subscription_on_touch():
     """Subscription.on_pointer_touch() subscribes to touch events."""
-    sub = Subscription.on_pointer_touch("touch")
+    sub = Subscription.on_pointer_touch()
     assert sub.kind == "on_touch"
 
 
 def test_subscription_on_ime():
     """Subscription.on_ime() subscribes to IME events."""
-    sub = Subscription.on_ime("ime")
+    sub = Subscription.on_ime()
     assert sub.kind == "on_ime"
 
 
 def test_subscription_on_theme_change():
     """Subscription.on_theme_change() subscribes to OS theme changes."""
-    sub = Subscription.on_theme_change("theme_changed")
+    sub = Subscription.on_theme_change()
     assert sub.kind == "on_theme_change"
 
 
 def test_subscription_on_animation_frame():
     """Subscription.on_animation_frame() subscribes to vsync ticks."""
-    sub = Subscription.on_animation_frame("frame")
+    sub = Subscription.on_animation_frame()
     assert sub.kind == "on_animation_frame"
 
 
 def test_subscription_on_file_drop():
     """Subscription.on_file_drop() subscribes to file drop events."""
-    sub = Subscription.on_file_drop("fdrop")
+    sub = Subscription.on_file_drop()
     assert sub.kind == "on_file_drop"
 
 
 def test_subscription_on_event():
     """Subscription.on_event() is the catch-all subscription."""
-    sub = Subscription.on_event("everything")
+    sub = Subscription.on_event()
     assert sub.kind == "on_event"
 
 
@@ -921,14 +921,14 @@ def test_subscription_on_event():
 
 def test_subscription_max_rate():
     """Renderer subscriptions accept a max_rate keyword."""
-    sub = Subscription.on_pointer_move("mouse", max_rate=30)
+    sub = Subscription.on_pointer_move(max_rate=30)
 
     assert sub.max_rate == 30
 
-    sub_frame = Subscription.on_animation_frame("frame", max_rate=60)
+    sub_frame = Subscription.on_animation_frame(max_rate=60)
     assert sub_frame.max_rate == 60
 
-    sub_zero = Subscription.on_pointer_move("mouse", max_rate=0)
+    sub_zero = Subscription.on_pointer_move(max_rate=0)
     assert sub_zero.max_rate == 0
 
 
@@ -971,8 +971,8 @@ def test_subscription_key_identity():
     b = Subscription.every(1000, "tick")
     assert a.key == b.key
 
-    c = Subscription.on_key_press("keys")
-    d = Subscription.on_key_press("keys")
+    c = Subscription.on_key_press()
+    d = Subscription.on_key_press()
     assert c.key == d.key
 
     # Different interval = different key

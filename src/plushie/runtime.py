@@ -1279,7 +1279,7 @@ class Runtime:
             ):
                 self._conn.send_subscribe(
                     new_spec.wire_kind,
-                    new_spec.tag,
+                    new_spec.wire_tag,
                     max_rate=new_spec.max_rate,
                     window_id=new_spec.window_id,
                 )
@@ -1310,7 +1310,7 @@ class Runtime:
             ):
                 self._conn.send_subscribe(
                     new_spec.wire_kind,
-                    new_spec.tag,
+                    new_spec.wire_tag,
                     max_rate=new_spec.max_rate,
                     window_id=new_spec.window_id,
                 )
@@ -1327,10 +1327,11 @@ class Runtime:
         """Start a new subscription (timer or renderer)."""
         if spec.kind == "every":
             interval_ms = spec.interval_ms or 1000
+            tag = spec.tag if spec.tag is not None else ""
 
             def tick() -> None:
                 now_ms = int(time.monotonic() * 1000)
-                self._queue.put(TimerTick(tag=spec.tag, timestamp=now_ms))
+                self._queue.put(TimerTick(tag=tag, timestamp=now_ms))
                 # Re-arm if still subscribed
                 if spec.key in self._subscriptions:
                     entry = self._subscriptions[spec.key]
@@ -1342,7 +1343,7 @@ class Runtime:
                     self._subscriptions[spec.key] = _SubEntry(
                         source="timer",
                         kind=spec.kind,
-                        tag=spec.tag,
+                        tag=tag,
                         max_rate=None,
                         timer=new_timer,
                         interval_ms=interval_ms,
@@ -1354,7 +1355,7 @@ class Runtime:
             return _SubEntry(
                 source="timer",
                 kind=spec.kind,
-                tag=spec.tag,
+                tag=tag,
                 max_rate=None,
                 timer=timer,
                 interval_ms=interval_ms,
@@ -1362,12 +1363,15 @@ class Runtime:
 
         # Renderer subscription
         self._conn.send_subscribe(
-            spec.wire_kind, spec.tag, max_rate=spec.max_rate, window_id=spec.window_id
+            spec.wire_kind,
+            spec.wire_tag,
+            max_rate=spec.max_rate,
+            window_id=spec.window_id,
         )
         return _SubEntry(
             source="renderer",
             kind=spec.kind,
-            tag=spec.tag,
+            tag=spec.wire_tag,
             max_rate=spec.max_rate,
             timer=None,
             interval_ms=None,

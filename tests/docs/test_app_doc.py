@@ -213,7 +213,7 @@ class TestViewTreeStructure:
 
 
 def subscribe(model: Model) -> list[Subscription]:
-    subs = [Subscription.on_key_press("key_event")]
+    subs = [Subscription.on_key_press()]
 
     if model.auto_refresh:
         subs.append(Subscription.every(5000, "refresh"))
@@ -227,14 +227,14 @@ class TestSubscribe:
         model = Model(auto_refresh=False)
         subs = subscribe(model)
         assert len(subs) == 1
-        assert subs[0] == Subscription.on_key_press("key_event")
+        assert subs[0] == Subscription.on_key_press()
 
     def test_subscribe_with_auto_refresh(self) -> None:
         """Docs: subscribe adds timer when auto_refresh is on."""
         model = Model(auto_refresh=True)
         subs = subscribe(model)
         assert len(subs) == 2
-        assert subs[0] == Subscription.on_key_press("key_event")
+        assert subs[0] == Subscription.on_key_press()
         assert subs[1] == Subscription.every(5000, "refresh")
 
 

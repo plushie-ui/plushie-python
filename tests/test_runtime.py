@@ -433,18 +433,18 @@ class TestSubscriptionKeys:
         assert s.key == ("every", "100", "tick")
 
     def test_renderer_key(self) -> None:
-        s = Subscription.on_key_press("keys")
-        assert s.key == ("on_key_press", "keys")
+        s = Subscription.on_key_press()
+        assert s.key == ("on_key_press", "")
 
-    def test_same_kind_different_tag(self) -> None:
-        s1 = Subscription.on_key_press("a")
-        s2 = Subscription.on_key_press("b")
-        assert s1.key != s2.key
+    def test_same_kind_same_key(self) -> None:
+        s1 = Subscription.on_key_press()
+        s2 = Subscription.on_key_press()
+        assert s1.key == s2.key
 
     def test_max_rate_not_in_key(self) -> None:
         """max_rate is not part of the key: same sub, different rate."""
-        s1 = Subscription.on_pointer_move("m", max_rate=30)
-        s2 = Subscription.on_pointer_move("m", max_rate=60)
+        s1 = Subscription.on_pointer_move(max_rate=30)
+        s2 = Subscription.on_pointer_move(max_rate=60)
         assert s1.key == s2.key
 
 

@@ -5,6 +5,10 @@ the list each cycle using ``key``: subscriptions with the same key are
 considered identical and kept alive; new keys trigger a subscribe message
 to the renderer; removed keys trigger an unsubscribe.
 
+Timer subscriptions (``every``) carry a ``tag`` that identifies them in
+``TimerTick`` events. Renderer subscriptions have no tag; their identity
+is derived from the subscription kind and optional window scope.
+
 Renderer subscriptions accept an optional ``max_rate`` that tells the
 renderer to coalesce events beyond the given rate (events per second).
 
@@ -13,7 +17,7 @@ Usage::
     from plushie.subscriptions import Subscription
 
     def subscribe(self, model):
-        subs = [Subscription.on_key_press("keys")]
+        subs = [Subscription.on_key_press()]
         if model.animating:
             subs.append(Subscription.every(16, "tick"))
         return subs
@@ -21,11 +25,11 @@ Usage::
 Window-scoped subscriptions only receive events from a specific
 window::
 
-    Subscription.on_key_press("editor_keys", window="editor")
+    Subscription.on_key_press(window="editor")
 
     Subscription.for_window("editor", [
-        Subscription.on_key_press("editor_keys"),
-        Subscription.on_pointer_move("editor_mouse", max_rate=60),
+        Subscription.on_key_press(),
+        Subscription.on_pointer_move(max_rate=60),
     ])
 """
 
@@ -46,7 +50,9 @@ class Subscription:
     Attributes:
         kind: The subscription kind (e.g. ``"every"``,
             ``"on_key_press"``).
-        tag: Identifier for subscription management and diffing.
+        tag: Identifier for timer subscriptions. ``None`` for renderer
+            subscriptions (their identity is derived from kind and
+            window scope).
         interval_ms: Timer interval in milliseconds (``every`` only).
         max_rate: Optional rate limit (events per second) for renderer
             subscriptions.  ``None`` means no limit.
@@ -56,7 +62,7 @@ class Subscription:
     """
 
     kind: str
-    tag: str
+    tag: str | None
     interval_ms: int | None = None
     max_rate: int | None = None
     window_id: str | None = None
@@ -66,14 +72,30 @@ class Subscription:
         """Unique identity for subscription diffing.
 
         Timer subscriptions key on ``(kind, interval_ms, tag)``.
-        Renderer subscriptions key on ``(kind, tag)`` or
-        ``(kind, tag, window_id)`` when window-scoped.
+        Renderer subscriptions key on ``(kind, window_id)``.
         """
         if self.kind == "every":
-            return ("every", str(self.interval_ms), self.tag)
+            return (
+                "every",
+                str(self.interval_ms),
+                self.tag if self.tag is not None else "",
+            )
+        return (self.kind, self.window_id or "")
+
+    @property
+    def wire_tag(self) -> str:
+        """Wire tag sent to the renderer for subscribe/unsubscribe.
+
+        Timer subscriptions use the user-provided tag.
+        Global renderer subscriptions use the kind string
+        (e.g. ``"on_key_press"``). Window-scoped subscriptions include
+        the window_id (e.g. ``"on_pointer_move:editor"``).
+        """
+        if self.kind == "every":
+            return self.tag if self.tag is not None else ""
         if self.window_id is not None:
-            return (self.kind, self.tag, self.window_id)
-        return (self.kind, self.tag)
+            return f"{self.kind}:{self.window_id}"
+        return self.kind
 
     @property
     def wire_kind(self) -> str:
@@ -98,29 +120,29 @@ class Subscription:
 
     @staticmethod
     def on_key_press(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to key press events."""
         return Subscription(
-            kind="on_key_press", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_key_press", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_key_release(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to key release events."""
         return Subscription(
-            kind="on_key_release", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_key_release", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_modifiers_changed(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to keyboard modifier state changes (shift, ctrl, alt, etc.)."""
         return Subscription(
-            kind="on_modifiers_changed", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_modifiers_changed", tag=None, max_rate=max_rate, window_id=window
         )
 
     # ------------------------------------------------------------------
@@ -129,7 +151,7 @@ class Subscription:
 
     @staticmethod
     def on_pointer_move(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to pointer movement events (also delivers enter/leave).
 
@@ -137,12 +159,12 @@ class Subscription:
         ``id=window_id`` and ``scope=()``.
         """
         return Subscription(
-            kind="on_pointer_move", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_pointer_move", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_pointer_button(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to pointer button press and release events.
 
@@ -150,24 +172,24 @@ class Subscription:
         and ``scope=()``.
         """
         return Subscription(
-            kind="on_pointer_button", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_pointer_button", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_pointer_scroll(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to pointer scroll (wheel) events.
 
         Delivers ``Scroll`` events with ``id=window_id`` and ``scope=()``.
         """
         return Subscription(
-            kind="on_pointer_scroll", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_pointer_scroll", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_pointer_touch(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to touch pointer events.
 
@@ -175,7 +197,7 @@ class Subscription:
         ``pointer="touch"`` and ``id=window_id``.
         """
         return Subscription(
-            kind="on_touch", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_touch", tag=None, max_rate=max_rate, window_id=window
         )
 
     # ------------------------------------------------------------------
@@ -184,10 +206,12 @@ class Subscription:
 
     @staticmethod
     def on_ime(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to IME (Input Method Editor) events."""
-        return Subscription(kind="on_ime", tag=tag, max_rate=max_rate, window_id=window)
+        return Subscription(
+            kind="on_ime", tag=None, max_rate=max_rate, window_id=window
+        )
 
     # ------------------------------------------------------------------
     # Window
@@ -195,65 +219,65 @@ class Subscription:
 
     @staticmethod
     def on_window_event(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to all window events (resize, move, focus, etc.)."""
         return Subscription(
-            kind="on_window_event", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_window_event", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_window_open(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to window open events."""
         return Subscription(
-            kind="on_window_open", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_window_open", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_window_close(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to window close request events."""
         return Subscription(
-            kind="on_window_close", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_window_close", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_window_resize(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to window resize events."""
         return Subscription(
-            kind="on_window_resize", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_window_resize", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_window_move(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to window move events."""
         return Subscription(
-            kind="on_window_move", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_window_move", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_window_focus(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to window focus gained events."""
         return Subscription(
-            kind="on_window_focus", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_window_focus", tag=None, max_rate=max_rate, window_id=window
         )
 
     @staticmethod
     def on_window_unfocus(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to window focus lost events."""
         return Subscription(
-            kind="on_window_unfocus", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_window_unfocus", tag=None, max_rate=max_rate, window_id=window
         )
 
     # ------------------------------------------------------------------
@@ -262,11 +286,11 @@ class Subscription:
 
     @staticmethod
     def on_file_drop(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to file drop events (also delivers hovered/hover-left)."""
         return Subscription(
-            kind="on_file_drop", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_file_drop", tag=None, max_rate=max_rate, window_id=window
         )
 
     # ------------------------------------------------------------------
@@ -275,11 +299,11 @@ class Subscription:
 
     @staticmethod
     def on_animation_frame(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to animation frame events (vsync ticks)."""
         return Subscription(
-            kind="on_animation_frame", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_animation_frame", tag=None, max_rate=max_rate, window_id=window
         )
 
     # ------------------------------------------------------------------
@@ -288,11 +312,11 @@ class Subscription:
 
     @staticmethod
     def on_theme_change(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to system theme changes (light/dark mode)."""
         return Subscription(
-            kind="on_theme_change", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_theme_change", tag=None, max_rate=max_rate, window_id=window
         )
 
     # ------------------------------------------------------------------
@@ -301,11 +325,11 @@ class Subscription:
 
     @staticmethod
     def on_event(
-        tag: str, *, max_rate: int | None = None, window: str | None = None
+        *, max_rate: int | None = None, window: str | None = None
     ) -> Subscription:
         """Subscribe to all renderer events (catch-all)."""
         return Subscription(
-            kind="on_event", tag=tag, max_rate=max_rate, window_id=window
+            kind="on_event", tag=None, max_rate=max_rate, window_id=window
         )
 
     # ------------------------------------------------------------------
@@ -325,8 +349,8 @@ class Subscription:
         Example::
 
             Subscription.for_window("editor", [
-                Subscription.on_key_press("editor_keys"),
-                Subscription.on_pointer_move("editor_mouse", max_rate=60),
+                Subscription.on_key_press(),
+                Subscription.on_pointer_move(max_rate=60),
             ])
         """
         return [replace(sub, window_id=window_id) for sub in subscriptions]

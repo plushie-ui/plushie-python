@@ -75,17 +75,17 @@ class TestPerSubscriptionRate:
     """Doc section: Event rate limiting: Per-subscription."""
 
     def test_mouse_move_rate(self) -> None:
-        sub = Subscription.on_pointer_move("mouse", max_rate=30)
+        sub = Subscription.on_pointer_move(max_rate=30)
         assert sub.kind == "on_pointer_move"
         assert sub.max_rate == 30
 
     def test_animation_frame_rate(self) -> None:
-        sub = Subscription.on_animation_frame("frame", max_rate=60)
+        sub = Subscription.on_animation_frame(max_rate=60)
         assert sub.kind == "on_animation_frame"
         assert sub.max_rate == 60
 
     def test_capture_only_zero_rate(self) -> None:
-        sub = Subscription.on_pointer_move("capture", max_rate=0)
+        sub = Subscription.on_pointer_move(max_rate=0)
         assert sub.max_rate == 0
 
 

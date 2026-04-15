@@ -2,7 +2,7 @@
 
 Demonstrates:
 
-- ``Subscription.on_key_press("keys")`` for global keyboard events
+- ``Subscription.on_key_press()`` for global keyboard events
 - ``KeyPress`` event handling with modifier inspection
 - ``scrollable`` for overflow content with dynamic list items
 - Capped log buffer (50 entries)
@@ -69,7 +69,7 @@ class Shortcuts(plushie.App[Model]):
                 return model
 
     def subscribe(self, model: Model) -> list[Subscription]:
-        return [Subscription.on_key_press("keys")]
+        return [Subscription.on_key_press()]
 
     def view(self, model: Model) -> dict[str, Any]:
         return ui.window(
