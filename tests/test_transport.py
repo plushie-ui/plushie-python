@@ -16,7 +16,7 @@ import msgpack
 import pytest
 
 from plushie.connection import Connection
-from plushie.transport import IoStreamAdapter, WebSocketAdapter
+from plushie.transport import IoStreamAdapter, SocketAdapter, WebSocketAdapter
 
 
 def _encode_msg(msg: dict[str, Any]) -> bytes:
@@ -248,3 +248,19 @@ class TestConnectionFromIostream:
         conn.send_settings({"theme": "dark"})
         assert len(writer.chunks) == 1
         conn.close()
+
+
+class TestSocketAdapterInit:
+    """SocketAdapter address parsing and connection (no live server)."""
+
+    def test_tcp_connection_refused(self) -> None:
+        with pytest.raises(ConnectionRefusedError):
+            SocketAdapter(":1")
+
+    def test_tcp_host_port_refused(self) -> None:
+        with pytest.raises(ConnectionRefusedError):
+            SocketAdapter("127.0.0.1:1")
+
+    def test_unix_connection_refused(self) -> None:
+        with pytest.raises((ConnectionRefusedError, FileNotFoundError)):
+            SocketAdapter("/tmp/_plushie_nonexistent_test.sock")

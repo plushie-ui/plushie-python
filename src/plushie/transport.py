@@ -14,11 +14,19 @@ The iostream protocol (matching the Elixir Bridge's iostream mode):
 
 Usage::
 
-    import socket
-    from plushie.transport import IoStreamAdapter
+    from plushie.transport import IoStreamAdapter, SocketAdapter
 
+    # Manual socket
+    import socket
     sock = socket.create_connection(("127.0.0.1", 4567))
     adapter = IoStreamAdapter(sock.makefile("rb"), sock.makefile("wb"))
+    conn = Connection.from_iostream(adapter)
+
+    # SocketAdapter convenience (TCP or Unix domain socket)
+    adapter = SocketAdapter("127.0.0.1:4567")
+    conn = Connection.from_iostream(adapter)
+
+    adapter = SocketAdapter("/tmp/plushie.sock")
     conn = Connection.from_iostream(adapter)
 """
 
@@ -26,6 +34,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import socket
 import threading
 from collections.abc import Callable
 from queue import Empty, Queue
@@ -321,9 +330,64 @@ class _WebSocketWriter:
         """No-op: WebSocket lifecycle managed by WebSocketAdapter."""
 
 
+class SocketAdapter(IoStreamAdapter):
+    """Connect to a plushie renderer over TCP or Unix domain socket.
+
+    Parses the address string to determine the transport:
+    - ``":4567"`` or ``"localhost:4567"``: TCP (localhost when only port given)
+    - ``"/path/to/sock"`` or ``"path/to/sock"``: Unix domain socket
+
+    Usage::
+
+        from plushie.transport import SocketAdapter
+        from plushie.connection import Connection
+
+        adapter = SocketAdapter(":4567")
+        conn = Connection.from_iostream(adapter)
+
+        adapter = SocketAdapter("/tmp/plushie.sock")
+        conn = Connection.from_iostream(adapter)
+    """
+
+    def __init__(
+        self,
+        address: str,
+        *,
+        on_event: Callable[[Any], None] | None = None,
+    ) -> None:
+        self._socket: socket.socket
+        if address.startswith("/"):
+            self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self._socket.connect(address)
+        elif ":" in address:
+            host, port_str = address.split(":", 1)
+            if host:
+                self._socket = socket.create_connection((host, int(port_str)))
+            else:
+                self._socket = socket.create_connection(("127.0.0.1", int(port_str)))
+        else:
+            self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self._socket.connect(address)
+
+        super().__init__(
+            self._socket.makefile("rb"),
+            self._socket.makefile("wb"),
+            on_event=on_event,
+        )
+
+    def close(self) -> None:
+        """Close the adapter and the underlying socket."""
+        if self._closed:
+            return
+        super().close()
+        with contextlib.suppress(OSError):
+            self._socket.close()
+
+
 __all__ = [
     "IoStreamAdapter",
     "ReadableStream",
+    "SocketAdapter",
     "WebSocketAdapter",
     "WritableStream",
 ]
