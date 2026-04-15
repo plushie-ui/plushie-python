@@ -131,6 +131,34 @@ class TestNormalizeSlashValidation:
         with pytest.raises(ValueError, match="/"):
             normalize(_node("bad/id", "button"))
 
+    def test_rejects_hash_in_user_id(self) -> None:
+        with pytest.raises(ValueError, match="#"):
+            normalize(_node("bad#id", "button"))
+
+    def test_rejects_empty_id(self) -> None:
+        with pytest.raises(ValueError, match="empty"):
+            normalize(_node("", "button"))
+
+    def test_rejects_non_ascii(self) -> None:
+        with pytest.raises(ValueError, match="invalid characters"):
+            normalize(_node("héllo", "button"))
+
+    def test_rejects_control_chars(self) -> None:
+        with pytest.raises(ValueError, match="invalid characters"):
+            normalize(_node("bad\nid", "button"))
+
+    def test_rejects_space(self) -> None:
+        with pytest.raises(ValueError, match="invalid characters"):
+            normalize(_node("bad id", "button"))
+
+    def test_rejects_oversized_id(self) -> None:
+        with pytest.raises(ValueError, match="1024"):
+            normalize(_node("x" * 1025, "button"))
+
+    def test_accepts_valid_id(self) -> None:
+        result = normalize(_node("my-button_123", "button"))
+        assert result["id"] == "my-button_123"
+
     def test_allows_auto_id_with_colon(self) -> None:
         """Auto-IDs are internal and always valid."""
         node = {"type": "text", "props": {}}

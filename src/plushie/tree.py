@@ -21,11 +21,14 @@ diff algorithm and normalization rules.
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger("plushie")
+
+_VALID_ID_RE = re.compile(r"^[\x21-\x7e]+$")
 
 # ---------------------------------------------------------------------------
 # Types
@@ -324,8 +327,10 @@ def _normalize_with_scope(
     is_auto = node_id.startswith("auto:")
     current_window_id = node_id if node_type == "window" else window_id
 
-    # Validate: user-provided IDs must not contain "/" or "#"
+    # Validate user-provided IDs (auto-IDs skip validation).
     if not is_auto:
+        if node_id == "":
+            raise ValueError("widget ID must not be empty")
         if "/" in node_id:
             raise ValueError(
                 f'widget ID {node_id!r} cannot contain "/" '
@@ -334,7 +339,16 @@ def _normalize_with_scope(
         if "#" in node_id:
             raise ValueError(
                 f'widget ID {node_id!r} cannot contain "#" '
-                "-- # is a reserved separator for window boundaries"
+                "-- # is a reserved separator for window-qualified paths"
+            )
+        if len(node_id.encode("utf-8")) > 1024:
+            raise ValueError(
+                f"widget ID {node_id!r} exceeds maximum length of 1024 bytes"
+            )
+        if not _VALID_ID_RE.match(node_id):
+            raise ValueError(
+                f"widget ID {node_id!r} contains invalid characters "
+                "-- IDs must contain only printable ASCII (0x21-0x7E)"
             )
 
     # Apply scope prefix to this node's ID.
