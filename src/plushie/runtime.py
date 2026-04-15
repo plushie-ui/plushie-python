@@ -1206,8 +1206,14 @@ class Runtime:
                 return
 
     def _flush_pending_effects(self, reason: str) -> None:
-        """Flush all pending effects (e.g. on renderer restart)."""
-        for _wire_id, entry in list(self._pending_effects.items()):
+        """Flush all pending effects (e.g. on renderer restart).
+
+        Takes a snapshot before processing so new effects added during
+        update callbacks are not silently discarded.
+        """
+        snapshot = dict(self._pending_effects)
+        self._pending_effects.clear()
+        for _wire_id, entry in snapshot.items():
             entry["timer"].cancel()
             self._run_update(
                 EffectResult(
@@ -1217,7 +1223,6 @@ class Runtime:
                     error=reason,
                 )
             )
-        self._pending_effects.clear()
 
     # -------------------------------------------------------------------
     # Subscription diffing
@@ -1244,6 +1249,18 @@ class Runtime:
 
         if extra_subs:
             new_specs = [*new_specs, *extra_subs]
+
+        # Filter out non-Subscription items and warn
+        filtered: list[Subscription] = []
+        for spec in new_specs:
+            if isinstance(spec, Subscription):
+                filtered.append(spec)
+            else:
+                logger.warning(
+                    "plushie runtime: subscribe() returned non-Subscription item: %r",
+                    spec,
+                )
+        new_specs = filtered
 
         new_by_key: dict[tuple[str, ...], Subscription] = {
             spec.key: spec for spec in new_specs
