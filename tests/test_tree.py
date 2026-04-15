@@ -1040,10 +1040,10 @@ class TestNormalizePropEncoding:
             "children": [],
         }
         result = normalize(node)
-        assert result["props"]["font"] == {"family": "Inter", "weight": "Bold"}
+        assert result["props"]["font"] == {"family": "Inter", "weight": "bold"}
 
     def test_gradient_encoded(self) -> None:
-        g = Gradient.linear(90, [(0.0, "#ff0000"), (1.0, "#0000ff")])
+        g = Gradient.linear((0, 0), (100, 100), [(0.0, "#ff0000"), (1.0, "#0000ff")])
         node = {
             "id": "box",
             "type": "container",
@@ -1052,7 +1052,8 @@ class TestNormalizePropEncoding:
         }
         result = normalize(node)
         assert result["props"]["background"]["type"] == "linear"
-        assert result["props"]["background"]["angle"] == 90
+        assert result["props"]["background"]["start"] == [0, 0]
+        assert result["props"]["background"]["end"] == [100, 100]
 
     def test_style_map_encoded(self) -> None:
         style = (
@@ -1152,7 +1153,7 @@ class TestNormalizePropEncodingRoundTrip:
         assert rt_props["style"]["shadow"]["offset"] == [2.0, 2.0]
 
     def test_gradient_through_framing(self) -> None:
-        g = Gradient.linear(45, [(0.0, "#ff0000"), (1.0, "blue")])
+        g = Gradient.linear((0, 0), (1, 1), [(0.0, "#ff0000"), (1.0, "blue")])
         node = {
             "id": "box",
             "type": "container",
@@ -1166,7 +1167,8 @@ class TestNormalizePropEncodingRoundTrip:
         decoded = framing.feed(framed)
         bg = decoded[0]["tree"]["props"]["background"]
         assert bg["type"] == "linear"
-        assert bg["angle"] == 45
+        assert bg["start"] == [0, 0]
+        assert bg["end"] == [1, 1]
         assert len(bg["stops"]) == 2
 
     def test_a11y_through_framing(self) -> None:

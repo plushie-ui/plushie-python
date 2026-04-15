@@ -11,6 +11,7 @@ string-literal type aliases.
 
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass, replace
 from typing import Literal
@@ -448,49 +449,74 @@ type GradientStop = tuple[float, str]
 
 @dataclass(frozen=True, slots=True)
 class Gradient:
-    """Linear gradient background.
+    """Linear gradient background defined by start/end coordinates.
 
-    Use the ``linear`` factory for convenient construction. Stops are
-    ``(offset, color)`` tuples where offset ranges from 0.0 to 1.0.
+    Use the ``linear`` factory to specify start and end points, or
+    ``linear_from_angle`` for angle-based construction (which converts
+    the angle to coordinates on a unit square).
 
-    Wire format produces a dict with ``type``, ``angle``, and ``stops`` keys.
+    Stops are ``(offset, color)`` tuples where offset ranges from 0.0
+    to 1.0. Colors are normalized to hex via ``Colors.cast``.
     """
 
-    angle: float
+    start: tuple[float, float]
+    end: tuple[float, float]
     stops: tuple[tuple[float, str], ...]
 
     @staticmethod
     def linear(
-        angle: float,
+        start: tuple[float, float],
+        end: tuple[float, float],
         stops: list[tuple[float, str]] | tuple[tuple[float, str], ...],
     ) -> Gradient:
-        """Create a linear gradient.
+        """Create a linear gradient with explicit start and end coordinates.
 
-        Colors in stops are cast through ``Colors.cast`` for named color
-        support.
-
-        >>> g = Gradient.linear(90, [(0.0, "#ff0000"), (1.0, "#0000ff")])
-        >>> g.angle
-        90
-        >>> len(g.stops)
-        2
+        >>> g = Gradient.linear((0, 0), (1, 1), [(0.0, "#ff0000"), (1.0, "#0000ff")])
+        >>> g.start
+        (0, 0)
+        >>> g.end
+        (1, 1)
         """
         normalized: list[tuple[float, str]] = []
         for offset, color in stops:
             normalized.append((offset, Colors.cast(color)))
-        return Gradient(angle=angle, stops=tuple(normalized))
+        return Gradient(start=start, end=end, stops=tuple(normalized))
+
+    @staticmethod
+    def linear_from_angle(
+        angle: float,
+        stops: list[tuple[float, str]] | tuple[tuple[float, str], ...],
+    ) -> Gradient:
+        """Create a linear gradient from an angle (degrees).
+
+        Converts the angle to start/end coordinates on the unit square
+        (0-1 range). An angle of 0 points right, 90 points down.
+
+        >>> g = Gradient.linear_from_angle(90, [(0.0, "red"), (1.0, "blue")])
+        >>> g.start[0] == 0.5
+        True
+        """
+        radians = angle * math.pi / 180.0
+        dx = math.cos(radians)
+        dy = math.sin(radians)
+        half_len = abs(dx) / 2.0 + abs(dy) / 2.0
+        cx, cy = 0.5, 0.5
+        return Gradient.linear(
+            (cx - dx * half_len, cy - dy * half_len),
+            (cx + dx * half_len, cy + dy * half_len),
+            stops,
+        )
 
     def to_wire(self) -> dict[str, object]:
         """Convert to wire-compatible dict.
 
-        Wire format: ``{"type": "linear", "angle": n, "stops": [{"offset": n, "color": hex}, ...]}``.
+        Wire format: ``{"type": "linear", "start": [x, y], "end": [x, y], "stops": [[offset, color], ...]}``.
         """
         return {
             "type": "linear",
-            "angle": self.angle,
-            "stops": [
-                {"offset": offset, "color": color} for offset, color in self.stops
-            ],
+            "start": list(self.start),
+            "end": list(self.end),
+            "stops": [[offset, color] for offset, color in self.stops],
         }
 
 

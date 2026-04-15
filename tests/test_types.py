@@ -237,25 +237,31 @@ class TestShadow:
 
 class TestGradient:
     def test_linear_factory(self) -> None:
-        g = Gradient.linear(90, [(0.0, "#ff0000"), (1.0, "#0000ff")])
-        assert g.angle == 90
+        g = Gradient.linear((0, 0), (100, 100), [(0.0, "#ff0000"), (1.0, "#0000ff")])
+        assert g.start == (0, 0)
+        assert g.end == (100, 100)
         assert len(g.stops) == 2
         assert g.stops[0] == (0.0, "#ff0000")
         assert g.stops[1] == (1.0, "#0000ff")
 
     def test_stops_are_tuple(self) -> None:
-        g = Gradient.linear(45, [(0.0, "#000000"), (1.0, "#ffffff")])
+        g = Gradient.linear((0, 0), (1, 1), [(0.0, "#000000"), (1.0, "#ffffff")])
         assert isinstance(g.stops, tuple)
 
     def test_named_color_in_stops(self) -> None:
-        g = Gradient.linear(0, [(0.0, "red"), (1.0, "blue")])
+        g = Gradient.linear((0, 0), (1, 1), [(0.0, "red"), (1.0, "blue")])
         assert g.stops[0] == (0.0, "#ff0000")
         assert g.stops[1] == (1.0, "#0000ff")
 
+    def test_linear_from_angle(self) -> None:
+        g = Gradient.linear_from_angle(90, [(0.0, "#000000")])
+        assert abs(g.start[0] - 0.5) < 1e-9
+        assert g.stops[0] == (0.0, "#000000")
+
     def test_frozen(self) -> None:
-        g = Gradient.linear(90, [(0.0, "#000000")])
+        g = Gradient.linear((0, 0), (1, 1), [(0.0, "#000000")])
         with pytest.raises(AttributeError):
-            g.angle = 45  # type: ignore[misc]
+            g.start = (1, 1)  # type: ignore[misc]
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +322,7 @@ class TestStyleMap:
         assert s.background == "#ff0000"
 
     def test_with_background_gradient(self) -> None:
-        g = Gradient.linear(90, [(0.0, "#000000"), (1.0, "#ffffff")])
+        g = Gradient.linear((0, 0), (1, 1), [(0.0, "#000000"), (1.0, "#ffffff")])
         s = StyleMap().with_background(g)
         assert isinstance(s.background, Gradient)
 
@@ -606,14 +612,12 @@ class TestShadowToWire:
 
 class TestGradientToWire:
     def test_linear(self) -> None:
-        g = Gradient.linear(90, [(0.0, "#ff0000"), (1.0, "#0000ff")])
+        g = Gradient.linear((0, 0), (100, 100), [(0.0, "#ff0000"), (1.0, "#0000ff")])
         wire = g.to_wire()
         assert wire["type"] == "linear"
-        assert wire["angle"] == 90
-        assert wire["stops"] == [
-            {"offset": 0.0, "color": "#ff0000"},
-            {"offset": 1.0, "color": "#0000ff"},
-        ]
+        assert wire["start"] == [0, 0]
+        assert wire["end"] == [100, 100]
+        assert wire["stops"] == [[0.0, "#ff0000"], [1.0, "#0000ff"]]
 
 
 class TestFontToWire:
@@ -652,12 +656,14 @@ class TestStyleMapToWire:
         assert s.to_wire() == {"background": "#ff0000"}
 
     def test_background_gradient(self) -> None:
-        g = Gradient.linear(90, [(0.0, "#000000"), (1.0, "#ffffff")])
+        g = Gradient.linear((0, 0), (1, 1), [(0.0, "#000000"), (1.0, "#ffffff")])
         s = StyleMap().with_background(g)
         wire = s.to_wire()
         bg = wire["background"]
         assert isinstance(bg, dict)
         assert bg["type"] == "linear"
+        assert "start" in bg
+        assert "end" in bg
 
     def test_nested_border_shadow(self) -> None:
         b = Border(color="#000000", width=1, radius=4)
