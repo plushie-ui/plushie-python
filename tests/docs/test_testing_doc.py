@@ -103,8 +103,9 @@ class TestCommandExamples:
         assert isinstance(result, tuple)
         model_out, cmd = result
         assert model_out.todos == [{"text": "Buy milk"}]
-        assert cmd.type == "widget_op"
-        assert cmd.payload["target"] == "todo_input"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "focus"
+        assert cmd.payload["id"] == "todo_input"
 
     def test_save_triggers_async_task(self) -> None:
         app = MyApp()

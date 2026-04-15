@@ -1019,21 +1019,19 @@ class Runtime:
             self._conn.send(msg)
             return
 
-        if t == "extension_command":
+        if t == "command":
             msg = widget_command(
-                p["node_id"],
-                p["op"],
-                p.get("payload"),
+                p["id"],
+                p["family"],
+                p.get("value"),
                 session=self._conn.session,
             )
             self._conn.send(msg)
             return
 
-        if t == "extension_commands":
-            cmds = [
-                {"node_id": c[0], "op": c[1], "payload": c[2]}
-                for c in p.get("commands", [])
-            ]
+        if t == "commands":
+            raw_cmds = p.get("commands", [])
+            cmds = [(c["id"], c["family"], c.get("value")) for c in raw_cmds]
             msg = widget_commands(cmds, session=self._conn.session)
             self._conn.send(msg)
             return

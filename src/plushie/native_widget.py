@@ -265,7 +265,7 @@ def build_command(
 ) -> Command:
     """Build a native widget command targeting a specific widget instance.
 
-    The command is sent via the wire protocol's ``extension_command``
+    The command is sent via the wire protocol's unified ``command``
     message type and delivered to the Rust widget by node ID.
 
     Args:
@@ -278,10 +278,12 @@ def build_command(
 
     Returns:
         A :class:`~plushie.commands.Command` of type
-        ``"extension_command"``.
+        ``"command"``.
     """
-    _ = ext_def  # present for API symmetry and future validation
-    return Command.widget_command(node_id, op, payload or {})
+    _ = ext_def
+    if payload:
+        return Command.widget_command(node_id, op, payload)
+    return Command.widget_command(node_id, op)
 
 
 # -- Build system integration -------------------------------------------------

@@ -182,9 +182,9 @@ def test_command_focus():
     """Command.focus() targets a specific widget."""
     cmd = Command.focus("todo_input")
 
-    assert cmd.type == "widget_op"
-    assert cmd.payload["op"] == "focus"
-    assert cmd.payload["target"] == "todo_input"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "focus"
+    assert cmd.payload["id"] == "todo_input"
 
 
 def test_command_focus_next():
@@ -212,43 +212,47 @@ def test_command_select_all():
     """Command.select_all() selects all text in a widget."""
     cmd = Command.select_all("editor")
 
-    assert cmd.type == "widget_op"
-    assert cmd.payload["op"] == "select_all"
-    assert cmd.payload["target"] == "editor"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "select_all"
+    assert cmd.payload["id"] == "editor"
 
 
 def test_command_select_range():
     """Command.select_range() selects a character range."""
     cmd = Command.select_range("editor", 5, 10)
 
-    assert cmd.type == "widget_op"
-    assert cmd.payload["op"] == "select_range"
-    assert cmd.payload["target"] == "editor"
-    assert cmd.payload["start"] == 5
-    assert cmd.payload["end"] == 10
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "select_range"
+    assert cmd.payload["id"] == "editor"
+    assert cmd.payload["value"] == {"start": 5, "end": 10}
 
 
 def test_command_move_cursor_to():
     """Command.move_cursor_to() positions the cursor."""
     cmd = Command.move_cursor_to("editor", 42)
 
-    assert cmd.type == "widget_op"
-    assert cmd.payload["op"] == "move_cursor_to"
-    assert cmd.payload["position"] == 42
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "move_cursor_to"
+    assert cmd.payload["id"] == "editor"
+    assert cmd.payload["value"] == {"position": 42}
 
 
 def test_command_move_cursor_to_front():
     """Command.move_cursor_to_front() moves cursor to start."""
     cmd = Command.move_cursor_to_front("editor")
 
-    assert cmd.payload["op"] == "move_cursor_to_front"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "move_cursor_to_front"
+    assert cmd.payload["id"] == "editor"
 
 
 def test_command_move_cursor_to_end():
     """Command.move_cursor_to_end() moves cursor to end."""
     cmd = Command.move_cursor_to_end("editor")
 
-    assert cmd.payload["op"] == "move_cursor_to_end"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "move_cursor_to_end"
+    assert cmd.payload["id"] == "editor"
 
 
 # ---------------------------------------------------------------------------
@@ -260,36 +264,39 @@ def test_command_scroll_to():
     """Command.scroll_to() scrolls to an absolute vertical position."""
     cmd = Command.scroll_to("chat_log", 500.0)
 
-    assert cmd.type == "widget_op"
-    assert cmd.payload["op"] == "scroll_to"
-    assert cmd.payload["target"] == "chat_log"
-    assert cmd.payload["offset_y"] == 500.0
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "scroll_to"
+    assert cmd.payload["id"] == "chat_log"
+    assert cmd.payload["value"] == {"x": 0.0, "y": 500.0}
 
 
 def test_command_snap_to():
     """Command.snap_to() snaps to an absolute scroll offset."""
     cmd = Command.snap_to("scroller", 0.0, 100.0)
 
-    assert cmd.payload["op"] == "snap_to"
-    assert cmd.payload["x"] == 0.0
-    assert cmd.payload["y"] == 100.0
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "snap_to"
+    assert cmd.payload["id"] == "scroller"
+    assert cmd.payload["value"] == {"x": 0.0, "y": 100.0}
 
 
 def test_command_snap_to_end():
     """Command.snap_to_end() snaps to the end of scrollable content."""
     cmd = Command.snap_to_end("chat_log")
 
-    assert cmd.payload["op"] == "snap_to_end"
-    assert cmd.payload["target"] == "chat_log"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "snap_to_end"
+    assert cmd.payload["id"] == "chat_log"
 
 
 def test_command_scroll_by():
     """Command.scroll_by() scrolls by a relative delta."""
     cmd = Command.scroll_by("scroller", 0.0, 50.0)
 
-    assert cmd.payload["op"] == "scroll_by"
-    assert cmd.payload["x"] == 0.0
-    assert cmd.payload["y"] == 50.0
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "scroll_by"
+    assert cmd.payload["id"] == "scroller"
+    assert cmd.payload["value"] == {"x": 0.0, "y": 50.0}
 
 
 # ---------------------------------------------------------------------------
@@ -371,9 +378,9 @@ def test_command_toggle_decorations():
     assert cmd.payload["op"] == "toggle_decorations"
 
 
-def test_command_gain_focus():
-    """Command.gain_focus() brings a window to front."""
-    cmd = Command.gain_focus("main")
+def test_command_focus_window():
+    """Command.focus_window() brings a window to front."""
+    cmd = Command.focus_window("main")
     assert cmd.payload["op"] == "gain_focus"
 
 
@@ -585,37 +592,49 @@ def test_command_pane_split():
     """Command.pane_split() splits a pane along an axis."""
     cmd = Command.pane_split("pane_grid", "editor", "horizontal", "new_editor")
 
-    assert cmd.type == "widget_op"
-    assert cmd.payload["op"] == "pane_split"
-    assert cmd.payload["target"] == "pane_grid"
-    assert cmd.payload["axis"] == "horizontal"
-    assert cmd.payload["new_pane_id"] == "new_editor"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "pane_split"
+    assert cmd.payload["id"] == "pane_grid"
+    assert cmd.payload["value"] == {
+        "pane": "editor",
+        "axis": "horizontal",
+        "new_pane_id": "new_editor",
+    }
 
 
 def test_command_pane_close():
     """Command.pane_close() removes a pane."""
     cmd = Command.pane_close("pane_grid", "editor")
-    assert cmd.payload["op"] == "pane_close"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "pane_close"
+    assert cmd.payload["id"] == "pane_grid"
+    assert cmd.payload["value"] == {"pane": "editor"}
 
 
 def test_command_pane_swap():
     """Command.pane_swap() exchanges two panes."""
     cmd = Command.pane_swap("pane_grid", "a", "b")
-    assert cmd.payload["op"] == "pane_swap"
-    assert cmd.payload["a"] == "a"
-    assert cmd.payload["b"] == "b"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "pane_swap"
+    assert cmd.payload["id"] == "pane_grid"
+    assert cmd.payload["value"] == {"a": "a", "b": "b"}
 
 
 def test_command_pane_maximize():
     """Command.pane_maximize() fills the grid with one pane."""
     cmd = Command.pane_maximize("pane_grid", "editor")
-    assert cmd.payload["op"] == "pane_maximize"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "pane_maximize"
+    assert cmd.payload["id"] == "pane_grid"
+    assert cmd.payload["value"] == {"pane": "editor"}
 
 
 def test_command_pane_restore():
     """Command.pane_restore() restores all panes from maximized."""
     cmd = Command.pane_restore("pane_grid")
-    assert cmd.payload["op"] == "pane_restore"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "pane_restore"
+    assert cmd.payload["id"] == "pane_grid"
 
 
 # ---------------------------------------------------------------------------
@@ -649,7 +668,7 @@ def test_command_batch():
     assert cmd.type == "batch"
     cmds = cmd.payload["commands"]
     assert len(cmds) == 2
-    assert cmds[0].type == "widget_op"
+    assert cmds[0].type == "command"
     assert cmds[1].type == "send_after"
 
 
@@ -662,10 +681,10 @@ def test_command_widget_command():
     """Command.widget_command() sends data to a native widget."""
     cmd = Command.widget_command("term-1", "write", {"data": "hello"})
 
-    assert cmd.type == "extension_command"
-    assert cmd.payload["node_id"] == "term-1"
-    assert cmd.payload["op"] == "write"
-    assert cmd.payload["payload"] == {"data": "hello"}
+    assert cmd.type == "command"
+    assert cmd.payload["id"] == "term-1"
+    assert cmd.payload["family"] == "write"
+    assert cmd.payload["value"] == {"data": "hello"}
 
 
 def test_command_widget_commands():
@@ -677,7 +696,7 @@ def test_command_widget_commands():
         ]
     )
 
-    assert cmd.type == "extension_commands"
+    assert cmd.type == "commands"
     assert len(cmd.payload["commands"]) == 2
 
 

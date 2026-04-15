@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from typing import Any, overload
 
+from plushie.types import encode_line_height
+
 # ---------------------------------------------------------------------------
 # Node type alias
 # ---------------------------------------------------------------------------
@@ -60,7 +62,11 @@ def _node(
     props: dict[str, Any],
     children: list[Node] | None = None,
 ) -> Node:
-    """Build a node dict, stripping None-valued props."""
+    """Build a node dict, stripping None-valued props and remapping keys."""
+    if "ime_purpose" in props:
+        props.setdefault("input_purpose", props.pop("ime_purpose"))
+    if "line_height" in props:
+        props["line_height"] = encode_line_height(props["line_height"])
     clean_props = {k: v for k, v in props.items() if v is not None}
     return {
         "id": id,
@@ -368,7 +374,8 @@ def text_input(id: str, value: str, /, **kwargs: Any) -> Node:
         **kwargs: Text input props (placeholder, padding, width, size,
             font, line_height, align_x, on_submit, on_paste, secure,
             ime_purpose, style, icon, placeholder_color, selection_color,
-            a11y).
+            a11y). Use ``input_purpose`` (preferred) or ``ime_purpose``
+            (deprecated alias).
     """
     return _node(id, "text_input", {"value": value, **kwargs})
 
@@ -509,6 +516,8 @@ def text_editor(id: str, content: str, /, **kwargs: Any) -> Node:
             min_height, max_height, font, size, line_height, padding,
             wrapping, ime_purpose, highlight_syntax, highlight_theme,
             style, key_bindings, placeholder_color, selection_color, a11y).
+            Use ``input_purpose`` (preferred) or ``ime_purpose``
+            (deprecated alias).
     """
     return _node(id, "text_editor", {"content": content, **kwargs})
 

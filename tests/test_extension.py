@@ -329,15 +329,15 @@ class TestBuildCommand:
         ext = _gauge_def()
         cmd = build_command(ext, "g1", "set_value", {"value": 75})
         assert isinstance(cmd, Command)
-        assert cmd.type == "extension_command"
-        assert cmd.payload["node_id"] == "g1"
-        assert cmd.payload["op"] == "set_value"
-        assert cmd.payload["payload"] == {"value": 75}
+        assert cmd.type == "command"
+        assert cmd.payload["id"] == "g1"
+        assert cmd.payload["family"] == "set_value"
+        assert cmd.payload["value"] == {"value": 75}
 
     def test_no_payload(self) -> None:
         ext = _gauge_def()
         cmd = build_command(ext, "g1", "reset")
-        assert cmd.payload["payload"] == {}
+        assert "value" not in cmd.payload
 
     def test_matches_command_factory(self) -> None:
         """build_command should produce the same result as Command.widget_command."""

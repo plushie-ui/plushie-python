@@ -72,69 +72,73 @@ class TestAsyncLifecycle:
 class TestWidgetOps:
     def test_focus(self) -> None:
         cmd = Command.focus("email")
-        assert cmd.type == "widget_op"
-        assert cmd.payload["op"] == "focus"
-        assert cmd.payload["target"] == "email"
-
-    def test_focus_next(self) -> None:
-        cmd = Command.focus_next()
-        assert cmd.type == "widget_op"
-        assert cmd.payload["op"] == "focus_next"
-
-    def test_focus_previous(self) -> None:
-        cmd = Command.focus_previous()
-        assert cmd.type == "widget_op"
-        assert cmd.payload["op"] == "focus_previous"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "focus"
+        assert cmd.payload["id"] == "email"
 
     def test_select_all(self) -> None:
         cmd = Command.select_all("editor")
-        assert cmd.payload["op"] == "select_all"
-        assert cmd.payload["target"] == "editor"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "select_all"
+        assert cmd.payload["id"] == "editor"
 
     def test_select_range(self) -> None:
         cmd = Command.select_range("editor", 5, 10)
-        assert cmd.payload["op"] == "select_range"
-        assert cmd.payload["start"] == 5
-        assert cmd.payload["end"] == 10
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "select_range"
+        assert cmd.payload["id"] == "editor"
+        assert cmd.payload["value"] == {"start": 5, "end": 10}
 
     def test_move_cursor_to(self) -> None:
         cmd = Command.move_cursor_to("input", 7)
-        assert cmd.payload["op"] == "move_cursor_to"
-        assert cmd.payload["position"] == 7
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "move_cursor_to"
+        assert cmd.payload["id"] == "input"
+        assert cmd.payload["value"] == {"position": 7}
 
     def test_move_cursor_to_front(self) -> None:
         cmd = Command.move_cursor_to_front("input")
-        assert cmd.payload["op"] == "move_cursor_to_front"
-        assert cmd.payload["target"] == "input"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "move_cursor_to_front"
+        assert cmd.payload["id"] == "input"
 
     def test_move_cursor_to_end(self) -> None:
         cmd = Command.move_cursor_to_end("input")
-        assert cmd.payload["op"] == "move_cursor_to_end"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "move_cursor_to_end"
+        assert cmd.payload["id"] == "input"
 
     def test_scroll_to(self) -> None:
         cmd = Command.scroll_to("log", 100.0)
-        assert cmd.payload["op"] == "scroll_to"
-        assert cmd.payload["offset_y"] == 100.0
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "scroll_to"
+        assert cmd.payload["id"] == "log"
+        assert cmd.payload["value"] == {"x": 0.0, "y": 100.0}
 
     def test_snap_to(self) -> None:
         cmd = Command.snap_to("log", x=10.0, y=20.0)
-        assert cmd.payload["op"] == "snap_to"
-        assert cmd.payload["x"] == 10.0
-        assert cmd.payload["y"] == 20.0
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "snap_to"
+        assert cmd.payload["id"] == "log"
+        assert cmd.payload["value"] == {"x": 10.0, "y": 20.0}
 
     def test_snap_to_defaults(self) -> None:
         cmd = Command.snap_to("log")
-        assert cmd.payload["x"] == 0.0
-        assert cmd.payload["y"] == 0.0
+        assert cmd.type == "command"
+        assert cmd.payload["value"] == {"x": 0.0, "y": 0.0}
 
     def test_snap_to_end(self) -> None:
         cmd = Command.snap_to_end("log")
-        assert cmd.payload["op"] == "snap_to_end"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "snap_to_end"
+        assert cmd.payload["id"] == "log"
 
     def test_scroll_by(self) -> None:
         cmd = Command.scroll_by("log", x=0.0, y=50.0)
-        assert cmd.payload["op"] == "scroll_by"
-        assert cmd.payload["y"] == 50.0
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "scroll_by"
+        assert cmd.payload["id"] == "log"
+        assert cmd.payload["value"] == {"x": 0.0, "y": 50.0}
 
     def test_close_window(self) -> None:
         cmd = Command.close_window("main")
@@ -173,32 +177,41 @@ class TestWidgetOps:
 
     def test_pane_split(self) -> None:
         cmd = Command.pane_split("grid", "p1", "horizontal", "p2")
-        assert cmd.payload["op"] == "pane_split"
-        assert cmd.payload["target"] == "grid"
-        assert cmd.payload["pane"] == "p1"
-        assert cmd.payload["axis"] == "horizontal"
-        assert cmd.payload["new_pane_id"] == "p2"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "pane_split"
+        assert cmd.payload["id"] == "grid"
+        assert cmd.payload["value"] == {
+            "pane": "p1",
+            "axis": "horizontal",
+            "new_pane_id": "p2",
+        }
 
     def test_pane_close(self) -> None:
         cmd = Command.pane_close("grid", "p1")
-        assert cmd.payload["op"] == "pane_close"
-        assert cmd.payload["pane"] == "p1"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "pane_close"
+        assert cmd.payload["id"] == "grid"
+        assert cmd.payload["value"] == {"pane": "p1"}
 
     def test_pane_swap(self) -> None:
         cmd = Command.pane_swap("grid", "a", "b")
-        assert cmd.payload["op"] == "pane_swap"
-        assert cmd.payload["a"] == "a"
-        assert cmd.payload["b"] == "b"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "pane_swap"
+        assert cmd.payload["id"] == "grid"
+        assert cmd.payload["value"] == {"a": "a", "b": "b"}
 
     def test_pane_maximize(self) -> None:
         cmd = Command.pane_maximize("grid", "p1")
-        assert cmd.payload["op"] == "pane_maximize"
-        assert cmd.payload["pane"] == "p1"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "pane_maximize"
+        assert cmd.payload["id"] == "grid"
+        assert cmd.payload["value"] == {"pane": "p1"}
 
     def test_pane_restore(self) -> None:
         cmd = Command.pane_restore("grid")
-        assert cmd.payload["op"] == "pane_restore"
-        assert cmd.payload["target"] == "grid"
+        assert cmd.type == "command"
+        assert cmd.payload["family"] == "pane_restore"
+        assert cmd.payload["id"] == "grid"
 
 
 class TestWindowOps:
@@ -241,8 +254,8 @@ class TestWindowOps:
         cmd = Command.toggle_decorations("main")
         assert cmd.payload["op"] == "toggle_decorations"
 
-    def test_gain_focus(self) -> None:
-        cmd = Command.gain_focus("main")
+    def test_focus_window(self) -> None:
+        cmd = Command.focus_window("main")
         assert cmd.payload["op"] == "gain_focus"
 
     def test_set_window_level(self) -> None:
@@ -402,22 +415,22 @@ class TestImageOps:
         assert cmd.payload["handle"] == "logo"
 
 
-class TestExtension:
+class TestWidgetCommand:
     def test_widget_command(self) -> None:
         cmd = Command.widget_command("chart", "set_data", {"values": [1, 2]})
-        assert cmd.type == "extension_command"
-        assert cmd.payload["node_id"] == "chart"
-        assert cmd.payload["op"] == "set_data"
-        assert cmd.payload["payload"] == {"values": [1, 2]}
+        assert cmd.type == "command"
+        assert cmd.payload["id"] == "chart"
+        assert cmd.payload["family"] == "set_data"
+        assert cmd.payload["value"] == {"values": [1, 2]}
 
-    def test_widget_command_default_payload(self) -> None:
+    def test_widget_command_default_value(self) -> None:
         cmd = Command.widget_command("chart", "reset")
-        assert cmd.payload["payload"] == {}
+        assert "value" not in cmd.payload
 
     def test_widget_commands(self) -> None:
-        cmds = [("a", "op1", {}), ("b", "op2", {"x": 1})]
+        cmds = [("a", "op1", None), ("b", "op2", {"x": 1})]
         cmd = Command.widget_commands(cmds)
-        assert cmd.type == "extension_commands"
+        assert cmd.type == "commands"
         assert cmd.payload["commands"] == cmds
 
 

@@ -275,8 +275,9 @@ def test_tutorial_step2_submit_creates_todo() -> None:
     assert new_model.items[0].text == "Buy milk"
     assert new_model.items[0].id == "todo-1"
     assert new_model.items[0].done is False
-    assert cmd.type == "widget_op"
-    assert cmd.payload["op"] == "focus"
+    assert cmd.type == "command"
+    assert cmd.payload["family"] == "focus"
+    assert cmd.payload["id"] == "app/new-todo"
 
 
 def test_tutorial_step2_empty_submit_does_nothing() -> None:
