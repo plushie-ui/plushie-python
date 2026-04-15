@@ -681,7 +681,21 @@ def parse_hello(msg: dict[str, Any]) -> HelloInfo:
 
     Returns:
         Populated ``HelloInfo`` instance.
+
+    Raises:
+        ValueError: If required fields are missing or have wrong types.
     """
+    required_keys = ("protocol", "version", "name", "mode", "backend")
+    missing = [k for k in required_keys if k not in msg]
+    if missing:
+        raise ValueError(f"hello message missing required fields: {missing}")
+
+    for key in ("protocol", "version", "name", "mode", "backend"):
+        if not isinstance(msg[key], (str, int)):
+            raise ValueError(
+                f"hello message field {key!r} must be str or int, got {type(msg[key]).__name__}"
+            )
+
     extensions = msg.get("extensions", [])
     native_widgets = msg.get("native_widgets", msg.get("extension_widgets", []))
     widgets = msg.get("widgets", msg.get("widget_sets", []))
