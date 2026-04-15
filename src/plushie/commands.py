@@ -720,7 +720,16 @@ class Command:
     def create_image_rgba(
         handle: str, width: int, height: int, pixels: bytes
     ) -> Command:
-        """Register an image from raw RGBA pixel data under *handle*."""
+        """Register an image from raw RGBA pixel data under *handle*.
+
+        *pixels* must be exactly ``width * height * 4`` bytes.
+        """
+        expected = width * height * 4
+        if len(pixels) != expected:
+            raise ValueError(
+                f"pixel buffer has {len(pixels)} bytes, expected {expected} "
+                f"(width={width} height={height} channels=4)"
+            )
         return Command(
             type="image_op",
             payload={
@@ -744,7 +753,16 @@ class Command:
     def update_image_rgba(
         handle: str, width: int, height: int, pixels: bytes
     ) -> Command:
-        """Update an existing image *handle* with new raw RGBA pixel data."""
+        """Update an existing image *handle* with new raw RGBA pixel data.
+
+        *pixels* must be exactly ``width * height * 4`` bytes.
+        """
+        expected = width * height * 4
+        if len(pixels) != expected:
+            raise ValueError(
+                f"pixel buffer has {len(pixels)} bytes, expected {expected} "
+                f"(width={width} height={height} channels=4)"
+            )
         return Command(
             type="image_op",
             payload={
