@@ -237,6 +237,7 @@ class Runtime:
         connection: Connection,
         *,
         daemon: bool = False,
+        heartbeat_interval_ms: int | None = 30000,
     ) -> None:
         if isinstance(app, AppBuilder):
             app = app.build()
@@ -301,6 +302,10 @@ class Runtime:
         # Widget status tracking (focus, hover, etc.): widget_id -> status string
         self._widget_statuses: dict[str, str] = {}
         self._focused_widget_id: str | None = None
+
+        # Heartbeat watchdog: detects unresponsive renderer
+        self._heartbeat_interval_ms: int | None = heartbeat_interval_ms
+        self._heartbeat_timer: threading.Timer | None = None
 
         # Consecutive view failure counter
         self._consecutive_view_errors: int = 0
@@ -557,7 +562,8 @@ class Runtime:
                 continue
 
             if event is None:
-                # Connection closed / reader thread finished
+                # Connection closed / reader thread finished / heartbeat timeout
+                self._cancel_heartbeat()
                 if self._attempt_reconnect():
                     continue
                 self._fail_pending_interact()
@@ -574,6 +580,7 @@ class Runtime:
                     event.backend,
                     event.transport,
                 )
+                self._reset_heartbeat()
                 continue
 
             # Diagnostic events: intercept, never deliver to update()
@@ -650,6 +657,7 @@ class Runtime:
 
             # Normal event -> flush coalescables first, then process
             self._flush_coalescables()
+            self._reset_heartbeat()
             self._run_update(event)
 
     # -------------------------------------------------------------------
@@ -1273,6 +1281,37 @@ class Runtime:
             )
 
     # -------------------------------------------------------------------
+    # Heartbeat watchdog
+    # -------------------------------------------------------------------
+
+    def _reset_heartbeat(self) -> None:
+        """Reset the heartbeat timer after receiving a message."""
+        if self._heartbeat_interval_ms is None:
+            return
+        if self._heartbeat_timer is not None:
+            self._heartbeat_timer.cancel()
+        self._heartbeat_timer = threading.Timer(
+            self._heartbeat_interval_ms / 1000.0, self._on_heartbeat_timeout
+        )
+        self._heartbeat_timer.daemon = True
+        self._heartbeat_timer.start()
+
+    def _cancel_heartbeat(self) -> None:
+        """Cancel the heartbeat timer."""
+        if self._heartbeat_timer is not None:
+            self._heartbeat_timer.cancel()
+            self._heartbeat_timer = None
+
+    def _on_heartbeat_timeout(self) -> None:
+        """Handle heartbeat timeout: inject a reconnect trigger."""
+        logger.warning(
+            "plushie runtime: renderer unresponsive "
+            "(no message in %dms), triggering restart",
+            self._heartbeat_interval_ms,
+        )
+        self._queue.put(None)
+
+    # -------------------------------------------------------------------
     # Subscription diffing
     # -------------------------------------------------------------------
 
@@ -1541,6 +1580,7 @@ class Runtime:
             ``True`` if reconnection succeeded, ``False`` if all
             attempts were exhausted.
         """
+        self._cancel_heartbeat()
         if not hasattr(self._conn, "restart"):
             return False
 
