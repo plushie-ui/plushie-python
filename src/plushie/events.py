@@ -1083,12 +1083,12 @@ class SystemInfo:
 
     Attributes:
         tag: The tag from the originating query command.
-        data: System info dict with keys like ``"cpu_brand"``,
+        value: System info dict with keys like ``"cpu_brand"``,
             ``"memory_total"``, etc.
     """
 
     tag: str
-    data: Any
+    value: Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -1172,22 +1172,22 @@ class DuplicateNodeIds:
 
 
 @dataclass(frozen=True, slots=True)
-class WidgetCommandError:
-    """Renderer error for a ``widget_command``.
+class CommandError:
+    """Renderer error for a widget-targeted command.
 
-    Wire family: ``error`` with ``id = "extension_command"``.
+    Wire family: ``error`` with ``id = "command"``.
 
     Attributes:
         reason: Machine-readable error reason.
-        node_id: Target widget node ID when known.
-        op: Command operation name when known.
+        id: Target widget ID when known.
+        family: Command family name when known.
         widget: Widget type name when known.
         message: Human-readable error text.
     """
 
     reason: str
-    node_id: str | None = None
-    op: str | None = None
+    id: str | None = None
+    family: str | None = None
     widget: str | None = None
     message: str | None = None
 
@@ -1295,32 +1295,58 @@ class TimerTick:
 # ---------------------------------------------------------------------------
 
 
-def split_scoped_id(wire_id: str) -> tuple[str, tuple[str, ...]]:
-    """Split a wire-format scoped ID into local ID and reversed scope.
+def split_scoped_id(
+    wire_id: str,
+) -> tuple[str, tuple[str, ...], str | None]:
+    """Split a wire-format scoped ID into local ID, reversed scope, and window.
 
-    Wire IDs use ``/`` as a scope separator. The last segment is the
-    local widget ID; preceding segments form the scope (reversed, so
-    the immediate parent is first).
+    Handles the canonical ``window#scope/path/id`` format. The ``#``
+    separates the window name from the widget path. The ``/`` separates
+    scope segments within the path. The last segment is the local ``id``.
 
     Args:
-        wire_id: The scoped ID string from the wire (e.g. ``"form/section/save"``).
+        wire_id: The scoped ID string from the wire
+            (e.g. ``"main#sidebar/form/email"``).
 
     Returns:
-        A ``(local_id, scope)`` tuple. For ``"form/section/save"`` this
-        returns ``("save", ("section", "form"))``.
+        A ``(local_id, scope, window)`` tuple. The scope is reversed
+        (nearest parent first). Window is ``None`` when no ``#``
+        separator is present.
 
     Examples:
         >>> split_scoped_id("save")
-        ('save', ())
+        ('save', (), None)
         >>> split_scoped_id("form/save")
-        ('save', ('form',))
+        ('save', ('form',), None)
+        >>> split_scoped_id("main#form/save")
+        ('save', ('form',), 'main')
         >>> split_scoped_id("app/form/section/save")
-        ('save', ('section', 'form', 'app'))
+        ('save', ('section', 'form', 'app'), None)
+        >>> split_scoped_id("main#sidebar/form/email")
+        ('email', ('form', 'sidebar'), 'main')
     """
-    parts = wire_id.split("/")
-    local_id = parts[-1]
-    scope = tuple(reversed(parts[:-1]))
-    return local_id, scope
+    if not wire_id:
+        return ("", (), None)
+
+    window: str | None = None
+    if "#" in wire_id:
+        win, rest = wire_id.split("#", 1)
+        if win:
+            window = win
+        else:
+            rest = wire_id
+    else:
+        rest = wire_id
+
+    parts = rest.split("/") if rest else []
+    if not parts or not parts[0]:
+        return ("", (), window)
+
+    if len(parts) == 1:
+        return (parts[0], (), window)
+
+    *scope_parts, local_id = parts
+    return (local_id, tuple(reversed(scope_parts)), window)
 
 
 def target(
@@ -1460,7 +1486,7 @@ type SystemEvent = (
     | ImageList
     | FocusedWidget
     | TreeHash
-    | WidgetCommandError
+    | CommandError
     | RendererError
 )
 """Union of all system/query response events."""
@@ -1490,17 +1516,13 @@ type Event = (
 
 __all__ = [
     "AllWindowsClosed",
-    "AllWindowsClosed",
-    "AnimationFrame",
     "AnimationFrame",
     "Announce",
-    "Announce",
     "AsyncResult",
-    "AsyncResult",
-    "Blurred",
     "Blurred",
     "Click",
     "Close",
+    "CommandError",
     "Diagnostic",
     "DoubleClick",
     "Drag",
@@ -1566,7 +1588,6 @@ __all__ = [
     "Toggle",
     "TransitionComplete",
     "TreeHash",
-    "WidgetCommandError",
     "WindowCloseRequested",
     "WindowClosed",
     "WindowEvent",

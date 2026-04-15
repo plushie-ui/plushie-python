@@ -5,7 +5,6 @@ from __future__ import annotations
 from plushie.events import (
     AllWindowsClosed,
     AnimationFrame,
-    Announce,
     Blurred,
     Click,
     Close,
@@ -20,8 +19,6 @@ from plushie.events import (
     FileHovered,
     FilesHoveredLeft,
     Focused,
-    FocusedWidget,
-    ImageList,
     ImeClose,
     ImeCommit,
     ImeOpen,
@@ -51,11 +48,8 @@ from plushie.events import (
     Sort,
     Submit,
     SystemInfo,
-    SystemTheme,
     ThemeChanged,
     Toggle,
-    TreeHash,
-    WidgetCommandError,
     WindowClosed,
     WindowCloseRequested,
     WindowFocused,
@@ -216,24 +210,28 @@ class TestImageOp:
         assert "data" not in msg
 
 
-class TestExtensionCommand:
+class TestWidgetCommand:
     def test_structure(self) -> None:
         msg = widget_command("chart1", "append_data", {"values": [1, 2]})
-        assert msg["type"] == "extension_command"
-        assert msg["node_id"] == "chart1"
-        assert msg["op"] == "append_data"
-        assert msg["payload"]["values"] == [1, 2]
+        assert msg["type"] == "command"
+        assert msg["id"] == "chart1"
+        assert msg["family"] == "append_data"
+        assert msg["value"] == {"values": [1, 2]}
+
+    def test_without_value(self) -> None:
+        msg = widget_command("chart1", "reset")
+        assert msg["type"] == "command"
+        assert "value" not in msg
 
 
-class TestExtensionCommands:
+class TestWidgetCommands:
     def test_batch(self) -> None:
-        cmds = [
-            {"node_id": "a", "op": "x", "payload": {}},
-            {"node_id": "b", "op": "y", "payload": {}},
-        ]
+        cmds = [("a", "x", None), ("b", "y", {"z": 1})]
         msg = widget_commands(cmds)
-        assert msg["type"] == "extension_commands"
+        assert msg["type"] == "commands"
         assert len(msg["commands"]) == 2
+        assert msg["commands"][0] == {"id": "a", "family": "x"}
+        assert msg["commands"][1] == {"id": "b", "family": "y", "value": {"z": 1}}
 
 
 class TestInteractMsg:
@@ -1379,109 +1377,14 @@ class TestDecodeErrorAndAnnounce:
 
     def test_announce(self) -> None:
         raw = {
-            "type": "event",
-            "family": "announce",
-            "id": "",
-            "data": {"text": "Item saved"},
-        }
-        result = decode_message(raw)
-        assert isinstance(result, Announce)
-        assert result.text == "Item saved"
-
-    def test_widget_command_error(self) -> None:
-        raw = {
-            "type": "event",
-            "family": "error",
-            "id": "extension_command",
-            "data": {
-                "kind": "extension_command",
-                "reason": "unknown_node",
-                "node_id": "g1",
-                "op": "set_value",
-                "message": "no extension handles node `g1`",
-            },
-        }
-        result = decode_message(raw)
-        assert isinstance(result, WidgetCommandError)
-        assert result.reason == "unknown_node"
-        assert result.node_id == "g1"
-        assert result.op == "set_value"
-        assert result.message == "no extension handles node `g1`"
-
-
-class TestDecodeOpQueryResponse:
-    def test_tree_hash(self) -> None:
-        raw = {
             "type": "op_query_response",
-            "session": "",
-            "kind": "tree_hash",
-            "tag": "th1",
-            "data": {"hash": "abc123"},
-        }
-        result = decode_message(raw)
-        assert isinstance(result, TreeHash)
-        assert result.hash == "abc123"
-        assert result.tag == "th1"
-
-    def test_find_focused(self) -> None:
-        raw = {
-            "type": "op_query_response",
-            "session": "",
-            "kind": "find_focused",
-            "tag": "f1",
-            "data": {"focused": "input1"},
-        }
-        result = decode_message(raw)
-        assert isinstance(result, FocusedWidget)
-        assert result.widget_id == "input1"
-
-    def test_find_focused_none(self) -> None:
-        raw = {
-            "type": "op_query_response",
-            "session": "",
-            "kind": "find_focused",
-            "tag": "f1",
-            "data": {"focused": None},
-        }
-        result = decode_message(raw)
-        assert isinstance(result, FocusedWidget)
-        assert result.widget_id is None
-
-    def test_list_images(self) -> None:
-        raw = {
-            "type": "op_query_response",
-            "session": "",
-            "kind": "list_images",
-            "tag": "li",
-            "data": {"handles": ["img1", "img2"]},
-        }
-        result = decode_message(raw)
-        assert isinstance(result, ImageList)
-        assert result.handles == ("img1", "img2")
-
-    def test_system_theme(self) -> None:
-        raw = {
-            "type": "op_query_response",
-            "session": "",
-            "kind": "system_theme",
-            "tag": "st",
-            "data": "dark",
-        }
-        result = decode_message(raw)
-        assert isinstance(result, SystemTheme)
-        assert result.theme == "dark"
-
-    def test_system_info(self) -> None:
-        raw = {
-            "type": "op_query_response",
-            "session": "",
             "kind": "system_info",
             "tag": "si",
             "data": {"cpu_brand": "Intel", "memory_total": 16000000000},
         }
         result = decode_message(raw)
         assert isinstance(result, SystemInfo)
-        assert result.data["cpu_brand"] == "Intel"
+        assert result.value["cpu_brand"] == "Intel"
 
 
 class TestDecodePassthrough:
@@ -1565,3 +1468,57 @@ class TestDecodeScopedIdSplitting:
         assert isinstance(result, Click)
         assert result.id == "save"
         assert result.scope == ("section", "form", "app", "main")
+
+    def test_window_hash_no_scope(self) -> None:
+        raw = {"type": "event", "family": "click", "id": "main#save"}
+        result = decode_message(raw)
+        assert isinstance(result, Click)
+        assert result.id == "save"
+        assert result.scope == ("main",)
+        assert result.window_id == "main"
+
+    def test_window_hash_with_scope(self) -> None:
+        raw = {"type": "event", "family": "click", "id": "main#form/save"}
+        result = decode_message(raw)
+        assert isinstance(result, Click)
+        assert result.id == "save"
+        assert result.scope == ("form", "main")
+        assert result.window_id == "main"
+
+    def test_window_hash_deep_scope(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "click",
+            "id": "main#sidebar/form/save",
+        }
+        result = decode_message(raw)
+        assert isinstance(result, Click)
+        assert result.id == "save"
+        assert result.scope == ("form", "sidebar", "main")
+        assert result.window_id == "main"
+
+    def test_window_hash_prefers_id_over_field(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "click",
+            "id": "other#save",
+            "window_id": "main",
+        }
+        result = decode_message(raw)
+        assert isinstance(result, Click)
+        assert result.id == "save"
+        assert result.scope == ("other",)
+        assert result.window_id == "other"
+
+    def test_window_hash_with_separate_window_id(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "click",
+            "id": "main#form/save",
+            "window_id": "main",
+        }
+        result = decode_message(raw)
+        assert isinstance(result, Click)
+        assert result.id == "save"
+        assert result.scope == ("form", "main")
+        assert result.window_id == "main"

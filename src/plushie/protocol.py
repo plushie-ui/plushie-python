@@ -21,6 +21,7 @@ from plushie.events import (
     Blurred,
     Click,
     Close,
+    CommandError,
     Diagnostic,
     DoubleClick,
     Drag,
@@ -73,7 +74,6 @@ from plushie.events import (
     Toggle,
     TransitionComplete,
     TreeHash,
-    WidgetCommandError,
     WindowClosed,
     WindowCloseRequested,
     WindowFocused,
@@ -358,47 +358,58 @@ def image_op(
 
 
 def widget_command(
-    node_id: str,
-    op: str,
-    payload: dict[str, Any] | None = None,
+    widget_id: str,
+    family: str,
+    value: Any = None,
     *,
     session: str = "",
 ) -> dict[str, Any]:
-    """Build a widget command message for a native widget.
+    """Build a widget-targeted command message.
+
+    Uses the unified wire format matching events:
+    ``{type: "command", id, family, value}``.
 
     Args:
-        node_id: Target native widget node ID.
-        op: Widget operation name.
-        payload: Operation-specific payload.
+        widget_id: Target widget ID (scoped path).
+        family: Operation name (e.g. ``"focus"``, ``"scroll_to"``).
+        value: Operation-specific data.
         session: Session identifier.
     """
-    return {
-        "type": "extension_command",
+    msg: dict[str, Any] = {
+        "type": "command",
         "session": session,
-        "node_id": node_id,
-        "op": op,
-        "payload": payload or {},
+        "id": widget_id,
+        "family": family,
     }
+    if value is not None:
+        msg["value"] = value
+    return msg
 
 
 def widget_commands(
-    commands: list[dict[str, Any]],
+    commands: list[tuple[str, str, Any]],
     *,
     session: str = "",
 ) -> dict[str, Any]:
-    """Build a batch of widget commands processed in one cycle.
+    """Build a batch of widget-targeted commands processed in one cycle.
 
-    Each item in ``commands`` should have ``node_id``, ``op``, and
-    ``payload`` keys.
+    Each item in ``commands`` should be a ``(id, family, value)`` tuple.
 
     Args:
-        commands: List of widget command dicts.
+        commands: List of ``(widget_id, family, value)`` tuples.
         session: Session identifier.
     """
     return {
-        "type": "extension_commands",
+        "type": "commands",
         "session": session,
-        "commands": commands,
+        "commands": [
+            {
+                "id": cmd_id,
+                "family": family,
+                **({"value": val} if val is not None else {}),
+            }
+            for cmd_id, family, val in commands
+        ],
     }
 
 
@@ -672,6 +683,8 @@ def parse_hello(msg: dict[str, Any]) -> HelloInfo:
         Populated ``HelloInfo`` instance.
     """
     extensions = msg.get("extensions", [])
+    native_widgets = msg.get("native_widgets", msg.get("extension_widgets", []))
+    widgets = msg.get("widgets", msg.get("widget_sets", []))
     return HelloInfo(
         protocol=msg["protocol"],
         version=msg["version"],
@@ -680,6 +693,8 @@ def parse_hello(msg: dict[str, Any]) -> HelloInfo:
         backend=msg["backend"],
         transport=msg.get("transport", "stdio"),
         extensions=tuple(extensions),
+        native_widgets=tuple(native_widgets),
+        widgets=tuple(widgets),
     )
 
 
@@ -885,9 +900,12 @@ def _split_scoped_with_window(
 
     Returns ``(local_id, window_id, scope)`` where scope includes the
     window_id as its last element when present.
+
+    Prefers the window extracted from ``#`` in the wire ID, falling back
+    to the separate ``window_id`` field for backward compatibility.
     """
-    local_id, scope = split_scoped_id(wire_id)
-    window_id = _extract_window_id(msg)
+    local_id, scope, window_from_id = split_scoped_id(wire_id)
+    window_id = window_from_id or _extract_window_id(msg)
     if window_id:
         scope = (*scope, window_id)
     return local_id, window_id, scope
@@ -898,7 +916,9 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     family = msg.get("family", "")
     wire_id = msg.get("id", "")
     value = msg.get("value")
-    data = msg.get("data") or {}
+    data = msg.get("value") if isinstance(msg.get("value"), dict) else None
+    if data is None:
+        data = msg.get("data") or {}
     captured = bool(msg.get("captured", False))
     modifiers_raw = msg.get("modifiers")
     sub_window_id = str(msg.get("window_id", "") or "")
@@ -1526,16 +1546,12 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         error_id = wire_id
         if error_id == "duplicate_node_ids":
             return DuplicateNodeIds(details=data)
-        if error_id == "extension_command":
-            return WidgetCommandError(
+        if error_id == "command":
+            return CommandError(
                 reason=str(data.get("reason", "")),
-                node_id=str(data["node_id"])
-                if data.get("node_id") is not None
-                else None,
-                op=str(data["op"]) if data.get("op") is not None else None,
-                widget=str(data["extension"])
-                if data.get("extension") is not None
-                else None,
+                id=str(data["id"]) if data.get("id") is not None else None,
+                family=str(data["family"]) if data.get("family") is not None else None,
+                widget=str(data["widget"]) if data.get("widget") is not None else None,
                 message=str(data["message"])
                 if data.get("message") is not None
                 else None,
@@ -1598,7 +1614,7 @@ def _decode_op_query_response(msg: dict[str, Any]) -> Any:
         return SystemTheme(tag=tag_val, theme=theme_val)
 
     if kind == "system_info":
-        return SystemInfo(tag=tag_val, data=data)
+        return SystemInfo(tag=tag_val, value=data)
 
     # Unknown op_query_response kind
     return msg

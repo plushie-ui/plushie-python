@@ -571,8 +571,9 @@ class TestSystemEvents:
         assert isinstance(e, AllWindowsClosed)
 
     def test_system_info(self) -> None:
-        e = SystemInfo(tag="q1", data={"cpu_brand": "AMD Ryzen"})
+        e = SystemInfo(tag="q1", value={"cpu_brand": "AMD Ryzen"})
         assert e.tag == "q1"
+        assert e.value["cpu_brand"] == "AMD Ryzen"
 
     def test_system_theme(self) -> None:
         e = SystemTheme(tag="q2", theme="light")
@@ -660,27 +661,55 @@ class TestRuntimeEvents:
 
 
 class TestSplitScopedId:
-    """Test wire ID splitting into local ID and reversed scope."""
+    """Test wire ID splitting into local ID, reversed scope, and window."""
 
     def test_no_scope(self) -> None:
-        local_id, scope = split_scoped_id("save")
+        local_id, scope, window = split_scoped_id("save")
         assert local_id == "save"
         assert scope == ()
+        assert window is None
 
     def test_single_scope(self) -> None:
-        local_id, scope = split_scoped_id("form/save")
+        local_id, scope, window = split_scoped_id("form/save")
         assert local_id == "save"
         assert scope == ("form",)
+        assert window is None
 
     def test_deep_scope(self) -> None:
-        local_id, scope = split_scoped_id("app/form/section/save")
+        local_id, scope, window = split_scoped_id("app/form/section/save")
         assert local_id == "save"
         assert scope == ("section", "form", "app")
+        assert window is None
 
     def test_two_levels(self) -> None:
-        local_id, scope = split_scoped_id("panel/input")
+        local_id, scope, window = split_scoped_id("panel/input")
         assert local_id == "input"
         assert scope == ("panel",)
+        assert window is None
+
+    def test_window_direct_child(self) -> None:
+        local_id, scope, window = split_scoped_id("main#save")
+        assert local_id == "save"
+        assert scope == ()
+        assert window == "main"
+
+    def test_window_nested_scope(self) -> None:
+        local_id, scope, window = split_scoped_id("main#form/save")
+        assert local_id == "save"
+        assert scope == ("form",)
+        assert window == "main"
+
+    def test_window_deep_scope(self) -> None:
+        local_id, scope, window = split_scoped_id("main#sidebar/form/save")
+        assert local_id == "save"
+        assert scope == ("form", "sidebar")
+        assert window == "main"
+
+    def test_empty_string(self) -> None:
+        local_id, scope, window = split_scoped_id("")
+        assert local_id == ""
+        assert scope == ()
+        assert window is None
 
 
 # ---------------------------------------------------------------------------
@@ -709,7 +738,7 @@ class TestTarget:
 
     def test_roundtrip(self) -> None:
         wire_id = "app/form/section/save"
-        local_id, scope = split_scoped_id(wire_id)
+        local_id, scope, _window = split_scoped_id(wire_id)
         e = Click(id=local_id, scope=scope)
         assert target(e) == wire_id
 
