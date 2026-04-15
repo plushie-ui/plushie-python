@@ -166,10 +166,14 @@ def rect(
     *,
     fill: str | dict[str, Any] | None = None,
     stroke: dict[str, Any] | None = None,
-    radius: float | None = None,
+    radius: float | dict[str, float] | None = None,
     opacity: float | None = None,
 ) -> Shape:
-    """Rectangle shape."""
+    """Rectangle shape.
+
+    *radius* can be a uniform number or a per-corner dict with keys
+    ``top_left``, ``top_right``, ``bottom_right``, ``bottom_left``.
+    """
     return _shape(
         "rect",
         x=x,
