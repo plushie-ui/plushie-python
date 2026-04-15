@@ -54,7 +54,7 @@ def test_auto_id_containers_do_not_scope():
 
 
 def test_window_nodes_do_not_scope():
-    """Window nodes don't create scope boundaries."""
+    """Window nodes set the '#' boundary for their children's scoped IDs."""
     tree = normalize(
         ui.window(
             "main",
@@ -65,9 +65,9 @@ def test_window_nodes_do_not_scope():
         )
     )
 
-    # The button is scoped under form, not main/form
-    assert find(tree, "form/save") is not None
-    assert find(tree, "main/form/save") is None
+    # The button is scoped under form with window boundary
+    assert find(tree, "main#form/save") is not None
+    assert find(tree, "form/save") is None
 
 
 def test_slash_in_user_id_raises():

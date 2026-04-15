@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger("plushie")
@@ -61,6 +62,153 @@ _EMPTY_CONTAINER: Node = {
 }
 
 _A11Y_ID_REF_KEYS = ("labelled_by", "described_by", "error_message")
+
+# ---------------------------------------------------------------------------
+# ScopedId
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class ScopedId:
+    """Structured representation of a scoped widget ID.
+
+    Wire IDs use the canonical format ``window#scope/path/id``::
+
+        "main#form/email"     widget in window
+        "main#users/u1"      table row
+        "main"               the window itself
+        "form/email"         widget without window qualification
+
+    Event structs use flat fields (``id``, ``scope``, ``window``) for
+    ergonomic pattern matching. Use :func:`ScopedId.parse` to convert
+    to the structured form when programmatic manipulation is needed.
+
+    Attributes:
+        id: The local widget ID (last path segment).
+        scope: Reversed scope chain (immediate parent first).
+            For ``"main#form/email"``, scope is ``("form",)``.
+        window: The window ID or ``None`` if no window qualifier.
+        full: The canonical wire ID string.
+
+    Examples:
+        >>> ScopedId.parse("main#sidebar/form/email")
+        ScopedId(id='email', scope=('form', 'sidebar'), window='main', full='main#sidebar/form/email')
+        >>> ScopedId.parse("form/email")
+        ScopedId(id='email', scope=('form',), window=None, full='form/email')
+        >>> ScopedId.parse("email")
+        ScopedId(id='email', scope=(), window=None, full='email')
+    """
+
+    id: str
+    scope: tuple[str, ...] = ()
+    window: str | None = None
+    full: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.full:
+            object.__setattr__(
+                self, "full", _build_full(self.window, self.scope, self.id)
+            )
+
+    @staticmethod
+    def parse(canonical: str) -> ScopedId:
+        """Parse a canonical wire ID into its components.
+
+        The ``#`` separates the window from the widget path. The ``/``
+        separates scope segments within the path. The last segment
+        is the local ``id``.
+
+        Args:
+            canonical: Wire ID string (e.g. ``"main#sidebar/form/email"``).
+
+        Returns:
+            Populated ``ScopedId`` instance.
+        """
+        if not canonical:
+            return ScopedId(id="", scope=(), window=None, full="")
+
+        if "#" in canonical:
+            win, rest = canonical.split("#", 1)
+            window = win if win else None
+        else:
+            window = None
+            rest = canonical
+
+        parts = rest.split("/") if rest else []
+        if not parts or not parts[0]:
+            return ScopedId(id="", scope=(), window=window, full=canonical)
+
+        if len(parts) == 1:
+            return ScopedId(id=parts[0], scope=(), window=window, full=canonical)
+
+        *scope_parts, local_id = parts
+        return ScopedId(
+            id=local_id,
+            scope=tuple(reversed(scope_parts)),
+            window=window,
+            full=canonical,
+        )
+
+    @staticmethod
+    def from_event(event: dict[str, Any]) -> ScopedId:
+        """Build a ScopedId from event fields.
+
+        The event's scope tuple includes the window_id as its last
+        element (appended by the protocol decoder). This method strips
+        it to produce the correct canonical ``full`` ID.
+
+        Args:
+            event: Event dict with ``id`` and ``scope`` keys.
+                May also have ``window`` or ``window_id``.
+        """
+        eid = event.get("id", "")
+        escope = event.get("scope", ())
+        ewindow = event.get("window") or event.get("window_id")
+        if ewindow and escope and escope[-1] == ewindow:
+            escope = escope[:-1]
+        full = _build_full(ewindow, escope, eid)
+        return ScopedId(
+            id=eid if eid else "",
+            scope=escope if escope else (),
+            window=ewindow,
+            full=full,
+        )
+
+    def matches_local(self, name: str) -> bool:
+        """True if the local ID matches the given name."""
+        return self.id == name
+
+    def matches_scope(self, ancestor: str) -> bool:
+        """True if the ancestor appears anywhere in the scope chain."""
+        return ancestor in self.scope
+
+    def in_window(self, window: str) -> bool:
+        """True if the ID is in the given window."""
+        return self.window == window
+
+    def parent(self) -> str | None:
+        """Returns the immediate parent (nearest ancestor), or None."""
+        return self.scope[0] if self.scope else None
+
+
+def _build_full(window: str | None, scope: tuple[str, ...], local_id: str) -> str:
+    """Build the canonical full ID from components."""
+    if not local_id:
+        return ""
+
+    if window is None and not scope:
+        return local_id
+
+    if window is None:
+        path = "/".join(reversed(scope))
+        return f"{path}/{local_id}"
+
+    if not scope:
+        return f"{window}#{local_id}"
+
+    path = "/".join(reversed(scope))
+    return f"{window}#{path}/{local_id}"
+
 
 # ---------------------------------------------------------------------------
 # Normalize
@@ -176,15 +324,30 @@ def _normalize_with_scope(
     is_auto = node_id.startswith("auto:")
     current_window_id = node_id if node_type == "window" else window_id
 
-    # Validate: user-provided IDs must not contain "/"
-    if not is_auto and "/" in node_id:
-        raise ValueError(
-            f'widget ID {node_id!r} cannot contain "/" '
-            "-- scoped paths are built automatically by named containers"
-        )
+    # Validate: user-provided IDs must not contain "/" or "#"
+    if not is_auto:
+        if "/" in node_id:
+            raise ValueError(
+                f'widget ID {node_id!r} cannot contain "/" '
+                "-- scoped paths are built automatically by named containers"
+            )
+        if "#" in node_id:
+            raise ValueError(
+                f'widget ID {node_id!r} cannot contain "#" '
+                "-- # is a reserved separator for window boundaries"
+            )
 
-    # Apply scope prefix to this node's ID
-    scoped_id = f"{scope}/{node_id}" if scope and not is_auto else node_id
+    # Apply scope prefix to this node's ID.
+    # Window nodes keep their bare ID. Children of windows get "window#id".
+    # Deeper descendants get "window#parent/id" (# only at window boundary).
+    if is_auto:
+        scoped_id = node_id
+    elif scope.endswith("#"):
+        scoped_id = f"{scope}{node_id}"
+    elif scope:
+        scoped_id = f"{scope}/{node_id}"
+    else:
+        scoped_id = node_id
 
     # Canvas widget rendering: if this node is a placeholder, render it
     # with stored state and normalize the output.
@@ -198,9 +361,11 @@ def _normalize_with_scope(
             )
             if placeholder is not None:
                 _key, rendered_node, _entry = placeholder
-                # Normalize rendered output. Pass empty scope since the
-                # rendered node's ID is already fully scoped.
-                child_scope = "" if rendered_node.get("type") == "window" else scoped_id
+                rendered_type = rendered_node.get("type", "container")
+                if rendered_type == "window":
+                    child_scope = f"{scoped_id}#"
+                else:
+                    child_scope = scoped_id
                 rendered_children = rendered_node.get("children") or []
                 normalized_children = [
                     _normalize_with_scope(
@@ -231,9 +396,14 @@ def _normalize_with_scope(
         except Exception:
             logger.exception("plushie: canvas widget render failed for %s", scoped_id)
 
-    # Determine scope for children: named (non-auto) non-window nodes
-    # propagate their scoped ID as the child scope.
-    child_scope = scope if is_auto or node_type == "window" else scoped_id
+    # Determine scope for children: window nodes set "window#" scope,
+    # auto-ID nodes are transparent, named containers propagate their scoped ID.
+    if node_type == "window":
+        child_scope = f"{scoped_id}#"
+    elif is_auto:
+        child_scope = scope
+    else:
+        child_scope = scoped_id
 
     # Encode dataclass prop values to wire-compatible dicts/values,
     # then resolve a11y ID refs relative to scope.
@@ -336,9 +506,13 @@ def _scope_ref(ref: str, scope: str) -> str:
     """Prefix an ID reference with the current scope.
 
     Already-scoped references (containing ``/``) pass through unchanged.
+    Handles the ``#`` window boundary: if scope ends with ``#``, the ref
+    is appended directly (e.g. ``"main#"`` + ``"label"`` -> ``"main#label"``).
     """
     if not scope or "/" in ref:
         return ref
+    if scope.endswith("#"):
+        return f"{scope}{ref}"
     return f"{scope}/{ref}"
 
 
@@ -523,9 +697,9 @@ def find(tree: Node, target_id: str) -> Node | None:
     """Find the first node whose ``id`` matches *target_id*.
 
     Matches against the full scoped ID first. If no match is found
-    and *target_id* does not contain ``/``, falls back to matching
-    the local segment (the part after the last ``/``) of each node's
-    scoped ID.
+    and *target_id* does not contain ``/`` or ``#``, falls back to
+    matching the local segment (the part after the last ``/`` or ``#``)
+    of each node's scoped ID.
 
     Returns the node dict, or ``None`` if not found. Searches depth-first.
     """
@@ -533,7 +707,7 @@ def find(tree: Node, target_id: str) -> Node | None:
     if result is not None:
         return result
 
-    if "/" not in target_id:
+    if "/" not in target_id and "#" not in target_id:
         return _find_by_local(tree, target_id)
 
     return None
@@ -551,9 +725,14 @@ def _find_exact(node: Node, target_id: str) -> Node | None:
 
 
 def _find_by_local(node: Node, target_id: str) -> Node | None:
-    """Depth-first match on the local (last) segment of scoped IDs."""
+    """Depth-first match on the local segment of scoped IDs.
+
+    The local segment is the part after the last ``/`` or ``#``.
+    """
     node_id = node.get("id", "")
-    local = node_id.rsplit("/", 1)[-1] if "/" in node_id else node_id
+    local = node_id.rsplit("/", 1)[-1]
+    if "#" in local:
+        local = local.rsplit("#", 1)[-1]
     if local == target_id:
         return node
     for child in node.get("children", []):
@@ -635,6 +814,7 @@ def text_of(node: Node) -> str | None:
 __all__ = [
     "Node",
     "PatchOp",
+    "ScopedId",
     "WireEncodable",
     "diff",
     "exists",

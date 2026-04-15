@@ -180,9 +180,8 @@ class TestNormalizeScopedIds:
             ],
         )
         result = normalize(tree)
-        # Window nodes don't create scope; children get no prefix
-        # (scope stays whatever was passed in, which is "" at root)
-        assert result["children"][0]["id"] == "btn"
+        # Window nodes scope their children with the "window#" prefix
+        assert result["children"][0]["id"] == "main#btn"
 
     def test_auto_id_node_does_not_scope(self) -> None:
         tree = _node(
@@ -317,8 +316,8 @@ class TestNormalizeA11yRefs:
             ],
         )
         result = normalize(tree)
-        # Window doesn't scope, so "" scope; ref stays as-is
-        assert result["children"][0]["props"]["a11y"]["labelled_by"] == "label"
+        # Window scopes its children with "main#", so the ref is prefixed
+        assert result["children"][0]["props"]["a11y"]["labelled_by"] == "main#label"
 
     def test_no_a11y_prop_unchanged(self) -> None:
         tree = _node("btn", "button", {"label": "OK"})
