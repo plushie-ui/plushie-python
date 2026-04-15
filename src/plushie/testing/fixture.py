@@ -258,6 +258,8 @@ def _find_local_id_targets(
     matches: list[dict[str, str]] = []
     node_window_id = tree["id"] if tree.get("type") == "window" else current_window_id
     local_id = tree["id"].rsplit("/", 1)[-1]
+    if "#" in local_id:
+        local_id = local_id.rsplit("#", 1)[-1]
     if node_window_id is not None and local_id == target_id:
         matches.append({"id": tree["id"], "window_id": node_window_id})
     for child in tree.get("children", []):
@@ -270,7 +272,10 @@ def _collect_widget_ids(tree: Node) -> set[str]:
     ids: set[str] = set()
     node_id = tree.get("id", "")
     if node_id and not node_id.startswith("auto:"):
-        ids.add(node_id.rsplit("/", 1)[-1])
+        local = node_id.rsplit("/", 1)[-1]
+        if "#" in local:
+            local = local.rsplit("#", 1)[-1]
+        ids.add(local)
     for child in tree.get("children", []):
         if isinstance(child, dict):
             ids.update(_collect_widget_ids(child))

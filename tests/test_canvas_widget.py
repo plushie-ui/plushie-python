@@ -246,8 +246,8 @@ class TestDeriveRegistry:
             }
         )
         reg = derive_registry(tree)
-        assert ("main", "stars") in reg
-        entry = reg[("main", "stars")]
+        assert ("main", "main#stars") in reg
+        entry = reg[("main", "main#stars")]
         assert isinstance(entry.definition, StarRating)
         assert entry.state == {"hovered": None, "max": 5}
         assert entry.props == {"max": 5}
@@ -261,7 +261,7 @@ class TestDeriveRegistry:
 class TestDispatchThroughWidgets:
     def test_ignored_passes_through(self) -> None:
         reg = {
-            ("main", "form/widget"): RegistryEntry(
+            ("main", "main#form/widget"): RegistryEntry(
                 definition=IgnoreAll(), state={}, props={}
             )
         }
@@ -271,7 +271,7 @@ class TestDispatchThroughWidgets:
 
     def test_consumed_returns_none(self) -> None:
         reg = {
-            ("main", "form/widget"): RegistryEntry(
+            ("main", "main#form/widget"): RegistryEntry(
                 definition=ConsumeAll(), state={}, props={}
             )
         }
@@ -281,7 +281,7 @@ class TestDispatchThroughWidgets:
 
     def test_emit_replaces_event(self) -> None:
         reg = {
-            ("main", "stars"): RegistryEntry(
+            ("main", "main#stars"): RegistryEntry(
                 definition=StarRating(),
                 state={"hovered": None, "max": 5},
                 props={"max": 5},
@@ -301,7 +301,7 @@ class TestDispatchThroughWidgets:
     def test_emit_custom_event_produces_widget_event(self) -> None:
         """Custom event names produce RawEvent (no typed class)."""
         reg = {
-            ("main", "picker"): RegistryEntry(
+            ("main", "main#picker"): RegistryEntry(
                 definition=CustomEmitter(),
                 state={},
                 props={},
@@ -322,7 +322,7 @@ class TestDispatchThroughWidgets:
         from plushie.events import Toggle
 
         reg = {
-            ("main", "sw"): RegistryEntry(
+            ("main", "main#sw"): RegistryEntry(
                 definition=ToggleEmitter(),
                 state={"on": False},
                 props={},
@@ -339,11 +339,11 @@ class TestDispatchThroughWidgets:
         assert result.id == "sw"
         assert result.window_id == "main"
         # State was also updated
-        assert new_reg[("main", "sw")].state == {"on": True}
+        assert new_reg[("main", "main#sw")].state == {"on": True}
 
     def test_update_state_modifies_registry(self) -> None:
         reg = {
-            ("main", "stars"): RegistryEntry(
+            ("main", "main#stars"): RegistryEntry(
                 definition=StarRating(),
                 state={"hovered": None, "max": 5},
                 props={"max": 5},
@@ -356,7 +356,7 @@ class TestDispatchThroughWidgets:
         )
         result, new_reg, _changed = dispatch_through_widgets(reg, event)
         assert result is None  # consumed by update_state
-        assert new_reg[("main", "stars")].state["hovered"] == "star2"
+        assert new_reg[("main", "main#stars")].state["hovered"] == "star2"
 
     def test_empty_registry_passes_through(self) -> None:
         event = Click(id="btn", window_id="main", scope=())
@@ -365,7 +365,9 @@ class TestDispatchThroughWidgets:
 
     def test_no_scope_passes_through(self) -> None:
         reg = {
-            ("main", "stars"): RegistryEntry(definition=IgnoreAll(), state={}, props={})
+            ("main", "main#stars"): RegistryEntry(
+                definition=IgnoreAll(), state={}, props={}
+            )
         }
         event = Click(id="other", window_id="main")
         result, _, _changed = dispatch_through_widgets(reg, event)
@@ -374,7 +376,7 @@ class TestDispatchThroughWidgets:
     def test_unhandled_press_passes_through(self) -> None:
         """Pointer events from unmatched scope pass through to update()."""
         reg = {
-            ("main", "other_widget"): RegistryEntry(
+            ("main", "main#other_widget"): RegistryEntry(
                 definition=IgnoreAll(), state={}, props={}
             )
         }
@@ -398,7 +400,7 @@ class TestDispatchThroughWidgets:
 class TestEventSpecs:
     def _make_reg(self) -> dict[tuple[str, str], RegistryEntry]:
         return {
-            ("main", "picker"): RegistryEntry(
+            ("main", "main#picker"): RegistryEntry(
                 definition=ValidatedWidget(),
                 state={},
                 props={},
@@ -450,7 +452,9 @@ class TestEventSpecs:
                 return EventAction.emit("cleared")
 
         reg = {
-            ("main", "w"): RegistryEntry(definition=ClearWidget(), state={}, props={})
+            ("main", "main#w"): RegistryEntry(
+                definition=ClearWidget(), state={}, props={}
+            )
         }
         event = Click(
             id="x",
@@ -480,7 +484,11 @@ class TestEventSpecs:
             ) -> EventActionResult:
                 return EventAction.emit("chaneg", {"x": 1.0})  # typo!
 
-        reg = {("main", "w"): RegistryEntry(definition=BadWidget(), state={}, props={})}
+        reg = {
+            ("main", "main#w"): RegistryEntry(
+                definition=BadWidget(), state={}, props={}
+            )
+        }
         event = Click(
             id="x",
             window_id="main",
@@ -511,7 +519,7 @@ class TestEventSpecs:
                 return EventAction.emit("change", {"hue": 180.0})  # missing saturation
 
         reg = {
-            ("main", "w"): RegistryEntry(
+            ("main", "main#w"): RegistryEntry(
                 definition=IncompleteWidget(), state={}, props={}
             )
         }
@@ -545,7 +553,7 @@ class TestEventSpecs:
                 return EventAction.emit("select", "not_an_int")
 
         reg = {
-            ("main", "w"): RegistryEntry(
+            ("main", "main#w"): RegistryEntry(
                 definition=WrongTypeWidget(), state={}, props={}
             )
         }
@@ -581,7 +589,9 @@ class TestEventSpecs:
                 return EventAction.emit("click")
 
         reg = {
-            ("main", "w"): RegistryEntry(definition=ClickEmitter(), state={}, props={})
+            ("main", "main#w"): RegistryEntry(
+                definition=ClickEmitter(), state={}, props={}
+            )
         }
         event = Click(
             id="x",
@@ -594,7 +604,7 @@ class TestEventSpecs:
     def test_no_event_specs_skips_validation(self) -> None:
         """Widgets without event_specs can emit anything."""
         reg = {
-            ("main", "picker"): RegistryEntry(
+            ("main", "main#picker"): RegistryEntry(
                 definition=CustomEmitter(),  # no event_specs
                 state={},
                 props={},
@@ -634,10 +644,12 @@ class TestMaybeHandleTimer:
 
     def test_widget_tag_routed(self) -> None:
         reg = {
-            ("main", "stars"): RegistryEntry(definition=IgnoreAll(), state={}, props={})
+            ("main", "main#stars"): RegistryEntry(
+                definition=IgnoreAll(), state={}, props={}
+            )
         }
         handled, event, _ = maybe_handle_timer(
-            reg, ("__widget__", "main", "stars", "tick")
+            reg, ("__widget__", "main", "main#stars", "tick")
         )
         assert handled is True
         assert event is None  # IgnoreAll ignores everything

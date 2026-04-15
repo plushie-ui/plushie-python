@@ -635,7 +635,7 @@ def dispatch_through_widgets(
 
     if not chain and event_id and isinstance(window_id, str):
         # Check if the event's target itself is a widget
-        target_id = _widget_key(window_id, _scope_to_id(scope, event_id))
+        target_id = _widget_key(window_id, _scope_to_id(window_id, scope, event_id))
         entry = registry.get(target_id)
         if entry is not None:
             chain = [(target_id, entry)]
@@ -651,27 +651,50 @@ def _build_handler_chain(
     window_id: str | None,
     scope: tuple[str, ...],
 ) -> list[tuple[WidgetKey, RegistryEntry]]:
-    """Build handler chain from scope, innermost to outermost."""
+    """Build handler chain from scope, innermost to outermost.
+
+    Strips the window_id from the end of the scope (appended by the
+    protocol decoder), reverses the remaining ancestors to forward
+    order, and builds canonical ``window#path`` keys for registry lookup.
+    """
     if not scope or window_id is None:
         return []
 
-    forward = list(reversed(scope))
+    ancestors = list(scope)
+    if ancestors and ancestors[-1] == window_id:
+        ancestors = ancestors[:-1]
+    if not ancestors:
+        return []
+
+    forward = list(reversed(ancestors))
     chain: list[tuple[WidgetKey, RegistryEntry]] = []
 
     for n in range(len(forward), 0, -1):
-        scoped_id = _widget_key(window_id, "/".join(forward[:n]))
-        entry = registry.get(scoped_id)
+        path = "/".join(forward[:n])
+        full_id = f"{window_id}#{path}"
+        key = _widget_key(window_id, full_id)
+        entry = registry.get(key)
         if entry is not None:
-            chain.append((scoped_id, entry))
+            chain.append((key, entry))
 
     return chain
 
 
-def _scope_to_id(scope: tuple[str, ...], local_id: str) -> str:
-    """Reconstruct scoped ID from reversed scope + local ID."""
-    if not scope:
-        return local_id
-    return "/".join((*reversed(scope), local_id))
+def _scope_to_id(window_id: str | None, scope: tuple[str, ...], local_id: str) -> str:
+    """Reconstruct canonical wire ID from window, reversed scope, and local ID.
+
+    Strips the window_id from the end of scope (appended by the protocol
+    decoder) before building the path. Produces ``window#path/id`` format.
+    """
+    ancestors = list(scope)
+    if window_id and ancestors and ancestors[-1] == window_id:
+        ancestors = ancestors[:-1]
+
+    if not ancestors:
+        return f"{window_id}#{local_id}" if window_id else local_id
+
+    path = "/".join((*reversed(ancestors), local_id))
+    return f"{window_id}#{path}" if window_id else path
 
 
 def _walk_chain(
@@ -750,7 +773,7 @@ def _resolve_emit_identity(
         return widget_key[0], event_id, ()
 
     # Timer or other non-widget event; split the widget ID
-    local_id, parent_scope = split_scoped_id(widget_key[1])
+    local_id, parent_scope, _window = split_scoped_id(widget_key[1])
     return widget_key[0], local_id, parent_scope
 
 
