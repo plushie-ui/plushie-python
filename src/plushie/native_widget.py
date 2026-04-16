@@ -72,6 +72,50 @@ RESERVED_PROP_NAMES: frozenset[str] = frozenset(
     {"id", "type", "children", "a11y", "event_rate"}
 )
 
+BUILTIN_WIDGET_TYPES: frozenset[str] = frozenset(
+    {
+        "column",
+        "row",
+        "container",
+        "stack",
+        "grid",
+        "pin",
+        "keyed_column",
+        "float",
+        "responsive",
+        "scrollable",
+        "pane_grid",
+        "text",
+        "rich_text",
+        "rich",
+        "space",
+        "rule",
+        "progress_bar",
+        "image",
+        "svg",
+        "markdown",
+        "qr_code",
+        "text_input",
+        "text_editor",
+        "checkbox",
+        "toggler",
+        "radio",
+        "slider",
+        "vertical_slider",
+        "pick_list",
+        "combo_box",
+        "button",
+        "pointer_area",
+        "sensor",
+        "tooltip",
+        "themer",
+        "window",
+        "overlay",
+        "canvas",
+        "table",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class PropDef:
@@ -157,6 +201,9 @@ def validate(ext_def: NativeWidget) -> list[str]:
 
     if not ext_def.kind:
         errors.append("kind must not be empty")
+
+    if ext_def.kind in BUILTIN_WIDGET_TYPES:
+        errors.append(f'widget type "{ext_def.kind}" shadows a built-in widget')
 
     seen: set[str] = set()
     for prop in ext_def.props:
@@ -392,6 +439,7 @@ fn main() -> plushie_ext::iced::Result {{
 
 
 __all__ = [
+    "BUILTIN_WIDGET_TYPES",
     "RESERVED_PROP_NAMES",
     "CommandDef",
     "NativeWidget",

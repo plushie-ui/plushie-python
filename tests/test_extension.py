@@ -173,6 +173,24 @@ class TestValidate:
         errors = validate(ext)
         assert any("reserved" in e and "children" in e for e in errors)
 
+    def test_builtin_widget_type_name(self) -> None:
+        ext = NativeWidget(
+            kind="button",
+            rust_crate="native/button",
+            rust_constructor="button::B::new()",
+        )
+        errors = validate(ext)
+        assert any("shadows a built-in" in e for e in errors)
+
+    def test_canvas_type_name_rejected(self) -> None:
+        ext = NativeWidget(
+            kind="canvas",
+            rust_crate="native/canvas",
+            rust_constructor="canvas::C::new()",
+        )
+        errors = validate(ext)
+        assert any("shadows a built-in" in e for e in errors)
+
     def test_multiple_errors(self) -> None:
         ext = NativeWidget(
             kind="",
