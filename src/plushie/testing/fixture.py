@@ -26,7 +26,7 @@ from typing import Any
 
 from plushie.app import App, AppBuilder
 from plushie.commands import Command
-from plushie.events import AsyncResult, StreamChunk
+from plushie.events import AsyncResult, Diagnostic, StreamChunk
 from plushie.protocol import encode_selector, parse_selector
 from plushie.testing.element import Element, ElementNotFoundError
 from plushie.testing.pool import SessionPool
@@ -417,6 +417,9 @@ class AppFixture[M]:
 
         # Register a session
         self._session_id = pool.register()
+
+        # Diagnostic collector
+        self._diagnostics: list[Any] = []
 
         # Initialize
         raw = app.init()
@@ -912,6 +915,69 @@ class AppFixture[M]:
         if actual != expected:
             raise AssertionError(f"assert_model: expected {expected!r}, got {actual!r}")
 
+    def assert_a11y(self, selector: str, expected: dict[str, Any]) -> None:
+        """Assert that a widget has the expected accessibility attributes.
+
+        Finds the widget by selector and checks that its ``a11y`` prop
+        map contains all the expected key-value pairs.
+
+        Args:
+            selector: Widget selector.
+            expected: Dict of a11y key-value pairs to check.
+
+        Raises:
+            AssertionError: If the element is not found, has no a11y
+                props, or any expected key-value pair differs.
+        """
+        el = self.find(selector)
+        raw_a11y = el.a11y()
+        if not raw_a11y:
+            raise AssertionError(f"assert_a11y({selector!r}): no a11y prop on element")
+        for key, expected_value in expected.items():
+            actual_value = raw_a11y.get(key)
+            if actual_value != expected_value:
+                raise AssertionError(
+                    f"assert_a11y({selector!r}): {key!r} mismatch: "
+                    f"expected {expected_value!r}, got {actual_value!r}. "
+                    f"Full a11y: {raw_a11y!r}"
+                )
+
+    def assert_role(self, selector: str, expected_role: str) -> None:
+        """Assert that a widget has the expected accessibility role.
+
+        Checks the inferred role (from widget type and any a11y override).
+
+        Args:
+            selector: Widget selector.
+            expected_role: The expected role string.
+
+        Raises:
+            AssertionError: If the element is not found or the role differs.
+        """
+        el = self.find(selector)
+        actual_role = el.inferred_role()
+        if actual_role != expected_role:
+            raise AssertionError(
+                f"assert_role({selector!r}): expected {expected_role!r}, "
+                f"got {actual_role!r}"
+            )
+
+    def assert_no_diagnostics(self) -> None:
+        """Assert that no prop validation diagnostics were collected.
+
+        Checks the internal diagnostic buffer and raises with details
+        if any diagnostics were received.
+
+        Raises:
+            AssertionError: If any diagnostics were collected.
+        """
+        diagnostics = self._diagnostics
+        if diagnostics:
+            details = "\n".join(
+                f"  - [{d.level}] {d.code}: {d.message}" for d in diagnostics
+            )
+            raise AssertionError(f"Expected no diagnostics, but found:\n{details}")
+
     def save_screenshot(self, name: str) -> Path:
         """Save a screenshot PNG to ``test/screenshots/``.
 
@@ -1139,6 +1205,10 @@ class AppFixture[M]:
         """Process a single event through app.update + sync command processing."""
         if event is None or isinstance(event, dict):
             # Raw dict events we don't recognize; skip
+            return
+
+        if isinstance(event, Diagnostic):
+            self._diagnostics.append(event)
             return
 
         try:
