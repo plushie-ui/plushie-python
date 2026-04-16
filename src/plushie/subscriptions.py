@@ -370,5 +370,31 @@ class Subscription:
         """
         return replace(self, tag=mapper(self.tag))
 
+    @staticmethod
+    def batch(
+        subs: list[Subscription] | tuple[Subscription, ...],
+    ) -> list[Subscription]:
+        """Validate and return a list of subscriptions unchanged.
+
+        Ensures every element is a ``Subscription`` instance. Useful
+        for composing subscription lists from multiple sources.
+
+        Args:
+            subs: List or tuple of subscriptions.
+
+        Returns:
+            The same subscriptions as a list.
+
+        Raises:
+            TypeError: If any element is not a ``Subscription``.
+        """
+        result = list(subs)
+        for s in result:
+            if not isinstance(s, Subscription):
+                raise TypeError(
+                    f"Subscription.batch expected Subscription, got {type(s).__name__}"
+                )
+        return result
+
 
 __all__ = ["Subscription"]

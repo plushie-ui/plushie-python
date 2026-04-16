@@ -1425,6 +1425,105 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             y=float(data.get("y", 0)),
             pointer="mouse",
             modifiers=_parse_modifiers(modifiers_raw),
+            captured=captured,
+            window_id=sub_window_id,
+        )
+
+    if family == "cursor_entered":
+        return Enter(id=sub_window_id, captured=captured, window_id=sub_window_id)
+
+    if family == "cursor_left":
+        return Exit(id=sub_window_id, captured=captured, window_id=sub_window_id)
+
+    if family == "button_pressed":
+        return Press(
+            id=sub_window_id,
+            x=0.0,
+            y=0.0,
+            button=str(value or "left"),
+            pointer="mouse",
+            modifiers=_parse_modifiers(modifiers_raw),
+            captured=captured,
+            window_id=sub_window_id,
+        )
+
+    if family == "button_released":
+        return Release(
+            id=sub_window_id,
+            x=0.0,
+            y=0.0,
+            button=str(value or "left"),
+            pointer="mouse",
+            modifiers=_parse_modifiers(modifiers_raw),
+            captured=captured,
+            window_id=sub_window_id,
+        )
+
+    if family == "wheel_scrolled":
+        return Scroll(
+            id=sub_window_id,
+            x=0.0,
+            y=0.0,
+            delta_x=float(data.get("delta_x", 0)),
+            delta_y=float(data.get("delta_y", 0)),
+            unit=data.get("unit", "line")
+            if data.get("unit") in ("line", "pixel")
+            else "line",
+            pointer="mouse",
+            modifiers=_parse_modifiers(modifiers_raw),
+            captured=captured,
+            window_id=sub_window_id,
+        )
+
+    if family == "finger_pressed":
+        return Press(
+            id=sub_window_id,
+            x=float(data.get("x", 0)),
+            y=float(data.get("y", 0)),
+            button="left",
+            pointer="touch",
+            finger=int(data.get("id", 0)),
+            modifiers=_parse_modifiers(modifiers_raw),
+            captured=captured,
+            window_id=sub_window_id,
+        )
+
+    if family == "finger_moved":
+        return Move(
+            id=sub_window_id,
+            x=float(data.get("x", 0)),
+            y=float(data.get("y", 0)),
+            pointer="touch",
+            finger=int(data.get("id", 0)),
+            modifiers=_parse_modifiers(modifiers_raw),
+            captured=captured,
+            window_id=sub_window_id,
+        )
+
+    if family == "finger_lifted":
+        return Release(
+            id=sub_window_id,
+            x=float(data.get("x", 0)),
+            y=float(data.get("y", 0)),
+            button="left",
+            pointer="touch",
+            finger=int(data.get("id", 0)),
+            modifiers=_parse_modifiers(modifiers_raw),
+            captured=captured,
+            window_id=sub_window_id,
+        )
+
+    if family == "finger_lost":
+        return Release(
+            id=sub_window_id,
+            x=float(data.get("x", 0)),
+            y=float(data.get("y", 0)),
+            button="left",
+            pointer="touch",
+            finger=int(data.get("id", 0)),
+            lost=True,
+            modifiers=_parse_modifiers(modifiers_raw),
+            captured=captured,
             window_id=sub_window_id,
         )
 
@@ -1463,6 +1562,9 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             y=0.0,
             delta_x=float(data.get("delta_x", 0)),
             delta_y=float(data.get("delta_y", 0)),
+            unit=data.get("unit", "line")
+            if data.get("unit") in ("line", "pixel")
+            else "line",
             pointer="mouse",
             modifiers=_parse_modifiers(modifiers_raw),
             window_id=sub_window_id,
@@ -1511,6 +1613,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             button="left",
             pointer="touch",
             finger=int(data.get("id", 0)),
+            lost=True,
             modifiers=_parse_modifiers(modifiers_raw),
             window_id=sub_window_id,
         )
@@ -1611,7 +1714,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- System / animation / theme -------
 
     if family == "animation_frame":
-        return AnimationFrame(timestamp=int(data.get("timestamp", 0)))
+        return AnimationFrame(timestamp=float(data.get("timestamp", 0)))
 
     if family == "transition_complete":
         local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)

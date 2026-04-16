@@ -392,9 +392,16 @@ class Enter:
     """Pointer entered a widget's bounds.
 
     Wire family: ``enter``.
+
+    Attributes:
+        id: Widget ID.
+        captured: Whether the event was captured by a parent widget.
+        window_id: Source window ID.
+        scope: Ancestor container IDs.
     """
 
     id: str
+    captured: bool = False
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -404,9 +411,16 @@ class Exit:
     """Pointer left a widget's bounds.
 
     Wire family: ``exit``.
+
+    Attributes:
+        id: Widget ID.
+        captured: Whether the event was captured by a parent widget.
+        window_id: Source window ID.
+        scope: Ancestor container IDs.
     """
 
     id: str
+    captured: bool = False
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -453,6 +467,7 @@ class Press:
         pointer: The pointer device type.
         modifiers: Active keyboard modifiers at press time.
         finger: Touch finger identifier, or ``None`` for mouse/pen.
+        captured: Whether the event was captured by a parent widget.
     """
 
     id: str
@@ -462,6 +477,7 @@ class Press:
     pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
     finger: int | None = None
+    captured: bool = False
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -471,7 +487,7 @@ class Release:
     """A pointer button was released on a widget.
 
     Wire family: ``release``. Replaces mouse_area right/middle/left release
-    and canvas_release.
+    and canvas_release. Also used for ``finger_lifted`` and ``finger_lost``.
 
     Attributes:
         x: Horizontal position in widget-local coordinates.
@@ -480,6 +496,8 @@ class Release:
         pointer: The pointer device type.
         modifiers: Active keyboard modifiers at release time.
         finger: Touch finger identifier, or ``None`` for mouse/pen.
+        lost: ``True`` if the touch was lost (finger went out of range),
+            ``False`` for a normal release.
     """
 
     id: str
@@ -489,6 +507,8 @@ class Release:
     pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
     finger: int | None = None
+    lost: bool = False
+    captured: bool = False
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -505,6 +525,7 @@ class Move:
         pointer: The pointer device type.
         modifiers: Active keyboard modifiers during movement.
         finger: Touch finger identifier, or ``None`` for mouse/pen.
+        captured: Whether the event was captured by a parent widget.
     """
 
     id: str
@@ -513,6 +534,7 @@ class Move:
     pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
     finger: int | None = None
+    captured: bool = False
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -528,6 +550,7 @@ class Scroll:
         y: Vertical cursor position.
         delta_x: Horizontal scroll delta.
         delta_y: Vertical scroll delta.
+        unit: Scroll delta measurement unit (``"line"`` or ``"pixel"``).
         pointer: The pointer device type.
         modifiers: Active keyboard modifiers during scroll.
     """
@@ -537,8 +560,10 @@ class Scroll:
     y: float
     delta_x: float
     delta_y: float
+    unit: ScrollUnit = "line"
     pointer: PointerType = "mouse"
     modifiers: KeyModifiers = field(default_factory=KeyModifiers)
+    captured: bool = False
     window_id: str = ""
     scope: tuple[str, ...] = ()
 
@@ -1047,7 +1072,7 @@ class AnimationFrame:
         timestamp: Monotonic timestamp in milliseconds.
     """
 
-    timestamp: int
+    timestamp: float
 
 
 @dataclass(frozen=True, slots=True)
