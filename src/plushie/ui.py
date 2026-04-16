@@ -745,19 +745,16 @@ def canvas(id: str, /, **kwargs: Any) -> Node:
 # ---------------------------------------------------------------------------
 
 __all__ = [
-    # Type
     "Node",
-    # Interactive leaves
     "button",
     "canvas",
+    "cell",
     "checkbox",
-    # Anonymous containers
     "column",
     "combo_box",
     "container",
     "floating",
     "grid",
-    # Display
     "image",
     "keyed_column",
     "markdown",
@@ -776,14 +773,11 @@ __all__ = [
     "scrollable",
     "sensor",
     "slider",
-    # Layout primitives
     "space",
     "stack",
     "svg",
     "table",
     "table_row",
-    "cell",
-    # Display with auto-id
     "text",
     "text_editor",
     "text_input",
@@ -791,6 +785,5 @@ __all__ = [
     "toggler",
     "tooltip",
     "vertical_slider",
-    # Named containers
     "window",
 ]

@@ -32,6 +32,7 @@ from queue import Empty, Queue
 from typing import Any
 
 from plushie.app import App, AppBuilder
+from plushie.binary import BINARY_VERSION
 from plushie.commands import Command
 from plushie.connection import Connection
 from plushie.effects import DEFAULT_TIMEOUTS
@@ -64,8 +65,6 @@ from plushie.subscriptions import Subscription
 from plushie.tree import Node, diff, normalize_view
 from plushie.types import HelloInfo
 from plushie.widget import WidgetRegistry
-
-from plushie.binary import BINARY_VERSION
 
 logger = logging.getLogger("plushie")
 

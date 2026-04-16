@@ -738,7 +738,7 @@ class TestEventSpecs:
             )
         }
         event = Click(id="x", window_id="main", scope=("w",))
-        with pytest.raises(ValueError, match="missing declared fields.*hue"):
+        with pytest.raises(ValueError, match=r"missing declared fields.*hue"):
             dispatch_through_widgets(reg, event)
 
     def test_spec_rejects_unknown_optional_field(self) -> None:

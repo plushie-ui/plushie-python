@@ -27,7 +27,7 @@ from typing import Any
 from plushie.app import App, AppBuilder
 from plushie.commands import Command
 from plushie.events import AsyncResult, StreamChunk
-from plushie.protocol import encode_selector
+from plushie.protocol import encode_selector, parse_selector
 from plushie.testing.element import Element, ElementNotFoundError
 from plushie.testing.pool import SessionPool
 from plushie.tree import Node, diff, normalize_view, text_of
@@ -163,8 +163,12 @@ def _parse_id_selector(selector: str) -> tuple[str | None, str] | None:
 def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
     """Resolve a user selector to a wire selector dict.
 
-    For ``#id`` selectors without a ``/``, looks up the full scoped ID
-    in the local tree so the renderer can find it by exact match.
+    Supports unified selector syntax:
+
+    - ID selectors (``"#save"``, ``"main#save"``, ``"form/save"``)
+      are resolved against the local tree for exact scoped IDs.
+    - Pseudo-selectors (``":focused"``) and attribute selectors
+      (``"[text=Save]"``, ``"[role=button]"``) pass through directly.
 
     Args:
         selector: User-facing selector string.
@@ -233,6 +237,11 @@ def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
         if window_id is not None:
             result["window_id"] = window_id
         return result
+
+    wire = parse_selector(selector)
+    if wire["by"] != "id" or "window_id" in wire:
+        return wire
+
     return encode_selector(selector)
 
 

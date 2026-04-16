@@ -74,6 +74,7 @@ from plushie.events import (
     Toggle,
     TransitionComplete,
     TreeHash,
+    WidgetStatus,
     WindowClosed,
     WindowCloseRequested,
     WindowFocused,
@@ -82,7 +83,6 @@ from plushie.events import (
     WindowRescaled,
     WindowResized,
     WindowUnfocused,
-    WidgetStatus,
     split_scoped_id,
 )
 from plushie.types import HelloInfo, KeyModifiers
@@ -614,6 +614,8 @@ def encode_selector(selector: str) -> dict[str, str]:
     - ``"#widget_id"`` - find by node ID (strips leading ``#``)
     - ``"text content"`` - find by text content (content, label, value)
 
+    For richer selector forms see :func:`parse_selector`.
+
     Args:
         selector: Selector string.
 
@@ -623,6 +625,57 @@ def encode_selector(selector: str) -> dict[str, str]:
     if selector.startswith("#"):
         return {"by": "id", "value": selector[1:]}
     return {"by": "text", "value": selector}
+
+
+def parse_selector(selector: str) -> dict[str, str]:
+    """Parse a unified selector string into a wire selector dict.
+
+    Supported syntax:
+
+    - ``"save"`` or ``"#save"`` - ID selector
+    - ``"form/save"`` or ``"#form/save"`` - scoped ID selector
+    - ``"main#save"`` - window-qualified ID selector
+    - ``":focused"`` - focused element pseudo-selector
+    - ``"main#:focused"`` - window-qualified focused selector
+    - ``"[text=Save]"`` - text content attribute selector
+    - ``"[role=button]"`` - accessibility role attribute selector
+    - ``"[label=Name]"`` - accessibility label attribute selector
+
+    Args:
+        selector: Selector string.
+
+    Returns:
+        Wire selector dict with ``"by"`` and optionally ``"value"``
+        and ``"window_id"`` keys.
+    """
+    window_id: str | None = None
+    target = selector
+
+    if "#" in selector:
+        parts = selector.split("#", 1)
+        if parts[0]:
+            window_id = parts[0]
+            target = parts[1]
+
+    if target.startswith("#"):
+        target = target[1:]
+
+    if target.startswith(":"):
+        result: dict[str, str] = {"by": target[1:]}
+    elif target.startswith("[") and target.endswith("]"):
+        inner = target[1:-1]
+        eq_pos = inner.find("=")
+        if eq_pos >= 0:
+            result = {"by": inner[:eq_pos], "value": inner[eq_pos + 1 :]}
+        else:
+            result = {"by": "id", "value": target}
+    else:
+        result = {"by": "id", "value": target}
+
+    if window_id is not None:
+        result["window_id"] = window_id
+
+    return result
 
 
 def selector_by_id(node_id: str, window_id: str | None = None) -> dict[str, str]:
@@ -1666,6 +1719,7 @@ __all__ = [
     "parse_effect_response",
     "parse_hello",
     "parse_query_response",
+    "parse_selector",
     "patch",
     "query_msg",
     "register_effect_stub",

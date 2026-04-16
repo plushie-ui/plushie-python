@@ -1667,6 +1667,7 @@ __all__ = [
     "Toggle",
     "TransitionComplete",
     "TreeHash",
+    "WidgetStatus",
     "WindowCloseRequested",
     "WindowClosed",
     "WindowEvent",
@@ -1676,8 +1677,7 @@ __all__ = [
     "WindowRescaled",
     "WindowResized",
     "WindowUnfocused",
-    "WidgetStatus",
+    "build_renderer_exit",
     "split_scoped_id",
     "target",
-    "build_renderer_exit",
 ]

@@ -70,6 +70,7 @@ from plushie.protocol import (
     parse_effect_response,
     parse_hello,
     parse_query_response,
+    parse_selector,
     patch,
     query_msg,
     reset_msg,
@@ -349,6 +350,54 @@ class TestSelectors:
 
     def test_selector_by_label(self) -> None:
         assert selector_by_label("Save") == {"by": "label", "value": "Save"}
+
+    def test_parse_selector_bare_id(self) -> None:
+        assert parse_selector("save") == {"by": "id", "value": "save"}
+
+    def test_parse_selector_hash_id(self) -> None:
+        assert parse_selector("#save") == {"by": "id", "value": "save"}
+
+    def test_parse_selector_scoped_id(self) -> None:
+        assert parse_selector("form/save") == {"by": "id", "value": "form/save"}
+
+    def test_parse_selector_window_qualified_id(self) -> None:
+        assert parse_selector("main#save") == {
+            "by": "id",
+            "value": "save",
+            "window_id": "main",
+        }
+
+    def test_parse_selector_window_qualified_scoped(self) -> None:
+        assert parse_selector("main#form/save") == {
+            "by": "id",
+            "value": "form/save",
+            "window_id": "main",
+        }
+
+    def test_parse_selector_focused(self) -> None:
+        assert parse_selector(":focused") == {"by": "focused"}
+
+    def test_parse_selector_window_focused(self) -> None:
+        assert parse_selector("main#:focused") == {
+            "by": "focused",
+            "window_id": "main",
+        }
+
+    def test_parse_selector_text_attr(self) -> None:
+        assert parse_selector("[text=Save]") == {"by": "text", "value": "Save"}
+
+    def test_parse_selector_role_attr(self) -> None:
+        assert parse_selector("[role=button]") == {"by": "role", "value": "button"}
+
+    def test_parse_selector_label_attr(self) -> None:
+        assert parse_selector("[label=Name]") == {"by": "label", "value": "Name"}
+
+    def test_parse_selector_window_text_attr(self) -> None:
+        assert parse_selector("main#[text=Save]") == {
+            "by": "text",
+            "value": "Save",
+            "window_id": "main",
+        }
 
     def test_selector_focused(self) -> None:
         assert selector_focused() == {"by": "focused"}
