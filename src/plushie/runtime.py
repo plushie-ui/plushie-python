@@ -65,6 +65,8 @@ from plushie.tree import Node, diff, normalize_view
 from plushie.types import HelloInfo
 from plushie.widget import WidgetRegistry
 
+from plushie.binary import BINARY_VERSION
+
 logger = logging.getLogger("plushie")
 
 # Default timeout for effect requests (milliseconds).
@@ -583,6 +585,13 @@ class Runtime:
                     event.backend,
                     event.transport,
                 )
+                if event.version != BINARY_VERSION:
+                    logger.warning(
+                        "plushie runtime: renderer version %s does not "
+                        "match SDK expected version %s",
+                        event.version,
+                        BINARY_VERSION,
+                    )
                 self._reset_heartbeat()
                 continue
 
