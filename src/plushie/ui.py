@@ -246,10 +246,33 @@ def table(id: str, /, *children: Any, **kwargs: Any) -> Node:
 
     Args:
         id: Table identifier.
-        *children: Child widgets.
-        **kwargs: Table props.
+        *children: Child widgets (typically ``table_row`` nodes).
+        **kwargs: Table props (columns, rows, etc.).
     """
     return _named_container("table", id, *children, **kwargs)
+
+
+def table_row(id: str, /, *children: Node, **kwargs: Any) -> Node:
+    """Table row container for use as a child of ``table()``.
+
+    Args:
+        id: Row identifier.
+        *children: Cell nodes (typically ``cell()`` nodes).
+        **kwargs: Row props.
+    """
+    return _named_container("table_row", id, *children, **kwargs)
+
+
+def cell(column: str, /, *children: Node, **kwargs: Any) -> Node:
+    """Table cell for use as a child of ``table_row()``.
+
+    Args:
+        column: Column key this cell belongs to.
+        *children: Cell content widgets.
+        **kwargs: Cell props.
+    """
+    kwargs.setdefault("column", column)
+    return _named_container("table_cell", column, *children, **kwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -756,6 +779,8 @@ __all__ = [
     "stack",
     "svg",
     "table",
+    "table_row",
+    "cell",
     # Display with auto-id
     "text",
     "text_editor",

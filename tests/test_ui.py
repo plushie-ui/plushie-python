@@ -135,6 +135,31 @@ class TestTable:
         node = ui.table("tbl")
         _assert_node(node, id="tbl", type="table")
 
+    def test_table_row(self) -> None:
+        node = ui.table_row("r1", ui.cell("name", ui.text("Alice")))
+        _assert_node(node, id="r1", type="table_row", children_count=1)
+        assert len(node["children"]) == 1
+
+    def test_cell(self) -> None:
+        node = ui.cell("email", ui.text("a@b.com"))
+        _assert_node(node, id="email", type="table_cell", children_count=1)
+        assert node["props"]["column"] == "email"
+
+    def test_table_with_rows(self) -> None:
+        node = ui.table(
+            "users",
+            ui.table_row(
+                "r1",
+                ui.cell("name", ui.text("Alice")),
+                ui.cell("email", ui.text("a@b.com")),
+            ),
+            columns=[{"key": "name"}, {"key": "email"}],
+        )
+        _assert_node(node, id="users", type="table", children_count=1)
+        row = node["children"][0]
+        assert row["type"] == "table_row"
+        assert len(row["children"]) == 2
+
 
 # ---------------------------------------------------------------------------
 # Anonymous containers

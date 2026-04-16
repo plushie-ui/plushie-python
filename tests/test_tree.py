@@ -10,6 +10,7 @@ from plushie.framing import MsgpackFraming
 from plushie.tree import (
     diff,
     exists,
+    expand_rows,
     find,
     find_all,
     ids,
@@ -1215,3 +1216,86 @@ class TestNormalizePropEncodingRoundTrip:
         assert a11y["role"] == "heading"
         assert a11y["level"] == 1
         assert "hidden" not in a11y
+
+
+class TestExpandRows:
+    def test_non_table_passthrough(self) -> None:
+        node = {"id": "x", "type": "column", "props": {}, "children": []}
+        assert expand_rows(node) is node
+
+    def test_table_no_rows_passthrough(self) -> None:
+        node = {
+            "id": "tbl",
+            "type": "table",
+            "props": {"columns": [{"key": "name"}]},
+            "children": [],
+        }
+        assert expand_rows(node) is node
+
+    def test_table_with_children_unchanged(self) -> None:
+        node = {
+            "id": "tbl",
+            "type": "table",
+            "props": {"columns": [{"key": "name"}]},
+            "children": [
+                {"id": "r1", "type": "table_row", "props": {}, "children": []}
+            ],
+        }
+        assert expand_rows(node) is node
+
+    def test_expands_rows_to_children(self) -> None:
+        node = {
+            "id": "tbl",
+            "type": "table",
+            "props": {
+                "columns": [{"key": "name"}, {"key": "email"}],
+                "rows": [
+                    {"id": "r1", "name": "Alice", "email": "a@b.com"},
+                    {"id": "r2", "name": "Bob", "email": "c@d.com"},
+                ],
+            },
+            "children": [],
+        }
+        result = expand_rows(node)
+        assert "rows" not in result["props"]
+        children = result["children"]
+        assert len(children) == 2
+
+        r1 = children[0]
+        assert r1["type"] == "table_row"
+        assert r1["id"] == "r1"
+        assert len(r1["children"]) == 2
+
+        name_cell = r1["children"][0]
+        assert name_cell["type"] == "table_cell"
+        assert name_cell["props"]["column"] == "name"
+        assert name_cell["children"][0]["props"]["content"] == "Alice"
+
+        email_cell = r1["children"][1]
+        assert email_cell["props"]["column"] == "email"
+        assert email_cell["children"][0]["props"]["content"] == "a@b.com"
+
+    def test_rows_and_children_raises(self) -> None:
+        node = {
+            "id": "tbl",
+            "type": "table",
+            "props": {"rows": [{"name": "Alice"}]},
+            "children": [
+                {"id": "r1", "type": "table_row", "props": {}, "children": []}
+            ],
+        }
+        with pytest.raises(ValueError, match="cannot combine"):
+            expand_rows(node)
+
+    def test_row_without_id_uses_empty_string(self) -> None:
+        node = {
+            "id": "tbl",
+            "type": "table",
+            "props": {
+                "columns": [{"key": "name"}],
+                "rows": [{"name": "Alice"}],
+            },
+            "children": [],
+        }
+        result = expand_rows(node)
+        assert result["children"][0]["id"] == ""

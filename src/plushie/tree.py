@@ -821,6 +821,81 @@ def text_of(node: Node) -> str | None:
     return None
 
 
+def expand_rows(node: Node) -> Node:
+    """Expand data-based table rows into table_row/table_cell children.
+
+    If the node is a table with a ``rows`` prop but no children, the
+    rows are converted into ``table_row``/``table_cell`` child nodes.
+    Each cell gets a ``column`` prop matching its column key. The
+    ``rows`` prop is removed from the node.
+
+    If the node already has children or has no ``rows`` prop, it is
+    returned unchanged.
+
+    Raises:
+        ValueError: If the node has both ``rows`` prop and children.
+    """
+    if node.get("type") != "table":
+        return node
+
+    props = dict(node.get("props", {}))
+    rows = props.get("rows")
+    children = node.get("children", [])
+
+    if not rows:
+        return node
+
+    if children:
+        raise ValueError(
+            f"table {node.get('id')!r}: cannot combine rows prop "
+            "with child nodes. Use one or the other."
+        )
+
+    columns = props.get("columns", [])
+    col_keys = [
+        str(col.get("key", col) if isinstance(col, dict) else col) for col in columns
+    ]
+
+    row_nodes: list[Node] = []
+    for row_data in rows:
+        row_id = str(row_data.get("id", ""))
+        cells: list[Node] = []
+        for key in col_keys:
+            raw_val = row_data.get(key, row_data.get(key))
+            value = str(raw_val) if raw_val is not None else ""
+            cells.append(
+                {
+                    "id": key,
+                    "type": "table_cell",
+                    "props": {"column": key},
+                    "children": [
+                        {
+                            "id": f"{row_id}/{key}/text",
+                            "type": "text",
+                            "props": {"content": value},
+                            "children": [],
+                        }
+                    ],
+                }
+            )
+        row_nodes.append(
+            {
+                "id": row_id,
+                "type": "table_row",
+                "props": {},
+                "children": cells,
+            }
+        )
+
+    props.pop("rows", None)
+    return {
+        "id": node.get("id", ""),
+        "type": "table",
+        "props": props,
+        "children": row_nodes,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -832,6 +907,7 @@ __all__ = [
     "WireEncodable",
     "diff",
     "exists",
+    "expand_rows",
     "find",
     "find_all",
     "ids",
