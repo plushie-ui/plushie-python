@@ -28,6 +28,7 @@ from plushie.events import (
     DragEnd,
     DuplicateNodeIds,
     EffectResult,
+    EffectStubAck,
     Enter,
     Exit,
     FileDropped,
@@ -64,6 +65,8 @@ from plushie.events import (
     ScrollData,
     Scrolled,
     Select,
+    SessionClosed,
+    SessionError,
     Slide,
     SlideRelease,
     Sort,
@@ -876,6 +879,9 @@ def decode_message(
     | TreeHash
     | DuplicateNodeIds
     | Announce
+    | SessionError
+    | SessionClosed
+    | EffectStubAck
     | tuple[str, str, str, Any, str | None]
     | dict[str, Any]
 ):
@@ -909,7 +915,12 @@ def decode_message(
         return _decode_event(msg)
 
     if msg_type in ("effect_stub_registered", "effect_stub_unregistered"):
-        return {"type": msg_type, "kind": msg.get("kind", "")}
+        from plushie.events import EffectStubAck
+
+        return EffectStubAck(
+            kind=msg.get("kind", ""),
+            registered=msg_type == "effect_stub_registered",
+        )
 
     # Pass through other response types (query_response, interact_response,
     # interact_step, tree_hash_response, screenshot_response, reset_response)
@@ -1293,6 +1304,8 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             element_id=str(data.get("element_id", "")),
             code=str(data.get("code", "")),
             message=str(data.get("message", "")),
+            id=msg.get("id"),
+            window_id=msg.get("window_id"),
         )
 
     # ------- Pane events (scoped) -------
@@ -1641,7 +1654,13 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- Session lifecycle (multiplexed mode) -------
 
     if family in ("session_error", "session_closed"):
-        return msg
+        from plushie.events import SessionClosed, SessionError
+
+        session_id = str(msg.get("session", ""))
+        v = value if isinstance(value, dict) else data
+        if family == "session_error":
+            return SessionError(session=session_id, error=str(v.get("error", "")))
+        return SessionClosed(session=session_id, reason=str(v.get("reason", "")))
 
     # ------- Catch-all: unknown widget event -------
     if wire_id:

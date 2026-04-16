@@ -594,12 +594,16 @@ class Diagnostic:
         element_id: The element that triggered the diagnostic.
         code: Machine-readable diagnostic code.
         message: Human-readable diagnostic message.
+        id: Originating widget or canvas ID (may be ``None``).
+        window_id: Originating window ID (may be ``None``).
     """
 
     level: str
     element_id: str
     code: str
     message: str
+    id: str | None = None
+    window_id: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -1365,6 +1369,68 @@ class TimerTick:
 
 
 # ---------------------------------------------------------------------------
+# Session lifecycle events (multiplexed mode)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class SessionError:
+    """A multiplexed session encountered an error.
+
+    Wire family: ``session_error``.
+
+    Emitted by the multiplexed renderer when a session fails.
+    Only relevant in multiplexed (pool) mode.
+
+    Attributes:
+        session: The session ID that errored.
+        error: Error description from the renderer.
+    """
+
+    session: str
+    error: str
+
+
+@dataclass(frozen=True, slots=True)
+class SessionClosed:
+    """A multiplexed session was closed by the renderer.
+
+    Wire family: ``session_closed``.
+
+    Emitted by the multiplexed renderer when a session terminates.
+    Only relevant in multiplexed (pool) mode.
+
+    Attributes:
+        session: The session ID that was closed.
+        reason: Close reason from the renderer.
+    """
+
+    session: str
+    reason: str
+
+
+# ---------------------------------------------------------------------------
+# Effect stub acknowledgement
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class EffectStubAck:
+    """Acknowledgement of an effect stub registration or unregistration.
+
+    Wire types: ``effect_stub_registered`` or ``effect_stub_unregistered``.
+
+    Attributes:
+        kind: The effect kind that was stubbed.
+        registered: ``True`` if this is a registration ack,
+            ``False`` if unregistration.
+    """
+
+    kind: str
+    registered: bool
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -1583,6 +1649,9 @@ type Event = (
     | Announce
     | EffectResult
     | RuntimeEvent
+    | SessionError
+    | SessionClosed
+    | EffectStubAck
 )
 """Union of all event types that can arrive in ``update()``."""
 
@@ -1607,6 +1676,7 @@ __all__ = [
     "DuplicateNodeIds",
     "EffectResult",
     "EffectStatus",
+    "EffectStubAck",
     "Enter",
     "Event",
     "Exit",
@@ -1654,6 +1724,8 @@ __all__ = [
     "ScrollUnit",
     "Scrolled",
     "Select",
+    "SessionClosed",
+    "SessionError",
     "Slide",
     "SlideRelease",
     "Sort",

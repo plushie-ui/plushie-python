@@ -737,6 +737,14 @@ class Runtime:
                     ack.set()
                 continue
 
+            from plushie.events import EffectStubAck
+
+            if isinstance(event, EffectStubAck):
+                ack = self._pending_stub_acks.pop(event.kind, None)
+                if ack is not None:
+                    ack.set()
+                continue
+
             # Interact step: batch events with apply_event, then snapshot
             if isinstance(event, dict) and event.get("type") == "interact_step":
                 self._flush_coalescables()

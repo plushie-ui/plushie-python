@@ -313,16 +313,20 @@ class TestEffectStubMessages:
     def test_decode_effect_stub_registered(self) -> None:
         raw = {"type": "effect_stub_registered", "kind": "clipboard_read"}
         result = decode_message(raw)
-        assert isinstance(result, dict)
-        assert result["type"] == "effect_stub_registered"
-        assert result["kind"] == "clipboard_read"
+        from plushie.events import EffectStubAck
+
+        assert isinstance(result, EffectStubAck)
+        assert result.kind == "clipboard_read"
+        assert result.registered is True
 
     def test_decode_effect_stub_unregistered(self) -> None:
         raw = {"type": "effect_stub_unregistered", "kind": "file_open"}
         result = decode_message(raw)
-        assert isinstance(result, dict)
-        assert result["type"] == "effect_stub_unregistered"
-        assert result["kind"] == "file_open"
+        from plushie.events import EffectStubAck
+
+        assert isinstance(result, EffectStubAck)
+        assert result.kind == "file_open"
+        assert result.registered is False
 
 
 # ===================================================================
