@@ -348,10 +348,294 @@ class TestNormalizeA11yRefs:
         # Window scopes its children with "main#", so the ref is prefixed
         assert result["children"][0]["props"]["a11y"]["labelled_by"] == "main#label"
 
-    def test_no_a11y_prop_unchanged(self) -> None:
+    def test_a11y_defaults_applied(self) -> None:
         tree = _node("btn", "button", {"label": "OK"})
         result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "button"
+        assert a11y["label"] == "OK"
+
+
+class TestA11yDefaults:
+    """Per-widget a11y defaults applied during normalization."""
+
+    def test_button_defaults(self) -> None:
+        tree = _node("save", "button", {"label": "Save"})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "button"
+        assert a11y["label"] == "Save"
+
+    def test_text_defaults_with_content(self) -> None:
+        tree = {"type": "text", "props": {"content": "Hello"}}
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "label"
+        assert a11y["label"] == "Hello"
+
+    def test_text_input_defaults_from_placeholder(self) -> None:
+        tree = _node("search", "text_input", {"value": "", "placeholder": "Search..."})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "text_input"
+        assert a11y["label"] == "Search..."
+
+    def test_checkbox_defaults_from_label(self) -> None:
+        tree = _node("agree", "checkbox", {"checked": False, "label": "I agree"})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "check_box"
+        assert a11y["label"] == "I agree"
+
+    def test_combo_box_has_popup(self) -> None:
+        tree = _node(
+            "cb",
+            "combo_box",
+            {"options": [], "selected": None, "placeholder": "Choose"},
+        )
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "combo_box"
+        assert a11y["has_popup"] == "listbox"
+        assert a11y["label"] == "Choose"
+
+    def test_pick_list_has_popup(self) -> None:
+        tree = _node(
+            "pl",
+            "pick_list",
+            {"options": ["a", "b"], "selected": None, "placeholder": "Pick"},
+        )
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "combo_box"
+        assert a11y["has_popup"] == "listbox"
+        assert a11y["label"] == "Pick"
+
+    def test_slider_defaults(self) -> None:
+        tree = _node("vol", "slider", {"range": [0, 100], "value": 50})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "slider"
+        assert "label" not in a11y
+
+    def test_image_defaults(self) -> None:
+        tree = _node("img", "image", {"source": "photo.png"})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "image"
+
+    def test_window_defaults(self) -> None:
+        tree = _node("main", "window", {"title": "App"})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "window"
+
+    def test_container_no_defaults(self) -> None:
+        tree = _node("box", "container")
+        result = normalize(tree)
         assert "a11y" not in result["props"]
+
+    def test_column_no_defaults(self) -> None:
+        tree = {"type": "column", "props": {}, "children": []}
+        result = normalize(tree)
+        assert "a11y" not in result["props"]
+
+    def test_rule_defaults(self) -> None:
+        tree = {"type": "rule", "props": {}}
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "splitter"
+
+    def test_progress_bar_defaults(self) -> None:
+        tree = {"type": "progress_bar", "props": {"range": [0, 100], "value": 50}}
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "progress_indicator"
+
+    def test_scrollable_defaults(self) -> None:
+        tree = _node("scroll", "scrollable")
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "scroll_view"
+
+    def test_toggler_defaults(self) -> None:
+        tree = _node("toggle", "toggler", {"is_toggled": False, "label": "Dark mode"})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "switch"
+        assert a11y["label"] == "Dark mode"
+
+    def test_text_editor_defaults(self) -> None:
+        tree = _node("ed", "text_editor", {"content": "", "placeholder": "Type here"})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "multiline_text_input"
+        assert a11y["label"] == "Type here"
+
+    def test_markdown_defaults(self) -> None:
+        tree = {"type": "markdown", "props": {"content": "# Hello"}}
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "document"
+
+    def test_user_a11y_replaces_defaults(self) -> None:
+        tree = _node("btn", "button", {"label": "Go", "a11y": {"label": "Custom"}})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["label"] == "Custom"
+        assert "role" not in a11y
+
+    def test_user_a11y_dataclass_replaces_defaults(self) -> None:
+        tree = _node("btn", "button", {"label": "Go", "a11y": A11y(role="link")})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "link"
+        assert "label" not in a11y
+
+    def test_label_from_not_in_wire_output(self) -> None:
+        tree = _node("btn", "button", {"label": "Go"})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert "label_from" not in a11y
+
+    def test_no_label_from_when_label_prop_missing(self) -> None:
+        tree = _node("btn", "button", {})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "button"
+        assert "label" not in a11y
+
+
+class TestRadioA11yInference:
+    """Radio group position_in_set / size_of_set inference during normalize."""
+
+    def test_radio_group_inference(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node(
+                    "r1",
+                    "radio",
+                    {"value": "a", "selected": "a", "label": "A", "group": "colors"},
+                ),
+                _node(
+                    "r2",
+                    "radio",
+                    {"value": "b", "selected": "a", "label": "B", "group": "colors"},
+                ),
+                _node(
+                    "r3",
+                    "radio",
+                    {"value": "c", "selected": "a", "label": "C", "group": "colors"},
+                ),
+            ],
+        )
+        result = normalize(tree)
+        children = result["children"]
+        for i, child in enumerate(children, 1):
+            a11y = child["props"]["a11y"]
+            assert a11y["position_in_set"] == i
+            assert a11y["size_of_set"] == 3
+
+    def test_multiple_groups(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("r1", "radio", {"value": "a", "selected": "a", "group": "g1"}),
+                _node("r2", "radio", {"value": "b", "selected": "a", "group": "g1"}),
+                _node("r3", "radio", {"value": "x", "selected": "x", "group": "g2"}),
+            ],
+        )
+        result = normalize(tree)
+        children = result["children"]
+        assert children[0]["props"]["a11y"]["position_in_set"] == 1
+        assert children[0]["props"]["a11y"]["size_of_set"] == 2
+        assert children[1]["props"]["a11y"]["position_in_set"] == 2
+        assert children[1]["props"]["a11y"]["size_of_set"] == 2
+        assert children[2]["props"]["a11y"]["position_in_set"] == 1
+        assert children[2]["props"]["a11y"]["size_of_set"] == 1
+
+    def test_no_group_prop_skipped(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("r1", "radio", {"value": "a", "selected": "a"}),
+            ],
+        )
+        result = normalize(tree)
+        a11y = result["children"][0]["props"]["a11y"]
+        assert "position_in_set" not in a11y
+        assert "size_of_set" not in a11y
+
+    def test_manual_position_respected(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node(
+                    "r1",
+                    "radio",
+                    {
+                        "value": "a",
+                        "selected": "a",
+                        "group": "g",
+                        "a11y": {"position_in_set": 5},
+                    },
+                ),
+                _node("r2", "radio", {"value": "b", "selected": "a", "group": "g"}),
+            ],
+        )
+        result = normalize(tree)
+        c0_a11y = result["children"][0]["props"]["a11y"]
+        assert c0_a11y["position_in_set"] == 5
+        assert c0_a11y["size_of_set"] == 2
+
+        c1_a11y = result["children"][1]["props"]["a11y"]
+        assert c1_a11y["position_in_set"] == 2
+        assert c1_a11y["size_of_set"] == 2
+
+    def test_manual_position_and_size_skipped(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node(
+                    "r1",
+                    "radio",
+                    {
+                        "value": "a",
+                        "selected": "a",
+                        "group": "g",
+                        "a11y": {"position_in_set": 1, "size_of_set": 10},
+                    },
+                ),
+                _node("r2", "radio", {"value": "b", "selected": "a", "group": "g"}),
+            ],
+        )
+        result = normalize(tree)
+        c0_a11y = result["children"][0]["props"]["a11y"]
+        assert c0_a11y["position_in_set"] == 1
+        assert c0_a11y["size_of_set"] == 10
+
+        c1_a11y = result["children"][1]["props"]["a11y"]
+        assert c1_a11y["position_in_set"] == 2
+        assert c1_a11y["size_of_set"] == 2
+
+    def test_non_radio_unaffected(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("btn", "button", {"label": "OK"}),
+                _node("r1", "radio", {"value": "a", "selected": "a", "group": "g"}),
+            ],
+        )
+        result = normalize(tree)
+        btn_a11y = result["children"][0]["props"]["a11y"]
+        assert "position_in_set" not in btn_a11y
 
 
 class TestNormalizeDuplicateIds:

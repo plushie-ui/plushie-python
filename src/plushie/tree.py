@@ -66,6 +66,41 @@ _EMPTY_CONTAINER: Node = {
 
 _A11Y_ID_REF_KEYS = ("labelled_by", "described_by", "error_message")
 
+_WIDGET_A11Y_DEFAULTS: dict[str, dict[str, Any]] = {
+    "button": {"role": "button", "label_from": "label"},
+    "canvas": {"role": "canvas"},
+    "checkbox": {"role": "check_box", "label_from": "label"},
+    "combo_box": {
+        "role": "combo_box",
+        "has_popup": "listbox",
+        "label_from": "placeholder",
+    },
+    "image": {"role": "image"},
+    "markdown": {"role": "document"},
+    "pane_grid": {"role": "group"},
+    "pick_list": {
+        "role": "combo_box",
+        "has_popup": "listbox",
+        "label_from": "placeholder",
+    },
+    "progress_bar": {"role": "progress_indicator"},
+    "qr_code": {"role": "image"},
+    "radio": {"role": "radio_button", "label_from": "label"},
+    "rich_text": {"role": "label"},
+    "rule": {"role": "splitter"},
+    "scrollable": {"role": "scroll_view"},
+    "slider": {"role": "slider"},
+    "svg": {"role": "image"},
+    "table": {"role": "table"},
+    "text": {"role": "label", "label_from": "content"},
+    "text_editor": {"role": "multiline_text_input", "label_from": "placeholder"},
+    "text_input": {"role": "text_input", "label_from": "placeholder"},
+    "toggler": {"role": "switch", "label_from": "label"},
+    "tooltip": {"role": "tooltip"},
+    "vertical_slider": {"role": "slider"},
+    "window": {"role": "window"},
+}
+
 # ---------------------------------------------------------------------------
 # ScopedId
 # ---------------------------------------------------------------------------
@@ -305,6 +340,89 @@ _MAX_TREE_DEPTH_WARN = 200
 _MAX_TREE_DEPTH_HARD = 256
 
 
+def _apply_a11y_defaults(node_type: str, props: dict[str, Any]) -> dict[str, Any]:
+    """Apply per-widget a11y defaults and resolve label_from directives.
+
+    If no a11y prop exists and the widget type has defaults, creates an a11y
+    dict from defaults. User-provided a11y replaces defaults entirely (no merge).
+
+    The ``label_from`` directive copies the named prop's value into the a11y
+    ``label`` field when ``label`` is not already set. ``label_from`` is always
+    removed before the a11y dict goes on the wire (it is a build-time directive).
+    """
+    defaults = _WIDGET_A11Y_DEFAULTS.get(node_type)
+    raw_a11y = props.get("a11y")
+
+    if raw_a11y is None:
+        if defaults is None:
+            return props
+        a11y: dict[str, Any] = dict(defaults)
+    elif isinstance(raw_a11y, dict):
+        a11y = dict(raw_a11y)
+    else:
+        return props
+
+    label_from = a11y.pop("label_from", None)
+    if label_from and "label" not in a11y:
+        source_value = props.get(str(label_from))
+        if source_value is not None:
+            a11y["label"] = str(source_value)
+
+    if a11y:
+        return {**props, "a11y": a11y}
+
+    result = dict(props)
+    result.pop("a11y", None)
+    return result
+
+
+def _infer_radio_groups(children: list[Node]) -> list[Node]:
+    """Infer position_in_set and size_of_set for radio button groups.
+
+    Scans sibling children for radio widgets with a ``group`` prop,
+    groups them by that value, and patches their a11y with set position
+    and size. Manual overrides are respected: if position_in_set is already
+    set, only size_of_set is backfilled.
+    """
+    radio_groups: dict[str, list[tuple[int, Node]]] = {}
+    for idx, child in enumerate(children):
+        if child.get("type") == "radio":
+            group_prop = child.get("props", {}).get("group")
+            if isinstance(group_prop, str) and group_prop:
+                radio_groups.setdefault(group_prop, []).append((idx, child))
+
+    if not radio_groups:
+        return children
+
+    patches: dict[int, dict[str, Any]] = {}
+    for members in radio_groups.values():
+        size = len(members)
+        for pos, (child_idx, node) in enumerate(members, 1):
+            a11y = dict(node.get("props", {}).get("a11y") or {})
+            has_position = "position_in_set" in a11y
+            has_size = "size_of_set" in a11y
+
+            if has_position and has_size:
+                continue
+            elif has_position:
+                a11y["size_of_set"] = size
+            else:
+                a11y["position_in_set"] = pos
+                a11y["size_of_set"] = size
+
+            patches[child_idx] = a11y
+
+    if not patches:
+        return children
+
+    return [
+        dict(child, props={**child["props"], "a11y": patches[idx]})
+        if idx in patches
+        else child
+        for idx, child in enumerate(children)
+    ]
+
+
 def _normalize_with_scope(
     node: Node,
     scope: str,
@@ -418,6 +536,9 @@ def _normalize_with_scope(
                 for key in ("a11y", "event_rate"):
                     if key in widget_props and key not in rendered_props:
                         rendered_props[key] = _encode_prop_value(widget_props[key])
+                rendered_props = _apply_a11y_defaults(
+                    rendered_node.get("type", "canvas"), rendered_props
+                )
                 normalized_props = _resolve_a11y_id_refs(rendered_props, scope)
                 return {
                     "id": scoped_id,
@@ -439,8 +560,9 @@ def _normalize_with_scope(
         child_scope = scoped_id
 
     # Encode dataclass prop values to wire-compatible dicts/values,
-    # then resolve a11y ID refs relative to scope.
+    # apply a11y defaults, then resolve a11y ID refs relative to scope.
     encoded_props = _encode_props(dict(props))
+    encoded_props = _apply_a11y_defaults(node_type, encoded_props)
     normalized_props = _resolve_a11y_id_refs(encoded_props, scope)
 
     # Normalize children
@@ -482,6 +604,7 @@ def _normalize_children(
         for i, child in enumerate(children)
     ]
     _check_duplicate_ids(normalized)
+    normalized = _infer_radio_groups(normalized)
     return normalized
 
 
