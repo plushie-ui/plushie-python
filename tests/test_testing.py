@@ -632,3 +632,19 @@ class TestAssertNoDiagnostics:
             )
             with pytest.raises(AssertionError, match=r"Expected no diagnostics"):
                 app.assert_no_diagnostics()
+
+    def test_get_diagnostics_returns_and_clears(self) -> None:
+        with _make_fixture() as app:
+            from plushie.events import Diagnostic
+
+            d = Diagnostic(
+                level="warning",
+                element_id="x",
+                code="BAD",
+                message="bad",
+            )
+            app._diagnostics.append(d)
+            result = app.get_diagnostics()
+            assert len(result) == 1
+            assert result[0] is d
+            assert app.get_diagnostics() == []

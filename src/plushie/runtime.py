@@ -41,6 +41,7 @@ from plushie.events import (
     AsyncResult,
     Blurred,
     EffectResult,
+    EffectStubAck,
     Focused,
     Move,
     RecoveryFailed,
@@ -727,18 +728,6 @@ class Runtime:
                 continue
 
             # Effect stub ack; unblock the waiting caller
-            if isinstance(event, dict) and event.get("type") in (
-                "effect_stub_registered",
-                "effect_stub_unregistered",
-            ):
-                kind = event.get("kind", "")
-                ack = self._pending_stub_acks.pop(kind, None)
-                if ack is not None:
-                    ack.set()
-                continue
-
-            from plushie.events import EffectStubAck
-
             if isinstance(event, EffectStubAck):
                 ack = self._pending_stub_acks.pop(event.kind, None)
                 if ack is not None:

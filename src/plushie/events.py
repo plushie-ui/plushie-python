@@ -1676,7 +1676,6 @@ type Event = (
     | RuntimeEvent
     | SessionError
     | SessionClosed
-    | EffectStubAck
 )
 """Union of all event types that can arrive in ``update()``."""
 

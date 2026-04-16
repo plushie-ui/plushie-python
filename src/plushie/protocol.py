@@ -915,8 +915,6 @@ def decode_message(
         return _decode_event(msg)
 
     if msg_type in ("effect_stub_registered", "effect_stub_unregistered"):
-        from plushie.events import EffectStubAck
-
         return EffectStubAck(
             kind=msg.get("kind", ""),
             registered=msg_type == "effect_stub_registered",
@@ -1757,8 +1755,6 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- Session lifecycle (multiplexed mode) -------
 
     if family in ("session_error", "session_closed"):
-        from plushie.events import SessionClosed, SessionError
-
         session_id = str(msg.get("session", ""))
         v = value if isinstance(value, dict) else data
         if family == "session_error":

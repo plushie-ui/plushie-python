@@ -966,7 +966,7 @@ class AppFixture[M]:
         """Assert that no prop validation diagnostics were collected.
 
         Checks the internal diagnostic buffer and raises with details
-        if any diagnostics were received.
+        if any diagnostics were received. Does not clear the buffer.
 
         Raises:
             AssertionError: If any diagnostics were collected.
