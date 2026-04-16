@@ -127,6 +127,14 @@ class EventSpec:
 
         EventSpec(fields={"hue": float, "saturation": float})
 
+    All fields are required by default. Use ``optional`` to mark
+    fields that may be omitted from emitted data without error::
+
+        EventSpec(fields={"hue": float, "modifier": str}, optional=("modifier",))
+
+    Optional fields absent from emit data are silently omitted. When
+    present, their type is still validated.
+
     Field types use Python's built-in types (``int``, ``float``,
     ``str``, ``bool``).  Use ``object`` for fields that accept any
     type.
@@ -138,12 +146,23 @@ class EventSpec:
     value_type: type | None = None
     """Expected type for value-carrier events."""
 
+    optional: tuple[str, ...] = ()
+    """Field names that may be omitted from emit data."""
+
     def __post_init__(self) -> None:
         if self.fields is not None and self.value_type is not None:
             raise ValueError(
                 "EventSpec cannot have both fields and value_type. "
                 "use fields for structured data or value_type for scalars"
             )
+        if self.optional and self.fields is None:
+            raise ValueError("EventSpec optional fields require a fields declaration")
+        if self.optional:
+            unknown = set(self.optional) - set(self.fields or ())
+            if unknown:
+                raise ValueError(
+                    f"EventSpec optional fields not in fields: {sorted(unknown)}"
+                )
 
 
 def _validate_emit(
@@ -177,9 +196,10 @@ def _validate_emit(
         # Built-in event; no custom spec to validate against
         return
 
-    # Data-carrier: check all declared fields are present
+    # Data-carrier: check required fields are present
     if spec.fields is not None:
-        missing = [f for f in spec.fields if f not in data]
+        required_fields = [f for f in spec.fields if f not in spec.optional]
+        missing = [f for f in required_fields if f not in data]
         if missing:
             raise ValueError(
                 f"{widget_name} event {kind!r} is missing declared fields: {missing}"

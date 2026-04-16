@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+import pytest
+
 from plushie.events import (
     Click,
     Enter,
@@ -494,7 +496,6 @@ class TestEventSpecs:
             window_id="main",
             scope=("w",),
         )
-        import pytest
 
         with pytest.raises(ValueError, match="undeclared event"):
             dispatch_through_widgets(reg, event)
@@ -528,7 +529,6 @@ class TestEventSpecs:
             window_id="main",
             scope=("w",),
         )
-        import pytest
 
         with pytest.raises(ValueError, match="missing declared fields"):
             dispatch_through_widgets(reg, event)
@@ -562,7 +562,6 @@ class TestEventSpecs:
             window_id="main",
             scope=("w",),
         )
-        import pytest
 
         with pytest.raises(TypeError, match="expected int"):
             dispatch_through_widgets(reg, event)
@@ -613,6 +612,142 @@ class TestEventSpecs:
         result, _, _changed = dispatch_through_widgets(reg, self._click("ring"))
         assert isinstance(result, RawEvent)
         assert result.kind == "change"
+
+    def test_optional_field_omitted_passes(self) -> None:
+        class OptWidget(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "change": EventSpec(
+                    fields={"hue": float, "saturation": float, "modifier": str},
+                    optional=("modifier",),
+                ),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("change", {"hue": 180.0, "saturation": 0.5})
+
+        reg = {
+            ("main", "main#w"): RegistryEntry(
+                definition=OptWidget(), state={}, props={}
+            )
+        }
+        event = Click(id="x", window_id="main", scope=("w",))
+        result, _, _changed = dispatch_through_widgets(reg, event)
+        assert isinstance(result, RawEvent)
+        assert result.kind == "change"
+        assert result.data == {"hue": 180.0, "saturation": 0.5}
+        assert "modifier" not in result.data
+
+    def test_optional_field_present_passes(self) -> None:
+        class OptWidget(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "change": EventSpec(
+                    fields={"hue": float, "modifier": str},
+                    optional=("modifier",),
+                ),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("change", {"hue": 180.0, "modifier": "shift"})
+
+        reg = {
+            ("main", "main#w"): RegistryEntry(
+                definition=OptWidget(), state={}, props={}
+            )
+        }
+        event = Click(id="x", window_id="main", scope=("w",))
+        result, _, _changed = dispatch_through_widgets(reg, event)
+        assert isinstance(result, RawEvent)
+        assert result.data["modifier"] == "shift"
+
+    def test_optional_field_wrong_type_raises(self) -> None:
+        class OptWidget(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "change": EventSpec(
+                    fields={"hue": float, "modifier": str},
+                    optional=("modifier",),
+                ),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("change", {"hue": 180.0, "modifier": 42})
+
+        reg = {
+            ("main", "main#w"): RegistryEntry(
+                definition=OptWidget(), state={}, props={}
+            )
+        }
+        event = Click(id="x", window_id="main", scope=("w",))
+        with pytest.raises(TypeError, match="modifier"):
+            dispatch_through_widgets(reg, event)
+
+    def test_required_field_still_required_with_optional(self) -> None:
+        class OptWidget(WidgetDef):
+            event_specs: ClassVar[dict[str, EventSpec]] = {
+                "change": EventSpec(
+                    fields={"hue": float, "modifier": str},
+                    optional=("modifier",),
+                ),
+            }
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.emit("change", {"modifier": "shift"})
+
+        reg = {
+            ("main", "main#w"): RegistryEntry(
+                definition=OptWidget(), state={}, props={}
+            )
+        }
+        event = Click(id="x", window_id="main", scope=("w",))
+        with pytest.raises(ValueError, match="missing declared fields.*hue"):
+            dispatch_through_widgets(reg, event)
+
+    def test_spec_rejects_unknown_optional_field(self) -> None:
+        with pytest.raises(ValueError, match="optional fields not in fields"):
+            EventSpec(fields={"x": float}, optional=("y",))
+
+    def test_spec_rejects_optional_without_fields(self) -> None:
+        with pytest.raises(ValueError, match="optional fields require"):
+            EventSpec(optional=("x",))
 
 
 # ---------------------------------------------------------------------------
