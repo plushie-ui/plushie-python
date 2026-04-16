@@ -69,8 +69,122 @@ from plushie.binary import BINARY_VERSION
 
 logger = logging.getLogger("plushie")
 
-# Default timeout for effect requests (milliseconds).
 _EFFECT_TIMEOUT_MS: int = 30_000
+
+_DEV_PREFIX = "__plushie_dev__"
+
+
+def _build_frozen_overlay_bar() -> dict[str, Any]:
+    """Build the frozen UI overlay bar node tree."""
+    return {
+        "id": f"{_DEV_PREFIX}/anchor",
+        "type": "container",
+        "props": {"width": "fill", "align_y": "top"},
+        "children": [
+            {
+                "id": f"{_DEV_PREFIX}/column",
+                "type": "column",
+                "props": {
+                    "padding": {"top": 8, "right": 8, "bottom": 0, "left": 8},
+                    "width": "shrink",
+                    "max_width": 600,
+                },
+                "children": [
+                    {
+                        "id": f"{_DEV_PREFIX}/bar",
+                        "type": "container",
+                        "props": {
+                            "background": "rgba(180, 40, 40, 0.85)",
+                            "padding": 6,
+                            "border": {"radius": 4},
+                        },
+                        "children": [
+                            {
+                                "id": f"{_DEV_PREFIX}/bar_row",
+                                "type": "row",
+                                "props": {"spacing": 8, "align_y": "center"},
+                                "children": [
+                                    {
+                                        "id": f"{_DEV_PREFIX}/icon",
+                                        "type": "text",
+                                        "props": {
+                                            "content": "[!!]",
+                                            "color": "#ffaaaa",
+                                            "size": 14,
+                                        },
+                                        "children": [],
+                                    },
+                                    {
+                                        "id": f"{_DEV_PREFIX}/status",
+                                        "type": "text",
+                                        "props": {
+                                            "content": "UI frozen: view() is failing repeatedly.",
+                                            "color": "#ffaaaa",
+                                            "size": 14,
+                                        },
+                                        "children": [],
+                                    },
+                                    {
+                                        "id": f"{_DEV_PREFIX}/dismiss",
+                                        "type": "button",
+                                        "props": {"label": "x"},
+                                        "children": [],
+                                    },
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _inject_frozen_overlay(tree: Node) -> Node:
+    """Inject the frozen UI overlay into the tree's window(s).
+
+    Wraps each window's content in a stack with the overlay bar on top.
+    """
+    if tree["type"] == "window":
+        return _inject_overlay_into_window(tree)
+
+    children = tree.get("children", [])
+    if not children:
+        return tree
+
+    new_children = [
+        (_inject_overlay_into_window(child) if child.get("type") == "window" else child)
+        for child in children
+    ]
+
+    return {**tree, "children": new_children}
+
+
+def _inject_overlay_into_window(window_node: Node) -> Node:
+    """Wrap a window's content in a stack with the frozen overlay bar."""
+    children = window_node.get("children", [])
+    if not children:
+        return window_node
+
+    content = children[0]
+    overlay = _build_frozen_overlay_bar()
+
+    stack_node: dict[str, Any] = {
+        "id": f"{_DEV_PREFIX}/stack",
+        "type": "stack",
+        "props": {"width": "fill", "height": "fill"},
+        "children": [content, overlay],
+    }
+
+    return {**window_node, "children": [stack_node]}
+
+
+def _is_overlay_event(event: Any) -> bool:
+    """Check if an event targets the dev overlay."""
+    event_id = getattr(event, "id", None)
+    if isinstance(event_id, str):
+        return event_id.startswith(_DEV_PREFIX + "/")
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -312,6 +426,9 @@ class Runtime:
 
         # Consecutive view failure counter
         self._consecutive_view_errors: int = 0
+
+        # Dev overlay state: None or "frozen_ui"
+        self._dev_overlay: str | None = None
 
         # Reader thread
         self._reader_thread: threading.Thread | None = None
@@ -678,6 +795,11 @@ class Runtime:
 
     def _run_update(self, event: Any) -> None:
         """Full update cycle: update -> commands -> view -> diff -> patch -> sync."""
+        # Intercept dev overlay events before normal dispatch
+        if _is_overlay_event(event):
+            self._handle_overlay_event(event)
+            return
+
         app = self._app
         model = self._model
 
@@ -836,19 +958,45 @@ class Runtime:
     def _render_and_sync(self, model: Any) -> Node | None:
         """Render view, diff against old tree, send snapshot or patch."""
         new_tree = self._safe_view(model)
-        if new_tree is None:
-            return self._tree
+        if new_tree is not None:
+            if self._dev_overlay is not None:
+                self._dev_overlay = None
+            old_tree = self._tree
+            if old_tree is None:
+                self._conn.send_snapshot(new_tree)
+            else:
+                ops = diff(old_tree, new_tree)
+                if ops:
+                    self._conn.send_patch(ops)
+            return new_tree
 
-        old_tree = self._tree
-        if old_tree is None:
-            # First render or after restart -> full snapshot
-            self._conn.send_snapshot(new_tree)
-        else:
-            ops = diff(old_tree, new_tree)
-            if ops:
-                self._conn.send_patch(ops)
+        if (
+            self._consecutive_view_errors == self._VIEW_ERROR_WARN_THRESHOLD
+            and self._dev_overlay is None
+            and self._tree is not None
+        ):
+            self._dev_overlay = "frozen_ui"
+            overlay_tree = _inject_frozen_overlay(self._tree)
+            if overlay_tree is not self._tree:
+                ops = diff(self._tree, overlay_tree)
+                if ops:
+                    self._conn.send_patch(ops)
+                return overlay_tree
 
-        return new_tree
+        return self._tree
+
+    def _handle_overlay_event(self, event: Any) -> None:
+        """Handle dev overlay events (dismiss)."""
+        event_id = getattr(event, "id", "")
+        if event_id == f"{_DEV_PREFIX}/dismiss" and self._dev_overlay is not None:
+            self._dev_overlay = None
+            new_tree = self._safe_view(self._model)
+            if new_tree is not None:
+                old_tree = self._tree
+                self._tree = new_tree
+                ops = diff(old_tree, new_tree)
+                if ops:
+                    self._conn.send_patch(ops)
 
     # -------------------------------------------------------------------
     # Interact protocol
@@ -1688,6 +1836,8 @@ class Runtime:
 
             # Reset error counters (stale renderer may have accumulated them)
             self._consecutive_errors = 0
+            self._consecutive_view_errors = 0
+            self._dev_overlay = None
 
             # Restart reader thread
             self._start_reader()

@@ -20,6 +20,10 @@ from plushie.events import (
     TimerTick,
 )
 from plushie.runtime import (
+    _DEV_PREFIX,
+    _build_frozen_overlay_bar,
+    _inject_frozen_overlay,
+    _is_overlay_event,
     coalesce_key,
     detect_windows,
     extract_window_props,
@@ -594,3 +598,115 @@ class TestWindowConfig:
 
         app = builder.build()
         assert app.window_config(0) == {}
+
+
+# ===================================================================
+# Dev overlay / frozen UI
+# ===================================================================
+
+
+class TestFrozenOverlay:
+    def test_overlay_bar_has_dev_prefix_ids(self) -> None:
+        bar = _build_frozen_overlay_bar()
+        assert bar["id"] == f"{_DEV_PREFIX}/anchor"
+        ids = _collect_ids(bar)
+        for node_id in ids:
+            assert node_id.startswith(_DEV_PREFIX + "/")
+
+    def test_overlay_bar_has_dismiss_button(self) -> None:
+        bar = _build_frozen_overlay_bar()
+        ids = _collect_ids(bar)
+        assert f"{_DEV_PREFIX}/dismiss" in ids
+
+    def test_overlay_bar_has_status_text(self) -> None:
+        bar = _build_frozen_overlay_bar()
+        ids = _collect_ids(bar)
+        assert f"{_DEV_PREFIX}/status" in ids
+
+    def test_inject_overlay_into_single_window(self) -> None:
+        tree = {
+            "id": "main",
+            "type": "window",
+            "props": {"title": "App"},
+            "children": [
+                {"id": "main#content", "type": "column", "props": {}, "children": []}
+            ],
+        }
+        result = _inject_frozen_overlay(tree)
+        assert result["type"] == "window"
+        assert len(result["children"]) == 1
+        stack = result["children"][0]
+        assert stack["type"] == "stack"
+        assert stack["id"] == f"{_DEV_PREFIX}/stack"
+        assert len(stack["children"]) == 2
+        assert stack["children"][0]["id"] == "main#content"
+        assert stack["children"][1]["id"] == f"{_DEV_PREFIX}/anchor"
+
+    def test_inject_overlay_into_root_with_windows(self) -> None:
+        tree = {
+            "id": "root",
+            "type": "container",
+            "props": {},
+            "children": [
+                {
+                    "id": "win1",
+                    "type": "window",
+                    "props": {},
+                    "children": [
+                        {
+                            "id": "win1#content",
+                            "type": "text",
+                            "props": {},
+                            "children": [],
+                        }
+                    ],
+                },
+                {
+                    "id": "win2",
+                    "type": "window",
+                    "props": {},
+                    "children": [
+                        {
+                            "id": "win2#content",
+                            "type": "text",
+                            "props": {},
+                            "children": [],
+                        }
+                    ],
+                },
+            ],
+        }
+        result = _inject_frozen_overlay(tree)
+        win1 = result["children"][0]
+        win2 = result["children"][1]
+        assert win1["type"] == "window"
+        assert win1["children"][0]["type"] == "stack"
+        assert win2["type"] == "window"
+        assert win2["children"][0]["type"] == "stack"
+
+    def test_inject_overlay_window_no_children_unchanged(self) -> None:
+        tree = {"id": "main", "type": "window", "props": {}, "children": []}
+        result = _inject_frozen_overlay(tree)
+        assert result is tree
+
+    def test_overlay_event_detection(self) -> None:
+        click = Click(id=f"{_DEV_PREFIX}/dismiss")
+        assert _is_overlay_event(click) is True
+
+    def test_normal_event_not_overlay(self) -> None:
+        click = Click(id="save")
+        assert _is_overlay_event(click) is False
+
+    def test_event_without_id_not_overlay(self) -> None:
+        tick = TimerTick(tag="t1", timestamp=0)
+        assert _is_overlay_event(tick) is False
+
+
+def _collect_ids(node: dict[str, Any]) -> list[str]:
+    """Collect all IDs from a tree node."""
+    result: list[str] = []
+    if "id" in node:
+        result.append(node["id"])
+    for child in node.get("children", []):
+        result.extend(_collect_ids(child))
+    return result
