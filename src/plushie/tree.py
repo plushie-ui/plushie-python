@@ -301,6 +301,10 @@ def _empty_container() -> Node:
     }
 
 
+_MAX_TREE_DEPTH_WARN = 200
+_MAX_TREE_DEPTH_HARD = 256
+
+
 def _normalize_with_scope(
     node: Node,
     scope: str,
@@ -308,6 +312,7 @@ def _normalize_with_scope(
     *,
     window_id: str | None,
     registry: Any = None,
+    depth: int = 0,
 ) -> Node:
     """Normalize a single node with scope context.
 
@@ -316,7 +321,20 @@ def _normalize_with_scope(
         scope: Current scope prefix (e.g. ``"sidebar/form"``).
         index: Child index within parent (for auto-ID generation).
         registry: Canvas widget registry for placeholder rendering.
+        depth: Current nesting depth (for max depth protection).
     """
+    if depth >= _MAX_TREE_DEPTH_HARD:
+        raise ValueError(
+            f"UI tree exceeds maximum depth of {_MAX_TREE_DEPTH_HARD}. "
+            "This usually indicates a circular widget composition."
+        )
+    if depth >= _MAX_TREE_DEPTH_WARN:
+        logger.warning(
+            "plushie: UI tree depth %d exceeds %d, which may indicate "
+            "a circular widget composition",
+            depth,
+            _MAX_TREE_DEPTH_WARN,
+        )
     raw_id = node.get("id")
     node_type = node.get("type", "container")
     props: dict[str, Any] = node.get("props") or {}
@@ -388,6 +406,7 @@ def _normalize_with_scope(
                         i,
                         window_id=current_window_id,
                         registry=registry,
+                        depth=depth + 1,
                     )
                     for i, c in enumerate(rendered_children)
                 ]
@@ -426,7 +445,11 @@ def _normalize_with_scope(
 
     # Normalize children
     normalized_children = _normalize_children(
-        children, child_scope, window_id=current_window_id, registry=registry
+        children,
+        child_scope,
+        window_id=current_window_id,
+        registry=registry,
+        depth=depth + 1,
     )
 
     result: Node = {
@@ -449,10 +472,13 @@ def _normalize_children(
     *,
     window_id: str | None,
     registry: Any = None,
+    depth: int = 0,
 ) -> list[Node]:
     """Normalize a list of child nodes, checking for duplicate IDs."""
     normalized = [
-        _normalize_with_scope(child, scope, i, window_id=window_id, registry=registry)
+        _normalize_with_scope(
+            child, scope, i, window_id=window_id, registry=registry, depth=depth
+        )
         for i, child in enumerate(children)
     ]
     _check_duplicate_ids(normalized)
