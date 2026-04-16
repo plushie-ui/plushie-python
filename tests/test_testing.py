@@ -552,3 +552,83 @@ class TestSaveScreenshot:
             app._pool.screenshot.return_value = {"hash": "abc123"}  # type: ignore[union-attr]
             with pytest.raises(RuntimeError, match="did not return screenshot data"):
                 app.save_screenshot("test_shot")
+
+
+class TestAssertA11y:
+    def test_passes_when_a11y_matches(self) -> None:
+        with _make_fixture() as app:
+            node = {
+                "id": "greeting",
+                "type": "text",
+                "props": {
+                    "content": "Hello",
+                    "a11y": {"role": "heading", "level": 1},
+                },
+                "children": [],
+            }
+            app._pool.query_find.side_effect = lambda sid, sel, **kw: node  # type: ignore[union-attr]
+            app.assert_a11y("#greeting", {"role": "heading", "level": 1})
+
+    def test_fails_when_no_a11y(self) -> None:
+        with (
+            _make_fixture() as app,
+            pytest.raises(AssertionError, match=r"no a11y prop"),
+        ):
+            app.assert_a11y("#greeting", {"role": "heading"})
+
+    def test_fails_when_a11y_mismatch(self) -> None:
+        with _make_fixture() as app:
+            node = {
+                "id": "greeting",
+                "type": "text",
+                "props": {"content": "Hello", "a11y": {"role": "heading"}},
+                "children": [],
+            }
+            app._pool.query_find.side_effect = lambda sid, sel, **kw: node  # type: ignore[union-attr]
+            with pytest.raises(AssertionError, match=r"role.*mismatch"):
+                app.assert_a11y("#greeting", {"role": "button"})
+
+
+class TestAssertRole:
+    def test_passes_when_role_matches_explicit(self) -> None:
+        with _make_fixture() as app:
+            node = {
+                "id": "greeting",
+                "type": "text",
+                "props": {"content": "Hello", "a11y": {"role": "heading"}},
+                "children": [],
+            }
+            app._pool.query_find.side_effect = lambda sid, sel, **kw: node  # type: ignore[union-attr]
+            app.assert_role("#greeting", "heading")
+
+    def test_infers_role_from_type(self) -> None:
+        with _make_fixture() as app:
+            app.assert_role("#btn", "button")
+
+    def test_fails_when_role_differs(self) -> None:
+        with (
+            _make_fixture() as app,
+            pytest.raises(AssertionError, match=r"expected.*'heading'.*got.*'button'"),
+        ):
+            app.assert_role("#btn", "heading")
+
+
+class TestAssertNoDiagnostics:
+    def test_passes_when_empty(self) -> None:
+        with _make_fixture() as app:
+            app.assert_no_diagnostics()
+
+    def test_fails_when_diagnostics_present(self) -> None:
+        with _make_fixture() as app:
+            from plushie.events import Diagnostic
+
+            app._diagnostics.append(
+                Diagnostic(
+                    level="warning",
+                    element_id="x",
+                    code="BAD",
+                    message="something wrong",
+                )
+            )
+            with pytest.raises(AssertionError, match=r"Expected no diagnostics"):
+                app.assert_no_diagnostics()

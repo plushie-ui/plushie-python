@@ -13,6 +13,7 @@ from plushie.events import (
     Drag,
     DragEnd,
     DuplicateNodeIds,
+    EffectStubAck,
     Enter,
     Exit,
     FileDropped,
@@ -43,6 +44,8 @@ from plushie.events import (
     Scroll,
     Scrolled,
     Select,
+    SessionClosed,
+    SessionError,
     Slide,
     SlideRelease,
     Sort,
@@ -929,6 +932,25 @@ class TestDecodeDiagnostic:
         assert result.element_id == "star-0"
         assert result.code == "MISSING_A11Y"
 
+    def test_diagnostic_with_id_and_window(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "diagnostic",
+            "id": "canvas1",
+            "window_id": "main",
+            "data": {
+                "level": "error",
+                "element_id": "shape-0",
+                "code": "INVALID_PROP",
+                "message": "bad value",
+            },
+        }
+        result = decode_message(raw)
+        assert isinstance(result, Diagnostic)
+        assert result.id == "canvas1"
+        assert result.window_id == "main"
+        assert result.level == "error"
+
 
 class TestDecodePaneEvents:
     def test_pane_resized(self) -> None:
@@ -1575,3 +1597,67 @@ class TestDecodeScopedIdSplitting:
         assert result.id == "save"
         assert result.scope == ("form", "main")
         assert result.window_id == "main"
+
+
+class TestDecodeSessionLifecycle:
+    def test_session_error(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "session_error",
+            "session": "pool_1",
+            "value": {"error": "widget crashed"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, SessionError)
+        assert result.session == "pool_1"
+        assert result.error == "widget crashed"
+
+    def test_session_closed(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "session_closed",
+            "session": "pool_2",
+            "value": {"reason": "user disconnect"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, SessionClosed)
+        assert result.session == "pool_2"
+        assert result.reason == "user disconnect"
+
+    def test_session_error_missing_value(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "session_error",
+            "session": "pool_3",
+        }
+        result = decode_message(raw)
+        assert isinstance(result, SessionError)
+        assert result.session == "pool_3"
+        assert result.error == ""
+
+    def test_session_closed_missing_value(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "session_closed",
+            "session": "pool_4",
+        }
+        result = decode_message(raw)
+        assert isinstance(result, SessionClosed)
+        assert result.session == "pool_4"
+        assert result.reason == ""
+
+
+class TestDecodeEffectStubAck:
+    def test_registered(self) -> None:
+        raw = {"type": "effect_stub_registered", "kind": "clipboard_read"}
+        result = decode_message(raw)
+        assert isinstance(result, EffectStubAck)
+        assert result.kind == "clipboard_read"
+        assert result.registered is True
+
+    def test_unregistered(self) -> None:
+        raw = {"type": "effect_stub_unregistered", "kind": "file_open"}
+        result = decode_message(raw)
+        assert isinstance(result, EffectStubAck)
+        assert result.kind == "file_open"
+        assert result.registered is False
