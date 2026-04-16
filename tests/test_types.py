@@ -430,7 +430,9 @@ class TestTheme:
         assert t.palette is None
 
     def test_custom_rejects_unknown_key(self) -> None:
-        with pytest.raises(ValueError, match="unknown key 'not_a_real_key'"):
+        with pytest.raises(
+            ValueError, match=r"unknown shade override key 'not_a_real_key'"
+        ):
             Theme.custom("Bad", not_a_real_key="#ff0000")
 
     def test_custom_accepts_all_color_shade_keys(self) -> None:
@@ -606,9 +608,9 @@ class TestA11y:
         assert "active_descendant" not in a.to_wire()
 
     def test_radio_group_field(self) -> None:
-        a = A11y(radio_group=["r1", "r2", "r3"])
-        assert a.radio_group == ["r1", "r2", "r3"]
-        assert a.to_wire()["radio_group"] == ["r1", "r2", "r3"]
+        a = A11y(radio_group=("r1", "r2", "r3"))
+        assert a.radio_group == ("r1", "r2", "r3")
+        assert a.to_wire()["radio_group"] == ("r1", "r2", "r3")
 
     def test_radio_group_default_none(self) -> None:
         a = A11y(role="radio_button")
@@ -671,7 +673,7 @@ class TestHelloInfo:
 
 class TestBorderToWire:
     def test_defaults(self) -> None:
-        assert Border().to_wire() == {"color": None, "width": 0, "radius": 0}
+        assert Border().to_wire() == {"width": 0, "radius": 0}
 
     def test_full(self) -> None:
         b = Border(color="#ff0000", width=2, radius=8)

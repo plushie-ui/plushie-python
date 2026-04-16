@@ -58,14 +58,10 @@ class _HarnessApp(App[_WidgetModel]):
     def update(self, model: _WidgetModel, event: Any) -> _WidgetModel:
         if isinstance(event, dict):
             return model
-        data = getattr(event, "value", None)
-        if isinstance(data, dict):
-            pass
-        else:
-            data = {}
+        value = getattr(event, "value", None)
         return replace(
             model,
-            last_value=data,
+            last_value=value,
             events=(*model.events, event),
             last_event=event,
         )
@@ -73,13 +69,10 @@ class _HarnessApp(App[_WidgetModel]):
     def view(self, model: _WidgetModel) -> dict:
         from plushie.ui import column, window
 
-        wmod = model.widget_module
-        wid = model.widget_id
-        wopts = model.widget_props
         return window(
             "test_harness",
             column(
-                wmod.build(wid, **wopts),
+                model.widget_module.build(model.widget_id, props=model.widget_props),
             ),
             title="Widget Test",
         )
@@ -94,7 +87,7 @@ class WidgetFixture(AppFixture[_WidgetModel]):
     Attributes:
         last_event: The most recent event emitted by the widget, or ``None``.
         events: Tuple of all emitted events (oldest first).
-        last_value: The most recent event data dict, or ``None``.
+        last_value: The most recent event's ``value`` attribute, or ``None``.
     """
 
     def __init__(

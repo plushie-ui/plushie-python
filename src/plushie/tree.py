@@ -1006,11 +1006,12 @@ def expand_rows(node: Node) -> Node:
     ]
 
     row_nodes: list[Node] = []
-    for row_data in rows:
-        row_id = str(row_data.get("id", ""))
+    for idx, row_data in enumerate(rows):
+        row_id = row_data.get("id")
+        row_id = str(row_id) if row_id else f"row_{idx}"
         cells: list[Node] = []
         for key in col_keys:
-            raw_val = row_data.get(key, row_data.get(key))
+            raw_val = row_data.get(key)
             value = str(raw_val) if raw_val is not None else ""
             cells.append(
                 {
@@ -1019,7 +1020,7 @@ def expand_rows(node: Node) -> Node:
                     "props": {"column": key},
                     "children": [
                         {
-                            "id": f"{row_id}/{key}/text",
+                            "id": f"{row_id}.{key}",
                             "type": "text",
                             "props": {"content": value},
                             "children": [],
@@ -1061,5 +1062,6 @@ __all__ = [
     "find_all",
     "ids",
     "normalize",
+    "normalize_view",
     "text_of",
 ]

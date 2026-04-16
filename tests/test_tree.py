@@ -1571,7 +1571,7 @@ class TestExpandRows:
         with pytest.raises(ValueError, match="cannot combine"):
             expand_rows(node)
 
-    def test_row_without_id_uses_empty_string(self) -> None:
+    def test_row_without_id_generates_auto_id(self) -> None:
         node = {
             "id": "tbl",
             "type": "table",
@@ -1582,4 +1582,9 @@ class TestExpandRows:
             "children": [],
         }
         result = expand_rows(node)
-        assert result["children"][0]["id"] == ""
+        row = result["children"][0]
+        assert row["id"] == "row_0"
+        cell = row["children"][0]
+        assert cell["id"] == "name"
+        text_node = cell["children"][0]
+        assert text_node["id"] == "row_0.name"

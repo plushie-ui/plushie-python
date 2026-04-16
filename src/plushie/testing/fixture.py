@@ -419,7 +419,7 @@ class AppFixture[M]:
         self._session_id = pool.register()
 
         # Diagnostic collector
-        self._diagnostics: list[Any] = []
+        self._diagnostics: list[Diagnostic] = []
 
         # Initialize
         raw = app.init()
@@ -977,6 +977,16 @@ class AppFixture[M]:
                 f"  - [{d.level}] {d.code}: {d.message}" for d in diagnostics
             )
             raise AssertionError(f"Expected no diagnostics, but found:\n{details}")
+
+    def get_diagnostics(self) -> list[Diagnostic]:
+        """Return and clear accumulated diagnostic events.
+
+        Returns:
+            List of ``Diagnostic`` events collected since the last call.
+        """
+        result = list(self._diagnostics)
+        self._diagnostics.clear()
+        return result
 
     def save_screenshot(self, name: str) -> Path:
         """Save a screenshot PNG to ``test/screenshots/``.

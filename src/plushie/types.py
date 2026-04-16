@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, replace
 from typing import Literal
 
 # ---------------------------------------------------------------------------
@@ -404,11 +404,10 @@ class Border:
 
         Wire format: ``{"color": hex, "width": n, "radius": n_or_dict}``.
         """
-        return {
-            "color": self.color,
-            "width": self.width,
-            "radius": self.radius,
-        }
+        result: dict[str, object] = {"width": self.width, "radius": self.radius}
+        if self.color is not None:
+            result["color"] = self.color
+        return result
 
 
 # ---------------------------------------------------------------------------
@@ -856,7 +855,7 @@ class Theme:
             if key not in _VALID_CUSTOM_KEYS:
                 valid = ", ".join(sorted(_VALID_CUSTOM_KEYS))
                 raise ValueError(
-                    f"unknown key {key!r} in Theme.custom. Valid keys: base, {valid}"
+                    f"unknown shade override key {key!r} in Theme.custom. Valid keys: {valid}"
                 )
         palette: dict[str, str] = {}
         if base is not None:
@@ -983,15 +982,13 @@ class A11y:
     size_of_set: int | None = None
     has_popup: A11yHasPopup | None = None
     active_descendant: str | None = None
-    radio_group: list[str] | None = None
+    radio_group: tuple[str, ...] | None = None
 
     def to_wire(self) -> dict[str, object]:
         """Convert to wire-compatible dict with non-None fields only."""
-        import dataclasses
-
         return {
             f.name: getattr(self, f.name)
-            for f in dataclasses.fields(self)
+            for f in fields(self)
             if getattr(self, f.name) is not None
         }
 

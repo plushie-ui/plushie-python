@@ -431,7 +431,10 @@ class TestWidgetCommand:
         cmds = [("a", "op1", None), ("b", "op2", {"x": 1})]
         cmd = Command.widget_commands(cmds)
         assert cmd.type == "commands"
-        assert cmd.payload["commands"] == cmds
+        wire = cmd.payload["commands"]
+        assert len(wire) == 2
+        assert wire[0] == {"id": "a", "family": "op1"}
+        assert wire[1] == {"id": "b", "family": "op2", "value": {"x": 1}}
 
 
 class TestAdvanceFrame:

@@ -767,6 +767,7 @@ class Runtime:
             c_key = coalesce_key(event)
             if c_key is not None:
                 self._store_coalescable(c_key, event)
+                self._reset_heartbeat()
                 continue
 
             # Internal runtime events (tuples from task/stream/coalesce/effect)
@@ -852,6 +853,7 @@ class Runtime:
 
         # Render and sync
         new_tree = self._render_and_sync(new_model)
+        prev_tree = self._tree
         self._tree = new_tree
 
         # Derive canvas widget registry from the new tree
@@ -862,7 +864,7 @@ class Runtime:
 
         # Sync subscriptions (merge widget subs) and windows
         self._sync_subscriptions(new_model, extra_subs=widget_subs)
-        self._sync_windows(new_tree)
+        self._sync_windows(new_tree, prev_tree=prev_tree)
 
     def _route_through_widgets(
         self, event: Any
@@ -978,7 +980,7 @@ class Runtime:
             return new_tree
 
         if (
-            self._consecutive_view_errors == self._VIEW_ERROR_WARN_THRESHOLD
+            self._consecutive_view_errors >= self._VIEW_ERROR_WARN_THRESHOLD
             and self._dev_overlay is None
             and self._tree is not None
         ):
@@ -1663,7 +1665,12 @@ class Runtime:
     # Window sync
     # -------------------------------------------------------------------
 
-    def _sync_windows(self, tree: Node | None) -> None:
+    def _sync_windows(
+        self,
+        tree: Node | None,
+        *,
+        prev_tree: Node | None = None,
+    ) -> None:
         """Synchronize tracked windows with the current tree."""
         new_windows = detect_windows(tree)
         old_windows = self._windows
@@ -1687,8 +1694,9 @@ class Runtime:
             self._conn.send(msg)
 
         # Update surviving windows if props changed
+        compare_tree = prev_tree if prev_tree is not None else self._tree
         for win_id in new_windows & old_windows:
-            old_props = extract_window_props(self._tree, win_id)
+            old_props = extract_window_props(compare_tree, win_id)
             new_props = extract_window_props(tree, win_id)
             if old_props != new_props:
                 msg = window_op(
@@ -1888,6 +1896,7 @@ class Runtime:
     def _cleanup(self) -> None:
         """Clean up all resources."""
         self._running = False
+        self._cancel_heartbeat()
 
         # Cancel all pending timers
         for timer in self._pending_timers.values():

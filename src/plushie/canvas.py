@@ -57,12 +57,17 @@ def to_degrees(angle: Angle) -> float:
 
     Bare numbers are treated as degrees already. Radian values are
     converted to degrees.
+
+    Raises:
+        ValueError: If a tuple angle uses an unrecognized unit.
     """
     if isinstance(angle, tuple):
         value, unit = angle
         if unit == "rad":
             return value * 180.0 / math.pi
-        return float(value)
+        if unit == "deg":
+            return float(value)
+        raise ValueError(f"unknown angle unit {unit!r}, expected 'deg' or 'rad'")
     return float(angle)
 
 
@@ -71,12 +76,17 @@ def to_radians(angle: Angle) -> float:
 
     Useful for contexts that need radian values (e.g. trigonometric
     calculations in application code).
+
+    Raises:
+        ValueError: If a tuple angle uses an unrecognized unit.
     """
     if isinstance(angle, tuple):
         value, unit = angle
         if unit == "deg":
             return value * math.pi / 180.0
-        return float(value)
+        if unit == "rad":
+            return float(value)
+        raise ValueError(f"unknown angle unit {unit!r}, expected 'deg' or 'rad'")
     return angle * math.pi / 180.0
 
 

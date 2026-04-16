@@ -806,9 +806,15 @@ class Command:
 
         Each item in ``commands`` should be a ``(id, family, value)`` tuple.
         """
+        wire_cmds: list[dict[str, Any]] = []
+        for cid, family, value in commands:
+            cmd: dict[str, Any] = {"id": cid, "family": family}
+            if value is not None:
+                cmd["value"] = value
+            wire_cmds.append(cmd)
         return Command(
             type="commands",
-            payload={"commands": commands},
+            payload={"commands": wire_cmds},
         )
 
     # ------------------------------------------------------------------
