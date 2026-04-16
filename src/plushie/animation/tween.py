@@ -60,8 +60,14 @@ def interpolate(
 class Tween:
     """A single animated value transitioning over time.
 
-    Create via :meth:`new`, start with :meth:`start`, advance each frame
-    with :meth:`advance`, and read the current value with :meth:`value`.
+    Create via :meth:`new` or :meth:`looping`, start with :meth:`start`,
+    advance each frame with :meth:`advance`, and read the current value
+    with :meth:`value`.
+
+    Use ``repeat`` to replay the animation a fixed number of times or
+    indefinitely. Use ``auto_reverse`` with repeat for ping-pong behavior
+    (the animation smoothly reverses direction each cycle instead of
+    snapping back to the start value).
     """
 
     from_val: float
@@ -70,6 +76,9 @@ class Tween:
     easing: Easing
     started_at: int | None
     current_value: float
+    repeat: int | None = None
+    auto_reverse: bool = False
+    is_done: bool = False
 
     @staticmethod
     def new(
@@ -78,6 +87,8 @@ class Tween:
         duration_ms: int,
         *,
         easing: Easing = linear,
+        repeat: int | None = None,
+        auto_reverse: bool = False,
     ) -> Tween:
         """Create a new tween animation.
 
@@ -86,6 +97,10 @@ class Tween:
             to_val: Target value.
             duration_ms: Duration in milliseconds (must be > 0).
             easing: Easing function, defaults to :func:`linear`.
+            repeat: Number of repetitions, ``None`` for single play,
+                or a positive integer for that many plays total.
+            auto_reverse: When ``True``, swap from/to on each repeat
+                cycle for ping-pong behavior.
         """
         if duration_ms <= 0:
             msg = f"duration_ms must be positive, got {duration_ms}"
@@ -97,11 +112,37 @@ class Tween:
             easing=easing,
             started_at=None,
             current_value=from_val,
+            repeat=repeat,
+            auto_reverse=auto_reverse,
+        )
+
+    @staticmethod
+    def looping(
+        from_val: float,
+        to_val: float,
+        duration_ms: int,
+        *,
+        easing: Easing = linear,
+    ) -> Tween:
+        """Create a tween that loops forever with ping-pong behavior.
+
+        Convenience for ``new(..., repeat=None, auto_reverse=True)``.
+        The animation smoothly oscillates between from and to values.
+        """
+        return Tween.new(
+            from_val,
+            to_val,
+            duration_ms,
+            easing=easing,
+            repeat=None,
+            auto_reverse=True,
         )
 
     def start(self, timestamp: int) -> Tween:
         """Start (or restart) the animation at the given frame timestamp."""
-        return replace(self, started_at=timestamp, current_value=self.from_val)
+        return replace(
+            self, started_at=timestamp, current_value=self.from_val, is_done=False
+        )
 
     def advance(self, timestamp: int) -> tuple[float, Tween | Literal["finished"]]:
         """Advance the animation to the given frame timestamp.
@@ -112,21 +153,43 @@ class Tween:
         if self.started_at is None:
             return (self.current_value, self)
 
+        if self.is_done:
+            return (self.current_value, FINISHED)
+
         elapsed = timestamp - self.started_at
         t = _clamp(elapsed / self.duration_ms)
         current = interpolate(self.from_val, self.to_val, t, self.easing)
 
-        if t >= 1.0:
+        if t < 1.0:
+            return (current, replace(self, current_value=current))
+
+        if self.repeat is None and not self.auto_reverse:
             return (self.to_val, FINISHED)
 
-        updated = replace(self, current_value=current)
-        return (current, updated)
+        updated = self._restart_cycle()
+        return (self.to_val, updated)
+
+    def _restart_cycle(self) -> Tween:
+        if self.auto_reverse:
+            return replace(
+                self,
+                from_val=self.to_val,
+                to_val=self.from_val,
+                current_value=self.to_val,
+                started_at=(self.started_at or 0) + self.duration_ms,
+            )
+        if self.repeat is not None and self.repeat > 1:
+            return replace(
+                self,
+                repeat=self.repeat - 1,
+                current_value=self.from_val,
+                started_at=(self.started_at or 0) + self.duration_ms,
+            )
+        return replace(self, current_value=self.to_val, is_done=True)
 
     def finished(self) -> bool:
-        """Return ``True`` if the animation has reached its target value."""
-        if self.started_at is None:
-            return False
-        return self.current_value == self.to_val
+        """Return ``True`` if the animation has completed."""
+        return self.is_done
 
     def value(self) -> float:
         """Return the current interpolated value."""
@@ -134,6 +197,10 @@ class Tween:
 
     def __repr__(self) -> str:
         state = (
-            "not started" if self.started_at is None else f"at {self.current_value:.4f}"
+            "finished"
+            if self.is_done
+            else "not started"
+            if self.started_at is None
+            else f"at {self.current_value:.4f}"
         )
         return f"Tween({self.from_val} -> {self.to_val}, {self.duration_ms}ms, {state})"

@@ -327,7 +327,7 @@ def keyed_column(*children: Any, **kwargs: Any) -> Node:
 
     Args:
         *children: Child widgets.
-        **kwargs: Keyed column props. Optional ``id=``.
+        **kwargs: Keyed column props (align_x, max_width). Optional ``id=``.
     """
     return _anon_container("keyed_column", *children, **kwargs)
 
@@ -456,7 +456,7 @@ def slider(
         range: ``(min, max)`` tuple.
         value: Current slider value.
         **kwargs: Slider props (step, width, height, default, shift_step,
-            circular_handle, rail_color, rail_width, style, label,
+            circular_handle, handle_radius, rail_color, rail_width, style, label,
             event_rate, a11y).
     """
     return _node(id, "slider", {"range": list(range), "value": value, **kwargs})
@@ -720,7 +720,7 @@ def qr_code(id: str, data: str, /, **kwargs: Any) -> Node:
     Args:
         id: QR code identifier.
         data: Data string to encode.
-        **kwargs: QR code props (cell_size, cell_color, background,
+        **kwargs: QR code props (cell_size, total_size, cell_color, background,
             error_correction, alt, description, a11y).
     """
     return _node(id, "qr_code", {"data": data, **kwargs})
