@@ -111,7 +111,9 @@ def window(id: str, /, *children: Any, **kwargs: Any) -> Node:
         **kwargs: Window props (title, size, width, height, position,
             min_size, max_size, maximized, fullscreen, visible, resizable,
             closeable, minimizable, decorations, transparent, blur, level,
-            exit_on_close_request, scale_factor, theme).
+            exit_on_close_request, scale_factor, theme). The ``width`` and
+            ``height`` props accept Length values (numeric pixels, ``"fill"``,
+            ``"shrink"``, or ``{"fill_portion": n}``).
     """
     return _single_child_container("window", id, *children, **kwargs)
 
