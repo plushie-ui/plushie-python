@@ -982,6 +982,8 @@ class A11y:
     position_in_set: int | None = None
     size_of_set: int | None = None
     has_popup: A11yHasPopup | None = None
+    active_descendant: str | None = None
+    radio_group: list[str] | None = None
 
     def to_wire(self) -> dict[str, object]:
         """Convert to wire-compatible dict with non-None fields only."""

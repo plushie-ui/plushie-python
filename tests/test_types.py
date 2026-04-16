@@ -584,7 +584,7 @@ class TestA11y:
         import dataclasses
 
         fields = dataclasses.fields(A11y)
-        assert len(fields) == 24
+        assert len(fields) == 26
 
     def test_table_context_roles(self) -> None:
         """Table-context roles (row, cell, column_header) are valid A11y roles."""
@@ -594,6 +594,26 @@ class TestA11y:
         assert a_cell.role == "cell"
         a_col = A11y(role="column_header")
         assert a_col.role == "column_header"
+
+    def test_active_descendant_field(self) -> None:
+        a = A11y(active_descendant="item-3")
+        assert a.active_descendant == "item-3"
+        assert a.to_wire() == {"active_descendant": "item-3"}
+
+    def test_active_descendant_default_none(self) -> None:
+        a = A11y(role="list")
+        assert a.active_descendant is None
+        assert "active_descendant" not in a.to_wire()
+
+    def test_radio_group_field(self) -> None:
+        a = A11y(radio_group=["r1", "r2", "r3"])
+        assert a.radio_group == ["r1", "r2", "r3"]
+        assert a.to_wire()["radio_group"] == ["r1", "r2", "r3"]
+
+    def test_radio_group_default_none(self) -> None:
+        a = A11y(role="radio_button")
+        assert a.radio_group is None
+        assert "radio_group" not in a.to_wire()
 
 
 # ---------------------------------------------------------------------------
