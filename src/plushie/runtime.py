@@ -1686,6 +1686,9 @@ class Runtime:
             self._widget_statuses.clear()
             self._focused_widget_id = None
 
+            # Reset error counters (stale renderer may have accumulated them)
+            self._consecutive_errors = 0
+
             # Restart reader thread
             self._start_reader()
             return True
