@@ -225,6 +225,29 @@ def _resolve_selector(selector: str, tree: Node | None) -> dict[str, str]:
                     f'selector "{selector}" matches multiple windows; prefix it with "<window_id>#<widget_id>"'
                 )
             elif not exact_matches:
+                # Target contains "/": treat it as a scoped-path suffix
+                # and look for a node whose full id ends with it. This
+                # mirrors the renderer's find_by_id semantics so callers
+                # can use partial scoped paths like "todo-1/done" without
+                # knowing the window prefix.
+                suffix_matches = _find_suffix_id_targets(tree, target_id)
+                if window_id is not None:
+                    suffix_matches = [
+                        match
+                        for match in suffix_matches
+                        if match["window_id"] == window_id
+                    ]
+                if len(suffix_matches) == 1:
+                    match = suffix_matches[0]
+                    return {
+                        "by": "id",
+                        "value": match["id"],
+                        "window_id": match["window_id"],
+                    }
+                if len(suffix_matches) > 1:
+                    raise ValueError(
+                        f'selector "{selector}" is ambiguous across windows; prefix it with "<window_id>#<widget_id>" or use the full scoped id'
+                    )
                 available = _collect_widget_ids(tree)
                 hint = (
                     f" Available IDs: {', '.join(sorted(available))}"
@@ -273,6 +296,29 @@ def _find_local_id_targets(
         matches.append({"id": tree["id"], "window_id": node_window_id})
     for child in tree.get("children", []):
         matches.extend(_find_local_id_targets(child, target_id, node_window_id))
+    return matches
+
+
+def _find_suffix_id_targets(
+    tree: Node,
+    target_id: str,
+    current_window_id: str | None = None,
+) -> list[dict[str, str]]:
+    """Find nodes whose full id ends with a scoped-path suffix.
+
+    A node matches when its id ends with ``"/{target_id}"`` or
+    ``"#{target_id}"``. Mirrors the renderer's ``find_by_id`` so
+    callers can use partial scoped paths like ``"todo-1/done"``.
+    """
+    matches: list[dict[str, str]] = []
+    node_window_id = tree["id"] if tree.get("type") == "window" else current_window_id
+    node_id = tree.get("id", "")
+    if node_window_id is not None and (
+        node_id.endswith(f"/{target_id}") or node_id.endswith(f"#{target_id}")
+    ):
+        matches.append({"id": node_id, "window_id": node_window_id})
+    for child in tree.get("children", []):
+        matches.extend(_find_suffix_id_targets(child, target_id, node_window_id))
     return matches
 
 

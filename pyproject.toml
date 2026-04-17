@@ -116,9 +116,6 @@ markers = [
     "windowed: requires windowed backend (real windows, needs display)",
 ]
 
-[project.entry-points.pytest11]
-plushie = "plushie.testing.plugin"
-
 [project.scripts]
 plushie = "plushie.__main__:main"
 
