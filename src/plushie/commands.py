@@ -25,7 +25,7 @@ Categories:
   ``maximize_window``, ``minimize_window``, ``set_window_mode``,
   ``toggle_maximize``, ``toggle_decorations``, ``focus_window``,
   ``set_window_level``, ``drag_window``, ``drag_resize_window``,
-  ``request_user_attention``, ``set_resizable``, ``set_min_size``,
+  ``request_attention``, ``set_resizable``, ``set_min_size``,
   ``set_max_size``, ``enable_mouse_passthrough``,
   ``disable_mouse_passthrough``, ``show_system_menu``, ``set_icon``,
   ``set_resize_increments``, ``allow_automatic_tabbing``,
@@ -493,7 +493,7 @@ class Command:
         )
 
     @staticmethod
-    def request_user_attention(window_id: str, urgency: str | None = None) -> Command:
+    def request_attention(window_id: str, urgency: str | None = None) -> Command:
         """Flash the taskbar/dock icon.  *urgency* is ``"informational"`` or ``"critical"``."""
         return Command(
             type="window_op",

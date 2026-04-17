@@ -397,9 +397,9 @@ def test_command_drag_resize_window():
     assert cmd.payload["direction"] == "south_east"
 
 
-def test_command_request_user_attention():
-    """Command.request_user_attention() flashes the taskbar."""
-    cmd = Command.request_user_attention("main", "critical")
+def test_command_request_attention():
+    """Command.request_attention() flashes the taskbar."""
+    cmd = Command.request_attention("main", "critical")
     assert cmd.payload["urgency"] == "critical"
 
 

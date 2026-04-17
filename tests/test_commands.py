@@ -272,13 +272,13 @@ class TestWindowOps:
         assert cmd.payload["op"] == "drag_resize"
         assert cmd.payload["direction"] == "south_east"
 
-    def test_request_user_attention(self) -> None:
-        cmd = Command.request_user_attention("main", "critical")
+    def test_request_attention(self) -> None:
+        cmd = Command.request_attention("main", "critical")
         assert cmd.payload["op"] == "request_attention"
         assert cmd.payload["urgency"] == "critical"
 
-    def test_request_user_attention_none(self) -> None:
-        cmd = Command.request_user_attention("main")
+    def test_request_attention_none(self) -> None:
+        cmd = Command.request_attention("main")
         assert cmd.payload["urgency"] is None
 
     def test_set_resizable(self) -> None:
