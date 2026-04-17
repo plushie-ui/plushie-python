@@ -178,11 +178,11 @@ class TestWindowOp:
         assert msg["type"] == "window_op"
         assert msg["op"] == "resize"
         assert msg["window_id"] == "win1"
-        assert msg["settings"]["width"] == 800
+        assert msg["payload"]["width"] == 800
 
-    def test_no_settings_defaults_to_empty(self) -> None:
+    def test_no_payload_defaults_to_empty(self) -> None:
         msg = window_op("close", "win1")
-        assert msg["settings"] == {}
+        assert msg["payload"] == {}
 
 
 class TestEffectMsg:
@@ -199,19 +199,19 @@ class TestImageOp:
         msg = image_op("create_image", "img1", data=b"\x89PNG")
         assert msg["type"] == "image_op"
         assert msg["op"] == "create_image"
-        assert msg["handle"] == "img1"
-        assert msg["data"] == b"\x89PNG"
+        assert msg["payload"]["handle"] == "img1"
+        assert msg["payload"]["data"] == b"\x89PNG"
 
     def test_create_with_pixels(self) -> None:
         msg = image_op("create_image", "img1", pixels=b"\x00" * 16, width=2, height=2)
-        assert msg["pixels"] == b"\x00" * 16
-        assert msg["width"] == 2
-        assert msg["height"] == 2
+        assert msg["payload"]["pixels"] == b"\x00" * 16
+        assert msg["payload"]["width"] == 2
+        assert msg["payload"]["height"] == 2
 
     def test_delete(self) -> None:
         msg = image_op("delete_image", "img1")
         assert msg["op"] == "delete_image"
-        assert "data" not in msg
+        assert "data" not in msg["payload"]
 
 
 class TestWidgetCommand:

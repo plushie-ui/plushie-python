@@ -606,16 +606,19 @@ class Connection:
         self,
         op: str,
         window_id: str,
-        op_settings: dict[str, Any] | None = None,
+        payload: dict[str, Any] | None = None,
     ) -> None:
         """Send a window operation to the renderer.
+
+        Uses the unified ``_op`` envelope: op-specific data lives under
+        ``payload``.
 
         Args:
             op: Operation name (e.g. ``"resize"``).
             window_id: Target window identifier.
-            op_settings: Operation-specific settings.
+            payload: Operation-specific payload.
         """
-        msg = window_op(op, window_id, op_settings, session=self._session)
+        msg = window_op(op, window_id, payload, session=self._session)
         self.send(msg)
 
     def send_advance_frame(self, timestamp: int) -> None:

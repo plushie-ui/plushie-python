@@ -242,16 +242,19 @@ def widget_op(
 def window_op(
     op: str,
     window_id: str,
-    op_settings: dict[str, Any] | None = None,
+    payload: dict[str, Any] | None = None,
     *,
     session: str = "",
 ) -> dict[str, Any]:
     """Build a WindowOp message.
 
+    Uses the unified ``_op`` envelope: op-specific data lives under
+    ``payload``; the ``window_id`` addressing field stays flat beside ``op``.
+
     Args:
         op: Operation name (e.g. ``"open"``, ``"resize"``).
         window_id: Target window identifier.
-        op_settings: Operation-specific settings dict.
+        payload: Operation-specific payload dict.
         session: Session identifier.
     """
     msg: dict[str, Any] = {
@@ -259,38 +262,44 @@ def window_op(
         "session": session,
         "op": op,
         "window_id": window_id,
-        "settings": op_settings if op_settings is not None else {},
+        "payload": payload if payload is not None else {},
     }
     return msg
 
 
 def system_op(
     op: str,
-    op_settings: dict[str, Any] | None = None,
+    payload: dict[str, Any] | None = None,
     *,
     session: str = "",
 ) -> dict[str, Any]:
-    """Build a SystemOp message."""
+    """Build a SystemOp message.
+
+    Uses the unified ``_op`` envelope: op-specific data lives under ``payload``.
+    """
     return {
         "type": "system_op",
         "session": session,
         "op": op,
-        "settings": op_settings if op_settings is not None else {},
+        "payload": payload if payload is not None else {},
     }
 
 
 def system_query(
     op: str,
-    op_settings: dict[str, Any] | None = None,
+    payload: dict[str, Any] | None = None,
     *,
     session: str = "",
 ) -> dict[str, Any]:
-    """Build a SystemQuery message."""
+    """Build a SystemQuery message.
+
+    Uses the unified ``_op`` envelope: query-specific data lives under ``payload``.
+    """
     return {
         "type": "system_query",
         "session": session,
         "op": op,
-        "settings": op_settings if op_settings is not None else {},
+        "payload": payload if payload is not None else {},
     }
 
 
@@ -330,6 +339,9 @@ def image_op(
 ) -> dict[str, Any]:
     """Build an ImageOp message.
 
+    Uses the unified ``_op`` envelope: op-specific data (``handle``,
+    ``data``, ``pixels``, ``width``, ``height``) lives under ``payload``.
+
     For ``create_image`` / ``update_image``, provide either ``data``
     (encoded image bytes) or ``pixels`` + ``width`` + ``height``
     (raw RGBA). For ``delete_image``, only ``handle`` is needed.
@@ -344,21 +356,21 @@ def image_op(
         height: Image height (required with ``pixels``).
         session: Session identifier.
     """
-    msg: dict[str, Any] = {
+    payload: dict[str, Any] = {"handle": handle}
+    if data is not None:
+        payload["data"] = data
+    if pixels is not None:
+        payload["pixels"] = pixels
+    if width is not None:
+        payload["width"] = width
+    if height is not None:
+        payload["height"] = height
+    return {
         "type": "image_op",
         "session": session,
         "op": op,
-        "handle": handle,
+        "payload": payload,
     }
-    if data is not None:
-        msg["data"] = data
-    if pixels is not None:
-        msg["pixels"] = pixels
-    if width is not None:
-        msg["width"] = width
-    if height is not None:
-        msg["height"] = height
-    return msg
 
 
 def widget_command(
