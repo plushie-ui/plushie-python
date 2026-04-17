@@ -29,10 +29,10 @@ Categories:
   ``set_max_size``, ``enable_mouse_passthrough``,
   ``disable_mouse_passthrough``, ``show_system_menu``, ``set_icon``,
   ``set_resize_increments``, ``allow_automatic_tabbing``,
-  ``screenshot_window``, ``get_window_size``, ``get_window_position``,
-  ``get_mode``, ``get_scale_factor``, ``is_maximized``,
+  ``screenshot_window``, ``window_size``, ``window_position``,
+  ``window_mode``, ``scale_factor``, ``is_maximized``,
   ``is_minimized``, ``raw_id``, ``monitor_size``,
-  ``get_system_theme``, ``get_system_info``
+  ``system_theme``, ``system_info``
 - **Image ops**: ``create_image``, ``create_image_rgba``,
   ``update_image``, ``update_image_rgba``, ``delete_image``
 - **Animation**: ``advance_frame``
@@ -627,7 +627,7 @@ class Command:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def get_window_size(window_id: str, tag: str) -> Command:
+    def window_size(window_id: str, tag: str) -> Command:
         """Query the size of *window_id*.  Result arrives as a system event."""
         return Command(
             type="window_query",
@@ -635,7 +635,7 @@ class Command:
         )
 
     @staticmethod
-    def get_window_position(window_id: str, tag: str) -> Command:
+    def window_position(window_id: str, tag: str) -> Command:
         """Query the position of *window_id*.  Result arrives as a system event."""
         return Command(
             type="window_query",
@@ -643,7 +643,7 @@ class Command:
         )
 
     @staticmethod
-    def get_mode(window_id: str, tag: str) -> Command:
+    def window_mode(window_id: str, tag: str) -> Command:
         """Query the current window mode.  Result arrives as a system event."""
         return Command(
             type="window_query",
@@ -651,7 +651,7 @@ class Command:
         )
 
     @staticmethod
-    def get_scale_factor(window_id: str, tag: str) -> Command:
+    def scale_factor(window_id: str, tag: str) -> Command:
         """Query the DPI scale factor.  Result arrives as a system event."""
         return Command(
             type="window_query",
@@ -691,14 +691,14 @@ class Command:
         )
 
     @staticmethod
-    def get_system_theme(tag: str) -> Command:
+    def system_theme(tag: str) -> Command:
         """Query the OS light/dark theme preference.  Result arrives as a system event."""
         return Command(
             type="system_query", payload={"op": "get_system_theme", "tag": tag}
         )
 
     @staticmethod
-    def get_system_info(tag: str) -> Command:
+    def system_info(tag: str) -> Command:
         """Query system information (OS, CPU, memory, graphics)."""
         return Command(
             type="system_query", payload={"op": "get_system_info", "tag": tag}

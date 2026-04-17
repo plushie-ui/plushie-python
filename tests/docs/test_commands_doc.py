@@ -465,30 +465,30 @@ def test_command_allow_automatic_tabbing():
 # ---------------------------------------------------------------------------
 
 
-def test_command_get_window_size():
-    """Command.get_window_size() queries window dimensions."""
-    cmd = Command.get_window_size("main", "got_size")
+def test_command_window_size():
+    """Command.window_size() queries window dimensions."""
+    cmd = Command.window_size("main", "got_size")
 
     assert cmd.type == "window_query"
     assert cmd.payload["op"] == "get_size"
     assert cmd.payload["window_id"] == "main"
 
 
-def test_command_get_window_position():
-    """Command.get_window_position() queries window position."""
-    cmd = Command.get_window_position("main", "got_pos")
+def test_command_window_position():
+    """Command.window_position() queries window position."""
+    cmd = Command.window_position("main", "got_pos")
     assert cmd.payload["op"] == "get_position"
 
 
-def test_command_get_mode():
-    """Command.get_mode() queries the window display mode."""
-    cmd = Command.get_mode("main", "got_mode")
+def test_command_window_mode():
+    """Command.window_mode() queries the window display mode."""
+    cmd = Command.window_mode("main", "got_mode")
     assert cmd.payload["op"] == "get_mode"
 
 
-def test_command_get_scale_factor():
-    """Command.get_scale_factor() queries DPI scale."""
-    cmd = Command.get_scale_factor("main", "got_scale")
+def test_command_scale_factor():
+    """Command.scale_factor() queries DPI scale."""
+    cmd = Command.scale_factor("main", "got_scale")
     assert cmd.payload["op"] == "get_scale_factor"
 
 
@@ -516,18 +516,18 @@ def test_command_monitor_size():
     assert cmd.payload["op"] == "monitor_size"
 
 
-def test_command_get_system_theme():
-    """Command.get_system_theme() queries the OS light/dark preference."""
-    cmd = Command.get_system_theme("theme_detected")
+def test_command_system_theme():
+    """Command.system_theme() queries the OS light/dark preference."""
+    cmd = Command.system_theme("theme_detected")
 
     assert cmd.type == "system_query"
     assert cmd.payload["op"] == "get_system_theme"
     assert cmd.payload["tag"] == "theme_detected"
 
 
-def test_command_get_system_info():
-    """Command.get_system_info() queries system hardware info."""
-    cmd = Command.get_system_info("sysinfo")
+def test_command_system_info():
+    """Command.system_info() queries system hardware info."""
+    cmd = Command.system_info("sysinfo")
     assert cmd.payload["op"] == "get_system_info"
 
 

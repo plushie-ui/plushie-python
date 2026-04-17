@@ -338,22 +338,22 @@ class TestWindowOps:
 
 
 class TestWindowQueries:
-    def test_get_window_size(self) -> None:
-        cmd = Command.get_window_size("main", "sz")
+    def test_window_size(self) -> None:
+        cmd = Command.window_size("main", "sz")
         assert cmd.type == "window_query"
         assert cmd.payload["op"] == "get_size"
         assert cmd.payload["tag"] == "sz"
 
-    def test_get_window_position(self) -> None:
-        cmd = Command.get_window_position("main", "pos")
+    def test_window_position(self) -> None:
+        cmd = Command.window_position("main", "pos")
         assert cmd.payload["op"] == "get_position"
 
-    def test_get_mode(self) -> None:
-        cmd = Command.get_mode("main", "m")
+    def test_window_mode(self) -> None:
+        cmd = Command.window_mode("main", "m")
         assert cmd.payload["op"] == "get_mode"
 
-    def test_get_scale_factor(self) -> None:
-        cmd = Command.get_scale_factor("main", "sf")
+    def test_scale_factor(self) -> None:
+        cmd = Command.scale_factor("main", "sf")
         assert cmd.payload["op"] == "get_scale_factor"
 
     def test_is_maximized(self) -> None:
@@ -372,14 +372,14 @@ class TestWindowQueries:
         cmd = Command.monitor_size("main", "mon")
         assert cmd.payload["op"] == "monitor_size"
 
-    def test_get_system_theme(self) -> None:
-        cmd = Command.get_system_theme("theme")
+    def test_system_theme(self) -> None:
+        cmd = Command.system_theme("theme")
         assert cmd.type == "system_query"
         assert cmd.payload["op"] == "get_system_theme"
         assert cmd.payload["tag"] == "theme"
 
-    def test_get_system_info(self) -> None:
-        cmd = Command.get_system_info("info")
+    def test_system_info(self) -> None:
+        cmd = Command.system_info("info")
         assert cmd.type == "system_query"
         assert cmd.payload["op"] == "get_system_info"
         assert cmd.payload["tag"] == "info"
