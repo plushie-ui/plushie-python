@@ -354,6 +354,31 @@ class Command:
         return Command(type="widget_op", payload={"op": "focus_previous"})
 
     @staticmethod
+    def focus_next_within(scope: str) -> Command:
+        """Move focus to the next focusable widget within *scope*.
+
+        Only widgets that are descendants of the scope widget are
+        considered; focus wraps at the subtree boundary. Useful for
+        menus, pane grids, and other keyboard containers that want a
+        bounded Tab cycle.
+        """
+        return Command(
+            type="widget_op",
+            payload={"op": "focus_next_within", "scope": scope},
+        )
+
+    @staticmethod
+    def focus_previous_within(scope: str) -> Command:
+        """Move focus to the previous focusable widget within *scope*.
+
+        See :py:meth:`focus_next_within` for semantics.
+        """
+        return Command(
+            type="widget_op",
+            payload={"op": "focus_previous_within", "scope": scope},
+        )
+
+    @staticmethod
     def close_window(window_id: str) -> Command:
         """Close the window identified by *window_id*."""
         return Command(
@@ -362,9 +387,24 @@ class Command:
         )
 
     @staticmethod
-    def announce(text: str) -> Command:
-        """Announce *text* to screen readers via the accessibility system."""
-        return Command(type="widget_op", payload={"op": "announce", "text": text})
+    def announce(text: str, politeness: str = "polite") -> Command:
+        """Announce *text* to screen readers via the accessibility system.
+
+        ``politeness`` controls how assistive technology delivers the
+        announcement. ``"polite"`` (the default) waits for a gap in the
+        current announcement and is correct for most toast-style
+        feedback. ``"assertive"`` interrupts the current announcement
+        and should be reserved for urgent context the user must hear
+        immediately.
+        """
+        if politeness not in ("polite", "assertive"):
+            raise ValueError(
+                f"politeness must be 'polite' or 'assertive', got {politeness!r}"
+            )
+        return Command(
+            type="widget_op",
+            payload={"op": "announce", "text": text, "politeness": politeness},
+        )
 
     @staticmethod
     def load_font(data: bytes) -> Command:
