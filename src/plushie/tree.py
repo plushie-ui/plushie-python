@@ -288,22 +288,26 @@ def normalize(
         if len(tree) == 0:
             return _empty_container()
         if len(tree) == 1:
-            return _normalize_with_scope(
-                tree[0], "", 0, window_id=None, registry=registry
+            return _post_normalize(
+                _normalize_with_scope(tree[0], "", 0, window_id=None, registry=registry)
             )
         normalized_children = [
             _normalize_with_scope(child, "", i, window_id=None, registry=registry)
             for i, child in enumerate(tree)
         ]
         _check_duplicate_ids(normalized_children)
-        return {
-            "id": "root",
-            "type": "container",
-            "props": {},
-            "children": normalized_children,
-        }
+        return _post_normalize(
+            {
+                "id": "root",
+                "type": "container",
+                "props": {},
+                "children": normalized_children,
+            }
+        )
 
-    return _normalize_with_scope(tree, "", 0, window_id=None, registry=registry)
+    return _post_normalize(
+        _normalize_with_scope(tree, "", 0, window_id=None, registry=registry)
+    )
 
 
 def normalize_view(
@@ -647,6 +651,243 @@ def _encode_props(props: dict[str, Any]) -> dict[str, Any]:
     return {k: _encode_prop_value(v) for k, v in props.items()}
 
 
+# ---------------------------------------------------------------------------
+# Post-normalize a11y pass
+# ---------------------------------------------------------------------------
+#
+# Runs after the first pass produces a fully scoped tree. Mirrors the
+# Rust SDK: auto-populate a11y.role, rewrite active_descendant and
+# radio_group list refs, populate implicit radio_group when radios
+# share a ``group`` prop, emit a11y_ref_unresolved diagnostics for
+# dangling refs, emit missing_accessible_name diagnostics for
+# interactive widgets with no accessible name source.
+
+_A11Y_SINGLE_REF_KEYS = (
+    "labelled_by",
+    "described_by",
+    "error_message",
+    "active_descendant",
+)
+
+_NAMED_INTERACTIVE_TYPES = frozenset({"button", "toggler", "checkbox", "pointer_area"})
+
+_WIDGET_ROLE_DEFAULTS: dict[str, str] = {
+    "button": "button",
+    "checkbox": "check_box",
+    "toggler": "switch",
+    "radio": "radio_button",
+    "text_input": "text_input",
+    "text_editor": "multiline_text_input",
+    "text": "label",
+    "rich_text": "label",
+    "slider": "slider",
+    "vertical_slider": "slider",
+    "pick_list": "combo_box",
+    "combo_box": "combo_box",
+    "progress_bar": "progress_indicator",
+    "image": "image",
+    "svg": "image",
+    "qr_code": "image",
+    "scrollable": "scroll_view",
+    "container": "generic_container",
+    "column": "generic_container",
+    "row": "generic_container",
+    "stack": "generic_container",
+    "grid": "generic_container",
+    "pane_grid": "generic_container",
+    "table": "table",
+    "canvas": "canvas",
+    "rule": "separator",
+}
+
+
+def _post_normalize(tree: Node) -> Node:
+    """Run the a11y post-pass on an already-scoped tree in-place."""
+    declared: set[str] = set()
+    _collect_declared_ids(tree, declared)
+    radio_groups: dict[tuple[str, str], list[str]] = {}
+    _collect_radio_groups(tree, "", radio_groups)
+    _rewrite_a11y(tree, "", declared, radio_groups)
+    _check_missing_accessible_name(tree)
+    return tree
+
+
+def _collect_declared_ids(node: Node, out: set[str]) -> None:
+    """Collect every non-auto, non-empty scoped ID present in the tree."""
+    node_id = node.get("id", "")
+    if isinstance(node_id, str) and node_id and not node_id.startswith("auto:"):
+        out.add(node_id)
+    for child in node.get("children", []):
+        _collect_declared_ids(child, out)
+
+
+def _child_scope_of(node: Node, scope: str) -> str:
+    kind = node.get("type", "")
+    node_id = node.get("id", "")
+    if kind == "window":
+        return f"{node_id}#"
+    if not node_id or (isinstance(node_id, str) and node_id.startswith("auto:")):
+        return scope
+    return node_id
+
+
+def _collect_radio_groups(
+    node: Node,
+    scope: str,
+    out: dict[tuple[str, str], list[str]],
+) -> None:
+    if node.get("type") == "radio":
+        group = _fetch_group_prop(node.get("props") or {})
+        if group:
+            key = (scope, group)
+            out.setdefault(key, []).append(node.get("id", ""))
+    child_scope = _child_scope_of(node, scope)
+    for child in node.get("children", []):
+        _collect_radio_groups(child, child_scope, out)
+
+
+def _fetch_group_prop(props: dict[str, Any]) -> str | None:
+    group = props.get("group")
+    return group if isinstance(group, str) and group else None
+
+
+def _rewrite_a11y(
+    node: Node,
+    scope: str,
+    declared: set[str],
+    radio_groups: dict[tuple[str, str], list[str]],
+) -> None:
+    _apply_a11y_rewrites(node, scope, declared, radio_groups)
+    child_scope = _child_scope_of(node, scope)
+    for child in node.get("children", []):
+        _rewrite_a11y(child, child_scope, declared, radio_groups)
+
+
+def _apply_a11y_rewrites(
+    node: Node,
+    scope: str,
+    declared: set[str],
+    radio_groups: dict[tuple[str, str], list[str]],
+) -> None:
+    kind = node.get("type", "")
+    owner_id = node.get("id", "")
+    props = node.get("props")
+    if not isinstance(props, dict):
+        return
+
+    role_default = _WIDGET_ROLE_DEFAULTS.get(kind)
+    radio_ids: list[str] | None = None
+    if kind == "radio":
+        group = _fetch_group_prop(props)
+        if group:
+            radio_ids = radio_groups.get((scope, group))
+
+    existing_a11y = props.get("a11y")
+    a11y: dict[str, Any] | None = (
+        dict(existing_a11y) if isinstance(existing_a11y, dict) else None
+    )
+
+    needs_update = (
+        (role_default is not None and not (a11y and "role" in a11y))
+        or radio_ids is not None
+        or (a11y is not None and _has_any_ref(a11y))
+    )
+
+    if a11y is None and not needs_update:
+        return
+
+    if a11y is None:
+        a11y = {}
+
+    if role_default is not None and "role" not in a11y:
+        a11y["role"] = role_default
+
+    for key in _A11Y_SINGLE_REF_KEYS:
+        ref = a11y.get(key)
+        if isinstance(ref, str) and ref:
+            rewritten = _scope_ref(ref, scope)
+            if rewritten not in declared:
+                _warn_unresolved(key, ref, owner_id)
+            a11y[key] = rewritten
+
+    existing_group = a11y.get("radio_group")
+    if isinstance(existing_group, list):
+        rewritten_group: list[Any] = []
+        for item in existing_group:
+            if isinstance(item, str) and item:
+                r = _scope_ref(item, scope)
+                if r not in declared:
+                    _warn_unresolved("radio_group", item, owner_id)
+                rewritten_group.append(r)
+            else:
+                rewritten_group.append(item)
+        a11y["radio_group"] = rewritten_group
+    elif radio_ids is not None:
+        a11y["radio_group"] = list(radio_ids)
+
+    props["a11y"] = a11y
+
+
+def _has_any_ref(a11y: dict[str, Any]) -> bool:
+    for key in _A11Y_SINGLE_REF_KEYS:
+        if key in a11y:
+            return True
+    return "radio_group" in a11y
+
+
+def _warn_unresolved(key: str, ref: str, owner_id: str) -> None:
+    import logging
+
+    logging.getLogger("plushie.tree").warning(
+        "a11y_ref_unresolved: a11y.%s %r on %r does not match any declared widget ID",
+        key,
+        ref,
+        owner_id,
+    )
+
+
+def _check_missing_accessible_name(node: Node) -> None:
+    kind = node.get("type", "")
+    if kind in _NAMED_INTERACTIVE_TYPES and not _has_accessible_name(node):
+        import logging
+
+        logging.getLogger("plushie.tree").warning(
+            "missing_accessible_name: %s %r has no label, text child, "
+            "a11y.label, or a11y.labelled_by; screen readers will announce no name",
+            kind,
+            node.get("id", ""),
+        )
+    for child in node.get("children", []):
+        _check_missing_accessible_name(child)
+
+
+def _has_accessible_name(node: Node) -> bool:
+    props = node.get("props") or {}
+    label = props.get("label")
+    if isinstance(label, str) and label:
+        return True
+    a11y = props.get("a11y")
+    if isinstance(a11y, dict):
+        a11y_label = a11y.get("label")
+        if isinstance(a11y_label, str) and a11y_label:
+            return True
+        a11y_lb = a11y.get("labelled_by")
+        if isinstance(a11y_lb, str) and a11y_lb:
+            return True
+    return _has_text_child(node.get("children", []))
+
+
+def _has_text_child(children: list[Node]) -> bool:
+    for child in children:
+        if child.get("type") == "text":
+            content = (child.get("props") or {}).get("content")
+            if isinstance(content, str) and content:
+                return True
+        if _has_text_child(child.get("children", [])):
+            return True
+    return False
+
+
 def _resolve_a11y_id_refs(props: dict[str, Any], scope: str) -> dict[str, Any]:
     """Resolve a11y ID references relative to the current scope.
 
@@ -670,11 +911,12 @@ def _resolve_a11y_id_refs(props: dict[str, Any], scope: str) -> dict[str, Any]:
 def _scope_ref(ref: str, scope: str) -> str:
     """Prefix an ID reference with the current scope.
 
-    Already-scoped references (containing ``/``) pass through unchanged.
-    Handles the ``#`` window boundary: if scope ends with ``#``, the ref
-    is appended directly (e.g. ``"main#"`` + ``"label"`` -> ``"main#label"``).
+    Already-scoped references (containing ``/`` or ``#``) pass through
+    unchanged. Handles the ``#`` window boundary: if scope ends with
+    ``#``, the ref is appended directly (e.g. ``"main#"`` + ``"label"``
+    -> ``"main#label"``).
     """
-    if not scope or "/" in ref:
+    if not scope or not ref or "/" in ref or "#" in ref:
         return ref
     if scope.endswith("#"):
         return f"{scope}{ref}"

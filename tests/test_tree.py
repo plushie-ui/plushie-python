@@ -98,7 +98,8 @@ class TestNormalizeSingleNode:
     def test_fills_missing_fields(self) -> None:
         result = normalize({"id": "x"})
         assert result["type"] == "container"
-        assert result["props"] == {}
+        # Post-normalize auto-populates a11y.role from the widget type.
+        assert result["props"] == {"a11y": {"role": "generic_container"}}
         assert result["children"] == []
 
 
@@ -430,15 +431,16 @@ class TestA11yDefaults:
         a11y = result["props"]["a11y"]
         assert a11y["role"] == "window"
 
-    def test_container_no_defaults(self) -> None:
+    def test_container_has_generic_container_role(self) -> None:
         tree = _node("box", "container")
         result = normalize(tree)
-        assert "a11y" not in result["props"]
+        # Post-normalize maps container to the generic_container role.
+        assert result["props"]["a11y"]["role"] == "generic_container"
 
-    def test_column_no_defaults(self) -> None:
+    def test_column_has_generic_container_role(self) -> None:
         tree = {"type": "column", "props": {}, "children": []}
         result = normalize(tree)
-        assert "a11y" not in result["props"]
+        assert result["props"]["a11y"]["role"] == "generic_container"
 
     def test_rule_defaults(self) -> None:
         tree = {"type": "rule", "props": {}}
@@ -478,12 +480,14 @@ class TestA11yDefaults:
         a11y = result["props"]["a11y"]
         assert a11y["role"] == "document"
 
-    def test_user_a11y_replaces_defaults(self) -> None:
+    def test_user_a11y_merges_with_defaults(self) -> None:
         tree = _node("btn", "button", {"label": "Go", "a11y": {"label": "Custom"}})
         result = normalize(tree)
         a11y = result["props"]["a11y"]
+        # User-provided label wins; post-normalize still supplies the
+        # widget-type role since the author didn't specify one.
         assert a11y["label"] == "Custom"
-        assert "role" not in a11y
+        assert a11y["role"] == "button"
 
     def test_user_a11y_dataclass_replaces_defaults(self) -> None:
         tree = _node("btn", "button", {"label": "Go", "a11y": A11y(role="link")})
