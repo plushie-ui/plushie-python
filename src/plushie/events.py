@@ -1443,7 +1443,7 @@ class SessionClosed:
 class EffectStubAck:
     """Acknowledgement of an effect stub registration or unregistration.
 
-    Wire types: ``effect_stub_registered`` or ``effect_stub_unregistered``.
+    Wire types: ``effect_stub_register_ack`` or ``effect_stub_unregister_ack``.
 
     Attributes:
         kind: The effect kind that was stubbed.

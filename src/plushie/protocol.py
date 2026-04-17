@@ -926,10 +926,10 @@ def decode_message(
     if msg_type == "event":
         return _decode_event(msg)
 
-    if msg_type in ("effect_stub_registered", "effect_stub_unregistered"):
+    if msg_type in ("effect_stub_register_ack", "effect_stub_unregister_ack"):
         return EffectStubAck(
             kind=msg.get("kind", ""),
-            registered=msg_type == "effect_stub_registered",
+            registered=msg_type == "effect_stub_register_ack",
         )
 
     # Pass through other response types (query_response, interact_response,

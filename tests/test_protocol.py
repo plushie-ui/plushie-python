@@ -313,8 +313,8 @@ class TestEffectStubMessages:
         assert msg["type"] == "unregister_effect_stub"
         assert msg["kind"] == "file_open"
 
-    def test_decode_effect_stub_registered(self) -> None:
-        raw = {"type": "effect_stub_registered", "kind": "clipboard_read"}
+    def test_decode_effect_stub_register_ack(self) -> None:
+        raw = {"type": "effect_stub_register_ack", "kind": "clipboard_read"}
         result = decode_message(raw)
         from plushie.events import EffectStubAck
 
@@ -322,8 +322,8 @@ class TestEffectStubMessages:
         assert result.kind == "clipboard_read"
         assert result.registered is True
 
-    def test_decode_effect_stub_unregistered(self) -> None:
-        raw = {"type": "effect_stub_unregistered", "kind": "file_open"}
+    def test_decode_effect_stub_unregister_ack(self) -> None:
+        raw = {"type": "effect_stub_unregister_ack", "kind": "file_open"}
         result = decode_message(raw)
         from plushie.events import EffectStubAck
 
@@ -1649,14 +1649,14 @@ class TestDecodeSessionLifecycle:
 
 class TestDecodeEffectStubAck:
     def test_registered(self) -> None:
-        raw = {"type": "effect_stub_registered", "kind": "clipboard_read"}
+        raw = {"type": "effect_stub_register_ack", "kind": "clipboard_read"}
         result = decode_message(raw)
         assert isinstance(result, EffectStubAck)
         assert result.kind == "clipboard_read"
         assert result.registered is True
 
     def test_unregistered(self) -> None:
-        raw = {"type": "effect_stub_unregistered", "kind": "file_open"}
+        raw = {"type": "effect_stub_unregister_ack", "kind": "file_open"}
         result = decode_message(raw)
         assert isinstance(result, EffectStubAck)
         assert result.kind == "file_open"
