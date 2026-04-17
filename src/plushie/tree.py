@@ -50,7 +50,9 @@ class WireEncodable(Protocol):
     registration needed.
     """
 
-    def to_wire(self) -> Any: ...
+    def to_wire(self) -> Any:
+        """Return the wire-protocol representation of this value."""
+        ...
 
 
 # ---------------------------------------------------------------------------
