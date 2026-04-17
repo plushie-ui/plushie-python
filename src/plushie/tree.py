@@ -756,11 +756,80 @@ def _rewrite_a11y(
     scope: str,
     declared: set[str],
     radio_groups: dict[tuple[str, str], list[str]],
+    tooltip_parent_id: str | None = None,
 ) -> None:
-    _apply_a11y_rewrites(node, scope, declared, radio_groups)
+    _apply_a11y_rewrites(node, scope, declared, radio_groups, tooltip_parent_id)
     child_scope = _child_scope_of(node, scope)
+    # A tooltip's children are its trigger content; flow described_by
+    # down to them so AT announces the tip text when focus lands there.
+    tooltip_for_children = node.get("id", "") if node.get("type") == "tooltip" else None
     for child in node.get("children", []):
-        _rewrite_a11y(child, child_scope, declared, radio_groups)
+        _rewrite_a11y(child, child_scope, declared, radio_groups, tooltip_for_children)
+
+
+# Widget types that project :placeholder -> a11y.description.
+_PLACEHOLDER_DESCRIPTION_WIDGETS = frozenset(
+    {"text_input", "text_editor", "combo_box", "pick_list"}
+)
+
+# Widget types that honour :required / :validation builder props.
+_VALIDATABLE_WIDGETS = frozenset(
+    {"text_input", "text_editor", "checkbox", "pick_list", "combo_box"}
+)
+
+
+def _placeholder_description(kind: str, props: dict[str, Any]) -> str | None:
+    if kind not in _PLACEHOLDER_DESCRIPTION_WIDGETS:
+        return None
+    ph = props.get("placeholder")
+    return ph if isinstance(ph, str) and ph else None
+
+
+def _required_from_props(kind: str, props: dict[str, Any]) -> bool | None:
+    if kind not in _VALIDATABLE_WIDGETS:
+        return None
+    req = props.get("required")
+    return req if isinstance(req, bool) else None
+
+
+def _invalid_from_props(
+    kind: str, props: dict[str, Any]
+) -> tuple[bool | None, str | None]:
+    """Project a validation prop onto (a11y.invalid, a11y.error_message).
+
+    Accepted shapes mirror the Elixir SDK's permissive matcher:
+
+    - ``"valid"`` (or ``ValidationState.VALID``)                    -> (False, None)
+    - ``"pending"`` / ``ValidationState.PENDING``                   -> (None, None)
+    - ``("invalid", message)`` / ``["invalid", message]``           -> (True, message)
+    - ``{"state": "invalid", "message": m}``                        -> (True, m)
+    - ``{"state": "valid"}``                                        -> (False, None)
+    """
+    if kind not in _VALIDATABLE_WIDGETS:
+        return (None, None)
+    v = props.get("validation")
+    if v is None:
+        return (None, None)
+    if v in ("valid",):
+        return (False, None)
+    if v in ("pending",):
+        return (None, None)
+    if isinstance(v, tuple) and len(v) == 2 and v[0] == "invalid":
+        msg = v[1]
+        return (True, msg if isinstance(msg, str) else None)
+    if isinstance(v, list) and len(v) == 2 and v[0] == "invalid":
+        msg = v[1]
+        return (True, msg if isinstance(msg, str) else None)
+    if isinstance(v, dict):
+        state = v.get("state")
+        if state == "valid":
+            return (False, None)
+        if state == "pending":
+            return (None, None)
+        if state == "invalid":
+            msg = v.get("message")
+            return (True, msg if isinstance(msg, str) else None)
+    return (None, None)
 
 
 def _apply_a11y_rewrites(
@@ -768,6 +837,7 @@ def _apply_a11y_rewrites(
     scope: str,
     declared: set[str],
     radio_groups: dict[tuple[str, str], list[str]],
+    tooltip_parent_id: str | None = None,
 ) -> None:
     kind = node.get("type", "")
     owner_id = node.get("id", "")
@@ -782,6 +852,10 @@ def _apply_a11y_rewrites(
         if group:
             radio_ids = radio_groups.get((scope, group))
 
+    placeholder_desc = _placeholder_description(kind, props)
+    required_prop = _required_from_props(kind, props)
+    invalid_prop, error_text = _invalid_from_props(kind, props)
+
     existing_a11y = props.get("a11y")
     a11y: dict[str, Any] | None = (
         dict(existing_a11y) if isinstance(existing_a11y, dict) else None
@@ -791,6 +865,11 @@ def _apply_a11y_rewrites(
         (role_default is not None and not (a11y and "role" in a11y))
         or radio_ids is not None
         or (a11y is not None and _has_any_ref(a11y))
+        or placeholder_desc is not None
+        or required_prop is not None
+        or invalid_prop is not None
+        or error_text is not None
+        or tooltip_parent_id is not None
     )
 
     if a11y is None and not needs_update:
@@ -824,6 +903,21 @@ def _apply_a11y_rewrites(
         a11y["radio_group"] = rewritten_group
     elif radio_ids is not None:
         a11y["radio_group"] = list(radio_ids)
+
+    if placeholder_desc is not None and "description" not in a11y:
+        a11y["description"] = placeholder_desc
+
+    if required_prop is True and "required" not in a11y:
+        a11y["required"] = True
+
+    if invalid_prop is not None and "invalid" not in a11y:
+        a11y["invalid"] = invalid_prop
+
+    if error_text is not None and "error_message" not in a11y:
+        a11y["error_message"] = error_text
+
+    if tooltip_parent_id is not None and "described_by" not in a11y:
+        a11y["described_by"] = tooltip_parent_id
 
     props["a11y"] = a11y
 

@@ -994,6 +994,39 @@ class A11y:
 
 
 # ---------------------------------------------------------------------------
+# ValidationState
+# ---------------------------------------------------------------------------
+
+
+type ValidationState = (
+    Literal["valid", "pending"] | tuple[Literal["invalid"], str] | dict[str, object]
+)
+"""Form-validation state for input widgets.
+
+Accepted forms:
+
+- ``"valid"`` - the field is validated and OK
+- ``"pending"`` - validation is in progress (sets ``a11y.busy``)
+- ``("invalid", "reason")`` - validation failed with a human-readable
+  message (sets ``a11y.invalid`` and ``a11y.error_message``)
+
+The normalizer projects this onto the ``a11y`` map automatically; the
+widget also reflects the state visually in the renderer.
+"""
+
+
+def invalid(message: str) -> tuple[Literal["invalid"], str]:
+    """Build an ``("invalid", message)`` validation state.
+
+    Equivalent to writing the tuple literal; this helper gives the
+    shape a name so call sites read like prose::
+
+        text_input("email", model.email, validation=invalid("Not a valid address"))
+    """
+    return ("invalid", message)
+
+
+# ---------------------------------------------------------------------------
 # LineHeight
 # ---------------------------------------------------------------------------
 
@@ -1113,8 +1146,10 @@ __all__ = [
     "StatusOverride",
     "StyleMap",
     "Theme",
+    "ValidationState",
     "WindowLevel",
     "WindowMode",
     "Wrapping",
     "encode_line_height",
+    "invalid",
 ]

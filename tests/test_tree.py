@@ -357,6 +357,96 @@ class TestNormalizeA11yRefs:
         assert a11y["label"] == "OK"
 
 
+class TestNormalizeA11yBuilderDefaults:
+    """Normalizer projections from widget-level props onto a11y."""
+
+    def test_placeholder_flows_into_description(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("email", "text_input", {"placeholder": "Your email"}),
+            ],
+        )
+        result = normalize(tree)
+        a11y = result["children"][0]["props"]["a11y"]
+        assert a11y["description"] == "Your email"
+
+    def test_explicit_description_wins_over_placeholder(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node(
+                    "email",
+                    "text_input",
+                    {"placeholder": "Ph", "a11y": {"description": "Explicit"}},
+                ),
+            ],
+        )
+        result = normalize(tree)
+        a11y = result["children"][0]["props"]["a11y"]
+        assert a11y["description"] == "Explicit"
+
+    def test_required_prop_flows_into_a11y_required(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("email", "text_input", {"required": True}),
+            ],
+        )
+        result = normalize(tree)
+        a11y = result["children"][0]["props"]["a11y"]
+        assert a11y["required"] is True
+
+    def test_validation_invalid_flows_into_a11y(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node(
+                    "email",
+                    "text_input",
+                    {"validation": ("invalid", "Not a valid email")},
+                ),
+            ],
+        )
+        result = normalize(tree)
+        a11y = result["children"][0]["props"]["a11y"]
+        assert a11y["invalid"] is True
+        assert a11y["error_message"] == "Not a valid email"
+
+    def test_validation_valid_sets_invalid_false(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("email", "text_input", {"validation": "valid"}),
+            ],
+        )
+        result = normalize(tree)
+        a11y = result["children"][0]["props"]["a11y"]
+        assert a11y["invalid"] is False
+
+    def test_tooltip_scopes_described_by_onto_trigger_child(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node(
+                    "help",
+                    "tooltip",
+                    {"tip": "Enter your email"},
+                    children=[_node("email", "text_input", {})],
+                ),
+            ],
+        )
+        result = normalize(tree)
+        trigger = result["children"][0]["children"][0]
+        assert trigger["props"]["a11y"]["described_by"] == "form/help"
+
+
 class TestA11yDefaults:
     """Per-widget a11y defaults applied during normalization."""
 

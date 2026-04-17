@@ -121,6 +121,51 @@ class TestElement:
         assert el.id == "form/email"
 
 
+class TestElementResolvedA11y:
+    def test_text_input_placeholder_seeds_description(self) -> None:
+        el = Element(node={"type": "text_input", "props": {"placeholder": "Search..."}})
+        assert el.resolved_a11y() == {"description": "Search..."}
+
+    def test_image_alt_seeds_label(self) -> None:
+        el = Element(node={"type": "image", "props": {"alt": "Tree"}})
+        assert el.resolved_a11y() == {"label": "Tree"}
+
+    def test_explicit_a11y_composes_with_inferred(self) -> None:
+        el = Element(
+            node={
+                "type": "text_input",
+                "props": {
+                    "placeholder": "Search...",
+                    "a11y": {"label": "Search box", "required": True},
+                },
+            }
+        )
+        resolved = el.resolved_a11y()
+        assert resolved["description"] == "Search..."
+        assert resolved["label"] == "Search box"
+        assert resolved["required"] is True
+
+    def test_explicit_description_overrides_inferred(self) -> None:
+        el = Element(
+            node={
+                "type": "text_input",
+                "props": {
+                    "placeholder": "Search...",
+                    "a11y": {"description": "Enter a query"},
+                },
+            }
+        )
+        assert el.resolved_a11y()["description"] == "Enter a query"
+
+    def test_blank_placeholder_treated_as_absent(self) -> None:
+        el = Element(node={"type": "text_input", "props": {"placeholder": ""}})
+        assert el.resolved_a11y() == {}
+
+    def test_unknown_type_returns_empty(self) -> None:
+        el = Element(node={"type": "text", "props": {"content": "hi"}})
+        assert el.resolved_a11y() == {}
+
+
 class TestElementNotFoundError:
     def test_is_exception(self) -> None:
         err = ElementNotFoundError("not found: #foo")
@@ -570,9 +615,11 @@ class TestAssertA11y:
             app.assert_a11y("#greeting", {"role": "heading", "level": 1})
 
     def test_fails_when_no_a11y(self) -> None:
+        # Routed through resolved_a11y/1, so "no a11y prop" surfaces as a
+        # per-key mismatch against the empty resolved map.
         with (
             _make_fixture() as app,
-            pytest.raises(AssertionError, match=r"no a11y prop"),
+            pytest.raises(AssertionError, match=r"role.*mismatch"),
         ):
             app.assert_a11y("#greeting", {"role": "heading"})
 

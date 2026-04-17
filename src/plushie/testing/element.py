@@ -74,6 +74,25 @@ class Element:
         """
         return self.props.get("a11y", {})
 
+    def resolved_a11y(self) -> dict[str, Any]:
+        """Return the resolved a11y map for this element.
+
+        Layers render-pipeline inference on top of the normalized
+        ``a11y`` prop: ``placeholder`` flows into ``description`` for
+        ``text_input``/``text_editor``/``combo_box``/``pick_list`` when
+        unset, and ``alt`` flows into ``label`` for ``image``/``svg``/
+        ``qr_code``.
+
+        Returns an empty dict for widgets the normalizer left
+        untouched, so tests can match on individual keys without
+        special-casing absence.
+        """
+        explicit: dict[str, Any] = self.a11y()
+        inferred = _infer_a11y(self.type, self.props)
+        merged: dict[str, Any] = dict(inferred)
+        merged.update(explicit)
+        return merged
+
     def inferred_role(self) -> str:
         """Return the accessible role, inferring from widget type if not explicit.
 
@@ -89,6 +108,29 @@ class Element:
 
 class ElementNotFoundError(Exception):
     """Raised when a query expected to find an element returns nothing."""
+
+
+_PLACEHOLDER_WIDGETS = frozenset({"text_input", "text_editor", "combo_box", "pick_list"})
+_ALT_WIDGETS = frozenset({"image", "svg", "qr_code"})
+
+
+def _infer_a11y(widget_type: str, props: dict[str, Any]) -> dict[str, Any]:
+    """Infer widget-sdk-equivalent a11y defaults for a node.
+
+    Kept aligned with the Rust SDK's ``resolve_a11y_for_node`` so parity
+    holds across host SDKs.
+    """
+    if widget_type in _PLACEHOLDER_WIDGETS:
+        ph = props.get("placeholder")
+        if isinstance(ph, str) and ph:
+            return {"description": ph}
+        return {}
+    if widget_type in _ALT_WIDGETS:
+        alt = props.get("alt")
+        if isinstance(alt, str) and alt:
+            return {"label": alt}
+        return {}
+    return {}
 
 
 __all__ = [

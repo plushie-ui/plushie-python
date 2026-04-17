@@ -961,31 +961,51 @@ class AppFixture[M]:
         if actual != expected:
             raise AssertionError(f"assert_model: expected {expected!r}, got {actual!r}")
 
+    def resolved_a11y(self, selector: str) -> dict[str, Any]:
+        """Return the resolved a11y map for a widget.
+
+        Layers render-pipeline inference (placeholder -> description
+        for text inputs, alt -> label for media widgets) on top of the
+        normalized ``a11y`` prop, so tests see what assistive
+        technology will see.
+
+        Args:
+            selector: Widget selector.
+
+        Returns:
+            The merged a11y dict. Empty if the element has no a11y
+            state.
+
+        Raises:
+            ElementNotFoundError: If the selector matches nothing.
+        """
+        el = self.find(selector)
+        return el.resolved_a11y()
+
     def assert_a11y(self, selector: str, expected: dict[str, Any]) -> None:
         """Assert that a widget has the expected accessibility attributes.
 
-        Finds the widget by selector and checks that its ``a11y`` prop
-        map contains all the expected key-value pairs.
+        Finds the widget by selector and checks that its resolved a11y
+        map (via :py:meth:`resolved_a11y`, which layers widget-level
+        inference like ``placeholder`` -> ``description``) contains all
+        the expected key-value pairs.
 
         Args:
             selector: Widget selector.
             expected: Dict of a11y key-value pairs to check.
 
         Raises:
-            AssertionError: If the element is not found, has no a11y
-                props, or any expected key-value pair differs.
+            AssertionError: If the element is not found or any
+                expected key-value pair differs.
         """
-        el = self.find(selector)
-        raw_a11y = el.a11y()
-        if not raw_a11y:
-            raise AssertionError(f"assert_a11y({selector!r}): no a11y prop on element")
+        a11y = self.resolved_a11y(selector)
         for key, expected_value in expected.items():
-            actual_value = raw_a11y.get(key)
+            actual_value = a11y.get(key)
             if actual_value != expected_value:
                 raise AssertionError(
                     f"assert_a11y({selector!r}): {key!r} mismatch: "
                     f"expected {expected_value!r}, got {actual_value!r}. "
-                    f"Full a11y: {raw_a11y!r}"
+                    f"Full a11y: {a11y!r}"
                 )
 
     def assert_role(self, selector: str, expected_role: str) -> None:
