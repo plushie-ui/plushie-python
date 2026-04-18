@@ -194,8 +194,17 @@ class TestBuild:
 
         def _fake_run(args: list[str], **_kwargs: Any) -> _Completed:
             calls.append(args)
-            # Simulate cargo plushie placing a binary at the expected path.
-            binary = spec_dir / "target" / "debug" / "my-app-renderer"
+            # Simulate cargo plushie placing a binary at the expected
+            # path: cargo-plushie's generated workspace nests its own
+            # target/ under <spec_dir>/target/plushie-renderer/.
+            binary = (
+                spec_dir
+                / "target"
+                / "plushie-renderer"
+                / "target"
+                / "debug"
+                / "my-app-renderer"
+            )
             binary.parent.mkdir(parents=True, exist_ok=True)
             binary.write_bytes(b"\x7fELF fake binary")
             binary.chmod(0o755)
@@ -293,7 +302,14 @@ class TestBuild:
 
         def _fake_run(args: list[str], **_kwargs: Any) -> _Completed:
             calls.append(args)
-            binary = spec_dir / "target" / "release" / "renderer"
+            binary = (
+                spec_dir
+                / "target"
+                / "plushie-renderer"
+                / "target"
+                / "release"
+                / "renderer"
+            )
             binary.parent.mkdir(parents=True, exist_ok=True)
             binary.write_bytes(b"\x7fELF")
             return _Completed()

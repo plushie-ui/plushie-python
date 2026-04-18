@@ -178,17 +178,27 @@ def install_built_binary(
 ) -> Path:
     """Copy the binary produced by ``cargo plushie build`` into place.
 
-    ``cargo-plushie`` leaves the built binary at
-    ``<spec_dir>/target/<profile>/<binary_name>``. The Python SDK's
-    :func:`plushie.binary.resolve` looks for binaries named
-    ``plushie-renderer-<os>-<arch>`` under
+    ``cargo-plushie`` drives a generated renderer workspace whose
+    ``output_dir`` is ``<spec_dir>/target/plushie-renderer/``. That
+    workspace's ``cargo build`` then writes the binary under its own
+    ``target/<profile>/``, so the final path is
+    ``<spec_dir>/target/plushie-renderer/target/<profile>/<binary_name>``.
+    The Python SDK's :func:`plushie.binary.resolve` looks for binaries
+    named ``plushie-renderer-<os>-<arch>`` under
     :func:`plushie.binary.download_dir`, so copy the output into that
     canonical location. Also honor ``bin_file`` (from ``[tool.plushie]``)
     if the app wants the binary somewhere else.
     """
     profile = "release" if release else "debug"
     bin_ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
-    built = spec_dir / "target" / profile / f"{binary_name}{bin_ext}"
+    built = (
+        spec_dir
+        / "target"
+        / "plushie-renderer"
+        / "target"
+        / profile
+        / f"{binary_name}{bin_ext}"
+    )
     if not built.is_file():
         raise FileNotFoundError(
             f"cargo plushie build completed but the binary is missing at {built}"
