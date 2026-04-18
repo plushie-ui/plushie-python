@@ -274,7 +274,7 @@ There is no `open_window` command. To open a window, add a `window` node to
 the tree returned by `view()`. To close one, remove it or use
 `close_window()`.
 
-<!-- test: test_command_close_window, test_command_resize_window, test_command_move_window, test_command_maximize_window, test_command_minimize_window, test_command_set_window_mode, test_command_toggle_maximize, test_command_toggle_decorations, test_command_gain_focus, test_command_set_window_level, test_command_drag_window, test_command_drag_resize_window, test_command_request_user_attention, test_command_screenshot_window, test_command_set_resizable, test_command_set_min_max_size, test_command_mouse_passthrough, test_command_show_system_menu, test_command_set_icon, test_command_set_resize_increments, test_command_allow_automatic_tabbing -- keep this code block in sync with the test -->
+<!-- test: test_command_close_window, test_command_resize_window, test_command_move_window, test_command_maximize_window, test_command_minimize_window, test_command_set_window_mode, test_command_toggle_maximize, test_command_toggle_decorations, test_command_focus_window, test_command_set_window_level, test_command_drag_window, test_command_drag_resize_window, test_command_request_attention, test_command_screenshot_window, test_command_set_resizable, test_command_set_min_max_size, test_command_mouse_passthrough, test_command_show_system_menu, test_command_set_icon, test_command_set_resize_increments, test_command_allow_automatic_tabbing -- keep this code block in sync with the test -->
 ```python
 Command.close_window(window_id)                            # Close a window
 Command.resize_window(window_id, width, height)            # Resize
@@ -286,11 +286,11 @@ Command.minimize_window(window_id, False)                  # Restore from minimi
 Command.set_window_mode(window_id, mode)                   # "fullscreen", "windowed", etc.
 Command.toggle_maximize(window_id)                         # Toggle maximize state
 Command.toggle_decorations(window_id)                      # Toggle title bar/borders
-Command.gain_focus(window_id)                              # Bring window to front
+Command.focus_window(window_id)                            # Bring window to front
 Command.set_window_level(window_id, level)                 # "normal", "always_on_top", etc.
 Command.drag_window(window_id)                             # Initiate OS window drag
 Command.drag_resize_window(window_id, direction)           # Initiate OS resize from edge
-Command.request_user_attention(window_id, urgency)         # Flash taskbar ("informational", "critical")
+Command.request_attention(window_id, urgency)              # Flash taskbar ("informational", "critical")
 Command.screenshot_window(window_id, tag)                  # Capture window pixels
 Command.set_resizable(window_id, value)                    # Enable/disable resize
 Command.set_min_size(window_id, width, height)             # Set minimum window size
@@ -324,51 +324,48 @@ The `rgba_data` must be a `bytes` object of `width * height * 4` bytes.
 #### Window queries
 
 Window queries are commands whose results arrive as events in `update()`.
-Despite accepting a `tag` parameter, window property queries use the
-**effect response** transport. Results arrive as
-`EffectResult(request_id=id, ...)` where `id` is the **window_id string**
-(the `tag` is currently unused for these queries). System queries use a
-separate path where the tag is used.
+Each query takes a `tag`; the response dataclass carries that `tag` so
+you can distinguish overlapping queries.
 
 ##### Window property queries
 
-These go through the effect/window_op system. Results arrive in `update()`
-as `EffectResult(request_id=window_id, status="ok", result=data)` where
-`window_id` is the string ID of the window and `data` varies by query type.
+These go through the `window_query` transport. Results arrive in `update()`
+as `EffectResult(tag=tag, status="ok", result=data)` where `data` varies
+by query type.
 
-<!-- test: test_command_get_window_size, test_command_get_window_position, test_command_get_mode, test_command_get_scale_factor, test_command_is_maximized, test_command_is_minimized, test_command_raw_id, test_command_monitor_size -- keep this code block in sync with the test -->
+<!-- test: test_command_window_size, test_command_window_position, test_command_window_mode, test_command_scale_factor, test_command_is_maximized, test_command_is_minimized, test_command_raw_id, test_command_monitor_size -- keep this code block in sync with the test -->
 ```python
-Command.get_window_size(window_id, tag)
-# Result: EffectResult(request_id=window_id, status="ok", result={"width": w, "height": h})
+Command.window_size(window_id, tag)
+# Result: EffectResult(tag=tag, status="ok", result={"width": w, "height": h})
 
-Command.get_window_position(window_id, tag)
-# Result: EffectResult(request_id=window_id, status="ok", result={"x": x, "y": y})
+Command.window_position(window_id, tag)
+# Result: EffectResult(tag=tag, status="ok", result={"x": x, "y": y})
 # (None if position is unavailable)
 
-Command.get_mode(window_id, tag)
-# Result: EffectResult(request_id=window_id, status="ok", result=mode)
+Command.window_mode(window_id, tag)
+# Result: EffectResult(tag=tag, status="ok", result=mode)
 # mode is "windowed", "fullscreen", or "hidden"
 
-Command.get_scale_factor(window_id, tag)
-# Result: EffectResult(request_id=window_id, status="ok", result=factor)
+Command.scale_factor(window_id, tag)
+# Result: EffectResult(tag=tag, status="ok", result=factor)
 
 Command.is_maximized(window_id, tag)
-# Result: EffectResult(request_id=window_id, status="ok", result=boolean)
+# Result: EffectResult(tag=tag, status="ok", result=boolean)
 
 Command.is_minimized(window_id, tag)
-# Result: EffectResult(request_id=window_id, status="ok", result=boolean)
+# Result: EffectResult(tag=tag, status="ok", result=boolean)
 
 Command.raw_id(window_id, tag)
-# Result: EffectResult(request_id=window_id, status="ok", result=platform_id)
+# Result: EffectResult(tag=tag, status="ok", result=platform_id)
 
 Command.monitor_size(window_id, tag)
-# Result: EffectResult(request_id=window_id, status="ok", result={"width": w, "height": h})
+# Result: EffectResult(tag=tag, status="ok", result={"width": w, "height": h})
 # (None if monitor cannot be determined)
 ```
 
 Example:
 
-<!-- test: test_command_get_window_size -- keep this code block in sync with the test -->
+<!-- test: test_command_window_size -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -377,42 +374,33 @@ from plushie.events import Click, EffectResult
 def update(self, model, event):
     match event:
         case Click(id="check_size"):
-            return model, Command.get_window_size("main", "got_size")
+            return model, Command.window_size("main", "got_size")
 
-        case EffectResult(request_id="main", status="ok", result={"width": w, "height": h}):
+        case EffectResult(tag="got_size", status="ok", result={"width": w, "height": h}):
             return replace(model, window_width=w, window_height=h)
 ```
 
-**Note:** Because the response is keyed by `window_id` rather than `tag`,
-issuing multiple different queries against the same window will produce
-results that share the same `window_id` key. Distinguish them by the shape
-of the `result` dict (e.g. `{"width": _, "height": _}` for size vs.
-`{"x": _, "y": _}` for position).
-
 ##### System queries
 
-System-level queries use a different transport path. Results arrive as
-dedicated event dataclasses where the **tag** (stringified) identifies
-the response.
+System-level queries use a separate transport path. Results arrive as
+dedicated event dataclasses (`SystemTheme`, `SystemInfo`) where the
+`tag` identifies the response.
 
-<!-- test: test_command_get_system_theme, test_command_get_system_info -- keep this code block in sync with the test -->
+<!-- test: test_command_system_theme, test_command_system_info -- keep this code block in sync with the test -->
 ```python
-Command.get_system_theme(tag)
-# Result: SystemTheme(tag=tag_string, theme=mode)
+Command.system_theme(tag)
+# Result: SystemTheme(tag=tag, theme=mode)
 # mode is "light", "dark", or "none"
 
-Command.get_system_info(tag)
-# Result: SystemInfo(tag=tag_string, data=info_dict)
+Command.system_info(tag)
+# Result: SystemInfo(tag=tag, value=info_dict)
 # info_dict keys: "system_name", "system_kernel", "system_version",
 #   "system_short_version", "cpu_brand", "cpu_cores", "memory_total",
 #   "memory_used", "graphics_backend", "graphics_adapter"
 # Requires the renderer to be built with the `sysinfo` feature.
 ```
 
-**Important:** The `tag` arrives as a **string** in `update()`, even if you
-pass a non-string value. Match on the string.
-
-<!-- test: test_command_get_system_theme -- keep this code block in sync with the test -->
+<!-- test: test_command_system_theme -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie.commands import Command
@@ -421,7 +409,7 @@ from plushie.events import Click, SystemTheme
 def update(self, model, event):
     match event:
         case Click(id="detect_theme"):
-            return model, Command.get_system_theme("theme_detected")
+            return model, Command.system_theme("theme_detected")
         case SystemTheme(tag="theme_detected", theme=mode):
             return replace(model, os_theme=mode)
 ```
@@ -523,27 +511,27 @@ Commands in a batch are dispatched sequentially. Async commands spawn
 concurrent threads, but the dispatch loop itself processes each command
 in order.
 
-#### Extension commands
+#### Widget commands
 
-Push data directly to a native Rust extension widget without triggering the
-view/diff/patch cycle. Used for high-frequency data like terminal output or
-streaming log lines.
+Push data directly to a native Rust widget without triggering the
+view/diff/patch cycle. Used for high-frequency data like terminal output
+or streaming log lines.
 
-<!-- test: test_command_extension_command, test_command_extension_commands -- keep this code block in sync with the test -->
+<!-- test: test_command_widget_command, test_command_widget_commands -- keep this code block in sync with the test -->
 ```python
 # Single command
-Command.extension_command("term-1", "write", {"data": output})
+Command.widget_command("term-1", "write", {"data": output})
 
 # Batch (all processed before next view cycle)
-Command.extension_commands([
+Command.widget_commands([
     ("term-1", "write", {"data": line1}),
     ("log-1", "append", {"line": entry}),
 ])
 ```
 
-Extension commands are only meaningful for widgets backed by a
-`WidgetExtension` Rust implementation. They are silently ignored for
-widgets without an extension handler.
+Widget commands are only meaningful for widgets backed by a native
+Rust implementation. They are silently ignored for widgets without a
+registered handler.
 
 #### Animation
 
@@ -726,12 +714,11 @@ like overhead for your use case.
 Subscriptions are ongoing event sources. Unlike commands (one-shot),
 subscriptions produce events continuously as long as they are active.
 
-**Important: tag semantics differ by subscription type.** For timer
-subscriptions (`every()`), the tag becomes the event wrapper, so `update()`
-receives `TimerTick(tag=tag, timestamp=ts)`. For all renderer subscriptions
-(keyboard, mouse, window, etc.), the tag is management-only and does NOT
-appear in the event. Renderer events arrive as their own dataclasses like
-`KeyPress(...)` regardless of what tag you chose.
+**Important: tag semantics differ by subscription type.** Timer
+subscriptions (`every(interval, tag)`) carry a tag that becomes the
+event wrapper, so `update()` receives `TimerTick(tag=tag, timestamp=ts)`.
+Renderer subscriptions (keyboard, pointer, window, etc.) take no tag at
+all; events arrive as their own dataclasses like `KeyPress(...)`.
 
 ### The subscribe callback
 
@@ -747,7 +734,7 @@ def subscribe(self, model):
         subs.append(Subscription.every(1000, "tick"))
 
     # Always listen for keyboard shortcuts
-    subs.append(Subscription.on_key_press("key_event"))
+    subs.append(Subscription.on_key_press())
 
     return subs
 ```
@@ -773,77 +760,75 @@ Subscription.every(interval_ms, tag)
 
 <!-- test: test_subscription_on_key_press, test_subscription_on_key_release, test_subscription_on_modifiers_changed -- keep this code block in sync with the test -->
 ```python
-Subscription.on_key_press(tag)
+Subscription.on_key_press()
 # Delivers: KeyPress(key=..., modifiers=..., ...)
 
-Subscription.on_key_release(tag)
+Subscription.on_key_release()
 # Delivers: KeyRelease(key=..., modifiers=..., ...)
 
-Subscription.on_modifiers_changed(tag)
+Subscription.on_modifiers_changed()
 # Delivers: ModifiersChanged(modifiers=KeyModifiers(...))
 
-# The tag is used by the runtime to register/unregister the
-# subscription with the renderer. It is NOT included in the event
-# delivered to update(). See docs/events.md for the full
-# KeyPress and KeyModifiers dataclass definitions.
+# Renderer subscriptions take no positional tag. See docs/events.md for
+# the full KeyPress and KeyModifiers dataclass definitions.
 ```
 
 #### Window lifecycle
 
 <!-- test: test_subscription_on_window_close, test_subscription_on_window_open, test_subscription_on_window_resize, test_subscription_on_window_focus, test_subscription_on_window_unfocus, test_subscription_on_window_move, test_subscription_on_window_event -- keep this code block in sync with the test -->
 ```python
-Subscription.on_window_close(tag)
+Subscription.on_window_close()
 # Delivers: WindowCloseRequested(window_id=wid)
 
-Subscription.on_window_open(tag)
+Subscription.on_window_open()
 # Delivers: WindowOpen(window_id=wid, width=w, height=h, ...)
 
-Subscription.on_window_resize(tag)
+Subscription.on_window_resize()
 # Delivers: WindowResized(window_id=wid, width=w, height=h)
 
-Subscription.on_window_focus(tag)
+Subscription.on_window_focus()
 # Delivers: WindowFocused(window_id=wid)
 
-Subscription.on_window_unfocus(tag)
+Subscription.on_window_unfocus()
 # Delivers: WindowUnfocused(window_id=wid)
 
-Subscription.on_window_move(tag)
+Subscription.on_window_move()
 # Delivers: WindowMoved(window_id=wid, x=x, y=y)
 
-Subscription.on_window_event(tag)
+Subscription.on_window_event()
 # Delivers: various Window* dataclasses (catch-all for window events)
 ```
 
-#### Mouse
+#### Pointer
 
-<!-- test: test_subscription_on_mouse_move, test_subscription_on_mouse_button, test_subscription_on_mouse_scroll -- keep this code block in sync with the test -->
+<!-- test: test_subscription_on_pointer_move, test_subscription_on_pointer_button, test_subscription_on_pointer_scroll -- keep this code block in sync with the test -->
 ```python
-Subscription.on_mouse_move(tag)
-# Delivers: MouseMove(x=x, y=y)
+Subscription.on_pointer_move()
+# Delivers: Move(x=x, y=y, pointer=..., ...)
 
-Subscription.on_mouse_button(tag)
-# Delivers: MouseButtonPress(button=btn) or MouseButtonRelease(button=btn)
+Subscription.on_pointer_button()
+# Delivers: Press(button=btn, pointer=..., ...) or Release(button=btn, ...)
 
-Subscription.on_mouse_scroll(tag)
-# Delivers: MouseWheel(delta_x=dx, delta_y=dy, unit=unit)
+Subscription.on_pointer_scroll()
+# Delivers: Scroll(delta_x=dx, delta_y=dy, unit=unit, ...)
 ```
 
 #### Touch
 
 <!-- test: test_subscription_on_touch -- keep this code block in sync with the test -->
 ```python
-Subscription.on_touch(tag)
-# Delivers: TouchPress(finger_id=fid, x=x, y=y)
-#           TouchMove(...)
-#           TouchLift(...)
-#           TouchLost(...)
+Subscription.on_pointer_touch()
+# Delivers: Press(pointer="touch", finger=fid, x=x, y=y, ...)
+#           Move(pointer="touch", finger=fid, ...)
+#           Release(pointer="touch", finger=fid, ...)
+#           Release(pointer="touch", finger=fid, lost=True, ...)  # OS-cancelled
 ```
 
 #### IME (Input Method Editor)
 
 <!-- test: test_subscription_on_ime -- keep this code block in sync with the test -->
 ```python
-Subscription.on_ime(tag)
+Subscription.on_ime()
 # Delivers: ImeOpen()
 #           ImePreedit(text=text, cursor=(start, end_pos))
 #           ImeCommit(text=text)
@@ -854,13 +839,13 @@ Subscription.on_ime(tag)
 
 <!-- test: test_subscription_on_theme_change, test_subscription_on_animation_frame, test_subscription_on_file_drop -- keep this code block in sync with the test -->
 ```python
-Subscription.on_theme_change(tag)
+Subscription.on_theme_change()
 # Delivers: ThemeChanged(theme=mode)  (mode is "light" or "dark")
 
-Subscription.on_animation_frame(tag)
+Subscription.on_animation_frame()
 # Delivers: AnimationFrame(timestamp=ts)
 
-Subscription.on_file_drop(tag)
+Subscription.on_file_drop()
 # Delivers: FileDropped(window_id=wid, path=path)
 #           FileHovered(window_id=wid, path=path)
 #           FilesHoveredLeft(window_id=wid)
@@ -870,7 +855,7 @@ Subscription.on_file_drop(tag)
 
 <!-- test: test_subscription_on_event -- keep this code block in sync with the test -->
 ```python
-Subscription.on_event(tag)
+Subscription.on_event()
 # Receives all renderer events. Dataclass type varies by event family.
 ```
 
@@ -899,14 +884,14 @@ Renderer subscriptions accept a `max_rate` keyword argument:
 
 <!-- test: test_subscription_max_rate, test_subscription_every_no_max_rate -- keep this code block in sync with the test -->
 ```python
-# Rate-limit mouse moves to 30 events per second:
-Subscription.on_mouse_move("mouse", max_rate=30)
+# Rate-limit pointer moves to 30 events per second:
+Subscription.on_pointer_move(max_rate=30)
 
 # Animation frames at 60fps:
-Subscription.on_animation_frame("frame", max_rate=60)
+Subscription.on_animation_frame(max_rate=60)
 
 # Subscribe but never emit (capture tracking only):
-Subscription.on_mouse_move("mouse", max_rate=0)
+Subscription.on_pointer_move(max_rate=0)
 ```
 
 Timer subscriptions (`every()`) do not support `max_rate`.

@@ -7,25 +7,15 @@ event family has its own class in `plushie.events`.
 from plushie.events import (
     # Widget events
     Click, Input, Submit, Toggle, Select, Slide, SlideRelease,
-    Scroll, Paste, Sort, Open, Close, OptionHovered, KeyBinding,
-    # Mouse area events
-    MouseAreaRightPress, MouseAreaRightRelease,
-    MouseAreaMiddlePress, MouseAreaMiddleRelease,
-    MouseAreaDoubleClick, MouseAreaEnter, MouseAreaExit,
-    MouseAreaMove, MouseAreaScroll,
-    # Canvas events
-    CanvasPress, CanvasRelease, CanvasMove, CanvasScroll,
-    CanvasElementClick, CanvasElementDrag, CanvasElementDragEnd,
-    CanvasElementEnter, CanvasElementLeave, CanvasElementFocused,
-    # Sensor / PaneGrid events
-    SensorResize, PaneResized, PaneDragged, PaneClicked,
+    Scrolled, ScrollData, Paste, Sort, Open, Close, OptionHovered, KeyBinding,
+    # Pointer events (widget-scoped and global)
+    Enter, Leave, Move, Press, Release, Scroll,
+    # Scoped widget events (canvas shapes, etc.)
+    DoubleClick, Drag, DragEnd, Focused, Blurred,
+    # Resize / PaneGrid events
+    Resize, PaneResized, PaneDragged, PaneClicked,
     # Keyboard events
     KeyPress, KeyRelease, ModifiersChanged,
-    # Mouse events (global)
-    MouseMove, MouseEnter, MouseLeave,
-    MouseButtonPress, MouseButtonRelease, MouseWheel,
-    # Touch events
-    TouchPress, TouchMove, TouchLift, TouchLost,
     # IME events
     ImeOpen, ImePreedit, ImeCommit, ImeClose,
     # Window events
@@ -36,8 +26,6 @@ from plushie.events import (
     AnimationFrame, ThemeChanged,
     # Timer / Async / Stream / Effect events
     TimerTick, AsyncResult, StreamChunk, EffectResult,
-    # Accessibility
-    A11yAction,
 )
 ```
 
@@ -214,10 +202,10 @@ def update(self, model, event):
             return replace(model, content=format_code(model.content))
 ```
 
-### Scroll
+### Scrolled
 
 ```python
-Scroll(id="log_view", data=ScrollData(
+Scrolled(id="log_view", data=ScrollData(
     absolute_x=..., absolute_y=...,
     relative_x=..., relative_y=...,
     bounds_width=..., bounds_height=...,
@@ -233,11 +221,11 @@ and total content bounds.
 <!-- test: TestScrollMatch -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
-from plushie.events import Scroll
+from plushie.events import Scrolled
 
 def update(self, model, event):
     match event:
-        case Scroll(id="log_view", data=viewport):
+        case Scrolled(id="log_view", data=viewport):
             at_bottom = viewport.relative_y >= 0.99
             return replace(model, auto_scroll=at_bottom)
 ```
@@ -327,104 +315,90 @@ def update(self, model, event):
             return replace(model, sort_by=column_key, sort_order=order)
 ```
 
-### Mouse area events
+### Pointer events (mouse_area, canvas, global)
 
-Mouse area events use dedicated dataclasses per interaction type:
+Pointer events are unified across all input devices. Every `Enter`,
+`Leave`, `Move`, `Press`, `Release`, and `Scroll` event carries a
+`pointer` discriminator (`"mouse"`, `"touch"`, `"pen"`, `"stylus"`).
+`Press`/`Release`/`Move` also carry an optional `finger` index for
+multi-touch. Mouse area and canvas widgets emit these events when their
+corresponding boolean prop is set; global (window-level) pointer events
+arrive via subscriptions.
 
 ```python
-from plushie.events import (
-    MouseAreaRightPress, MouseAreaEnter, MouseAreaMove, MouseAreaScroll,
-)
+from plushie.events import Enter, Leave, Move, Press, Release, Scroll
 
-MouseAreaRightPress(id="canvas")
-MouseAreaEnter(id="tooltip-target")
-MouseAreaMove(id="drag-zone", x=x, y=y)
-MouseAreaScroll(id="scroll-zone", delta_x=dx, delta_y=dy)
+Enter(id="tooltip-target")
+Leave(id="tooltip-target")
+Move(id="drag-zone", x=x, y=y)
+Press(id="draw_area", x=x, y=y, button="left")
+Release(id="draw_area", x=x, y=y, button="left")
+Scroll(id="scroll-zone", x=x, y=y, delta_x=dx, delta_y=dy)
 ```
 
-Available classes: `MouseAreaRightPress`, `MouseAreaRightRelease`,
-`MouseAreaMiddlePress`, `MouseAreaMiddleRelease`, `MouseAreaDoubleClick`,
-`MouseAreaEnter`, `MouseAreaExit`, `MouseAreaMove`, `MouseAreaScroll`.
+The `button` field is a string (`"left"`, `"right"`, `"middle"`,
+`"back"`, `"forward"`). The `x`/`y` coordinates are local to the widget.
 
-Each event requires its corresponding boolean prop to be set on the
-mouse_area widget. Without the prop, the event is not emitted.
+Note: left press/release on a `button` widget is delivered as a `Click`
+event, not `Press`/`Release`.
 
-Note: left press/release events from mouse_area are delivered as
-`Click` events.
-
-<!-- test: TestMouseAreaEnterMatch, TestMouseAreaMoveMatch -- keep this code block in sync with the test -->
+<!-- test: TestEnterMatch.test_enter_match, TestMoveMatch.test_move_match -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
-from plushie.events import MouseAreaEnter, MouseAreaMove
+from plushie.events import Enter, Move
 
 def update(self, model, event):
     match event:
-        case MouseAreaEnter(id="hover_zone"):
+        case Enter(id="hover_zone"):
             return replace(model, hovered=True)
-        case MouseAreaMove(id="canvas_area", x=x, y=y):
+        case Move(id="canvas_area", x=x, y=y):
             return replace(model, cursor=(x, y))
 ```
 
-### Canvas events
+### Canvas pointer example
 
-Generated by `canvas` widgets. Each event is opt-in via a boolean prop on
-the canvas node. Canvas events use dedicated dataclasses.
+Generated by `canvas` widgets when pointer props are enabled. Same
+unified `Press`/`Move` dataclasses as any other pointer source:
 
-```python
-from plushie.events import CanvasPress, CanvasRelease, CanvasMove, CanvasScroll
-
-CanvasPress(id="draw_area", x=x, y=y, button="left")
-CanvasRelease(id="draw_area", x=x, y=y, button="left")
-CanvasMove(id="draw_area", x=x, y=y)
-CanvasScroll(id="draw_area", x=x, y=y, delta_x=dx, delta_y=dy)
-```
-
-The `button` field is a string (`"left"`, `"right"`, `"middle"`). The
-`x`/`y` coordinates are relative to the canvas origin.
-
-<!-- test: TestCanvasPressMatch, TestCanvasMoveMatch -- keep this code block in sync with the test -->
+<!-- test: TestPressMatch.test_press_left_match, TestPointerMoveMatch.test_move_while_drawing -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
-from plushie.events import CanvasPress, CanvasMove
+from plushie.events import Press, Move
 
 def update(self, model, event):
     match event:
-        case CanvasPress(id="draw_area", x=x, y=y, button="left"):
+        case Press(id="draw_area", x=x, y=y, button="left"):
             return replace(model, drawing=True, last_point=(x, y))
-        case CanvasMove(id="draw_area", x=x, y=y) if model.drawing:
-            return replace(model, last_point=(x, y), strokes=[*model.strokes, (x, y)])
+        case Move(id="draw_area", x=x, y=y) if model.drawing:
+            return replace(model, last_point=(x, y), strokes=(*model.strokes, (x, y)))
 ```
 
-### Canvas shape events
+### Scoped widget events (canvas shapes)
 
 When a canvas contains shapes with an `interactive` field, the renderer
 handles hit testing locally and emits semantic shape events. These arrive
-as dedicated `CanvasElement*` dataclasses. The `id` is the canvas widget
-ID; `element_id` identifies the shape.
+as regular widget events (`Click`, `Enter`, `Leave`, `DoubleClick`,
+`Drag`, `DragEnd`, `Focused`, `Blurred`) where the `id` is the shape's
+element ID and `scope` is `(canvas_id, ...)` so the handler can
+distinguish shape events from events on the outer canvas.
 
 ```python
-from plushie.events import (
-    CanvasElementEnter, CanvasElementLeave, CanvasElementClick,
-    CanvasElementDrag, CanvasElementDragEnd, CanvasElementFocused,
-)
+from plushie.events import Click, Enter, Leave, DoubleClick, Drag, DragEnd
 
 # Cursor entered a shape's bounds
-CanvasElementEnter(id="chart", element_id="bar-jan", x=15.0, y=70.0)
+Enter(id="bar-jan", scope=("chart",))
 
 # Cursor left a shape's bounds
-CanvasElementLeave(id="chart", element_id="bar-jan")
+Leave(id="bar-jan", scope=("chart",))
 
 # Click on a shape
-CanvasElementClick(id="chart", element_id="bar-jan", x=15.0, y=70.0, button="left")
+Click(id="bar-jan", scope=("chart",))
 
 # Drag on a draggable shape (rate-limited by event_rate)
-CanvasElementDrag(id="chart", element_id="handle", x=50.0, y=80.0, delta_x=2.0, delta_y=-1.0)
+Drag(id="handle", x=50.0, y=80.0, delta_x=2.0, delta_y=-1.0, scope=("chart",))
 
 # Drag ended
-CanvasElementDragEnd(id="chart", element_id="handle", x=52.0, y=79.0)
-
-# Shape received keyboard focus (Tab/Arrow navigation)
-CanvasElementFocused(id="chart", element_id="bar-jan")
+DragEnd(id="handle", x=52.0, y=79.0, scope=("chart",))
 ```
 
 Hover styles, pressed styles, cursors, and tooltips on shapes are
@@ -432,35 +406,35 @@ handled by the renderer locally with no round-trip needed. Shape events
 give the host semantic actions (clicks, drags, focus changes) instead
 of raw coordinates.
 
-<!-- test: TestCanvasElementClickMatch -- keep this code block in sync with the test -->
+<!-- test: TestScopedClickMatch.test_element_click_match -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
-from plushie.events import CanvasElementClick
+from plushie.events import Click
 
 def update(self, model, event):
     match event:
-        case CanvasElementClick(id="chart", element_id=element_id):
+        case Click(id=element_id, scope=("chart", *_)):
             return replace(model, selected_bar=element_id)
 ```
 
-### Sensor events
+### Resize events
 
 Generated by `sensor` widgets when the sensor detects a size change.
 
 ```python
-from plushie.events import SensorResize
+from plushie.events import Resize
 
-SensorResize(id="content_area", width=w, height=h)
+Resize(id="content_area", width=w, height=h)
 ```
 
-<!-- test: TestSensorResizeMatch -- keep this code block in sync with the test -->
+<!-- test: TestResizeMatch.test_resize_match -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
-from plushie.events import SensorResize
+from plushie.events import Resize
 
 def update(self, model, event):
     match event:
-        case SensorResize(id="content_area", width=w, height=h):
+        case Resize(id="content_area", width=w, height=h):
             return replace(model, content_size=(w, h))
 ```
 
@@ -609,62 +583,66 @@ def update(self, model, event):
             return replace(model, composing=None, value=model.value + text)
 ```
 
-## Mouse events (global)
+## Global pointer events
 
-Delivered when mouse subscriptions are active. These are global
-(not widget-scoped) events from the windowing system.
+Delivered when pointer subscriptions are active. These are global
+(window-scoped) events from the windowing system. Same unified
+dataclasses as widget-scoped pointer events; discriminate by the
+`pointer` field (`"mouse"`, `"touch"`, `"pen"`, `"stylus"`). Global
+events carry `window_id` and the widget `id` is the window ID.
 
 ```python
-from plushie.events import (
-    MouseMove, MouseEnter, MouseLeave,
-    MouseButtonPress, MouseButtonRelease, MouseWheel,
-)
+from plushie.events import Enter, Leave, Move, Press, Release, Scroll
 
-MouseMove(x=x, y=y)
-MouseEnter()
-MouseLeave()
-MouseButtonPress(button="left")
-MouseButtonRelease(button="right")
-MouseWheel(delta_x=dx, delta_y=dy, unit="line")
+Move(id="main", x=x, y=y, pointer="mouse", window_id="main")
+Enter(id="main", window_id="main")
+Leave(id="main", window_id="main")
+Press(id="main", x=0.0, y=0.0, button="left", pointer="mouse", window_id="main")
+Release(id="main", x=0.0, y=0.0, button="right", pointer="mouse", window_id="main")
+Scroll(id="main", x=x, y=y, delta_x=dx, delta_y=dy, unit="line", window_id="main")
 ```
 
 The `button` field is a string (`"left"`, `"right"`, `"middle"`, `"back"`,
-`"forward"`). The `unit` field indicates scroll units (`"line"` or `"pixel"`).
+`"forward"`). The `unit` field on `Scroll` indicates units (`"line"` or `"pixel"`).
 
-<!-- test: TestMouseMoveMatch, TestMouseButtonPressMatch -- keep this code block in sync with the test -->
+<!-- test: TestSubscriptionPointerMoveMatch.test_subscription_move_match, TestPointerPressMatch.test_pointer_press_left_match -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
-from plushie.events import MouseMove, MouseButtonPress
+from plushie.events import Move, Press
 
 def update(self, model, event):
     match event:
-        case MouseMove(x=x, y=y):
+        case Move(x=x, y=y):
             return replace(model, cursor=(x, y))
-        case MouseButtonPress(button="left"):
+        case Press(button="left"):
             return replace(model, mouse_down=True)
 ```
 
 ## Touch events
 
-Delivered when touch subscriptions are active.
+Touch arrives as standard `Press`/`Move`/`Release` events with
+`pointer="touch"` and a `finger` integer identifying the contact. The
+same pattern handles multi-touch by matching on `finger`.
 
 ```python
-from plushie.events import TouchPress, TouchMove, TouchLift, TouchLost
+from plushie.events import Press, Move, Release
 
-TouchPress(finger_id=fid, x=x, y=y)
-TouchMove(finger_id=fid, x=x, y=y)
-TouchLift(finger_id=fid, x=x, y=y)
-TouchLost(finger_id=fid, x=x, y=y)
+Press(id="main", x=x, y=y, button="left", pointer="touch", finger=0, window_id="main")
+Move(id="main", x=x, y=y, pointer="touch", finger=0, window_id="main")
+Release(id="main", x=x, y=y, button="left", pointer="touch", finger=0, window_id="main")
 ```
 
-<!-- test: TestTouchPressMatch -- keep this code block in sync with the test -->
+A `Release` with `lost=True` signals the OS cancelled the touch
+(equivalent to the old `TouchLost`).
+
+<!-- test: TestPointerTouchPressMatch.test_touch_pointer_press_match -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
-from plushie.events import TouchPress
+from plushie.events import Press
 
 def update(self, model, event):
     match event:
-        case TouchPress(x=x, y=y):
+        case Press(pointer="touch", x=x, y=y):
             return replace(model, touch_start=(x, y))
 ```
 
@@ -834,13 +812,14 @@ Delivered when a renderer effect completes.
 ```python
 from plushie.events import EffectResult
 
-EffectResult(request_id="ef_1", status="ok", result=data)
-EffectResult(request_id="ef_1", status="cancelled")
-EffectResult(request_id="ef_1", status="error", error=reason)
+EffectResult(tag="import", status="ok", result=data)
+EffectResult(tag="import", status="cancelled")
+EffectResult(tag="import", status="error", error=reason)
 ```
 
-The `request_id` is the auto-generated effect ID (e.g. `"ef_1"`), not
-the effect kind name.
+The `tag` is the string you passed to the effect function (e.g.
+`effects.file_open("import", ...)`). Use it to distinguish responses
+when you issue more than one effect.
 
 <!-- test: TestEffectResultMatch -- keep this code block in sync with the test -->
 ```python
@@ -849,9 +828,9 @@ from plushie.events import EffectResult
 
 def update(self, model, event):
     match event:
-        case EffectResult(status="ok", result=result):
+        case EffectResult(tag="import", status="ok", result=result):
             return model, load_file(result["path"])
-        case EffectResult(status="error", error=reason):
+        case EffectResult(tag="import", status="error", error=reason):
             return replace(model, error=reason)
 ```
 

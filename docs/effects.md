@@ -19,7 +19,7 @@ renderer (decide whether to execute it). Keep the renderer dumb.
 
 ### Python side
 
-<!-- test: test_file_open, test_effect_id_extractable, test_effect_id_auto_generated, test_all_effects_return_command_type -- keep this code block in sync with the test -->
+<!-- test: test_file_open, test_effect_tag_in_payload, test_effect_id_auto_generated, test_all_effects_return_command_type -- keep this code block in sync with the test -->
 ```python
 from dataclasses import replace
 from plushie import effects
@@ -29,28 +29,32 @@ def update(self, model, event):
     match event:
         case Click(id="open_file"):
             cmd = effects.file_open(
+                "open",
                 title="Choose a file",
                 filters=[("Text files", "*.txt"), ("All files", "*")],
             )
             return model, cmd
 
-        case EffectResult(status="ok", result={"path": path}):
+        case EffectResult(tag="open", status="ok", result={"path": path}):
             return replace(model, file_path=path)
 
-        case EffectResult(status="error"):
+        case EffectResult(tag="open", status="error"):
             return model
 ```
 
-Every effect function returns a `Command` dataclass. The command must be
-returned from `update` as part of a `(model, command)` tuple. Discarding
-it silently does nothing. The effect ID is auto-generated (e.g. `"ef_1"`)
-and embedded in the command payload. You can extract it via
-`cmd.payload["id"]` if you need to correlate a specific response.
+Every effect function takes a `tag` as its first positional argument
+and returns a `Command` dataclass. The command must be returned from
+`update` as part of a `(model, command)` tuple. Discarding it silently
+does nothing. The `tag` is stored on the command payload as
+`cmd.payload["tag"]` and echoed back on the response so you can
+correlate responses when you issue multiple concurrent effects. A
+unique internal id is also auto-generated (e.g. `"ef_1"`) and stored at
+`cmd.payload["id"]`.
 
 Result keys come from the renderer as string keys (e.g.
 `{"path": path}`, not attribute access).
 
-The result arrives as an `EffectResult(request_id=id, status=status, ...)`
+The result arrives as an `EffectResult(tag=tag, status=status, ...)`
 event in a subsequent `update` call. Effects are asynchronous; the model
 is not blocked waiting for the result.
 
@@ -96,6 +100,7 @@ from plushie import effects
 
 # Single file open
 effects.file_open(
+    "open",
     title="Open Project",
     directory="/home/user/projects",
     filters=[("Python", "*.py"), ("All files", "*")],
@@ -103,22 +108,24 @@ effects.file_open(
 
 # Multiple file open
 effects.file_open_multiple(
+    "multi",
     title="Select images",
     filters=[("Images", "*.png"), ("JPEG", "*.jpg")],
 )
 
 # Save file
 effects.file_save(
+    "save",
     title="Save As",
     default_name="untitled.txt",
     filters=[("Text files", "*.txt")],
 )
 
 # Directory picker
-effects.directory_select(title="Choose output directory")
+effects.directory_select("dir", title="Choose output directory")
 
 # Multiple directory picker
-effects.directory_select_multiple(title="Select folders")
+effects.directory_select_multiple("dirs", title="Select folders")
 ```
 
 ### Clipboard
@@ -128,19 +135,19 @@ effects.directory_select_multiple(title="Select folders")
 from plushie import effects
 
 # Read/write plain text
-effects.clipboard_read()
-effects.clipboard_write("Hello, clipboard")
+effects.clipboard_read("clip")
+effects.clipboard_write("clip", "Hello, clipboard")
 
 # Read/write HTML
-effects.clipboard_read_html()
-effects.clipboard_write_html("<b>Bold</b>", alt_text="Bold")
+effects.clipboard_read_html("clip")
+effects.clipboard_write_html("clip", "<b>Bold</b>", alt_text="Bold")
 
 # Clear
-effects.clipboard_clear()
+effects.clipboard_clear("clip")
 
 # Primary selection (Linux middle-click paste)
-effects.clipboard_read_primary()
-effects.clipboard_write_primary("Selected text")
+effects.clipboard_read_primary("clip")
+effects.clipboard_write_primary("clip", "Selected text")
 ```
 
 ### Notifications
@@ -150,6 +157,7 @@ effects.clipboard_write_primary("Selected text")
 from plushie import effects
 
 effects.notification(
+    "notify",
     "Build Complete",
     "Your project compiled successfully.",
     icon="dialog-information",
@@ -180,7 +188,7 @@ For effects not yet wrapped in a convenience function, use the generic
 ```python
 from plushie import effects
 
-cmd = effects.request("some_new_effect", foo="bar", baz=42)
+cmd = effects.request("custom", "some_new_effect", foo="bar", baz=42)
 ```
 
 ## Effects are not commands
