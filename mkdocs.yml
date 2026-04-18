@@ -71,3 +71,4 @@ nav:
   - Reference:
     - CLI: cli.md
     - Standalone Executables: standalone.md
+    - Versioning: versioning.md

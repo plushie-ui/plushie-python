@@ -75,9 +75,10 @@ Your `init`/`update`/`view` code does not change at all.
 
 ### Prerequisites
 
-- **Your laptop**: the `plushie` renderer installed and on your PATH.
-  Download from the GitHub releases page, or build with
-  `cargo install plushie` if you have a Rust toolchain.
+- **Your laptop**: the `plushie-renderer` binary installed and on your
+  PATH. Download with `python -m plushie download`, or build from
+  source with `python -m plushie build` via
+  [cargo-plushie](versioning.md) if you have a Rust toolchain.
 - **The server**: your Python project deployed with its dependencies.
   The server does NOT need the renderer or a display server.
 - **SSH access**: you can `ssh user@server` from your laptop.

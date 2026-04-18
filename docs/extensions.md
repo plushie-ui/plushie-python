@@ -508,6 +508,15 @@ events in order.
 
 ## Build system
 
+The Python SDK delegates renderer workspace generation to the
+[`cargo-plushie`](https://github.com/plushie-ui/plushie-rust/blob/main/docs/build-tool.md)
+build tool. `python -m plushie build` reads widget declarations from
+`pyproject.toml`, injects the required
+`[package.metadata.plushie.widget]` block into each widget crate's
+`Cargo.toml`, writes a thin virtual app `Cargo.toml` under
+`build/plushie-renderer-spec/`, and shells out to
+`cargo plushie build`.
+
 ### Configuration
 
 Extensions are configured in `pyproject.toml` under `[tool.plushie]`
@@ -530,40 +539,30 @@ rust_constructor = "my_gauge::GaugeExtension::new()"
 ```
 
 The `source_path` and `build_name` keys are optional. They can also
-be set via `PLUSHIE_RUST_SOURCE_PATH` environment variable and the
+be set via the `PLUSHIE_RUST_SOURCE_PATH` environment variable and the
 `--name` CLI flag respectively.
-
-The build command reads this config, validates extensions (no
-duplicate widget types or crate names via `validate_all()`),
-generates a Cargo workspace, runs `cargo build`, and installs the
-binary to the standard download location.
 
 ```bash
 python -m plushie build --release
 ```
 
-### generate_cargo_toml
+### Installing cargo-plushie
 
-Generate a Cargo workspace manifest programmatically:
+`cargo-plushie` ships at the same version as the plushie-rust release
+this SDK targets (`PLUSHIE_RUST_VERSION` in `plushie.binary`). Install
+it with:
 
-```python
-from plushie.extension import generate_cargo_toml
-
-cargo_content = generate_cargo_toml([sparkline_def, gauge_def], binary_name="my-plushie")
+```bash
+cargo install cargo-plushie --version <PLUSHIE_RUST_VERSION> --locked
 ```
 
-### generate_main_rs
+Or for local development against an in-flight plushie-rust checkout,
+set `PLUSHIE_RUST_SOURCE_PATH` and the SDK runs the tool from source:
 
-Generate the Rust entry point that registers all extensions:
-
-```python
-from plushie.extension import generate_main_rs
-
-main_content = generate_main_rs([sparkline_def, gauge_def])
+```bash
+export PLUSHIE_RUST_SOURCE_PATH=~/projects/plushie-rust
+python -m plushie build --release
 ```
-
-The generated `main.rs` creates a `PlushieAppBuilder`, registers each
-extension via `.extension()`, and calls `run()`.
 
 
 ## Testing extensions

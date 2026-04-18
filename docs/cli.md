@@ -109,16 +109,19 @@ below.
 
 ## build
 
-Build the plushie binary from source, optionally with native Rust
-extensions.
+Build a custom plushie renderer binary wired to your native widgets.
+The command delegates workspace generation and the underlying
+`cargo build` to `cargo-plushie`; see
+[Versioning](versioning.md) for how to install the matching
+build tool.
 
 ```bash
-python -m plushie build                       # stock binary from source
+python -m plushie build                       # build with extensions
 python -m plushie build --release             # optimized build
 python -m plushie build --wasm                # WASM renderer
 python -m plushie build --bin --wasm          # both
-python -m plushie build --config ext.json     # with extensions
-python -m plushie build --verbose             # show cargo output
+python -m plushie build --config ext.json     # JSON-configured extensions
+python -m plushie build --verbose             # stream cargo output
 ```
 
 | Flag | Description |
@@ -128,31 +131,21 @@ python -m plushie build --verbose             # show cargo output
 | `--release` | Build with optimizations (default is debug). |
 | `--verbose` | Print full cargo output on successful builds. |
 | `--config CONFIG` | Path to extensions config JSON (default: `plushie_extensions.json`). |
-| `--name NAME` | Output binary name (default: `plushie-custom`). |
+| `--name NAME` | Output binary name (default: `plushie-renderer`). |
 
 ### Prerequisites
 
 - **Rust** 1.92+ (install via [rustup](https://rustup.rs/))
-- **PLUSHIE_RUST_SOURCE_PATH** environment variable pointing to the
-  plushie Rust source checkout (for stock builds)
-- **wasm-pack** (for `--wasm` only) - install via
+- **cargo-plushie**, installed at the matching `PLUSHIE_RUST_VERSION`
+  (`cargo install cargo-plushie --version <PLUSHIE_RUST_VERSION> --locked`).
+  Alternatively, set `PLUSHIE_RUST_SOURCE_PATH` to a plushie-rust
+  checkout; the SDK then invokes `cargo run -p cargo-plushie`.
+- **wasm-pack** (for `--wasm` only), install via
   [wasm-pack.rustwasm.github.io](https://rustwasm.github.io/wasm-pack/)
-
-### Stock build (no extensions)
-
-When no extensions config is found, builds the vanilla plushie binary
-from the Rust source at `PLUSHIE_RUST_SOURCE_PATH`:
-
-```bash
-export PLUSHIE_RUST_SOURCE_PATH=~/projects/plushie
-python -m plushie build --release
-```
-
-The built binary is installed to the standard download location.
 
 ### Extension build
 
-Extensions can be configured in `pyproject.toml` (preferred) or a
+Extensions are configured in `pyproject.toml` (preferred) or a
 JSON file:
 
 **pyproject.toml** (recommended):
@@ -188,16 +181,21 @@ Then build:
 python -m plushie build --release
 ```
 
-The build validates extensions (no duplicate widget types or crate
-names), generates a Cargo workspace, runs `cargo build`, and
-installs the built binary to the standard download location so
+The SDK injects a `[package.metadata.plushie.widget]` block into each
+widget crate's `Cargo.toml`, writes a virtual app `Cargo.toml` under
+`build/plushie-renderer-spec/`, and shells out to
+`cargo plushie build --manifest-path <spec>/Cargo.toml`. The
+resulting binary is copied into the standard download location so
 `resolve()` finds it automatically.
 
 Configuration resolution:
-- `--name` flag > `build_name` from pyproject.toml > `"plushie-custom"`
+
+- `--name` flag > `build_name` from pyproject.toml > `"plushie-renderer"`
 - `PLUSHIE_RUST_SOURCE_PATH` env > `source_path` from pyproject.toml
 
-See [Extensions](extensions.md) for the full guide.
+See [Extensions](extensions.md) for the full guide and
+[Versioning](versioning.md) for how SDK versions relate to
+plushie-rust releases.
 
 
 ## Project configuration

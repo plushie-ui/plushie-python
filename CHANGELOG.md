@@ -11,6 +11,17 @@
   "close"` rather than a `widget_op` with `op: "close_window"`.
   Callers that inspected `cmd.type` or `cmd.payload["op"]` must
   migrate to the new shape.
+- Environment variable renamed: `PLUSHIE_SOURCE_PATH` is now
+  `PLUSHIE_RUST_SOURCE_PATH`. The old name is no longer recognized.
+- Python constant renamed: `plushie.binary.BINARY_VERSION` is now
+  `plushie.binary.PLUSHIE_RUST_VERSION`.
+- `python -m plushie build` now delegates to `cargo-plushie`. Install
+  the matching tool with
+  `cargo install cargo-plushie --version <PLUSHIE_RUST_VERSION> --locked`,
+  or set `PLUSHIE_RUST_SOURCE_PATH` for local development. The
+  `generate_cargo_toml`, `generate_main_rs`, and `validate_all`
+  helpers in `plushie.native_widget` are gone; cross-widget
+  collision detection moved to cargo-plushie.
 
 ### Added
 
@@ -18,6 +29,11 @@
   Mirrored to Python logging at the reported severity and delivered
   through the runtime as a `RendererDiagnostic` event so hosts can
   inspect it programmatically via `get_diagnostics()`.
+- `plushie.cargo_plushie.resolve_cargo_plushie()` helper that returns
+  the cargo-plushie invocation (either from `PLUSHIE_RUST_SOURCE_PATH`
+  or from a PATH install with version check).
+- `plushie.renderer_build` module orchestrating the new cargo-plushie
+  build flow.
 
 ## v0.5.0 - 2026-03-23
 
