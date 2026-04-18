@@ -252,13 +252,20 @@ def _parse_extensions(raw: list[dict[str, Any]]) -> list[NativeWidget]:
 
 
 def _cmd_build(args: argparse.Namespace) -> None:
-    """Handle the ``build`` command."""
-    import os
-    import shutil
-    import stat
-    import subprocess
+    """Handle the ``build`` command.
 
-    from plushie.binary import check_rust_version
+    Delegates renderer workspace generation, widget discovery, and the
+    underlying ``cargo build`` invocation to ``cargo-plushie``. The
+    Python SDK's role is now limited to: reading widget declarations
+    from ``pyproject.toml``, injecting the matching
+    ``[package.metadata.plushie.widget]`` blocks into each widget
+    crate's ``Cargo.toml``, writing a virtual app ``Cargo.toml``
+    carrying ``[package.metadata.plushie]``, and copying the resulting
+    binary into the standard download location.
+    """
+    import os
+
+    from plushie.renderer_build import build
 
     release = args.release
 
@@ -284,14 +291,8 @@ def _cmd_build(args: argparse.Namespace) -> None:
     if not want_bin:
         return
 
-    check_rust_version()
-
-    from plushie.native_widget import generate_cargo_toml, generate_main_rs
-
-    # Extension resolution order:
-    # 1. pyproject.toml [tool.plushie] extensions
-    # 2. JSON config file (--config flag or plushie_extensions.json)
-    # 3. Stock build (no extensions)
+    # Widget discovery from pyproject.toml. The JSON-file fallback is
+    # retained so existing projects keep working.
     extensions: list[NativeWidget] = []
 
     pyproject_extensions = pyproject_cfg.get("extensions", [])
@@ -310,231 +311,22 @@ def _cmd_build(args: argparse.Namespace) -> None:
         pyproject_cfg.get("source_path"),
     )
 
-    if not extensions:
-        # Stock build (no extensions). Build vanilla binary from source
-        if source is None:
-            config_path = args.config or "plushie_extensions.json"
-            print("no extensions found and PLUSHIE_RUST_SOURCE_PATH not set")
-            print(f"  looked for extension config at: {config_path}")
-            print("  looked for [tool.plushie] in pyproject.toml")
-            print("")
-            print("to build with extensions:")
-            print("  add [tool.plushie] extensions to pyproject.toml")
-            print(f"  or create {config_path} with extension definitions")
-            print("")
-            print("to build the stock binary from source:")
-            print("  export PLUSHIE_RUST_SOURCE_PATH=/path/to/plushie")
-            print("  or set source_path in [tool.plushie]")
-            raise SystemExit(1)
-
-        # Build stock binary from source
-        plushie_crate = os.path.join(source, "crates", "plushie-renderer")
-        if not os.path.isdir(plushie_crate):
-            print(
-                f"plushie-renderer crate not found at {plushie_crate}", file=sys.stderr
-            )
-            raise SystemExit(1)
-
-        cargo_args = ["cargo", "build"]
-        if release:
-            cargo_args.append("--release")
-        profile = "release" if release else "debug"
-        verbose = getattr(args, "verbose", False)
-
-        print(f"building stock binary{' (release)' if release else ''}...")
-        result = subprocess.run(
-            cargo_args,
-            cwd=plushie_crate,
-            capture_output=not verbose,
-            check=False,
-        )
-        if result.returncode != 0:
-            if not verbose and result.stderr:
-                sys.stderr.buffer.write(result.stderr)
-            print("build failed", file=sys.stderr)
-            raise SystemExit(result.returncode)
-
-        # Install to standard download location
-        from plushie.binary import download_dir, download_name
-
-        bin_ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
-        built = os.path.join(source, "target", profile, f"plushie-renderer{bin_ext}")
-        if not os.path.isfile(built):
-            print(
-                f"build succeeded but binary not found at {built}",
-                file=sys.stderr,
-            )
-            raise SystemExit(1)
-        dest_dir = download_dir()
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        dest = dest_dir / download_name()
-        shutil.copy2(built, str(dest))
-        dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
-        print(f"installed: {dest}")
-
-        # Also install to bin_file if configured in pyproject.toml
-        bin_file = pyproject_cfg.get("bin_file")
-        if bin_file:
-            bin_path = Path(bin_file)
-            bin_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(built, str(bin_path))
-            bin_path.chmod(bin_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
-            print(f"installed: {bin_path}")
-        return
-
-    # Validate extensions
-    from plushie.native_widget import validate_all
-
-    errors = validate_all(extensions)
-    if errors:
-        print("extension validation failed:", file=sys.stderr)
-        for err in errors:
-            print(f"  - {err}", file=sys.stderr)
-        raise SystemExit(1)
-
     # binary_name resolution: --name flag > pyproject.toml build_name > default
     binary_name = args.name or pyproject_cfg.get("build_name") or "plushie-renderer"
 
-    # Check extension crate plushie-widget-sdk version compatibility
-    _check_extension_versions(extensions)
-
-    # Generate build files (workspace at _plushie_build/ in the project root).
-    # Must be at the project root level so extension crates (e.g. native/gauge/)
-    # are hierarchically below the workspace root, which Cargo requires.
-    build_dir = "_plushie_build"
-    os.makedirs(os.path.join(build_dir, "src"), exist_ok=True)
-
-    # Resolve source_path for local plushie-widget-sdk dependency
-    source = os.environ.get("PLUSHIE_RUST_SOURCE_PATH") or pyproject_cfg.get(
-        "source_path"
-    )
-
-    cargo_toml = generate_cargo_toml(
-        extensions,
-        binary_name=binary_name,
-        build_dir=build_dir,
-        source_path=source,
-    )
-    main_rs = generate_main_rs(extensions)
-
-    cargo_path = os.path.join(build_dir, "Cargo.toml")
-    main_path = os.path.join(build_dir, "src", "main.rs")
-
-    with open(cargo_path, "w") as f:
-        f.write(cargo_toml)
-    with open(main_path, "w") as f:
-        f.write(main_rs)
-
-    print(f"generated: {cargo_path}")
-    print(f"generated: {main_path}")
-
-    # Run cargo build
-    cargo_args = ["cargo", "build"]
-    if release:
-        cargo_args.append("--release")
-    profile = "release" if release else "debug"
+    bin_file = pyproject_cfg.get("bin_file")
     verbose = getattr(args, "verbose", False)
 
-    print(f"building{' (release)' if release else ''}...")
-    result = subprocess.run(
-        cargo_args,
-        cwd=build_dir,
-        capture_output=not verbose,
-        check=False,
+    exit_code = build(
+        extensions,
+        binary_name=binary_name,
+        source_path=source,
+        release=release,
+        verbose=verbose,
+        bin_file=bin_file,
     )
-    if result.returncode != 0:
-        # Always show output on failure
-        if not verbose and result.stdout:
-            sys.stdout.buffer.write(result.stdout)
-        if not verbose and result.stderr:
-            sys.stderr.buffer.write(result.stderr)
-        print("build failed", file=sys.stderr)
-        raise SystemExit(result.returncode)
-
-    if verbose and result.stdout:
-        sys.stdout.buffer.write(result.stdout)
-
-    # Install to standard download location so resolve() finds it
-    from plushie.binary import download_dir, download_name
-
-    bin_ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
-    built_path = os.path.join(build_dir, "target", profile, f"{binary_name}{bin_ext}")
-    if os.path.isfile(built_path):
-        dest_dir = download_dir()
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        dest = dest_dir / download_name()
-        shutil.copy2(built_path, str(dest))
-        dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
-        print(f"installed: {dest}")
-
-        # Also install to bin_file if configured in pyproject.toml
-        bin_file = pyproject_cfg.get("bin_file")
-        if bin_file:
-            bin_path = Path(bin_file)
-            bin_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(built_path, str(bin_path))
-            bin_path.chmod(bin_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
-            print(f"installed: {bin_path}")
-    else:
-        print(f"built: {built_path}")
-        print("warning: could not install, binary not found at expected path")
-
-
-def _check_extension_versions(extensions: list[NativeWidget]) -> None:
-    """Check extension crate plushie-widget-sdk version compatibility.
-
-    Reads each extension's Cargo.toml, extracts the plushie-widget-sdk
-    dependency version, and warns if the major.minor doesn't match
-    the SDK's binary version.  A mismatch would cause a cryptic Cargo
-    resolution failure. This gives a clear warning instead.
-    """
-    import os
-    import re
-
-    from plushie.binary import PLUSHIE_RUST_VERSION
-
-    try:
-        parts = PLUSHIE_RUST_VERSION.split(".")
-        expected_major_minor = (int(parts[0]), int(parts[1]))
-    except (IndexError, ValueError):
-        return
-
-    for ext in extensions:
-        cargo_path = os.path.join(ext.rust_crate, "Cargo.toml")
-        if not os.path.isfile(cargo_path):
-            continue
-
-        try:
-            with open(cargo_path) as f:
-                content = f.read()
-        except OSError:
-            continue
-
-        # Match: plushie-widget-sdk = "0.6" or plushie-widget-sdk = { version = "0.6", ... }
-        match = re.search(
-            r'plushie-widget-sdk\s*=\s*(?:"([^"]+)"|\{[^}]*version\s*=\s*"([^"]+)")',
-            content,
-        )
-        if not match:
-            continue
-
-        dep_version = match.group(1) or match.group(2)
-        # Strip leading operators (^, ~, >=, =)
-        base = re.sub(r"^[^0-9]*", "", dep_version)
-
-        try:
-            dep_parts = base.split(".")
-            dep_major_minor = (int(dep_parts[0]), int(dep_parts[1]))
-        except (IndexError, ValueError):
-            continue
-
-        if dep_major_minor != expected_major_minor:
-            print(
-                f"warning: extension {ext.kind!r} depends on plushie-widget-sdk "
-                f"{dep_version}, but this SDK targets {PLUSHIE_RUST_VERSION}. "
-                f"Update the extension crate or the SDK.",
-                file=sys.stderr,
-            )
+    if exit_code != 0:
+        raise SystemExit(exit_code)
 
 
 def _cmd_inspect(args: argparse.Namespace) -> None:

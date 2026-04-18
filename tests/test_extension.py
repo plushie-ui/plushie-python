@@ -11,11 +11,8 @@ from plushie.native_widget import (
     build_command,
     build_node,
     command_names,
-    generate_cargo_toml,
-    generate_main_rs,
     prop_names,
     validate,
-    validate_all,
 )
 
 # -- Fixtures ----------------------------------------------------------------
@@ -35,22 +32,6 @@ def _gauge_def() -> NativeWidget:
         commands=[
             CommandDef("set_value", [ParamDef("value", "number")]),
             CommandDef("reset"),
-        ],
-    )
-
-
-def _sparkline_def() -> NativeWidget:
-    return NativeWidget(
-        kind="sparkline",
-        rust_crate="native/my_sparkline",
-        rust_constructor="my_sparkline::SparklineExtension::new()",
-        props=[
-            PropDef("data", "number"),
-            PropDef("color", "color"),
-            PropDef("capacity", "number"),
-        ],
-        commands=[
-            CommandDef("push", [ParamDef("value", "number")]),
         ],
     )
 
@@ -207,68 +188,9 @@ class TestValidate:
         assert len(errors) == 3
 
 
-class TestValidateAll:
-    def test_valid_pair(self) -> None:
-        assert validate_all([_gauge_def(), _sparkline_def()]) == []
-
-    def test_empty_list(self) -> None:
-        assert validate_all([]) == []
-
-    def test_single_valid(self) -> None:
-        assert validate_all([_gauge_def()]) == []
-
-    def test_kind_collision(self) -> None:
-        a = _gauge_def()
-        b = NativeWidget(
-            kind="gauge",
-            rust_crate="native/other_gauge",
-            rust_constructor="other::Gauge::new()",
-        )
-        errors = validate_all([a, b])
-        assert any("gauge" in e and "claimed by both" in e for e in errors)
-
-    def test_crate_name_collision(self) -> None:
-        a = NativeWidget(
-            kind="foo",
-            rust_crate="native/shared",
-            rust_constructor="shared::Foo::new()",
-        )
-        b = NativeWidget(
-            kind="bar",
-            rust_crate="vendor/shared",
-            rust_constructor="shared::Bar::new()",
-        )
-        errors = validate_all([a, b])
-        assert any("crate name" in e and "shared" in e for e in errors)
-
-    def test_per_extension_errors_propagated(self) -> None:
-        bad = NativeWidget(
-            kind="",
-            rust_crate="native/bad",
-            rust_constructor="bad::B::new()",
-            props=[PropDef("id", "string")],
-        )
-        errors = validate_all([bad])
-        assert any("kind must not be empty" in e for e in errors)
-        assert any("reserved" in e for e in errors)
-
-    def test_both_collisions_reported(self) -> None:
-        """Two extensions with the same kind AND same crate name."""
-        a = NativeWidget(
-            kind="widget",
-            rust_crate="native/same_crate",
-            rust_constructor="same_crate::A::new()",
-        )
-        b = NativeWidget(
-            kind="widget",
-            rust_crate="vendor/same_crate",
-            rust_constructor="same_crate::B::new()",
-        )
-        errors = validate_all([a, b])
-        kind_errors = [e for e in errors if "claimed by both" in e]
-        crate_errors = [e for e in errors if "crate name" in e]
-        assert len(kind_errors) >= 1
-        assert len(crate_errors) >= 1
+# Cross-widget collision checks (duplicate kinds, duplicate crate
+# basenames) live in cargo-plushie now. The Python SDK only retains
+# per-widget sanity checks in ``validate``.
 
 
 # -- Helper functions ---------------------------------------------------------
@@ -365,69 +287,6 @@ class TestBuildCommand:
         assert via_ext == via_cmd
 
 
-# -- Cargo generation ---------------------------------------------------------
-
-
-class TestGenerateCargoToml:
-    def test_single_extension(self) -> None:
-        toml = generate_cargo_toml([_gauge_def()])
-        assert '"native/my_gauge"' in toml
-        assert 'name = "plushie-renderer"' in toml
-        assert 'my_gauge = { path = "native/my_gauge" }' in toml
-
-    def test_custom_binary_name(self) -> None:
-        toml = generate_cargo_toml([_gauge_def()], binary_name="my-app")
-        assert 'name = "my-app"' in toml
-
-    def test_multiple_extensions(self) -> None:
-        toml = generate_cargo_toml([_gauge_def(), _sparkline_def()])
-        assert '"native/my_gauge"' in toml
-        assert '"native/my_sparkline"' in toml
-        assert "my_gauge" in toml
-        assert "my_sparkline" in toml
-
-    def test_package_structure(self) -> None:
-        toml = generate_cargo_toml([_gauge_def()])
-        assert "[package]" in toml
-        assert "src/main.rs" in toml
-        assert "plushie-widget-sdk" in toml
-        assert "plushie-renderer =" in toml  # runner crate dep
-
-    def test_source_path_local_deps(self) -> None:
-        toml = generate_cargo_toml(
-            [_gauge_def()], source_path="/tmp/plushie", build_dir="/tmp/build"
-        )
-        assert "plushie-widget-sdk = { path =" in toml
-        assert "plushie-renderer = { path =" in toml
-        assert "git" not in toml
-
-    def test_no_source_path_crates_io_deps(self) -> None:
-        from plushie.binary import PLUSHIE_RUST_VERSION
-
-        toml = generate_cargo_toml([_gauge_def()])
-        assert f'plushie-widget-sdk = "{PLUSHIE_RUST_VERSION}"' in toml
-        assert f'plushie-renderer = "{PLUSHIE_RUST_VERSION}"' in toml
-
-
-# -- main.rs generation ------------------------------------------------------
-
-
-class TestGenerateMainRs:
-    def test_single_extension(self) -> None:
-        rs = generate_main_rs([_gauge_def()])
-        assert "my_gauge::GaugeExtension::new()" in rs
-        assert "PlushieAppBuilder::new()" in rs
-        assert ".widget(" in rs
-        assert "fn main() -> plushie_widget_sdk::iced::Result" in rs
-
-    def test_multiple_extensions(self) -> None:
-        rs = generate_main_rs([_gauge_def(), _sparkline_def()])
-        assert "my_gauge::GaugeExtension::new()" in rs
-        assert "my_sparkline::SparklineExtension::new()" in rs
-        # Both widgets registered via .widget().
-        assert rs.count(".widget(") == 2
-
-    def test_empty_extensions(self) -> None:
-        rs = generate_main_rs([])
-        assert "PlushieAppBuilder::new()" in rs
-        assert ".widget(" not in rs
+# Workspace Cargo.toml and main.rs generation moved to cargo-plushie.
+# Renderer spec generation on the Python side is covered by
+# tests/test_renderer_build.py.
