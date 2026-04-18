@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Breaking changes
+
+- `Command.load_font(data)` now requires a leading `family` argument:
+  `Command.load_font(family, data)`. The wire payload carries both
+  fields under the `load_font` widget_op.
+- `Command.close_window(window_id)` is now a `window_op` with `op:
+  "close"` rather than a `widget_op` with `op: "close_window"`.
+  Callers that inspected `cmd.type` or `cmd.payload["op"]` must
+  migrate to the new shape.
+
+### Added
+
+- Decoder support for the new top-level `diagnostic` wire message.
+  Mirrored to Python logging at the reported severity and delivered
+  through the runtime as a `RendererDiagnostic` event so hosts can
+  inspect it programmatically via `get_diagnostics()`.
+
 ## v0.5.0 - 2026-03-23
 
 Initial release of the plushie Python SDK. Full feature parity with

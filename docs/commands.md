@@ -253,7 +253,7 @@ Command.announce(text)           # Announce text to screen readers
 
 <!-- test: test_command_load_font -- keep this code block in sync with the test -->
 ```python
-Command.load_font(data)          # Load a font at runtime from raw TTF/OTF bytes
+Command.load_font(family, data)  # Load a font at runtime from raw TTF/OTF bytes
 ```
 
 ##### Renderer queries

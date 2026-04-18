@@ -110,7 +110,9 @@ class ElementNotFoundError(Exception):
     """Raised when a query expected to find an element returns nothing."""
 
 
-_PLACEHOLDER_WIDGETS = frozenset({"text_input", "text_editor", "combo_box", "pick_list"})
+_PLACEHOLDER_WIDGETS = frozenset(
+    {"text_input", "text_editor", "combo_box", "pick_list"}
+)
 _ALT_WIDGETS = frozenset({"image", "svg", "qr_code"})
 
 

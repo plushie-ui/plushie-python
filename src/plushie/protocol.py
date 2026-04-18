@@ -12,6 +12,7 @@ type, field, and value.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from plushie.events import (
@@ -59,6 +60,7 @@ from plushie.events import (
     Press,
     RawEvent,
     Release,
+    RendererDiagnostic,
     RendererError,
     Resize,
     Scroll,
@@ -92,6 +94,9 @@ from plushie.types import HelloInfo, KeyModifiers
 
 PROTOCOL_VERSION: int = 1
 """Current protocol version."""
+
+logger = logging.getLogger("plushie.protocol")
+"""Module logger. Used to mirror renderer diagnostics to Python logging."""
 
 
 def _strip_internal_meta(value: Any) -> Any:
@@ -891,6 +896,7 @@ def decode_message(
     | TreeHash
     | DuplicateNodeIds
     | Announce
+    | RendererDiagnostic
     | SessionError
     | SessionClosed
     | EffectStubAck
@@ -925,6 +931,9 @@ def decode_message(
 
     if msg_type == "event":
         return _decode_event(msg)
+
+    if msg_type == "diagnostic":
+        return _decode_diagnostic(msg)
 
     if msg_type in ("effect_stub_register_ack", "effect_stub_unregister_ack"):
         return EffectStubAck(
@@ -1825,6 +1834,29 @@ def _decode_op_query_response(msg: dict[str, Any]) -> Any:
 
     # Unknown op_query_response kind
     return msg
+
+
+def _decode_diagnostic(msg: dict[str, Any]) -> RendererDiagnostic:
+    """Decode a top-level ``diagnostic`` wire message.
+
+    Mirrors the diagnostic to the Python logging module at the matching
+    severity, then returns a ``RendererDiagnostic`` so the runtime can
+    expose it programmatically.
+    """
+    session = str(msg.get("session", "") or "")
+    level = str(msg.get("level", "warn") or "warn")
+    raw = msg.get("diagnostic")
+    details: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    kind = str(details.get("kind", "") or "")
+
+    log_fn = {
+        "error": logger.error,
+        "warn": logger.warning,
+        "info": logger.info,
+    }.get(level, logger.warning)
+    log_fn("renderer diagnostic [%s] %s: %s", level, kind, details)
+
+    return RendererDiagnostic(session=session, level=level, kind=kind, details=details)
 
 
 def _opt_float(val: Any) -> float | None:

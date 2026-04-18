@@ -19,9 +19,9 @@ Categories:
   ``pane_split``, ``pane_close``, ``pane_swap``, ``pane_maximize``,
   ``pane_restore``, ``widget_command``, ``widget_commands``
 - **Widget ops** (global): ``focus_next``, ``focus_previous``,
-  ``close_window``, ``announce``, ``load_font``, ``tree_hash_query``,
+  ``announce``, ``load_font``, ``tree_hash_query``,
   ``find_focused_query``, ``list_images_query``, ``clear_images``
-- **Window ops**: ``resize_window``, ``move_window``,
+- **Window ops**: ``close_window``, ``resize_window``, ``move_window``,
   ``maximize_window``, ``minimize_window``, ``set_window_mode``,
   ``toggle_maximize``, ``toggle_decorations``, ``focus_window``,
   ``set_window_level``, ``drag_window``, ``drag_resize_window``,
@@ -382,8 +382,8 @@ class Command:
     def close_window(window_id: str) -> Command:
         """Close the window identified by *window_id*."""
         return Command(
-            type="widget_op",
-            payload={"op": "close_window", "window_id": window_id},
+            type="window_op",
+            payload={"op": "close", "window_id": window_id},
         )
 
     @staticmethod
@@ -407,9 +407,18 @@ class Command:
         )
 
     @staticmethod
-    def load_font(data: bytes) -> Command:
-        """Load a font at runtime from raw TrueType or OpenType binary data."""
-        return Command(type="widget_op", payload={"op": "load_font", "data": data})
+    def load_font(family: str, data: bytes) -> Command:
+        """Load a font at runtime from raw TrueType or OpenType binary data.
+
+        Args:
+            family: Font family name the app will use to reference the
+                loaded font (e.g. ``"Inter"``).
+            data: Raw TrueType or OpenType binary font data.
+        """
+        return Command(
+            type="widget_op",
+            payload={"op": "load_font", "family": family, "data": data},
+        )
 
     @staticmethod
     def tree_hash_query(tag: str) -> Command:

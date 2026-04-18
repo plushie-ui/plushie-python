@@ -26,7 +26,12 @@ from typing import Any
 
 from plushie.app import App, AppBuilder
 from plushie.commands import Command
-from plushie.events import AsyncResult, Diagnostic, StreamChunk
+from plushie.events import (
+    AsyncResult,
+    Diagnostic,
+    RendererDiagnostic,
+    StreamChunk,
+)
 from plushie.protocol import encode_selector, parse_selector
 from plushie.testing.element import Element, ElementNotFoundError
 from plushie.testing.pool import SessionPool
@@ -464,8 +469,9 @@ class AppFixture[M]:
         # Register a session
         self._session_id = pool.register()
 
-        # Diagnostic collector
-        self._diagnostics: list[Diagnostic] = []
+        # Diagnostic collector (legacy canvas Diagnostic events and
+        # new top-level RendererDiagnostic wire messages)
+        self._diagnostics: list[Diagnostic | RendererDiagnostic] = []
 
         # Initialize
         raw = app.init()
@@ -1039,16 +1045,21 @@ class AppFixture[M]:
         """
         diagnostics = self._diagnostics
         if diagnostics:
-            details = "\n".join(
-                f"  - [{d.level}] {d.code}: {d.message}" for d in diagnostics
-            )
+            lines: list[str] = []
+            for d in diagnostics:
+                if isinstance(d, RendererDiagnostic):
+                    lines.append(f"  - [{d.level}] {d.kind}: {d.details}")
+                else:
+                    lines.append(f"  - [{d.level}] {d.code}: {d.message}")
+            details = "\n".join(lines)
             raise AssertionError(f"Expected no diagnostics, but found:\n{details}")
 
-    def get_diagnostics(self) -> list[Diagnostic]:
+    def get_diagnostics(self) -> list[Diagnostic | RendererDiagnostic]:
         """Return and clear accumulated diagnostic events.
 
         Returns:
-            List of ``Diagnostic`` events collected since the last call.
+            List of ``Diagnostic`` or ``RendererDiagnostic`` events
+            collected since the last call.
         """
         result = list(self._diagnostics)
         self._diagnostics.clear()
@@ -1283,7 +1294,7 @@ class AppFixture[M]:
             # Raw dict events we don't recognize; skip
             return
 
-        if isinstance(event, Diagnostic):
+        if isinstance(event, (Diagnostic, RendererDiagnostic)):
             self._diagnostics.append(event)
             return
 

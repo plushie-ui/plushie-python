@@ -51,6 +51,7 @@ from plushie.events import (
     build_renderer_exit,
 )
 from plushie.events import Diagnostic as _Diagnostic
+from plushie.events import RendererDiagnostic as _RendererDiagnostic
 from plushie.protocol import (
     advance_frame_msg,
     effect_msg,
@@ -717,6 +718,13 @@ class Runtime:
                 logger.warning(
                     "plushie runtime: prop validation diagnostic: %s", event.message
                 )
+                with self._diagnostics_lock:
+                    self._diagnostics.append(event)
+                continue
+
+            # Renderer diagnostic wire messages: intercept for programmatic
+            # observation. Logging already happened in protocol.decode_message.
+            if isinstance(event, _RendererDiagnostic):
                 with self._diagnostics_lock:
                     self._diagnostics.append(event)
                 continue

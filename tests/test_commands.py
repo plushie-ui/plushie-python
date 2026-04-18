@@ -142,8 +142,8 @@ class TestWidgetOps:
 
     def test_close_window(self) -> None:
         cmd = Command.close_window("main")
-        assert cmd.type == "widget_op"
-        assert cmd.payload["op"] == "close_window"
+        assert cmd.type == "window_op"
+        assert cmd.payload["op"] == "close"
         assert cmd.payload["window_id"] == "main"
 
     def test_announce(self) -> None:
@@ -152,8 +152,9 @@ class TestWidgetOps:
         assert cmd.payload["text"] == "Saved"
 
     def test_load_font(self) -> None:
-        cmd = Command.load_font(b"\x00\x01")
+        cmd = Command.load_font("Inter", b"\x00\x01")
         assert cmd.payload["op"] == "load_font"
+        assert cmd.payload["family"] == "Inter"
         assert cmd.payload["data"] == b"\x00\x01"
 
     def test_tree_hash_query(self) -> None:

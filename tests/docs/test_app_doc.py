@@ -379,8 +379,8 @@ class TestWindowEvents:
 
         assert isinstance(result, tuple)
         _, cmd = result
-        assert cmd.type == "widget_op"
-        assert cmd.payload["op"] == "close_window"
+        assert cmd.type == "window_op"
+        assert cmd.payload["op"] == "close"
 
     def test_set_window_mode_command(self) -> None:
         """Docs: Command.set_window_mode produces a window_op command."""

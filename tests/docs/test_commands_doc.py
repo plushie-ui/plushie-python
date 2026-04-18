@@ -308,8 +308,8 @@ def test_command_close_window():
     """Command.close_window() closes a window by ID."""
     cmd = Command.close_window("popup")
 
-    assert cmd.type == "widget_op"
-    assert cmd.payload["op"] == "close_window"
+    assert cmd.type == "window_op"
+    assert cmd.payload["op"] == "close"
     assert cmd.payload["window_id"] == "popup"
 
 
@@ -739,8 +739,9 @@ def test_command_announce():
 
 def test_command_load_font():
     """Command.load_font() loads a font from raw bytes."""
-    cmd = Command.load_font(b"\x00\x01\x00\x00")
+    cmd = Command.load_font("Inter", b"\x00\x01\x00\x00")
     assert cmd.payload["op"] == "load_font"
+    assert cmd.payload["family"] == "Inter"
 
 
 # ---------------------------------------------------------------------------
