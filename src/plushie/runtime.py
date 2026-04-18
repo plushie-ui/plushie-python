@@ -32,7 +32,7 @@ from queue import Empty, Queue
 from typing import Any
 
 from plushie.app import App, AppBuilder
-from plushie.binary import BINARY_VERSION
+from plushie.binary import PLUSHIE_RUST_VERSION
 from plushie.commands import Command
 from plushie.connection import Connection
 from plushie.effects import DEFAULT_TIMEOUTS
@@ -703,12 +703,12 @@ class Runtime:
                     event.backend,
                     event.transport,
                 )
-                if event.version != BINARY_VERSION:
+                if event.version != PLUSHIE_RUST_VERSION:
                     logger.warning(
                         "plushie runtime: renderer version %s does not "
                         "match SDK expected version %s",
                         event.version,
-                        BINARY_VERSION,
+                        PLUSHIE_RUST_VERSION,
                     )
                 self._reset_heartbeat()
                 continue

@@ -272,7 +272,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
         from plushie.binary import build_wasm
 
         source = os.environ.get(
-            "PLUSHIE_SOURCE_PATH",
+            "PLUSHIE_RUST_SOURCE_PATH",
             pyproject_cfg.get("source_path"),
         )
         wasm_dir_override = pyproject_cfg.get("wasm_dir")
@@ -306,7 +306,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
 
     # source_path resolution: env var > pyproject.toml
     source = os.environ.get(
-        "PLUSHIE_SOURCE_PATH",
+        "PLUSHIE_RUST_SOURCE_PATH",
         pyproject_cfg.get("source_path"),
     )
 
@@ -314,7 +314,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
         # Stock build (no extensions). Build vanilla binary from source
         if source is None:
             config_path = args.config or "plushie_extensions.json"
-            print("no extensions found and PLUSHIE_SOURCE_PATH not set")
+            print("no extensions found and PLUSHIE_RUST_SOURCE_PATH not set")
             print(f"  looked for extension config at: {config_path}")
             print("  looked for [tool.plushie] in pyproject.toml")
             print("")
@@ -323,7 +323,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
             print(f"  or create {config_path} with extension definitions")
             print("")
             print("to build the stock binary from source:")
-            print("  export PLUSHIE_SOURCE_PATH=/path/to/plushie")
+            print("  export PLUSHIE_RUST_SOURCE_PATH=/path/to/plushie")
             print("  or set source_path in [tool.plushie]")
             raise SystemExit(1)
 
@@ -405,7 +405,9 @@ def _cmd_build(args: argparse.Namespace) -> None:
     os.makedirs(os.path.join(build_dir, "src"), exist_ok=True)
 
     # Resolve source_path for local plushie-widget-sdk dependency
-    source = os.environ.get("PLUSHIE_SOURCE_PATH") or pyproject_cfg.get("source_path")
+    source = os.environ.get("PLUSHIE_RUST_SOURCE_PATH") or pyproject_cfg.get(
+        "source_path"
+    )
 
     cargo_toml = generate_cargo_toml(
         extensions,
@@ -489,10 +491,10 @@ def _check_extension_versions(extensions: list[NativeWidget]) -> None:
     import os
     import re
 
-    from plushie.binary import BINARY_VERSION
+    from plushie.binary import PLUSHIE_RUST_VERSION
 
     try:
-        parts = BINARY_VERSION.split(".")
+        parts = PLUSHIE_RUST_VERSION.split(".")
         expected_major_minor = (int(parts[0]), int(parts[1]))
     except (IndexError, ValueError):
         return
@@ -529,7 +531,7 @@ def _check_extension_versions(extensions: list[NativeWidget]) -> None:
         if dep_major_minor != expected_major_minor:
             print(
                 f"warning: extension {ext.kind!r} depends on plushie-widget-sdk "
-                f"{dep_version}, but this SDK targets {BINARY_VERSION}. "
+                f"{dep_version}, but this SDK targets {PLUSHIE_RUST_VERSION}. "
                 f"Update the extension crate or the SDK.",
                 file=sys.stderr,
             )
@@ -643,7 +645,7 @@ def _build_parser() -> argparse.ArgumentParser:
     download_parser.add_argument(
         "--version",
         default=None,
-        help="version to download (default: pinned BINARY_VERSION)",
+        help="version to download (default: pinned plushie-rust version)",
     )
     download_parser.add_argument(
         "--bin",

@@ -402,11 +402,11 @@ class TestGenerateCargoToml:
         assert "git" not in toml
 
     def test_no_source_path_crates_io_deps(self) -> None:
-        from plushie.binary import BINARY_VERSION
+        from plushie.binary import PLUSHIE_RUST_VERSION
 
         toml = generate_cargo_toml([_gauge_def()])
-        assert f'plushie-widget-sdk = "{BINARY_VERSION}"' in toml
-        assert f'plushie-renderer = "{BINARY_VERSION}"' in toml
+        assert f'plushie-widget-sdk = "{PLUSHIE_RUST_VERSION}"' in toml
+        assert f'plushie-renderer = "{PLUSHIE_RUST_VERSION}"' in toml
 
 
 # -- main.rs generation ------------------------------------------------------

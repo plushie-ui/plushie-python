@@ -366,7 +366,7 @@ def generate_cargo_toml(
     """
     import os
 
-    from plushie.binary import BINARY_VERSION
+    from plushie.binary import PLUSHIE_RUST_VERSION
 
     deps = []
     for ext in widgets:
@@ -410,8 +410,8 @@ def generate_cargo_toml(
             f"{extra_block}\n"
         )
     else:
-        core_dep = f'plushie-widget-sdk = "{BINARY_VERSION}"'
-        runner_dep = f'plushie-renderer = "{BINARY_VERSION}"'
+        core_dep = f'plushie-widget-sdk = "{PLUSHIE_RUST_VERSION}"'
+        runner_dep = f'plushie-renderer = "{PLUSHIE_RUST_VERSION}"'
 
     # Use underscores for the Cargo package name (Cargo convention)
     package_name = binary_name.replace("-", "_")

@@ -530,7 +530,7 @@ rust_constructor = "my_gauge::GaugeExtension::new()"
 ```
 
 The `source_path` and `build_name` keys are optional. They can also
-be set via `PLUSHIE_SOURCE_PATH` environment variable and the
+be set via `PLUSHIE_RUST_SOURCE_PATH` environment variable and the
 `--name` CLI flag respectively.
 
 The build command reads this config, validates extensions (no

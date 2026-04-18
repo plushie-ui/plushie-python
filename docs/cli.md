@@ -133,7 +133,7 @@ python -m plushie build --verbose             # show cargo output
 ### Prerequisites
 
 - **Rust** 1.92+ (install via [rustup](https://rustup.rs/))
-- **PLUSHIE_SOURCE_PATH** environment variable pointing to the
+- **PLUSHIE_RUST_SOURCE_PATH** environment variable pointing to the
   plushie Rust source checkout (for stock builds)
 - **wasm-pack** (for `--wasm` only) - install via
   [wasm-pack.rustwasm.github.io](https://rustwasm.github.io/wasm-pack/)
@@ -141,10 +141,10 @@ python -m plushie build --verbose             # show cargo output
 ### Stock build (no extensions)
 
 When no extensions config is found, builds the vanilla plushie binary
-from the Rust source at `PLUSHIE_SOURCE_PATH`:
+from the Rust source at `PLUSHIE_RUST_SOURCE_PATH`:
 
 ```bash
-export PLUSHIE_SOURCE_PATH=~/projects/plushie
+export PLUSHIE_RUST_SOURCE_PATH=~/projects/plushie
 python -m plushie build --release
 ```
 
@@ -195,7 +195,7 @@ installs the built binary to the standard download location so
 
 Configuration resolution:
 - `--name` flag > `build_name` from pyproject.toml > `"plushie-custom"`
-- `PLUSHIE_SOURCE_PATH` env > `source_path` from pyproject.toml
+- `PLUSHIE_RUST_SOURCE_PATH` env > `source_path` from pyproject.toml
 
 See [Extensions](extensions.md) for the full guide.
 

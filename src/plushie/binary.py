@@ -59,8 +59,9 @@ class ChecksumError(RuntimeError):
     """Raised when SHA-256 verification of a downloaded artifact fails."""
 
 
-BINARY_VERSION = "0.6.1"
-"""Default plushie binary version. Matches the renderer protocol this SDK was built against."""
+PLUSHIE_RUST_VERSION = "0.6.1"
+"""plushie-rust release this SDK pins to. Identifies the matching renderer binary,
+cargo-plushie build tool, and generated crate dependency versions."""
 
 MIN_RUST_VERSION = (1, 92, 0)
 """Minimum required Rust toolchain version for building from source."""
@@ -465,7 +466,7 @@ def download(
 
     Args:
         version: Release version tag (e.g. ``"0.5.1"``). If ``None``,
-            uses ``BINARY_VERSION`` (the pinned default for this SDK).
+            uses ``PLUSHIE_RUST_VERSION`` (the pinned default for this SDK).
         force: Re-download even if the binary already exists.
         bin_file: Override the destination path. If ``None``, uses the
             standard download directory.
@@ -479,7 +480,7 @@ def download(
         urllib.error.URLError: On network errors.
     """
     name = download_name()
-    tag = f"v{version or BINARY_VERSION}"
+    tag = f"v{version or PLUSHIE_RUST_VERSION}"
     url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
 
     if bin_file is not None:
@@ -534,7 +535,7 @@ def download_wasm(
 
     Args:
         version: Release version tag (e.g. ``"0.5.1"``). If ``None``,
-            uses ``BINARY_VERSION`` (the pinned default for this SDK).
+            uses ``PLUSHIE_RUST_VERSION`` (the pinned default for this SDK).
         force: Re-download even if WASM files already exist.
         wasm_dir_path: Override the WASM output directory. If ``None``,
             uses the standard WASM directory.
@@ -547,7 +548,7 @@ def download_wasm(
         ChecksumError: On checksum mismatch or unavailable checksum.
     """
     archive_name = wasm_download_name()
-    tag = f"v{version or BINARY_VERSION}"
+    tag = f"v{version or PLUSHIE_RUST_VERSION}"
     url = f"{GITHUB_RELEASE_URL}/{tag}/{archive_name}"
 
     dest_dir = Path(wasm_dir_path) if wasm_dir_path else wasm_dir()
@@ -609,7 +610,7 @@ def build_wasm(
 
     Args:
         source_path: Path to the plushie Rust source checkout. If
-            ``None``, reads from ``PLUSHIE_SOURCE_PATH`` env var.
+            ``None``, reads from ``PLUSHIE_RUST_SOURCE_PATH`` env var.
         release: Build with optimizations. Default is debug build.
         wasm_dir_path: Override the WASM output directory. If ``None``,
             uses the standard WASM directory.
@@ -634,11 +635,11 @@ def build_wasm(
         ) from exc
 
     # Resolve source path
-    src = source_path or os.environ.get("PLUSHIE_SOURCE_PATH")
+    src = source_path or os.environ.get("PLUSHIE_RUST_SOURCE_PATH")
     if src is None:
         raise RuntimeError(
             "plushie source path not specified.\n\n"
-            "Set PLUSHIE_SOURCE_PATH or pass source_path= argument."
+            "Set PLUSHIE_RUST_SOURCE_PATH or pass source_path= argument."
         )
 
     wasm_crate = os.path.join(src, "crates", "plushie-renderer-wasm")
@@ -725,9 +726,9 @@ def resolve_wasm() -> tuple[Path, Path]:
 # ---------------------------------------------------------------------------
 
 __all__ = [
-    "BINARY_VERSION",
     "GITHUB_RELEASE_URL",
     "MIN_RUST_VERSION",
+    "PLUSHIE_RUST_VERSION",
     "WASM_ARCHIVE_NAME",
     "WASM_BG_NAME",
     "WASM_JS_NAME",

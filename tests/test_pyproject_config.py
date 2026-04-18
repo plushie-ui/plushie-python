@@ -263,11 +263,11 @@ class TestBuildConfigResolution:
             source_path = "/opt/plushie-src"
         """)
         (tmp_path / "pyproject.toml").write_text(toml)
-        monkeypatch.delenv("PLUSHIE_SOURCE_PATH", raising=False)
+        monkeypatch.delenv("PLUSHIE_RUST_SOURCE_PATH", raising=False)
         cfg = _load_pyproject_config(tmp_path)
         import os
 
-        source = os.environ.get("PLUSHIE_SOURCE_PATH", cfg.get("source_path"))
+        source = os.environ.get("PLUSHIE_RUST_SOURCE_PATH", cfg.get("source_path"))
         assert source == "/opt/plushie-src"
 
     def test_env_var_overrides_pyproject_source_path(
@@ -278,11 +278,11 @@ class TestBuildConfigResolution:
             source_path = "/opt/plushie-src"
         """)
         (tmp_path / "pyproject.toml").write_text(toml)
-        monkeypatch.setenv("PLUSHIE_SOURCE_PATH", "/env/plushie")
+        monkeypatch.setenv("PLUSHIE_RUST_SOURCE_PATH", "/env/plushie")
         cfg = _load_pyproject_config(tmp_path)
         import os
 
-        source = os.environ.get("PLUSHIE_SOURCE_PATH", cfg.get("source_path"))
+        source = os.environ.get("PLUSHIE_RUST_SOURCE_PATH", cfg.get("source_path"))
         assert source == "/env/plushie"
 
 

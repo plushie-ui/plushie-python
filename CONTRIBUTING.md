@@ -194,8 +194,8 @@ Steps to publish a new release:
 1. **Version bump.** Update `__version__` in `src/plushie/__init__.py`
    and `version` in `pyproject.toml`. These must match.
 
-2. **Binary version.** If this release targets a new renderer version,
-   update `BINARY_VERSION` in `src/plushie/binary.py`.
+2. **plushie-rust version.** If this release targets a new renderer
+   version, update `PLUSHIE_RUST_VERSION` in `src/plushie/binary.py`.
 
 3. **Changelog.** Add an entry for the new version in `CHANGELOG.md`.
 
