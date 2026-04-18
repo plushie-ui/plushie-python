@@ -328,7 +328,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
             raise SystemExit(1)
 
         # Build stock binary from source
-        plushie_crate = os.path.join(source, "plushie-renderer")
+        plushie_crate = os.path.join(source, "crates", "plushie-renderer")
         if not os.path.isdir(plushie_crate):
             print(
                 f"plushie-renderer crate not found at {plushie_crate}", file=sys.stderr
@@ -395,7 +395,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
     # binary_name resolution: --name flag > pyproject.toml build_name > default
     binary_name = args.name or pyproject_cfg.get("build_name") or "plushie-renderer"
 
-    # Check extension crate plushie-ext version compatibility
+    # Check extension crate plushie-widget-sdk version compatibility
     _check_extension_versions(extensions)
 
     # Generate build files (workspace at _plushie_build/ in the project root).
@@ -404,7 +404,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
     build_dir = "_plushie_build"
     os.makedirs(os.path.join(build_dir, "src"), exist_ok=True)
 
-    # Resolve source_path for local plushie-ext dependency
+    # Resolve source_path for local plushie-widget-sdk dependency
     source = os.environ.get("PLUSHIE_SOURCE_PATH") or pyproject_cfg.get("source_path")
 
     cargo_toml = generate_cargo_toml(
@@ -479,9 +479,9 @@ def _cmd_build(args: argparse.Namespace) -> None:
 
 
 def _check_extension_versions(extensions: list[NativeWidget]) -> None:
-    """Check extension crate plushie-ext version compatibility.
+    """Check extension crate plushie-widget-sdk version compatibility.
 
-    Reads each extension's Cargo.toml, extracts the plushie-ext
+    Reads each extension's Cargo.toml, extracts the plushie-widget-sdk
     dependency version, and warns if the major.minor doesn't match
     the SDK's binary version.  A mismatch would cause a cryptic Cargo
     resolution failure. This gives a clear warning instead.
@@ -508,9 +508,9 @@ def _check_extension_versions(extensions: list[NativeWidget]) -> None:
         except OSError:
             continue
 
-        # Match: plushie-ext = "0.5" or plushie-ext = { version = "0.5", ... }
+        # Match: plushie-widget-sdk = "0.6" or plushie-widget-sdk = { version = "0.6", ... }
         match = re.search(
-            r'plushie-ext\s*=\s*(?:"([^"]+)"|\{[^}]*version\s*=\s*"([^"]+)")',
+            r'plushie-widget-sdk\s*=\s*(?:"([^"]+)"|\{[^}]*version\s*=\s*"([^"]+)")',
             content,
         )
         if not match:
@@ -528,7 +528,7 @@ def _check_extension_versions(extensions: list[NativeWidget]) -> None:
 
         if dep_major_minor != expected_major_minor:
             print(
-                f"warning: extension {ext.kind!r} depends on plushie-ext "
+                f"warning: extension {ext.kind!r} depends on plushie-widget-sdk "
                 f"{dep_version}, but this SDK targets {BINARY_VERSION}. "
                 f"Update the extension crate or the SDK.",
                 file=sys.stderr,

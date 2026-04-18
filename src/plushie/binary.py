@@ -641,7 +641,7 @@ def build_wasm(
             "Set PLUSHIE_SOURCE_PATH or pass source_path= argument."
         )
 
-    wasm_crate = os.path.join(src, "plushie-renderer-wasm")
+    wasm_crate = os.path.join(src, "crates", "plushie-renderer-wasm")
     if not os.path.isdir(wasm_crate):
         raise RuntimeError(
             f"plushie-renderer-wasm crate not found at {wasm_crate}.\n\n"

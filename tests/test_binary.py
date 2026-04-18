@@ -291,8 +291,8 @@ class TestDownloadWasmForce:
 
 class TestBuildWasmRelease:
     def test_debug_by_default(self, tmp_path: Path) -> None:
-        wasm_crate = tmp_path / "plushie-renderer-wasm"
-        wasm_crate.mkdir()
+        wasm_crate = tmp_path / "crates" / "plushie-renderer-wasm"
+        wasm_crate.mkdir(parents=True)
         (wasm_crate / "pkg").mkdir()
 
         with (
@@ -312,8 +312,8 @@ class TestBuildWasmRelease:
             assert "--release" not in build_call.args[0]
 
     def test_release_flag(self, tmp_path: Path) -> None:
-        wasm_crate = tmp_path / "plushie-renderer-wasm"
-        wasm_crate.mkdir()
+        wasm_crate = tmp_path / "crates" / "plushie-renderer-wasm"
+        wasm_crate.mkdir(parents=True)
         (wasm_crate / "pkg").mkdir()
 
         with (

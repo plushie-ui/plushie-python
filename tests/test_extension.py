@@ -390,21 +390,23 @@ class TestGenerateCargoToml:
         toml = generate_cargo_toml([_gauge_def()])
         assert "[package]" in toml
         assert "src/main.rs" in toml
-        assert "plushie-ext" in toml
+        assert "plushie-widget-sdk" in toml
         assert "plushie-renderer =" in toml  # runner crate dep
 
     def test_source_path_local_deps(self) -> None:
         toml = generate_cargo_toml(
             [_gauge_def()], source_path="/tmp/plushie", build_dir="/tmp/build"
         )
-        assert "plushie-ext = { path =" in toml
+        assert "plushie-widget-sdk = { path =" in toml
         assert "plushie-renderer = { path =" in toml
         assert "git" not in toml
 
     def test_no_source_path_crates_io_deps(self) -> None:
+        from plushie.binary import BINARY_VERSION
+
         toml = generate_cargo_toml([_gauge_def()])
-        assert 'plushie-ext = "0.5"' in toml
-        assert 'plushie-renderer = "0.5"' in toml
+        assert f'plushie-widget-sdk = "{BINARY_VERSION}"' in toml
+        assert f'plushie-renderer = "{BINARY_VERSION}"' in toml
 
 
 # -- main.rs generation ------------------------------------------------------
@@ -415,17 +417,17 @@ class TestGenerateMainRs:
         rs = generate_main_rs([_gauge_def()])
         assert "my_gauge::GaugeExtension::new()" in rs
         assert "PlushieAppBuilder::new()" in rs
-        assert ".extension(" in rs
-        assert "fn main() -> plushie_ext::iced::Result" in rs
+        assert ".widget(" in rs
+        assert "fn main() -> plushie_widget_sdk::iced::Result" in rs
 
     def test_multiple_extensions(self) -> None:
         rs = generate_main_rs([_gauge_def(), _sparkline_def()])
         assert "my_gauge::GaugeExtension::new()" in rs
         assert "my_sparkline::SparklineExtension::new()" in rs
-        # Two .extension() calls
-        assert rs.count(".extension(") == 2
+        # Both widgets registered via .widget().
+        assert rs.count(".widget(") == 2
 
     def test_empty_extensions(self) -> None:
         rs = generate_main_rs([])
         assert "PlushieAppBuilder::new()" in rs
-        assert ".extension(" not in rs
+        assert ".widget(" not in rs

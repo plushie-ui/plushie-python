@@ -345,7 +345,7 @@ def generate_cargo_toml(
 ) -> str:
     """Generate a Cargo.toml workspace for a custom binary build.
 
-    Produces the Cargo workspace manifest that includes plushie-ext
+    Produces the Cargo workspace manifest that includes plushie-widget-sdk
     and all native widget crates as path dependencies.  This is the
     Python equivalent of ``mix plushie.build``'s Cargo generation.
 
@@ -358,13 +358,15 @@ def generate_cargo_toml(
         build_dir: The directory where the Cargo.toml will be written.
             Crate paths are resolved relative to this.
         source_path: Path to the plushie Rust source checkout. If
-            provided, plushie-ext is referenced as a local path
-            dependency. Otherwise uses the git repository.
+            provided, plushie-widget-sdk is referenced as a local path
+            dependency. Otherwise uses the crates.io version.
 
     Returns:
         The Cargo.toml content as a string.
     """
     import os
+
+    from plushie.binary import BINARY_VERSION
 
     deps = []
     for ext in widgets:
@@ -376,19 +378,40 @@ def generate_cargo_toml(
 
     deps_block = "\n".join(deps)
 
-    # plushie dependencies: plushie-ext (extensions API) + plushie-renderer (run fn)
+    # plushie dependencies: plushie-widget-sdk (widget API) + plushie-renderer (run fn)
+    patch_section = ""
     if source_path:
         abs_src = os.path.abspath(source_path)
         abs_build = os.path.abspath(build_dir)
-        core_rel = os.path.relpath(os.path.join(abs_src, "plushie-ext"), abs_build)
-        runner_rel = os.path.relpath(
-            os.path.join(abs_src, "plushie-renderer"), abs_build
-        )
-        core_dep = f'plushie-ext = {{ path = "{core_rel}" }}'
+        core_abs = os.path.join(abs_src, "crates", "plushie-widget-sdk")
+        runner_abs = os.path.join(abs_src, "crates", "plushie-renderer")
+        core_rel = os.path.relpath(core_abs, abs_build)
+        runner_rel = os.path.relpath(runner_abs, abs_build)
+        core_dep = f'plushie-widget-sdk = {{ path = "{core_rel}" }}'
         runner_dep = f'plushie-renderer = {{ path = "{runner_rel}" }}'
+
+        # When using local source paths, add [patch.crates-io] so widget
+        # crates that depend on plushie-widget-sdk from crates.io get
+        # redirected to the same local checkout. Without this, Cargo
+        # treats the path dep and the crates.io dep as different crates
+        # and trait impls do not match.
+        #
+        # Forward any additional [patch.crates-io] entries from the
+        # renderer workspace (Cargo.toml and .cargo/config.toml) so the
+        # generated workspace shares the same local overrides (e.g. for
+        # the plushie-iced fork during local dev).
+        extra_patches = _renderer_patch_entries(abs_src)
+        extra_block = ("\n" + "\n".join(extra_patches)) if extra_patches else ""
+        patch_section = (
+            "\n\n"
+            "[patch.crates-io]\n"
+            f'plushie-widget-sdk = {{ path = "{core_abs}" }}\n'
+            f'plushie-renderer = {{ path = "{runner_abs}" }}'
+            f"{extra_block}\n"
+        )
     else:
-        core_dep = 'plushie-ext = "0.5"'
-        runner_dep = 'plushie-renderer = "0.5"'
+        core_dep = f'plushie-widget-sdk = "{BINARY_VERSION}"'
+        runner_dep = f'plushie-renderer = "{BINARY_VERSION}"'
 
     # Use underscores for the Cargo package name (Cargo convention)
     package_name = binary_name.replace("-", "_")
@@ -406,15 +429,74 @@ path = "src/main.rs"
 [dependencies]
 {core_dep}
 {runner_dep}
-{deps_block}
+{deps_block}{patch_section}
 """
+
+
+def _renderer_patch_entries(source_path: str) -> list[str]:
+    """Read ``[patch.crates-io]`` entries from the renderer workspace.
+
+    Reads both ``Cargo.toml`` and ``.cargo/config.toml`` (the
+    gitignored local-dev override) in the renderer root. Returns patch
+    lines with relative paths resolved to absolute paths against
+    ``source_path``. Entries for ``plushie-widget-sdk`` and
+    ``plushie-renderer`` are skipped because the generator emits those
+    explicitly.
+    """
+    import os
+
+    entries: list[tuple[str, str]] = []
+    for candidate in (
+        os.path.join(source_path, "Cargo.toml"),
+        os.path.join(source_path, ".cargo", "config.toml"),
+    ):
+        if not os.path.isfile(candidate):
+            continue
+        with open(candidate) as f:
+            entries.extend(_parse_cargo_patch_entries(f.read()))
+
+    lines: list[str] = []
+    for name, rel_path in entries:
+        if name in ("plushie-widget-sdk", "plushie-renderer"):
+            continue
+        resolved = os.path.normpath(os.path.join(source_path, rel_path))
+        if os.path.isdir(resolved):
+            lines.append(f'{name} = {{ path = "{resolved}" }}')
+    return lines
+
+
+def _parse_cargo_patch_entries(content: str) -> list[tuple[str, str]]:
+    """Parse ``[patch.crates-io]`` path entries from a manifest string.
+
+    Returns a list of ``(crate_name, relative_path)`` tuples. Entries
+    without a ``path = "..."`` field are ignored.
+    """
+    import re
+
+    in_section = False
+    results: list[tuple[str, str]] = []
+    entry_re = re.compile(r'^(\S+)\s*=\s*\{[^}]*path\s*=\s*"([^"]+)"')
+
+    for line in content.splitlines():
+        trimmed = line.strip()
+        if trimmed == "[patch.crates-io]":
+            in_section = True
+            continue
+        if in_section and trimmed.startswith("["):
+            in_section = False
+            continue
+        if in_section:
+            match = entry_re.match(trimmed)
+            if match:
+                results.append((match.group(1), match.group(2)))
+    return results
 
 
 def generate_main_rs(widgets: list[NativeWidget]) -> str:
     """Generate main.rs registering all native widgets.
 
     Produces the Rust entry point that creates a ``PlushieAppBuilder``,
-    registers each widget via ``.extension()``, and calls ``run()``.
+    registers each widget via ``.widget()``, and calls ``run()``.
 
     Args:
         widgets: Native widget definitions to register.
@@ -424,13 +506,13 @@ def generate_main_rs(widgets: list[NativeWidget]) -> str:
     """
     registrations = []
     for ext in widgets:
-        registrations.append(f"        .extension({ext.rust_constructor})")
+        registrations.append(f"        .widget({ext.rust_constructor})")
     registrations_block = "\n".join(registrations)
 
     return f"""\
-use plushie_ext::app::PlushieAppBuilder;
+use plushie_widget_sdk::app::PlushieAppBuilder;
 
-fn main() -> plushie_ext::iced::Result {{
+fn main() -> plushie_widget_sdk::iced::Result {{
     let builder = PlushieAppBuilder::new()
 {registrations_block};
     plushie_renderer::run(builder)
