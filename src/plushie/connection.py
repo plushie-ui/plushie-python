@@ -1127,7 +1127,7 @@ class StdioConnection:
 
 # Exact variable names to forward to the renderer subprocess.
 # Prevents leaking sensitive variables (API keys, tokens, DB URLs).
-# Mirrors the Elixir SDK's RendererEnv whitelist.
+# Matches the canonical whitelist shared across every host SDK.
 _ENV_WHITELIST_EXACT = frozenset(
     {
         "DISPLAY",
@@ -1151,11 +1151,12 @@ _ENV_WHITELIST_EXACT = frozenset(
         "RUST_BACKTRACE",
         "HOME",
         "USER",
-        "PLUSHIE_NO_CATCH_UNWIND",
     }
 )
 
 # Prefixes: any variable starting with one of these is forwarded.
+# "PLUSHIE_" catches all plushie-reserved debug toggles (e.g.
+# PLUSHIE_NO_CATCH_UNWIND) without per-var maintenance.
 _ENV_WHITELIST_PREFIXES = (
     "LC_",
     "MESA_",
@@ -1165,6 +1166,7 @@ _ENV_WHITELIST_PREFIXES = (
     "GALLIUM_",
     "AT_SPI_",
     "FONTCONFIG_",
+    "PLUSHIE_",
 )
 
 
