@@ -305,6 +305,24 @@ class KeyBinding:
 
 
 @dataclass(frozen=True, slots=True)
+class LinkClicked:
+    """A hyperlink in a link-capable widget was clicked.
+
+    Wire family: ``link_click``. Emitted by widgets that render
+    hyperlinked spans (``rich_text``, ``markdown``, and future link
+    emitters).
+
+    Attributes:
+        link: The URL of the clicked link.
+    """
+
+    id: str
+    link: str
+    window_id: str = ""
+    scope: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class Focused:
     """A widget or canvas element received keyboard focus.
 
@@ -1556,6 +1574,7 @@ def target(
     | Close
     | OptionHovered
     | KeyBinding
+    | LinkClicked
     | RawEvent
     | Focused
     | Blurred
@@ -1626,6 +1645,7 @@ type ScopedWidgetEvent = (
     | Close
     | OptionHovered
     | KeyBinding
+    | LinkClicked
     | RawEvent
     | Focused
     | Blurred
@@ -1737,6 +1757,7 @@ __all__ = [
     "KeyEvent",
     "KeyLocation",
     "KeyboardEvent",
+    "LinkClicked",
     "ModifiersChanged",
     "Move",
     "NotificationShown",

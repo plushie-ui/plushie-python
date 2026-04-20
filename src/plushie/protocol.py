@@ -39,6 +39,7 @@ from plushie.events import (
     Input,
     KeyBinding,
     KeyEvent,
+    LinkClicked,
     ModifiersChanged,
     Move,
     Open,
@@ -836,6 +837,7 @@ def decode_message(
     | Close
     | OptionHovered
     | KeyBinding
+    | LinkClicked
     | RawEvent
     | Press
     | Release
@@ -1132,6 +1134,16 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         return KeyBinding(
             id=local_id,
             value=binding,
+            window_id=_wid,
+            scope=scope,
+        )
+
+    if family == "link_click":
+        local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
+        link = str(data.get("link", "")) if isinstance(data, dict) else ""
+        return LinkClicked(
+            id=local_id,
+            link=link,
             window_id=_wid,
             scope=scope,
         )

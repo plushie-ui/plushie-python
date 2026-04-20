@@ -20,6 +20,7 @@ from plushie.events import (
     ImeEvent,
     Input,
     KeyBinding,
+    LinkClicked,
     KeyEvent,
     ModifiersChanged,
     Move,
@@ -723,6 +724,20 @@ class TestDecodeWidgetEvents:
         result = decode_message(raw)
         assert isinstance(result, KeyBinding)
         assert result.value == "undo"
+
+    def test_link_click(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "link_click",
+            "id": "article",
+            "window_id": "main",
+            "data": {"link": "https://example.com/article"},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, LinkClicked)
+        assert result.id == "article"
+        assert result.link == "https://example.com/article"
+        assert result.window_id == "main"
 
 
 class TestDecodePointerEvents:
