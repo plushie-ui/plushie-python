@@ -434,6 +434,14 @@ class Runtime:
         # Custom widget registry (canvas widgets + composites)
         self._widget_registry: WidgetRegistry = {}
 
+        # Memo cache and widget view cache. Passed through to
+        # normalize_view to skip re-evaluation of ``memo(...)``
+        # subtrees and widget ``view()`` calls when their inputs
+        # are unchanged. The "new" dicts are populated during each
+        # render and then swap into "prev" for the next one.
+        self._memo_cache_prev: dict[Any, Any] = {}
+        self._widget_cache_prev: dict[Any, Any] = {}
+
         # Widget status tracking (focus, hover, etc.): widget_id -> status string
         self._widget_statuses: dict[str, str] = {}
         self._focused_widget_id: str | None = None
@@ -984,7 +992,18 @@ class Runtime:
         """Call app.view() + normalize with error handling."""
         try:
             raw_tree = self._app.view(model)
-            result = normalize_view(raw_tree, registry=self._widget_registry or None)
+            memo_new: dict[Any, Any] = {}
+            widget_new: dict[Any, Any] = {}
+            result = normalize_view(
+                raw_tree,
+                registry=self._widget_registry or None,
+                memo_cache_prev=self._memo_cache_prev,
+                memo_cache_new=memo_new,
+                widget_cache_prev=self._widget_cache_prev,
+                widget_cache_new=widget_new,
+            )
+            self._memo_cache_prev = memo_new
+            self._widget_cache_prev = widget_new
             self._consecutive_view_errors = 0
             return result
         except Exception:

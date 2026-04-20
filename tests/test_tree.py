@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import pytest
 
@@ -894,6 +895,67 @@ class TestDiffProps:
         assert "size" not in ops[0]["props"]
 
 
+class TestDiffIdKeyedLists:
+    """Canvas shape lists and similar id-bearing prop lists compare
+    by element id rather than positional deep-equality. A rebuilt
+    list with the same content does not produce a diff; any content
+    change or structural change still does.
+    """
+
+    def test_identical_id_keyed_list_no_diff(self) -> None:
+        shapes = [
+            {"id": "s1", "type": "rect", "x": 0},
+            {"id": "s2", "type": "circle", "r": 10},
+        ]
+        old = _node("c", "canvas", {"shapes": list(shapes)})
+        new = _node("c", "canvas", {"shapes": list(shapes)})
+        assert diff(old, new) == []
+
+    def test_id_keyed_list_content_change_produces_patch(self) -> None:
+        old = _node(
+            "c",
+            "canvas",
+            {"shapes": [{"id": "s1", "type": "rect", "x": 0}]},
+        )
+        new = _node(
+            "c",
+            "canvas",
+            {"shapes": [{"id": "s1", "type": "rect", "x": 5}]},
+        )
+        ops = diff(old, new)
+        assert len(ops) == 1
+        assert ops[0]["op"] == "update_props"
+
+    def test_id_keyed_list_added_element_produces_patch(self) -> None:
+        old = _node("c", "canvas", {"shapes": [{"id": "s1", "type": "rect"}]})
+        new = _node(
+            "c",
+            "canvas",
+            {
+                "shapes": [
+                    {"id": "s1", "type": "rect"},
+                    {"id": "s2", "type": "circle"},
+                ]
+            },
+        )
+        ops = diff(old, new)
+        assert len(ops) == 1
+        assert ops[0]["op"] == "update_props"
+
+    def test_non_id_keyed_list_uses_deep_equality(self) -> None:
+        # Lists without an id on every element fall through to plain
+        # deep-equality. Identical content, no diff.
+        old = _node("c", "canvas", {"tags": ["a", "b", "c"]})
+        new = _node("c", "canvas", {"tags": ["a", "b", "c"]})
+        assert diff(old, new) == []
+
+        # Same pattern, content change still produces a patch.
+        new2 = _node("c", "canvas", {"tags": ["a", "b", "d"]})
+        ops = diff(old, new2)
+        assert len(ops) == 1
+        assert ops[0]["op"] == "update_props"
+
+
 class TestDiffChildRemovals:
     def test_remove_single_child(self) -> None:
         old = _node(
@@ -1682,3 +1744,194 @@ class TestExpandRows:
         assert cell["id"] == "name"
         text_node = cell["children"][0]
         assert text_node["id"] == "row_0.name"
+
+
+class TestMemoCache:
+    """``memo(key, deps, body)`` marks a subtree as cacheable by
+    ``deps``. Across renders, when ``deps`` compare equal, the
+    cached normalized subtree is reused and ``body()`` is not
+    invoked.
+    """
+
+    def test_memo_body_runs_once_per_deps_value(self) -> None:
+        calls = {"n": 0}
+
+        def body() -> dict[str, object]:
+            calls["n"] += 1
+            return {
+                "id": "inner",
+                "type": "text",
+                "props": {"content": "hi"},
+                "children": [],
+            }
+
+        from plushie.ui import memo
+
+        memo_prev: dict[object, object] = {}
+        # First render: miss. Body runs once.
+        memo_new1: dict[object, object] = {}
+        tree1 = normalize(
+            memo("k", ("tag", 1), body),
+            memo_cache_prev=memo_prev,
+            memo_cache_new=memo_new1,
+        )
+        assert calls["n"] == 1
+
+        # Second render, same deps: hit. Body does not run again.
+        memo_new2: dict[object, object] = {}
+        tree2 = normalize(
+            memo("k", ("tag", 1), body),
+            memo_cache_prev=memo_new1,
+            memo_cache_new=memo_new2,
+        )
+        assert calls["n"] == 1, "memo hit must not re-run body"
+
+        # The returned trees have the same shape.
+        assert tree1["id"] == tree2["id"]
+
+        # Third render, deps changed: miss. Body runs.
+        memo_new3: dict[object, object] = {}
+        normalize(
+            memo("k", ("tag", 2), body),
+            memo_cache_prev=memo_new2,
+            memo_cache_new=memo_new3,
+        )
+        assert calls["n"] == 2, "deps change must re-run body"
+
+        # Fourth render, new deps held: hit again.
+        memo_new4: dict[object, object] = {}
+        normalize(
+            memo("k", ("tag", 2), body),
+            memo_cache_prev=memo_new3,
+            memo_cache_new=memo_new4,
+        )
+        assert calls["n"] == 2
+
+
+class TestWidgetViewCache:
+    """Widgets that override ``cache_key`` reuse their expanded
+    view tree when the key is unchanged.
+    """
+
+    def test_widget_view_skipped_when_cache_key_unchanged(self) -> None:
+        from plushie.widget import WidgetDef, derive_registry
+
+        calls = {"n": 0}
+
+        class Counting(WidgetDef):
+            def init(self, props: dict[str, object]) -> dict[str, object]:
+                return {}
+
+            def view(
+                self,
+                widget_id: str,
+                props: dict[str, object],
+                state: dict[str, object],
+            ) -> dict[str, object]:
+                calls["n"] += 1
+                label = str(props.get("label", "x"))
+                return {
+                    "id": widget_id,
+                    "type": "button",
+                    "props": {"label": label},
+                    "children": [],
+                }
+
+            def cache_key(
+                self,
+                props: dict[str, object],
+                state: dict[str, object],
+            ) -> object:
+                return props.get("label")
+
+        def build_tree(label: str) -> dict[str, object]:
+            return {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [Counting.build("w1", props={"label": label})],
+            }
+
+        registry: Any = {}
+        widget_prev: dict[object, object] = {}
+        widget_new1: dict[object, object] = {}
+        normalized1 = normalize(
+            build_tree("hello"),
+            registry=registry,
+            widget_cache_prev=widget_prev,
+            widget_cache_new=widget_new1,
+        )
+        registry = derive_registry(normalized1)
+        assert calls["n"] == 1
+
+        # Same label across two renders: cache hit, view() not called.
+        widget_new2: dict[object, object] = {}
+        normalize(
+            build_tree("hello"),
+            registry=registry,
+            widget_cache_prev=widget_new1,
+            widget_cache_new=widget_new2,
+        )
+        assert calls["n"] == 1, "widget cache hit must skip view()"
+
+        # Different label: cache miss, view() runs.
+        widget_new3: dict[object, object] = {}
+        normalize(
+            build_tree("world"),
+            registry=registry,
+            widget_cache_prev=widget_new2,
+            widget_cache_new=widget_new3,
+        )
+        assert calls["n"] == 2
+
+    def test_widget_without_cache_key_always_renders(self) -> None:
+        from plushie.widget import WidgetDef, derive_registry
+
+        calls = {"n": 0}
+
+        class NoCache(WidgetDef):
+            def init(self, props: dict[str, object]) -> dict[str, object]:
+                return {}
+
+            def view(
+                self,
+                widget_id: str,
+                props: dict[str, object],
+                state: dict[str, object],
+            ) -> dict[str, object]:
+                calls["n"] += 1
+                return {
+                    "id": widget_id,
+                    "type": "button",
+                    "props": {"label": "nc"},
+                    "children": [],
+                }
+
+        tree = {
+            "id": "main",
+            "type": "window",
+            "props": {},
+            "children": [NoCache.build("w1")],
+        }
+
+        registry: Any = {}
+        widget_prev: dict[object, object] = {}
+        widget_new: dict[object, object] = {}
+        normalized = normalize(
+            tree,
+            registry=registry,
+            widget_cache_prev=widget_prev,
+            widget_cache_new=widget_new,
+        )
+        registry = derive_registry(normalized)
+        assert calls["n"] == 1
+
+        # Render again. Without cache_key, view() runs every time.
+        widget_new2: dict[object, object] = {}
+        normalize(
+            tree,
+            registry=registry,
+            widget_cache_prev=widget_new,
+            widget_cache_new=widget_new2,
+        )
+        assert calls["n"] == 2

@@ -259,6 +259,10 @@ def normalize(
     tree: None | Node | list[Node],
     *,
     registry: Any = None,
+    memo_cache_prev: dict[Any, Any] | None = None,
+    memo_cache_new: dict[Any, Any] | None = None,
+    widget_cache_prev: dict[Any, Any] | None = None,
+    widget_cache_new: dict[Any, Any] | None = None,
 ) -> Node:
     """Normalize a UI tree into canonical node shape.
 
@@ -271,6 +275,19 @@ def normalize(
     Args:
         registry: Canvas widget registry for placeholder rendering
             during normalization.
+        memo_cache_prev: Previous render's memo cache (read). Keys
+            are ``(node_id, scope, window_id, deps)`` tuples; values
+            are cached normalized subtrees. When supplied together
+            with ``memo_cache_new``, memo subtrees whose deps match
+            the previous render's value are reused instead of being
+            re-evaluated.
+        memo_cache_new: This render's memo cache (written).
+        widget_cache_prev: Previous render's widget view cache (read).
+            Keys are ``(window_id, scoped_id)`` tuples; values are
+            ``(cache_key, rendered_node)`` pairs. When a widget's
+            ``cache_key`` matches the stored value, its expanded
+            view is reused and ``view()`` is not re-invoked.
+        widget_cache_new: This render's widget view cache (written).
 
     Every node in the result is guaranteed to have ``id``, ``type``,
     ``props``, and ``children`` keys. Auto-IDs are assigned to nodes
@@ -281,6 +298,14 @@ def normalize(
     Raises:
         ValueError: If a user-provided ID contains ``/``.
     """
+    ctx = _NormCtx(
+        registry=registry,
+        memo_prev=memo_cache_prev,
+        memo_new=memo_cache_new,
+        widget_prev=widget_cache_prev,
+        widget_new=widget_cache_new,
+    )
+
     if tree is None:
         return _empty_container()
 
@@ -289,10 +314,10 @@ def normalize(
             return _empty_container()
         if len(tree) == 1:
             return _post_normalize(
-                _normalize_with_scope(tree[0], "", 0, window_id=None, registry=registry)
+                _normalize_with_scope(tree[0], "", 0, window_id=None, ctx=ctx)
             )
         normalized_children = [
-            _normalize_with_scope(child, "", i, window_id=None, registry=registry)
+            _normalize_with_scope(child, "", i, window_id=None, ctx=ctx)
             for i, child in enumerate(tree)
         ]
         _check_duplicate_ids(normalized_children)
@@ -305,18 +330,44 @@ def normalize(
             }
         )
 
-    return _post_normalize(
-        _normalize_with_scope(tree, "", 0, window_id=None, registry=registry)
-    )
+    return _post_normalize(_normalize_with_scope(tree, "", 0, window_id=None, ctx=ctx))
+
+
+@dataclass(slots=True)
+class _NormCtx:
+    """Per-render normalization context.
+
+    Threaded through ``_normalize_with_scope`` so recursion doesn't
+    need to forward a growing list of optional arguments. The four
+    cache dicts are optional; when ``None``, their feature (memo /
+    widget view cache) is disabled.
+    """
+
+    registry: Any = None
+    memo_prev: dict[Any, Any] | None = None
+    memo_new: dict[Any, Any] | None = None
+    widget_prev: dict[Any, Any] | None = None
+    widget_new: dict[Any, Any] | None = None
 
 
 def normalize_view(
     tree: None | Node | list[Node],
     *,
     registry: Any = None,
+    memo_cache_prev: dict[Any, Any] | None = None,
+    memo_cache_new: dict[Any, Any] | None = None,
+    widget_cache_prev: dict[Any, Any] | None = None,
+    widget_cache_new: dict[Any, Any] | None = None,
 ) -> Node:
     """Normalize a top-level app view and require explicit windows."""
-    normalized = normalize(tree, registry=registry)
+    normalized = normalize(
+        tree,
+        registry=registry,
+        memo_cache_prev=memo_cache_prev,
+        memo_cache_new=memo_cache_new,
+        widget_cache_prev=widget_cache_prev,
+        widget_cache_new=widget_cache_new,
+    )
 
     if normalized["type"] == "window":
         return normalized
@@ -435,7 +486,7 @@ def _normalize_with_scope(
     index: int,
     *,
     window_id: str | None,
-    registry: Any = None,
+    ctx: _NormCtx,
     depth: int = 0,
 ) -> Node:
     """Normalize a single node with scope context.
@@ -444,7 +495,8 @@ def _normalize_with_scope(
         node: Raw node dict (may have missing keys).
         scope: Current scope prefix (e.g. ``"sidebar/form"``).
         index: Child index within parent (for auto-ID generation).
-        registry: Canvas widget registry for placeholder rendering.
+        ctx: Per-render context (registry plus optional memo and
+            widget view caches).
         depth: Current nesting depth (for max depth protection).
     """
     if depth >= _MAX_TREE_DEPTH_HARD:
@@ -505,15 +557,69 @@ def _normalize_with_scope(
     else:
         scoped_id = node_id
 
+    meta = node.get("meta")
+
+    # __memo__ handling: reuse the cached subtree when deps match the
+    # previous render's value. On a miss, evaluate the body, normalize
+    # it, and stash the result for next render. When no caches are
+    # threaded through (``ctx.memo_new is None``), still evaluate the
+    # body so callers that don't maintain caches see the same tree
+    # shape; it just re-evaluates every render.
+    if node_type == "__memo__" and meta and "__memo_body__" in meta:
+        return _normalize_memo(
+            node=node,
+            scope=scope,
+            scoped_id=scoped_id,
+            window_id=current_window_id,
+            ctx=ctx,
+            depth=depth,
+        )
+
     # Canvas widget rendering: if this node is a placeholder, render it
     # with stored state and normalize the output.
-    meta = node.get("meta")
-    if registry is not None and meta and "__widget__" in meta:
+    if ctx.registry is not None and meta and "__widget__" in meta:
         try:
             from plushie.widget import render_placeholder
 
+            widget_cls = meta.get("__widget__")
+            widget_props = meta.get("__widget_props__", {})
+            widget_cache_key_value: Any = None
+            widget_cache_lookup_key: Any = None
+            if (
+                isinstance(widget_cls, type)
+                and current_window_id is not None
+                and ctx.widget_prev is not None
+                and ctx.widget_new is not None
+            ):
+                existing = ctx.registry.get((str(current_window_id), str(scoped_id)))
+                if existing is not None:
+                    widget_state = existing.state
+                else:
+                    widget_state = widget_cls().init(widget_props)
+                try:
+                    widget_cache_key_value = widget_cls().cache_key(
+                        widget_props, widget_state
+                    )
+                except Exception:
+                    widget_cache_key_value = None
+                if widget_cache_key_value is not None:
+                    widget_cache_lookup_key = (
+                        str(current_window_id),
+                        str(scoped_id),
+                    )
+                    cached_entry = ctx.widget_prev.get(widget_cache_lookup_key)
+                    if (
+                        cached_entry is not None
+                        and cached_entry[0] == widget_cache_key_value
+                    ):
+                        # Cache hit: reuse the previously-normalized
+                        # subtree. Copy the entry into the new cache so
+                        # the next render still sees it.
+                        ctx.widget_new[widget_cache_lookup_key] = cached_entry
+                        return cached_entry[1]
+
             placeholder = render_placeholder(
-                node, current_window_id, scoped_id, node_id, registry
+                node, current_window_id, scoped_id, node_id, ctx.registry
             )
             if placeholder is not None:
                 _key, rendered_node, _entry = placeholder
@@ -529,7 +635,7 @@ def _normalize_with_scope(
                         child_scope,
                         i,
                         window_id=current_window_id,
-                        registry=registry,
+                        ctx=ctx,
                         depth=depth + 1,
                     )
                     for i, c in enumerate(rendered_children)
@@ -538,21 +644,31 @@ def _normalize_with_scope(
                 # Auto-apply standard widget options (a11y, event_rate)
                 # from the original widget props so widget authors don't
                 # have to manually forward them in view().
-                widget_props = node.get("props") or {}
+                props_raw = node.get("props") or {}
                 for key in ("a11y", "event_rate"):
-                    if key in widget_props and key not in rendered_props:
-                        rendered_props[key] = _encode_prop_value(widget_props[key])
+                    if key in props_raw and key not in rendered_props:
+                        rendered_props[key] = _encode_prop_value(props_raw[key])
                 rendered_props = _apply_a11y_defaults(
                     rendered_node.get("type", "canvas"), rendered_props
                 )
                 normalized_props = _resolve_a11y_id_refs(rendered_props, scope)
-                return {
+                result_node: Node = {
                     "id": scoped_id,
                     "type": rendered_node.get("type", "canvas"),
                     "props": normalized_props,
                     "children": normalized_children,
                     "meta": rendered_node.get("meta", {}),
                 }
+                if (
+                    widget_cache_key_value is not None
+                    and widget_cache_lookup_key is not None
+                    and ctx.widget_new is not None
+                ):
+                    ctx.widget_new[widget_cache_lookup_key] = (
+                        widget_cache_key_value,
+                        result_node,
+                    )
+                return result_node
         except Exception:
             logger.exception("plushie: canvas widget render failed for %s", scoped_id)
 
@@ -576,7 +692,7 @@ def _normalize_with_scope(
         children,
         child_scope,
         window_id=current_window_id,
-        registry=registry,
+        ctx=ctx,
         depth=depth + 1,
     )
 
@@ -599,19 +715,131 @@ def _normalize_children(
     scope: str,
     *,
     window_id: str | None,
-    registry: Any = None,
+    ctx: _NormCtx,
     depth: int = 0,
 ) -> list[Node]:
     """Normalize a list of child nodes, checking for duplicate IDs."""
     normalized = [
         _normalize_with_scope(
-            child, scope, i, window_id=window_id, registry=registry, depth=depth
+            child, scope, i, window_id=window_id, ctx=ctx, depth=depth
         )
         for i, child in enumerate(children)
     ]
     _check_duplicate_ids(normalized)
     normalized = _infer_radio_groups(normalized)
     return normalized
+
+
+def _normalize_memo(
+    *,
+    node: Node,
+    scope: str,
+    scoped_id: str,
+    window_id: str | None,
+    ctx: _NormCtx,
+    depth: int,
+) -> Node:
+    """Normalize a ``__memo__`` node, consulting the memo cache.
+
+    Hit: reuse the previously-normalized subtree. Miss: invoke the
+    body, normalize its output, and cache the result under the same
+    key for the next render.
+
+    When no memo caches are present on ``ctx``, evaluate the body
+    every render (uncached fallback) so callers that opt out still
+    get a valid tree.
+    """
+    meta = node.get("meta") or {}
+    deps = meta.get("__memo_deps__")
+    body = meta.get("__memo_body__")
+    cache_key = (scoped_id, scope, window_id, _safe_hashable(deps))
+
+    if ctx.memo_prev is not None and ctx.memo_new is not None:
+        cached = ctx.memo_prev.get(cache_key)
+        if cached is not None and cached[0] == deps:
+            ctx.memo_new[cache_key] = cached
+            return cached[1]
+
+    raw = body() if callable(body) else body
+    normalized = _normalize_memo_body(
+        raw=raw,
+        scope=scope,
+        scoped_id=scoped_id,
+        window_id=window_id,
+        ctx=ctx,
+        depth=depth,
+    )
+
+    if ctx.memo_new is not None:
+        ctx.memo_new[cache_key] = (deps, normalized)
+
+    return normalized
+
+
+def _safe_hashable(value: Any) -> Any:
+    """Best-effort stable key component for memo cache lookup.
+
+    Tuples stay tuples, lists become tuples, dicts become sorted
+    item tuples, everything else passes through.
+    """
+    if isinstance(value, tuple):
+        return tuple(_safe_hashable(v) for v in value)
+    if isinstance(value, list):
+        return tuple(_safe_hashable(v) for v in value)
+    if isinstance(value, dict):
+        return tuple(sorted((k, _safe_hashable(v)) for k, v in value.items()))
+    return value
+
+
+def _normalize_memo_body(
+    *,
+    raw: Any,
+    scope: str,
+    scoped_id: str,
+    window_id: str | None,
+    ctx: _NormCtx,
+    depth: int,
+) -> Node:
+    """Evaluate a memo body's output and normalize it at the memo site.
+
+    Accepts a single node, a list of nodes, or ``None``. Multi-child
+    output is wrapped in a transparent auto-id container so the
+    cache stores a single node.
+    """
+    if raw is None:
+        return {
+            "id": f"auto:memo:{scoped_id}",
+            "type": "container",
+            "props": {},
+            "children": [],
+        }
+
+    if isinstance(raw, list):
+        items = [r for r in raw if r is not None]
+        if not items:
+            return {
+                "id": f"auto:memo:{scoped_id}",
+                "type": "container",
+                "props": {},
+                "children": [],
+            }
+        if len(items) == 1:
+            return _normalize_with_scope(
+                items[0], scope, 0, window_id=window_id, ctx=ctx, depth=depth + 1
+            )
+        wrapper: Node = {
+            "id": f"auto:memo_wrap:{scoped_id}",
+            "type": "container",
+            "props": {},
+            "children": items,
+        }
+        return _normalize_with_scope(
+            wrapper, scope, 0, window_id=window_id, ctx=ctx, depth=depth + 1
+        )
+
+    return _normalize_with_scope(
+        raw, scope, 0, window_id=window_id, ctx=ctx, depth=depth + 1
+    )
 
 
 def _check_duplicate_ids(children: list[Node]) -> None:
@@ -1080,10 +1308,14 @@ def _diff_props(
 
     changed: dict[str, Any] = {}
 
-    # Changed or added keys
+    # Changed or added keys. For list props where every element has
+    # an ``id`` key (canvas shape lists, for example), reconstructed
+    # lists with identical content compare equal via the id-keyed
+    # check below. That avoids a spurious ``update_props`` when the
+    # view recreated the list without changing any shape.
     for k, v in new_props.items():
         old_v = old_props.get(k, _SENTINEL)
-        if old_v is _SENTINEL or old_v != v:
+        if old_v is _SENTINEL or (old_v != v and not _id_keyed_lists_equal(old_v, v)):
             changed[k] = v
 
     # Removed keys -> set to None so the renderer can clear them
@@ -1099,6 +1331,38 @@ def _diff_props(
 
 # Sentinel for detecting missing keys vs None values
 _SENTINEL = object()
+
+
+def _id_keyed_lists_equal(old_val: Any, new_val: Any) -> bool:
+    """Check whether two list props are semantically equal by id.
+
+    When both values are lists of dicts and every element carries an
+    ``id`` field, compare elements by id rather than positional
+    deep-equality. Catches the case where the view function rebuilt
+    the list with identical content but a different object identity.
+
+    Returns False for any shape that doesn't fit the pattern, so
+    normal deep-equality wins for non-id-bearing lists.
+    """
+    if not isinstance(old_val, list) or not isinstance(new_val, list):
+        return False
+    if len(old_val) != len(new_val):
+        return False
+    if not old_val:
+        return False
+    for el in old_val:
+        if not isinstance(el, dict) or "id" not in el:
+            return False
+    for el in new_val:
+        if not isinstance(el, dict) or "id" not in el:
+            return False
+
+    old_by_id: dict[Any, dict[str, Any]] = {el["id"]: el for el in old_val}
+    for el in new_val:
+        cached = old_by_id.get(el["id"])
+        if cached != el:
+            return False
+    return True
 
 
 def _diff_children(

@@ -479,6 +479,12 @@ class AppFixture[M]:
         model = _process_commands(app, model, commands)
         self._model: Any = model
 
+        # Per-render memo and widget view caches. Kept on the fixture
+        # so tests that drive multiple render cycles see caching
+        # behaviour identical to the production runtime.
+        self._memo_cache_prev: dict[Any, Any] = {}
+        self._widget_cache_prev: dict[Any, Any] = {}
+
         # Render initial tree
         tree = self._render()
         self._tree: Node | None = tree
@@ -1205,7 +1211,18 @@ class AppFixture[M]:
         """Call app.view() + normalize."""
         try:
             raw_tree = self._app.view(self._model)
-            return normalize_view(raw_tree)
+            memo_new: dict[Any, Any] = {}
+            widget_new: dict[Any, Any] = {}
+            result = normalize_view(
+                raw_tree,
+                memo_cache_prev=self._memo_cache_prev,
+                memo_cache_new=memo_new,
+                widget_cache_prev=self._widget_cache_prev,
+                widget_cache_new=widget_new,
+            )
+            self._memo_cache_prev = memo_new
+            self._widget_cache_prev = widget_new
+            return result
         except Exception:
             logger.exception("app.view() raised during render")
             return None

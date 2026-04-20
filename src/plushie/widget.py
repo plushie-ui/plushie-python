@@ -452,6 +452,38 @@ class WidgetDef(ABC):
         """
         return []
 
+    def cache_key(
+        self,
+        props: dict[str, Any],
+        state: dict[str, Any],
+    ) -> Any:
+        """Optional cache key derived from props and state.
+
+        When this returns a non-``None`` value, the runtime records
+        it alongside the widget's expanded view tree. On the next
+        render, if the widget's cache key compares equal to the
+        stored value, the cached view is reused and ``view()`` is
+        not re-invoked.
+
+        The default returns ``None``, which disables caching for the
+        widget: ``view()`` runs every render. Override this for
+        widgets whose ``view()`` is expensive and whose output
+        depends on a small number of inputs.
+
+        Example::
+
+            def cache_key(self, props, state):
+                return (props.get("source"), state.get("theme"))
+
+        Args:
+            props: Resolved props.
+            state: Current internal state.
+
+        Returns:
+            A hashable-equal value, or ``None`` to disable caching.
+        """
+        return None
+
     @classmethod
     def build(
         cls,

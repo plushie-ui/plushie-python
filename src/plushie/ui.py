@@ -760,6 +760,44 @@ def canvas(id: str, /, **kwargs: Any) -> Node:
 
 
 # ---------------------------------------------------------------------------
+# Memoization
+# ---------------------------------------------------------------------------
+
+
+def memo(key: str, deps: Any, body: Any) -> Node:
+    """Cache a view subtree by a stable key plus a set of hashable deps.
+
+    The ``key`` identifies the memo call site (pick one stable name
+    per distinct memo in the view tree). The ``deps`` are compared
+    between renders; when they are unchanged, normalization reuses
+    the cached subtree instead of re-evaluating ``body`` and re-
+    walking the result.
+
+    ``body`` is a zero-argument callable that returns a single node
+    or a list of nodes. It is only evaluated on a cache miss.
+
+    Example::
+
+        column(
+            memo("header", (model.user_id, model.revision), lambda: expensive_header(model)),
+            text(model.dynamic_text),
+        )
+
+    Any ``deps`` value that supports equality works: a tuple, a
+    single string, an int, a dataclass with ``eq=True``. Avoid
+    unhashable / unequal types (sets of mutable objects, ``NaN``)
+    since they defeat the cache comparison.
+    """
+    return {
+        "id": f"memo:{key}",
+        "type": "__memo__",
+        "props": {},
+        "children": [],
+        "meta": {"__memo_deps__": deps, "__memo_body__": body},
+    }
+
+
+# ---------------------------------------------------------------------------
 # __all__
 # ---------------------------------------------------------------------------
 
@@ -777,6 +815,7 @@ __all__ = [
     "image",
     "keyed_column",
     "markdown",
+    "memo",
     "overlay",
     "pane_grid",
     "pick_list",
