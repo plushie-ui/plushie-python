@@ -955,6 +955,61 @@ class TestDiffIdKeyedLists:
         assert len(ops) == 1
         assert ops[0]["op"] == "update_props"
 
+    def test_reordered_id_keyed_list_same_content_no_diff(self) -> None:
+        # Same id set, same content, different order. Matches the
+        # Elixir / Ruby / Gleam contract: id-keyed comparison is set-
+        # based, not positional, so hosts can resort canvas shape
+        # lists without forcing a redundant prop update.
+        old = _node(
+            "c",
+            "canvas",
+            {
+                "shapes": [
+                    {"id": "s1", "type": "rect", "x": 0},
+                    {"id": "s2", "type": "circle", "r": 10},
+                ]
+            },
+        )
+        new = _node(
+            "c",
+            "canvas",
+            {
+                "shapes": [
+                    {"id": "s2", "type": "circle", "r": 10},
+                    {"id": "s1", "type": "rect", "x": 0},
+                ]
+            },
+        )
+        assert diff(old, new) == []
+
+    def test_id_keyed_list_different_id_sets_produces_patch(self) -> None:
+        # Same length, but one list carries an id the other doesn't.
+        # The helper must refuse equality so the diff still surfaces
+        # a real structural change.
+        old = _node(
+            "c",
+            "canvas",
+            {
+                "shapes": [
+                    {"id": "s1", "type": "rect"},
+                    {"id": "s2", "type": "circle"},
+                ]
+            },
+        )
+        new = _node(
+            "c",
+            "canvas",
+            {
+                "shapes": [
+                    {"id": "s1", "type": "rect"},
+                    {"id": "s3", "type": "circle"},
+                ]
+            },
+        )
+        ops = diff(old, new)
+        assert len(ops) == 1
+        assert ops[0]["op"] == "update_props"
+
 
 class TestDiffChildRemovals:
     def test_remove_single_child(self) -> None:

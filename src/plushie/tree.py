@@ -565,7 +565,7 @@ def _normalize_with_scope(
     # threaded through (``ctx.memo_new is None``), still evaluate the
     # body so callers that don't maintain caches see the same tree
     # shape; it just re-evaluates every render.
-    if node_type == "__memo__" and meta and "__memo_body__" in meta:
+    if node_type == "__memo__" and meta and "__memo_fun__" in meta:
         return _normalize_memo(
             node=node,
             scope=scope,
@@ -751,7 +751,7 @@ def _normalize_memo(
     """
     meta = node.get("meta") or {}
     deps = meta.get("__memo_deps__")
-    body = meta.get("__memo_body__")
+    body = meta.get("__memo_fun__")
     cache_key = (scoped_id, scope, window_id, _safe_hashable(deps))
 
     if ctx.memo_prev is not None and ctx.memo_new is not None:

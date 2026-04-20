@@ -793,7 +793,7 @@ def memo(key: str, deps: Any, body: Any) -> Node:
         "type": "__memo__",
         "props": {},
         "children": [],
-        "meta": {"__memo_deps__": deps, "__memo_body__": body},
+        "meta": {"__memo_deps__": deps, "__memo_fun__": body},
     }
 
 
