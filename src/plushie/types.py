@@ -48,6 +48,34 @@ Accepted forms:
 """
 
 
+def encode_length(value: Length) -> int | float | str | dict[str, int]:
+    """Encode a :data:`Length` value to its wire representation.
+
+    Raises ``ValueError`` when a numeric length is negative or when
+    ``fill_portion`` is less than 1.
+    """
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if value < 0:
+            raise ValueError(f"length must be non-negative, got {value}")
+        return value
+    if value == "fill" or value == "shrink":
+        return value
+    portion: object = None
+    if isinstance(value, dict):
+        portion = value.get("fill_portion")
+    elif isinstance(value, tuple) and len(value) == 2 and value[0] == "fill_portion":
+        portion = value[1]
+    else:
+        raise ValueError(f"invalid length: {value!r}")
+    if portion is None:
+        raise ValueError(f"length dict must contain 'fill_portion', got: {value!r}")
+    if not isinstance(portion, int) or portion < 1:
+        raise ValueError(
+            f"length fill_portion must be a positive integer, got {portion!r}"
+        )
+    return {"fill_portion": portion}
+
+
 def encode_padding(value: Padding) -> int | float | dict[str, float]:
     """Encode a :data:`Padding` value to its wire representation.
 
@@ -58,8 +86,12 @@ def encode_padding(value: Padding) -> int | float | dict[str, float]:
 
     As a convenience that matches the renderer's own ``wire_encode``,
     uniform four-sided padding collapses to a single number.
+
+    Raises ``ValueError`` when any side is negative.
     """
     if isinstance(value, (int, float)):
+        if value < 0:
+            raise ValueError(f"padding must be non-negative, got {value}")
         return value
     if isinstance(value, tuple):
         if len(value) == 2:
@@ -78,6 +110,10 @@ def encode_padding(value: Padding) -> int | float | dict[str, float]:
         left = value.get("left", 0)
     else:
         raise TypeError(f"Invalid Padding value: {value!r}")
+
+    for side, n in (("top", top), ("right", right), ("bottom", bottom), ("left", left)):
+        if n < 0:
+            raise ValueError(f"padding must be non-negative, got {side}={n}")
 
     if top == right == bottom == left:
         return top
@@ -454,7 +490,21 @@ class Border:
         """Convert to wire-compatible dict.
 
         Wire format: ``{"color": hex, "width": n, "radius": n_or_dict}``.
+
+        Raises ``ValueError`` when the width or any radius value is negative.
         """
+        if self.width < 0:
+            raise ValueError(f"border width must be non-negative, got {self.width}")
+        radius = self.radius
+        if isinstance(radius, (int, float)):
+            if radius < 0:
+                raise ValueError(f"border radius must be non-negative, got {radius}")
+        elif isinstance(radius, dict):
+            for corner, value in radius.items():
+                if isinstance(value, (int, float)) and value < 0:
+                    raise ValueError(
+                        f"border radius must be non-negative, got {corner}={value}"
+                    )
         result: dict[str, object] = {"width": self.width, "radius": self.radius}
         if self.color is not None:
             result["color"] = self.color
@@ -1203,6 +1253,7 @@ __all__ = [
     "WindowLevel",
     "WindowMode",
     "Wrapping",
+    "encode_length",
     "encode_line_height",
     "encode_padding",
     "invalid",

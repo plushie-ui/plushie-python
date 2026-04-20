@@ -37,9 +37,9 @@ class TestLengthFillPortion:
         assert tree["type"] == "row"
         children = tree["children"]
         assert children[0]["id"] == "left"
-        assert children[0]["props"]["width"] == ("fill_portion", 2)
+        assert children[0]["props"]["width"] == {"fill_portion": 2}
         assert children[1]["id"] == "right"
-        assert children[1]["props"]["width"] == ("fill_portion", 1)
+        assert children[1]["props"]["width"] == {"fill_portion": 1}
 
 
 class TestLengthShrink:

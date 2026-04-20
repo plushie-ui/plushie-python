@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Any, overload
 
-from plushie.types import encode_line_height, encode_padding
+from plushie.types import encode_length, encode_line_height, encode_padding
 
 # ---------------------------------------------------------------------------
 # Node type alias
@@ -69,6 +69,14 @@ def _node(
         props["line_height"] = encode_line_height(props["line_height"])
     if "padding" in props and props["padding"] is not None:
         props["padding"] = encode_padding(props["padding"])
+    for key in ("width", "height"):
+        if key in props and props[key] is not None:
+            props[key] = encode_length(props[key])
+    for key in ("max_width", "max_height", "min_width", "min_height"):
+        if key in props and props[key] is not None:
+            n = props[key]
+            if isinstance(n, (int, float)) and n < 0:
+                raise ValueError(f"{key} must be non-negative, got {n}")
     clean_props = {k: v for k, v in props.items() if v is not None}
     return {
         "id": id,
