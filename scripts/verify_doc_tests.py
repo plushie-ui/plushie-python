@@ -82,9 +82,8 @@ def collect_test_info(
                 methods: set[str] = set()
                 name_to_file[child.name] = rel
                 for method in ast.iter_child_nodes(child):
-                    if (
-                        isinstance(method, ast.FunctionDef)
-                        and method.name.startswith("test_")
+                    if isinstance(method, ast.FunctionDef) and method.name.startswith(
+                        "test_"
                     ):
                         methods.add(method.name)
                         name_to_file.setdefault(method.name, rel)
