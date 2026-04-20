@@ -370,7 +370,10 @@ def rule(**kwargs: Any) -> Node:
     """Horizontal or vertical rule (divider line).
 
     Args:
-        **kwargs: Rule props (height, width, direction, style, a11y).
+        **kwargs: Rule props (``height``, ``width``, ``thickness``,
+            ``direction``, ``style``, ``a11y``). ``thickness`` is a
+            direction-agnostic pixel size; the renderer falls back to
+            it when the direction-specific width/height isn't set.
     """
     return _node(None, "rule", kwargs)
 
