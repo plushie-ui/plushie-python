@@ -70,6 +70,18 @@ from plushie.widget import WidgetRegistry
 
 logger = logging.getLogger("plushie")
 
+
+DISPATCH_DEPTH_LIMIT: int = 100
+"""Maximum synchronous ``Command.dispatch`` chain depth.
+
+``Command.dispatch`` schedules a follow-up event back through the
+runtime queue. A pathological ``update`` that keeps returning another
+dispatch would fill the queue indefinitely; past this cap the runtime
+drops the command and emits a typed
+:class:`plushie.diagnostics.DispatchLoopExceeded` diagnostic so the
+loop is visible.
+"""
+
 _EFFECT_TIMEOUT_MS: int = 30_000
 
 _DEV_PREFIX = "__plushie_dev__"
@@ -406,6 +418,12 @@ class Runtime:
         # Diagnostic accumulation
         self._diagnostics: list[Any] = []
         self._diagnostics_lock: threading.Lock = threading.Lock()
+
+        # Chain-position counter for the `Command.dispatch` guard. Set
+        # by the main loop before each `_run_update` so a chained
+        # dispatch tracks its position and the guard in
+        # `_execute_command` can cap the chain.
+        self._current_dispatch_depth: int = 0
 
         # Pending await_async callers: tag -> Event
         self._pending_await_async: dict[str, threading.Event] = {}
@@ -767,8 +785,26 @@ class Runtime:
                 self._reset_heartbeat()
                 continue
 
-            # Internal runtime events (tuples from task/stream/coalesce/effect)
+            # Internal runtime events (tuples from task/stream/coalesce/effect).
+            # Dispatched tuples carry their chain position; everything
+            # else is a fresh entry, so the depth resets to 0.
             if isinstance(event, tuple) and event and isinstance(event[0], str):
+                if event[0] == "_dispatched" and len(event) == 3:
+                    # A `Command.dispatch` follow-up. Set the counter
+                    # to the stored chain position so the guard in
+                    # `_execute_command` caps the chain.
+                    self._flush_coalescables()
+                    self._reset_heartbeat()
+                    self._current_dispatch_depth = event[1]
+                    try:
+                        self._run_update(event[2])
+                    finally:
+                        self._current_dispatch_depth = 0
+                    continue
+
+                # Other internal tuples start a fresh chain.
+                self._current_dispatch_depth = 0
+
                 if event[0] == "_effect_response" and len(event) == 5:
                     self._flush_coalescables()
                     resolved = self._resolve_effect_response(
@@ -789,9 +825,10 @@ class Runtime:
                     self._flush_coalescables()
                     continue
 
-            # Normal event -> flush coalescables first, then process
+            # Normal event: fresh entry, reset depth.
             self._flush_coalescables()
             self._reset_heartbeat()
+            self._current_dispatch_depth = 0
             self._run_update(event)
 
     # -------------------------------------------------------------------
@@ -1100,12 +1137,19 @@ class Runtime:
     # -------------------------------------------------------------------
 
     def _execute_commands(self, commands: list[Command]) -> None:
-        """Execute a list of commands."""
+        """Execute a list of commands at the current dispatch depth."""
         for cmd in commands:
             self._execute_command(cmd)
 
     def _execute_command(self, cmd: Command) -> None:
-        """Execute a single command."""
+        """Execute a single command.
+
+        `Command.dispatch` follow-ups queue a ``("_dispatched", depth,
+        event)`` tuple; the main loop reads the depth off the tuple
+        and passes it through so
+        :data:`plushie.diagnostics.DispatchLoopExceeded` fires when a
+        pathological update loop keeps re-dispatching.
+        """
         t = cmd.type
         p = cmd.payload
 
@@ -1125,7 +1169,31 @@ class Runtime:
             mapper = p["mapper"]
             value = p["value"]
             event = mapper(value)
-            self._queue.put(event)
+            next_depth = self._current_dispatch_depth + 1
+            if next_depth > DISPATCH_DEPTH_LIMIT:
+                # Drop the dispatched command and emit the typed
+                # diagnostic so a pathological update loop is visible
+                # instead of unboundedly filling the event queue.
+                from plushie.diagnostics import DiagnosticMessage, DispatchLoopExceeded
+
+                diag = DiagnosticMessage(
+                    session=self._conn.session,
+                    level="error",
+                    diagnostic=DispatchLoopExceeded(
+                        depth=next_depth, limit=DISPATCH_DEPTH_LIMIT
+                    ),
+                )
+                logger.error(
+                    "plushie runtime: dispatch_loop_exceeded: "
+                    "command chain reached depth %d (limit %d); "
+                    "dropping command to break the loop",
+                    next_depth,
+                    DISPATCH_DEPTH_LIMIT,
+                )
+                with self._diagnostics_lock:
+                    self._diagnostics.append(diag)
+                return
+            self._queue.put(("_dispatched", next_depth, event))
             return
 
         if t == "task":

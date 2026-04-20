@@ -710,3 +710,72 @@ def _collect_ids(node: dict[str, Any]) -> list[str]:
     for child in node.get("children", []):
         result.extend(_collect_ids(child))
     return result
+
+
+# ===================================================================
+# Dispatch-depth guard
+# ===================================================================
+
+
+class TestDispatchDepthGuard:
+    """`Command.dispatch` past the depth cap surfaces a typed diagnostic."""
+
+    def _make_runtime(self) -> Any:
+        from unittest.mock import MagicMock
+
+        from plushie.app import create_app
+        from plushie.runtime import Runtime
+
+        builder = create_app("DispatchDepthTest")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model
+
+        @builder.view
+        def _view(_model: int) -> None:
+            return None
+
+        conn = MagicMock()
+        conn.session = ""
+        # Runtime spawns no reader threads because we don't call start().
+        rt = Runtime(builder, conn)
+        return rt
+
+    def test_dispatch_under_limit_enqueues_event(self) -> None:
+        rt = self._make_runtime()
+        cmd = Command.dispatch("hello", lambda v: v)
+        rt._current_dispatch_depth = 5
+        rt._execute_command(cmd)
+        # Should enqueue a ("_dispatched", 6, event) tuple.
+        queued = rt._queue.get_nowait()
+        assert queued[0] == "_dispatched"
+        assert queued[1] == 6
+        assert queued[2] == "hello"
+
+    def test_dispatch_at_limit_drops_and_emits_diagnostic(self) -> None:
+        from plushie.diagnostics import DiagnosticMessage, DispatchLoopExceeded
+        from plushie.runtime import DISPATCH_DEPTH_LIMIT
+
+        rt = self._make_runtime()
+        # Simulate being one dispatch away from the cap.
+        rt._current_dispatch_depth = DISPATCH_DEPTH_LIMIT
+        cmd = Command.dispatch("boom", lambda v: v)
+        rt._execute_command(cmd)
+
+        # The command was dropped: nothing queued.
+        assert rt._queue.empty()
+
+        # Typed DispatchLoopExceeded diagnostic was accumulated.
+        with rt._diagnostics_lock:
+            diags = list(rt._diagnostics)
+        assert len(diags) == 1
+        msg = diags[0]
+        assert isinstance(msg, DiagnosticMessage)
+        assert isinstance(msg.diagnostic, DispatchLoopExceeded)
+        assert msg.diagnostic.depth == DISPATCH_DEPTH_LIMIT + 1
+        assert msg.diagnostic.limit == DISPATCH_DEPTH_LIMIT
