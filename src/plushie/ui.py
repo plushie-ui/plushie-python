@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Any, overload
 
-from plushie.types import encode_length, encode_line_height, encode_padding
+from plushie.types import Span, encode_length, encode_line_height, encode_padding
 
 # ---------------------------------------------------------------------------
 # Node type alias
@@ -724,8 +724,14 @@ def rich_text(id: str, /, **kwargs: Any) -> Node:
     Args:
         id: Rich text identifier.
         **kwargs: Rich text props (spans, width, height, size, font,
-            color, line_height, wrapping, ellipsis, a11y).
+            color, line_height, wrapping, ellipsis, a11y). The
+            ``spans`` list accepts :class:`plushie.types.Span`
+            instances or plain dicts. Span instances are encoded to
+            their wire form automatically.
     """
+    spans = kwargs.get("spans")
+    if spans is not None:
+        kwargs["spans"] = [s.to_wire() if isinstance(s, Span) else s for s in spans]
     return _node(id, "rich_text", kwargs)
 
 

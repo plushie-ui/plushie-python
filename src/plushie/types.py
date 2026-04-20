@@ -1164,6 +1164,89 @@ def encode_line_height(
 
 
 # ---------------------------------------------------------------------------
+# Span (rich_text)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class SpanHighlight:
+    """Highlight backdrop drawn behind a `Span`'s text.
+
+    Optional fields apply only when set: a bare ``background`` paints
+    a solid colour, ``border`` adds a stroke around the highlighted
+    region.
+    """
+
+    background: str | None = None
+    border: Border | None = None
+
+    def to_wire(self) -> dict[str, object]:
+        """Convert to wire-compatible dict, omitting unset fields."""
+        result: dict[str, object] = {}
+        if self.background is not None:
+            result["background"] = self.background
+        if self.border is not None:
+            result["border"] = self.border.to_wire()
+        return result
+
+
+@dataclass(frozen=True, slots=True)
+class Span:
+    """A typed span for the ``rich_text`` widget.
+
+    Each span is one segment of styled text. ``text`` is required;
+    every other field is optional and falls back to the rich_text
+    widget's default styling when omitted.
+
+    Construct one and chain replacements with :func:`dataclasses.replace`,
+    or build them inline:
+
+        from dataclasses import replace
+        from plushie.types import Span
+
+        title = Span(text="Build ", color="#000000")
+        ok = replace(title, text="ok", color="#22aa22", underline=True)
+
+    Spans are encoded to maps with snake_case keys before being
+    placed on the wire; missing fields are omitted.
+    """
+
+    text: str
+    size: float | None = None
+    font: Font | None = None
+    color: str | None = None
+    line_height: LineHeight | None = None
+    link: str | None = None
+    underline: bool | None = None
+    strikethrough: bool | None = None
+    padding: Padding | None = None
+    highlight: SpanHighlight | None = None
+
+    def to_wire(self) -> dict[str, object]:
+        """Convert to wire-compatible dict with non-None fields only."""
+        result: dict[str, object] = {"text": self.text}
+        if self.size is not None:
+            result["size"] = self.size
+        if self.font is not None:
+            result["font"] = self.font.to_wire()
+        if self.color is not None:
+            result["color"] = self.color
+        if self.line_height is not None:
+            result["line_height"] = encode_line_height(self.line_height)
+        if self.link is not None:
+            result["link"] = self.link
+        if self.underline is not None:
+            result["underline"] = self.underline
+        if self.strikethrough is not None:
+            result["strikethrough"] = self.strikethrough
+        if self.padding is not None:
+            result["padding"] = encode_padding(self.padding)
+        if self.highlight is not None:
+            result["highlight"] = self.highlight.to_wire()
+        return result
+
+
+# ---------------------------------------------------------------------------
 # HelloInfo
 # ---------------------------------------------------------------------------
 
@@ -1246,6 +1329,8 @@ __all__ = [
     "RadiusCorners",
     "Shadow",
     "Shaping",
+    "Span",
+    "SpanHighlight",
     "StatusOverride",
     "StyleMap",
     "Theme",

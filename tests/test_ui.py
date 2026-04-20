@@ -452,6 +452,38 @@ class TestRichText:
         node = ui.rich_text("rt", spans=spans)
         _assert_node(node, id="rt", type="rich_text", props={"spans": spans})
 
+    def test_typed_spans_encode_to_wire_dicts(self) -> None:
+        from plushie.types import Span
+
+        node = ui.rich_text(
+            "rt",
+            spans=[
+                Span(text="Build ", color="#000000"),
+                Span(text="ok", color="#22aa22", underline=True),
+            ],
+        )
+        _assert_node(
+            node,
+            id="rt",
+            type="rich_text",
+            props={
+                "spans": [
+                    {"text": "Build ", "color": "#000000"},
+                    {"text": "ok", "color": "#22aa22", "underline": True},
+                ]
+            },
+        )
+
+    def test_typed_and_dict_spans_can_mix(self) -> None:
+        from plushie.types import Span
+
+        node = ui.rich_text(
+            "rt",
+            spans=[Span(text="a"), {"text": "b", "size": 14}],
+        )
+        spans = node["props"]["spans"]
+        assert spans == [{"text": "a"}, {"text": "b", "size": 14}]
+
 
 class TestQrCode:
     def test_basic(self) -> None:
