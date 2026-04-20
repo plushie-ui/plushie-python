@@ -3,14 +3,14 @@
 Each wire event family maps to its own frozen dataclass with precisely
 typed fields. Pattern match on class type in ``update()``::
 
-    from plushie.events import Click, Input, KeyPress
+    from plushie.events import Click, Input, KeyEvent
 
     match event:
         case Click(id="save"):
             handle_save(model)
         case Input(id="name", value=v):
             replace(model, name=v)
-        case KeyPress(key="Escape"):
+        case KeyEvent(type="press", key="Escape"):
             handle_escape(model)
 
 Widget events carry ``id`` (the widget's local ID after scope splitting),
