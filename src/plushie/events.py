@@ -395,12 +395,20 @@ class Enter:
 
     Attributes:
         id: Widget ID.
+        x: Horizontal position in widget-local coordinates, or ``None``
+            for widget-level enter events (populated when the source is
+            a canvas element).
+        y: Vertical position in widget-local coordinates, or ``None``
+            for widget-level enter events (populated when the source is
+            a canvas element).
         captured: Whether the event was captured by a parent widget.
         window_id: Source window ID.
         scope: Ancestor container IDs.
     """
 
     id: str
+    x: float | None = None
+    y: float | None = None
     captured: bool = False
     window_id: str = ""
     scope: tuple[str, ...] = ()
@@ -414,12 +422,20 @@ class Exit:
 
     Attributes:
         id: Widget ID.
+        x: Horizontal position in widget-local coordinates, or ``None``
+            for widget-level exit events (populated when the source is
+            a canvas element).
+        y: Vertical position in widget-local coordinates, or ``None``
+            for widget-level exit events (populated when the source is
+            a canvas element).
         captured: Whether the event was captured by a parent widget.
         window_id: Source window ID.
         scope: Ancestor container IDs.
     """
 
     id: str
+    x: float | None = None
+    y: float | None = None
     captured: bool = False
     window_id: str = ""
     scope: tuple[str, ...] = ()

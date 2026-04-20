@@ -871,6 +871,9 @@ class TestDecodeUnifiedEvents:
         result = decode_message(raw)
         assert isinstance(result, Enter)
         assert result.id == "area1"
+        assert result.x is None
+        assert result.y is None
+        assert result.captured is False
 
     def test_exit(self) -> None:
         raw = {
@@ -882,6 +885,39 @@ class TestDecodeUnifiedEvents:
         result = decode_message(raw)
         assert isinstance(result, Exit)
         assert result.id == "area1"
+        assert result.x is None
+        assert result.y is None
+        assert result.captured is False
+
+    def test_enter_with_canvas_coords(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "enter",
+            "id": "canvas1",
+            "window_id": "main",
+            "data": {"x": 12.5, "y": 34.0, "captured": True},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, Enter)
+        assert result.id == "canvas1"
+        assert result.x == 12.5
+        assert result.y == 34.0
+        assert result.captured is True
+
+    def test_exit_with_canvas_coords(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "exit",
+            "id": "canvas1",
+            "window_id": "main",
+            "value": {"x": 100.0, "y": 200.0, "captured": False},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, Exit)
+        assert result.id == "canvas1"
+        assert result.x == 100.0
+        assert result.y == 200.0
+        assert result.captured is False
 
     def test_key_press_widget_scoped(self) -> None:
         raw = {

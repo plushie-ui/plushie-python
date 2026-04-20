@@ -1275,6 +1275,9 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Enter(
             id=local_id,
+            x=_opt_float(data.get("x")),
+            y=_opt_float(data.get("y")),
+            captured=bool(data.get("captured", captured)),
             window_id=_wid,
             scope=scope,
         )
@@ -1283,6 +1286,9 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
         return Exit(
             id=local_id,
+            x=_opt_float(data.get("x")),
+            y=_opt_float(data.get("y")),
+            captured=bool(data.get("captured", captured)),
             window_id=_wid,
             scope=scope,
         )

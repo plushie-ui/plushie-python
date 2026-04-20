@@ -25,6 +25,10 @@
 
 ### Added
 
+- `Enter` and `Exit` pointer events now carry optional `x` and `y`
+  coordinates and a `captured` flag, converging with the Rust, Ruby,
+  and Elixir SDKs. Coordinates are populated when the event originates
+  from a canvas element and `None` for widget-level enter / exit.
 - Decoder support for the new top-level `diagnostic` wire message.
   Mirrored to Python logging at the reported severity and delivered
   through the runtime as a `RendererDiagnostic` event so hosts can
