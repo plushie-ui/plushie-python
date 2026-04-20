@@ -261,6 +261,9 @@ def notification(
 ) -> Command:
     """Show an OS notification. Returns a command.
 
+    On macOS, notifications may require the app to be bundled (.app)
+    or have notification entitlements to display.
+
     Args:
         tag: Effect tag for result matching.
         title: Notification title.
