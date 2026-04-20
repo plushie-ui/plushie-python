@@ -30,14 +30,59 @@ Accepted forms:
 - ``{"fill_portion": n}`` - fill a weighted portion of available space
 """
 
-type Padding = int | float | tuple[float, float] | tuple[float, float, float, float]
+type Padding = (
+    int
+    | float
+    | tuple[float, float]
+    | tuple[float, float, float, float]
+    | dict[str, float]
+)
 """Padding specification.
 
 Accepted forms:
 - Uniform: single number applied to all sides
 - Vertical/horizontal: ``(vertical, horizontal)``
 - Per-side: ``(top, right, bottom, left)``
+- Named: ``{"top": ..., "right": ..., "bottom": ..., "left": ...}``
+  (any subset; missing fields default to 0)
 """
+
+
+def encode_padding(value: Padding) -> int | float | dict[str, float]:
+    """Encode a :data:`Padding` value to its wire representation.
+
+    The renderer accepts either a plain number (uniform on all sides)
+    or a ``{"top", "right", "bottom", "left"}`` object. Tuples are
+    rejected by the renderer's decoder, so every shorthand form
+    normalises to one of those shapes before emission.
+
+    As a convenience that matches the renderer's own ``wire_encode``,
+    uniform four-sided padding collapses to a single number.
+    """
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, tuple):
+        if len(value) == 2:
+            v, h = value
+            top, right, bottom, left = v, h, v, h
+        elif len(value) == 4:
+            top, right, bottom, left = value
+        else:
+            raise ValueError(
+                f"Padding tuple must have 2 or 4 elements, got {len(value)}"
+            )
+    elif isinstance(value, dict):
+        top = value.get("top", 0)
+        right = value.get("right", 0)
+        bottom = value.get("bottom", 0)
+        left = value.get("left", 0)
+    else:
+        raise TypeError(f"Invalid Padding value: {value!r}")
+
+    if top == right == bottom == left:
+        return top
+    return {"top": top, "right": right, "bottom": bottom, "left": left}
+
 
 type Color = str
 """Canonical hex color string (``#rrggbb`` or ``#rrggbbaa``).
@@ -45,8 +90,14 @@ type Color = str
 Use the ``Colors`` helper class for constructors and named color lookup.
 """
 
-type Alignment = Literal["start", "center", "end"]
-"""Alignment value for ``align_x`` and ``align_y`` widget props."""
+type AlignX = Literal["left", "center", "right"]
+"""Horizontal alignment value for the ``align_x`` prop."""
+
+type AlignY = Literal["top", "center", "bottom"]
+"""Vertical alignment value for the ``align_y`` prop."""
+
+type Alignment = AlignX | AlignY
+"""Union of every accepted alignment value; prefer :data:`AlignX` or :data:`AlignY` at widget boundaries."""
 
 type WindowLevel = Literal["normal", "always_on_top", "always_on_bottom"]
 """Window stacking level."""
@@ -1120,6 +1171,8 @@ __all__ = [
     "A11yLive",
     "A11yOrientation",
     "A11yRole",
+    "AlignX",
+    "AlignY",
     "Alignment",
     "Anchor",
     "Border",
@@ -1151,5 +1204,6 @@ __all__ = [
     "WindowMode",
     "Wrapping",
     "encode_line_height",
+    "encode_padding",
     "invalid",
 ]

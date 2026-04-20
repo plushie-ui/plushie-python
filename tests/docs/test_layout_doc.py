@@ -64,7 +64,14 @@ class TestPaddingXY:
     def test_xy(self) -> None:
         """Docs: padding=(8, 16) vertical/horizontal."""
         tree = ui.container("box", ui.text("x"), padding=(8, 16))
-        assert tree["props"]["padding"] == (8, 16)
+        # (v, h) shorthand expands to {top: v, right: h, bottom: v, left: h}
+        # on the wire; the renderer rejects tuple encodings.
+        assert tree["props"]["padding"] == {
+            "top": 8,
+            "right": 16,
+            "bottom": 8,
+            "left": 16,
+        }
 
 
 class TestPaddingPerSide:
@@ -277,13 +284,13 @@ class TestGrid:
                 for item in items
             ),
             id="gallery",
-            columns=3,
+            num_columns=3,
             spacing=8,
         )
         assert tree["type"] == "grid"
         assert tree["id"] == "gallery"
         assert tree["props"]["spacing"] == 8
-        assert tree["props"]["columns"] == 3
+        assert tree["props"]["num_columns"] == 3
         assert len(tree["children"]) == 2
         assert all(c["type"] == "image" for c in tree["children"])
 
@@ -368,7 +375,12 @@ class TestHeaderBodyFooter:
         assert tree["type"] == "column"
         children = tree["children"]
         assert children[0]["id"] == "header"
-        assert children[0]["props"]["padding"] == (8, 16)
+        assert children[0]["props"]["padding"] == {
+            "top": 8,
+            "right": 16,
+            "bottom": 8,
+            "left": 16,
+        }
         assert children[1]["id"] == "body"
         assert children[1]["type"] == "scrollable"
         assert children[2]["id"] == "footer"
