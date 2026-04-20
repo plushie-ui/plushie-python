@@ -739,14 +739,19 @@ class PaneFocusCycle:
 
 
 @dataclass(frozen=True, slots=True)
-class KeyPress:
-    """A key was pressed.
+class KeyEvent:
+    """A key was pressed or released.
 
-    Wire family: ``key_press``. Fired from keyboard subscriptions
-    (global, with ``id=None``) or from widget-scoped key events
-    (with ``id`` and ``scope`` populated).
+    Wire families: ``key_press``, ``key_release``. Fired from keyboard
+    subscriptions (global, with ``id=None``) or from widget-scoped key
+    events (with ``id`` and ``scope`` populated). Match on ``type`` to
+    distinguish press from release::
+
+        case KeyEvent(type="press", key="Escape"):
+            ...
 
     Attributes:
+        type: ``"press"`` or ``"release"``.
         key: The logical key name (e.g. ``"a"``, ``"Enter"``, ``"ArrowUp"``).
         modified_key: The key value after applying modifier transforms
             (e.g. Shift+a produces ``"A"``). Falls back to ``key`` when
@@ -757,15 +762,16 @@ class KeyPress:
         location: Physical key location on the keyboard.
         text: Text input produced by this key press, or ``None`` for
             non-printable keys.
-        repeat: Whether this is an auto-repeat event from holding the key.
+        repeat: Whether this is an auto-repeat event from holding the
+            key. Always ``False`` for release events.
         captured: Whether a widget already consumed this event.
-        window_id: The window that was focused when the key was pressed,
-            or ``""`` when absent.
+        window_id: The window that was focused, or ``""`` when absent.
         id: Widget ID for widget-scoped key events, ``None`` for
             subscription (global) key events.
         scope: Ancestor container IDs for widget-scoped key events.
     """
 
+    type: Literal["press", "release"]
     key: str
     modified_key: str
     modifiers: KeyModifiers
@@ -773,41 +779,6 @@ class KeyPress:
     location: KeyLocation = "standard"
     text: str | None = None
     repeat: bool = False
-    captured: bool = False
-    window_id: str = ""
-    id: str | None = None
-    scope: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class KeyRelease:
-    """A key was released.
-
-    Wire family: ``key_release``. Fired from keyboard subscriptions
-    (global, with ``id=None``) or from widget-scoped key events
-    (with ``id`` and ``scope`` populated).
-
-    Attributes:
-        key: The logical key name.
-        modified_key: The key value after applying modifier transforms.
-        modifiers: Current keyboard modifier state.
-        physical_key: Physical key code, or ``None``.
-        location: Physical key location on the keyboard.
-        text: Text value, or ``None`` for non-printable keys.
-        captured: Whether a widget already consumed this event.
-        window_id: The window that was focused when the key was released,
-            or ``""`` when absent.
-        id: Widget ID for widget-scoped key events, ``None`` for
-            subscription (global) key events.
-        scope: Ancestor container IDs for widget-scoped key events.
-    """
-
-    key: str
-    modified_key: str
-    modifiers: KeyModifiers
-    physical_key: str | None = None
-    location: KeyLocation = "standard"
-    text: str | None = None
     captured: bool = False
     window_id: str = ""
     id: str | None = None
@@ -839,69 +810,28 @@ class ModifiersChanged:
 
 
 @dataclass(frozen=True, slots=True)
-class ImeOpened:
-    """The IME composition session started.
+class ImeEvent:
+    """An Input Method Editor lifecycle step.
 
-    Wire family: ``ime_opened``.
+    Wire families: ``ime_opened``, ``ime_preedit``, ``ime_commit``,
+    ``ime_closed``. Match on ``type`` to distinguish each step::
+
+        case ImeEvent(type="commit", text=committed):
+            ...
 
     Attributes:
+        type: ``"opened"``, ``"preedit"``, ``"commit"``, or ``"closed"``.
+        text: Current preedit or committed text; ``None`` for opened /
+            closed events.
+        cursor: Selection range inside the preedit string as a
+            ``(start, end)`` byte-offset tuple, or ``None``.
         captured: Whether a widget already consumed this event.
         window_id: The window with IME focus, or ``""`` if absent.
     """
 
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class ImePreedit:
-    """The IME is composing text.
-
-    Wire family: ``ime_preedit``.
-
-    Attributes:
-        text: The current preedit composition string.
-        cursor: Selection range within the preedit string as a
-            ``(start, end)`` tuple of byte offsets, or ``None`` when
-            no cursor info is available.
-        captured: Whether a widget already consumed this event.
-        window_id: The window with IME focus, or ``""`` if absent.
-    """
-
-    text: str
+    type: Literal["opened", "preedit", "commit", "closed"]
+    text: str | None = None
     cursor: tuple[int, int] | None = None
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class ImeCommit:
-    """The IME committed final text to the input.
-
-    Wire family: ``ime_commit``.
-
-    Attributes:
-        text: The committed text string.
-        captured: Whether a widget already consumed this event.
-        window_id: The window with IME focus, or ``""`` if absent.
-    """
-
-    text: str
-    captured: bool = False
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class ImeClose:
-    """The IME composition session ended.
-
-    Wire family: ``ime_closed``.
-
-    Attributes:
-        captured: Whether a widget already consumed this event.
-        window_id: The window with IME focus, or ``""`` if absent.
-    """
-
     captured: bool = False
     window_id: str = ""
 
@@ -912,171 +842,53 @@ class ImeClose:
 
 
 @dataclass(frozen=True, slots=True)
-class WindowOpen:
-    """A window finished opening.
+class WindowEvent:
+    """A window lifecycle event.
 
-    Wire family: ``window_opened``.
+    Wire families: ``window_opened``, ``window_closed``,
+    ``window_close_requested``, ``window_resized``, ``window_moved``,
+    ``window_focused``, ``window_unfocused``, ``window_rescaled``,
+    ``file_hovered``, ``file_dropped``, ``files_hovered_left``. Match
+    on ``type`` to distinguish each event::
+
+        case WindowEvent(type="resized", width=w, height=h):
+            ...
 
     Attributes:
-        window_id: The window's unique identifier.
-        width: Initial window width in logical pixels.
-        height: Initial window height in logical pixels.
-        position_x: Initial horizontal screen position, or ``None``.
-        position_y: Initial vertical screen position, or ``None``.
-        scale_factor: DPI scale factor for the window's display.
+        type: The lifecycle event kind.
+        window_id: The window the event applies to.
+        width: New width for ``"opened"`` and ``"resized"`` events.
+        height: New height for ``"opened"`` and ``"resized"`` events.
+        x: New horizontal position for ``"moved"`` events.
+        y: New vertical position for ``"moved"`` events.
+        scale_factor: Scale factor for ``"opened"`` and ``"rescaled"``.
+        path: File path for ``"file_hovered"`` and ``"file_dropped"``.
+        position_x: Initial screen x on ``"opened"`` when available.
+        position_y: Initial screen y on ``"opened"`` when available.
     """
 
-    width: float
-    height: float
-    scale_factor: float
+    type: Literal[
+        "opened",
+        "closed",
+        "close_requested",
+        "resized",
+        "moved",
+        "focused",
+        "unfocused",
+        "rescaled",
+        "file_hovered",
+        "file_dropped",
+        "files_hovered_left",
+    ]
     window_id: str = ""
+    width: float | None = None
+    height: float | None = None
+    x: float | None = None
+    y: float | None = None
+    scale_factor: float | None = None
+    path: str | None = None
     position_x: float | None = None
     position_y: float | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class WindowClosed:
-    """A window was closed and destroyed.
-
-    Wire family: ``window_closed``.
-
-    Attributes:
-        window_id: The closed window's identifier.
-    """
-
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class WindowCloseRequested:
-    """The user requested to close a window (e.g. clicked the X button).
-
-    Wire family: ``window_close_requested``. Handle this to show
-    confirmation dialogs or prevent accidental closure.
-
-    Attributes:
-        window_id: The window that received the close request.
-    """
-
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class WindowResized:
-    """A window was resized to new dimensions.
-
-    Wire family: ``window_resized``.
-
-    Attributes:
-        window_id: The resized window's identifier.
-        width: New width in logical pixels.
-        height: New height in logical pixels.
-    """
-
-    width: float
-    height: float
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class WindowMoved:
-    """A window was moved to a new screen position.
-
-    Wire family: ``window_moved``.
-
-    Attributes:
-        window_id: The moved window's identifier.
-        x: New horizontal position in logical pixels.
-        y: New vertical position in logical pixels.
-    """
-
-    x: float
-    y: float
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class WindowFocused:
-    """A window gained keyboard/input focus.
-
-    Wire family: ``window_focused``.
-
-    Attributes:
-        window_id: The focused window's identifier.
-    """
-
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class WindowUnfocused:
-    """A window lost keyboard/input focus.
-
-    Wire family: ``window_unfocused``.
-
-    Attributes:
-        window_id: The unfocused window's identifier.
-    """
-
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class WindowRescaled:
-    """A window's DPI scale factor changed (e.g. moved between monitors).
-
-    Wire family: ``window_rescaled``.
-
-    Attributes:
-        window_id: The rescaled window's identifier.
-        scale_factor: The new DPI scale factor.
-    """
-
-    scale_factor: float
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class FileHovered:
-    """A file is being dragged over a window (not yet dropped).
-
-    Wire family: ``file_hovered``.
-
-    Attributes:
-        window_id: The window the file is hovering over.
-        path: File system path of the hovered file.
-    """
-
-    path: str
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class FileDropped:
-    """A file was dropped onto a window.
-
-    Wire family: ``file_dropped``.
-
-    Attributes:
-        window_id: The window the file was dropped on.
-        path: File system path of the dropped file.
-    """
-
-    path: str
-    window_id: str = ""
-
-
-@dataclass(frozen=True, slots=True)
-class FilesHoveredLeft:
-    """A previously hovered file drag left the window without dropping.
-
-    Wire family: ``files_hovered_left``.
-
-    Attributes:
-        window_id: The window the file drag left.
-    """
-
-    window_id: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -1821,26 +1633,8 @@ type PointerEvent = Press | Release | Move | Scroll | DoubleClick
 type PaneEvent = PaneResized | PaneDragged | PaneClicked | PaneFocusCycle
 """Union of all pane_grid events."""
 
-type KeyEvent = KeyPress | KeyRelease | ModifiersChanged
-"""Union of all keyboard events."""
-
-type ImeEvent = ImeOpened | ImePreedit | ImeCommit | ImeClose
-"""Union of all IME events."""
-
-type WindowEvent = (
-    WindowOpen
-    | WindowClosed
-    | WindowCloseRequested
-    | WindowResized
-    | WindowMoved
-    | WindowFocused
-    | WindowUnfocused
-    | WindowRescaled
-    | FileHovered
-    | FileDropped
-    | FilesHoveredLeft
-)
-"""Union of all window lifecycle events."""
+type KeyboardEvent = KeyEvent | ModifiersChanged
+"""Union of all keyboard events (key press / release plus modifier changes)."""
 
 type SystemEvent = (
     AnimationFrame
@@ -1866,7 +1660,7 @@ type Event = (
     | Diagnostic
     | RendererDiagnostic
     | PaneEvent
-    | KeyEvent
+    | KeyboardEvent
     | ImeEvent
     | WindowEvent
     | SystemEvent
@@ -1915,26 +1709,18 @@ __all__ = [
     "Enter",
     "Event",
     "Exit",
-    "FileDropped",
-    "FileHovered",
     "FileOpened",
     "FileSaved",
-    "FilesHoveredLeft",
     "FilesOpened",
     "Focused",
     "FocusedWidget",
     "ImageList",
-    "ImeClose",
-    "ImeCommit",
     "ImeEvent",
-    "ImeOpened",
-    "ImePreedit",
     "Input",
     "KeyBinding",
     "KeyEvent",
     "KeyLocation",
-    "KeyPress",
-    "KeyRelease",
+    "KeyboardEvent",
     "ModifiersChanged",
     "Move",
     "NotificationShown",
@@ -1981,15 +1767,7 @@ __all__ = [
     "TransitionComplete",
     "TreeHash",
     "WidgetStatus",
-    "WindowCloseRequested",
-    "WindowClosed",
     "WindowEvent",
-    "WindowFocused",
-    "WindowMoved",
-    "WindowOpen",
-    "WindowRescaled",
-    "WindowResized",
-    "WindowUnfocused",
     "build_renderer_exit",
     "decode_effect_result",
     "split_scoped_id",

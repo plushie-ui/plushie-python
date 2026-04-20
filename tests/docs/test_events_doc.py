@@ -18,14 +18,10 @@ from plushie.events import (
     Close,
     EffectResult,
     Enter,
-    FileDropped,
-    FileHovered,
-    FilesHoveredLeft,
-    ImeCommit,
-    ImePreedit,
+    ImeEvent,
     Input,
     KeyBinding,
-    KeyPress,
+    KeyEvent,
     ModifiersChanged,
     Move,
     Open,
@@ -46,9 +42,7 @@ from plushie.events import (
     ThemeChanged,
     TimerTick,
     Toggle,
-    WindowCloseRequested,
-    WindowFocused,
-    WindowResized,
+    WindowEvent,
 )
 from plushie.types import KeyModifiers
 
@@ -381,53 +375,57 @@ class TestPaneResizedMatch:
 
 class TestKeyPressMatch:
     def test_cmd_s_match(self) -> None:
-        event = KeyPress(
+        event = KeyEvent(
+            type="press",
             key="s",
             modified_key="s",
             modifiers=KeyModifiers(command=True),
         )
         match event:
-            case KeyPress(key="s", modifiers=KeyModifiers(command=True)):
+            case KeyEvent(type="press", key="s", modifiers=KeyModifiers(command=True)):
                 matched = True
             case _:
                 matched = False
         assert matched
 
     def test_escape_match(self) -> None:
-        event = KeyPress(
+        event = KeyEvent(
+            type="press",
             key="Escape",
             modified_key="Escape",
             modifiers=KeyModifiers(),
         )
         model = Model(modal_open=True)
         match event:
-            case KeyPress(key="Escape"):
+            case KeyEvent(type="press", key="Escape"):
                 model = replace(model, modal_open=False)
         assert model.modal_open is False
 
     def test_physical_key_match(self) -> None:
-        event = KeyPress(
+        event = KeyEvent(
+            type="press",
             key="w",
             modified_key="w",
             modifiers=KeyModifiers(),
             physical_key="KeyW",
         )
         match event:
-            case KeyPress(physical_key="KeyW"):
+            case KeyEvent(type="press", physical_key="KeyW"):
                 matched = True
             case _:
                 matched = False
         assert matched
 
     def test_text_field_match(self) -> None:
-        event = KeyPress(
+        event = KeyEvent(
+            type="press",
             key="a",
             modified_key="a",
             modifiers=KeyModifiers(),
             text="a",
         )
         match event:
-            case KeyPress(text=text) if text is not None:
+            case KeyEvent(type="press", text=text) if text is not None:
                 matched_text = text
             case _:
                 matched_text = None
@@ -447,20 +445,20 @@ class TestKeyModifiersConstruct:
 
 class TestImePreeditMatch:
     def test_preedit_match(self) -> None:
-        event = ImePreedit(text="compose", cursor=(0, 7))
+        event = ImeEvent(type="preedit", text="compose", cursor=(0, 7))
         model = Model()
         match event:
-            case ImePreedit(text=text):
+            case ImeEvent(type="preedit", text=text):
                 model = replace(model, composing=text)
         assert model.composing == "compose"
 
 
 class TestImeCommitMatch:
     def test_commit_match(self) -> None:
-        event = ImeCommit(text="final")
+        event = ImeEvent(type="commit", text="final")
         model = Model(composing="draft", value="prefix")
         match event:
-            case ImeCommit(text=text):
+            case ImeEvent(type="commit", text=str() as text):
                 model = replace(model, composing=None, value=model.value + text)
         assert model.composing is None
         assert model.value == "prefixfinal"
@@ -527,9 +525,9 @@ class TestModifiersChangedMatch:
 
 class TestWindowCloseRequestedMatch:
     def test_close_requested_main(self) -> None:
-        event = WindowCloseRequested(window_id="main")
+        event = WindowEvent(type="close_requested", window_id="main")
         match event:
-            case WindowCloseRequested(window_id="main"):
+            case WindowEvent(type="close_requested", window_id="main"):
                 matched = True
             case _:
                 matched = False
@@ -537,10 +535,10 @@ class TestWindowCloseRequestedMatch:
 
     def test_close_with_unsaved_changes(self) -> None:
         model = Model(unsaved_changes=True)
-        event = WindowCloseRequested(window_id="main")
+        event = WindowEvent(type="close_requested", window_id="main")
         result: Any = model
         match event:
-            case WindowCloseRequested(window_id="main"):
+            case WindowEvent(type="close_requested", window_id="main"):
                 if model.unsaved_changes:
                     result = replace(model, confirm_exit=True)
                 else:
@@ -551,9 +549,9 @@ class TestWindowCloseRequestedMatch:
 
 class TestWindowResizedMatch:
     def test_window_resized_match(self) -> None:
-        event = WindowResized(window_id="main", width=800.0, height=600.0)
+        event = WindowEvent(type="resized", window_id="main", width=800.0, height=600.0)
         match event:
-            case WindowResized(window_id="main"):
+            case WindowEvent(type="resized", window_id="main"):
                 matched = True
             case _:
                 matched = False
@@ -562,38 +560,38 @@ class TestWindowResizedMatch:
 
 class TestWindowFocusedMatch:
     def test_window_focused_match(self) -> None:
-        event = WindowFocused(window_id="editor")
+        event = WindowEvent(type="focused", window_id="editor")
         model = Model()
         match event:
-            case WindowFocused(window_id=wid):
+            case WindowEvent(type="focused", window_id=wid):
                 model = replace(model, active_window=wid)
         assert model.active_window == "editor"
 
 
 class TestFileDragDropMatch:
     def test_file_hovered_match(self) -> None:
-        event = FileHovered(window_id="main", path="/foo.txt")
+        event = WindowEvent(type="file_hovered", window_id="main", path="/foo.txt")
         model = Model()
         match event:
-            case FileHovered(window_id="main", path=path):
+            case WindowEvent(type="file_hovered", window_id="main", path=path):
                 model = replace(model, drop_target_active=True, hovered_file=path)
         assert model.drop_target_active is True
         assert model.hovered_file == "/foo.txt"
 
     def test_file_dropped_match(self) -> None:
-        event = FileDropped(window_id="main", path="/foo.txt")
+        event = WindowEvent(type="file_dropped", window_id="main", path="/foo.txt")
         match event:
-            case FileDropped(window_id="main", path=path):
+            case WindowEvent(type="file_dropped", window_id="main", path=path):
                 matched_path = path
             case _:
                 matched_path = ""
         assert matched_path == "/foo.txt"
 
     def test_files_hovered_left_match(self) -> None:
-        event = FilesHoveredLeft(window_id="main")
+        event = WindowEvent(type="files_hovered_left", window_id="main")
         model = Model(drop_target_active=True)
         match event:
-            case FilesHoveredLeft(window_id="main"):
+            case WindowEvent(type="files_hovered_left", window_id="main"):
                 model = replace(model, drop_target_active=False)
         assert model.drop_target_active is False
 

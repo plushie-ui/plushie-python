@@ -7,13 +7,13 @@ and physical ``KeyCode`` variants).
 
 Usage::
 
-    from plushie.events import KeyPress
+    from plushie.events import KeyEvent
     from plushie import keys
 
     match event:
-        case KeyPress(key=k) if k == keys.ESCAPE:
+        case KeyEvent(type="press", key=k) if k == keys.ESCAPE:
             handle_escape(model)
-        case KeyPress(key=k) if k == keys.ENTER:
+        case KeyEvent(type="press", key=k) if k == keys.ENTER:
             handle_enter(model)
         case _:
             model

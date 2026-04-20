@@ -1,7 +1,7 @@
 """Integration test for the Shortcuts example app.
 
 Runs the Shortcuts app through the real plushie renderer binary.
-KeyPress events come from subscriptions which aren't fired by the
+KeyEvent events come from subscriptions which aren't fired by the
 mock renderer, so we test init state and view structure only.
 """
 

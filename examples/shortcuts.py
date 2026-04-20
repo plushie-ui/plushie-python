@@ -3,7 +3,7 @@
 Demonstrates:
 
 - ``Subscription.on_key_press()`` for global keyboard events
-- ``KeyPress`` event handling with modifier inspection
+- ``KeyEvent`` event handling with modifier inspection
 - ``scrollable`` for overflow content with dynamic list items
 - Capped log buffer (50 entries)
 
@@ -19,7 +19,7 @@ from typing import Any
 
 import plushie
 from plushie import ui
-from plushie.events import KeyPress
+from plushie.events import KeyEvent
 from plushie.subscriptions import Subscription
 
 MAX_LOG_ENTRIES = 50
@@ -33,14 +33,14 @@ class Model:
     count: int = 0
 
 
-def _format_key_event(event: KeyPress, n: int) -> str:
+def _format_key_event(event: KeyEvent, n: int) -> str:
     mods = _format_modifiers(event)
     key = repr(event.key)
     prefix = f"{mods}+" if mods else ""
     return f"#{n}: {prefix}{key}"
 
 
-def _format_modifiers(event: KeyPress) -> str:
+def _format_modifiers(event: KeyEvent) -> str:
     parts: list[str] = []
     if event.modifiers.ctrl:
         parts.append("Ctrl")
@@ -61,7 +61,7 @@ class Shortcuts(plushie.App[Model]):
 
     def update(self, model: Model, event: object) -> Model:
         match event:
-            case KeyPress():
+            case KeyEvent(type="press"):
                 entry = _format_key_event(event, model.count + 1)
                 new_log = (entry, *model.log)[:MAX_LOG_ENTRIES]
                 return replace(model, log=new_log, count=model.count + 1)

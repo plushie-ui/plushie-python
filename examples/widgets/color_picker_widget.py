@@ -22,7 +22,7 @@ from plushie import canvas as c
 from plushie import ui
 from plushie.canvas_widget import CanvasWidgetDef, EventAction, EventActionResult
 from plushie.events import (
-    KeyPress,
+    KeyEvent,
     Move,
     Press,
     Release,
@@ -94,7 +94,9 @@ class ColorPickerWidget(CanvasWidgetDef):
             case Release():
                 return EventAction.update_state({**state, "drag": "none"})
 
-            case KeyPress(id=eid, key=key, modifiers=mods) if eid is not None:
+            case KeyEvent(type="press", id=eid, key=key, modifiers=mods) if (
+                eid is not None
+            ):
                 shift = mods.shift
                 return _handle_key(eid, key, shift, state)
 

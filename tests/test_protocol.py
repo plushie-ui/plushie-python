@@ -16,18 +16,11 @@ from plushie.events import (
     EffectStubAck,
     Enter,
     Exit,
-    FileDropped,
-    FileHovered,
-    FilesHoveredLeft,
     Focused,
-    ImeClose,
-    ImeCommit,
-    ImeOpened,
-    ImePreedit,
+    ImeEvent,
     Input,
     KeyBinding,
-    KeyPress,
-    KeyRelease,
+    KeyEvent,
     ModifiersChanged,
     Move,
     Open,
@@ -53,14 +46,7 @@ from plushie.events import (
     SystemInfo,
     ThemeChanged,
     Toggle,
-    WindowClosed,
-    WindowCloseRequested,
-    WindowFocused,
-    WindowMoved,
-    WindowOpen,
-    WindowRescaled,
-    WindowResized,
-    WindowUnfocused,
+    WindowEvent,
 )
 from plushie.protocol import (
     PROTOCOL_VERSION,
@@ -906,7 +892,7 @@ class TestDecodeUnifiedEvents:
             "data": {"key": "ArrowRight", "modified_key": "ArrowRight"},
         }
         result = decode_message(raw)
-        assert isinstance(result, KeyPress)
+        assert isinstance(result, KeyEvent)
         assert result.id == "canvas1"
         assert result.key == "ArrowRight"
         assert result.scope == ("scope1", "main")
@@ -920,7 +906,7 @@ class TestDecodeUnifiedEvents:
             "data": {"key": "Enter", "modified_key": "Enter"},
         }
         result = decode_message(raw)
-        assert isinstance(result, KeyRelease)
+        assert isinstance(result, KeyEvent)
         assert result.id == "canvas1"
         assert result.key == "Enter"
         assert result.scope == ("main",)
@@ -1035,7 +1021,7 @@ class TestDecodeKeyEvents:
             "modifiers": {"shift": True, "ctrl": False, "alt": False, "logo": False},
         }
         result = decode_message(raw)
-        assert isinstance(result, KeyPress)
+        assert isinstance(result, KeyEvent)
         assert result.key == "a"
         assert result.modified_key == "A"
         assert result.modifiers.shift is True
@@ -1053,7 +1039,7 @@ class TestDecodeKeyEvents:
             "modifiers": {},
         }
         result = decode_message(raw)
-        assert isinstance(result, KeyPress)
+        assert isinstance(result, KeyEvent)
         assert result.window_id == "editor"
 
     def test_key_release(self) -> None:
@@ -1066,7 +1052,7 @@ class TestDecodeKeyEvents:
             "modifiers": {},
         }
         result = decode_message(raw)
-        assert isinstance(result, KeyRelease)
+        assert isinstance(result, KeyEvent)
         assert result.key == "Escape"
 
     def test_modifiers_changed(self) -> None:
@@ -1224,7 +1210,7 @@ class TestDecodeTouchEvents:
 class TestDecodeImeEvents:
     def test_ime_opened(self) -> None:
         raw = {"type": "event", "family": "ime_opened", "id": "", "tag": "ime"}
-        assert isinstance(decode_message(raw), ImeOpened)
+        assert isinstance(decode_message(raw), ImeEvent)
 
     def test_ime_preedit(self) -> None:
         raw = {
@@ -1235,7 +1221,7 @@ class TestDecodeImeEvents:
             "data": {"text": "ni", "cursor": {"start": 0, "end": 2}},
         }
         result = decode_message(raw)
-        assert isinstance(result, ImePreedit)
+        assert isinstance(result, ImeEvent)
         assert result.text == "ni"
         assert result.cursor == (0, 2)
 
@@ -1248,7 +1234,7 @@ class TestDecodeImeEvents:
             "data": {"text": "abc"},
         }
         result = decode_message(raw)
-        assert isinstance(result, ImePreedit)
+        assert isinstance(result, ImeEvent)
         assert result.cursor is None
 
     def test_ime_commit(self) -> None:
@@ -1260,12 +1246,12 @@ class TestDecodeImeEvents:
             "data": {"text": "你好"},
         }
         result = decode_message(raw)
-        assert isinstance(result, ImeCommit)
+        assert isinstance(result, ImeEvent)
         assert result.text == "你好"
 
     def test_ime_closed(self) -> None:
         raw = {"type": "event", "family": "ime_closed", "id": "", "tag": "ime"}
-        assert isinstance(decode_message(raw), ImeClose)
+        assert isinstance(decode_message(raw), ImeEvent)
 
 
 class TestDecodeWindowEvents:
@@ -1284,7 +1270,7 @@ class TestDecodeWindowEvents:
             },
         }
         result = decode_message(raw)
-        assert isinstance(result, WindowOpen)
+        assert isinstance(result, WindowEvent)
         assert result.window_id == "win1"
         assert result.width == 800
         assert result.position_x == 100
@@ -1304,7 +1290,7 @@ class TestDecodeWindowEvents:
             },
         }
         result = decode_message(raw)
-        assert isinstance(result, WindowOpen)
+        assert isinstance(result, WindowEvent)
         assert result.position_x is None
         assert result.position_y is None
 
@@ -1316,7 +1302,7 @@ class TestDecodeWindowEvents:
             "tag": "win",
             "data": {"window_id": "w1"},
         }
-        assert isinstance(decode_message(raw), WindowClosed)
+        assert isinstance(decode_message(raw), WindowEvent)
 
     def test_window_close_requested(self) -> None:
         raw = {
@@ -1326,7 +1312,7 @@ class TestDecodeWindowEvents:
             "tag": "win",
             "data": {"window_id": "w1"},
         }
-        assert isinstance(decode_message(raw), WindowCloseRequested)
+        assert isinstance(decode_message(raw), WindowEvent)
 
     def test_window_resized(self) -> None:
         raw = {
@@ -1337,7 +1323,7 @@ class TestDecodeWindowEvents:
             "data": {"window_id": "w1", "width": 1024, "height": 768},
         }
         result = decode_message(raw)
-        assert isinstance(result, WindowResized)
+        assert isinstance(result, WindowEvent)
         assert result.width == 1024
 
     def test_window_moved(self) -> None:
@@ -1349,7 +1335,7 @@ class TestDecodeWindowEvents:
             "data": {"window_id": "w1", "x": 200, "y": 100},
         }
         result = decode_message(raw)
-        assert isinstance(result, WindowMoved)
+        assert isinstance(result, WindowEvent)
         assert result.x == 200
 
     def test_window_focused(self) -> None:
@@ -1360,7 +1346,7 @@ class TestDecodeWindowEvents:
             "tag": "win",
             "data": {"window_id": "w1"},
         }
-        assert isinstance(decode_message(raw), WindowFocused)
+        assert isinstance(decode_message(raw), WindowEvent)
 
     def test_window_unfocused(self) -> None:
         raw = {
@@ -1370,7 +1356,7 @@ class TestDecodeWindowEvents:
             "tag": "win",
             "data": {"window_id": "w1"},
         }
-        assert isinstance(decode_message(raw), WindowUnfocused)
+        assert isinstance(decode_message(raw), WindowEvent)
 
     def test_window_rescaled(self) -> None:
         raw = {
@@ -1381,7 +1367,7 @@ class TestDecodeWindowEvents:
             "data": {"window_id": "w1", "scale_factor": 1.5},
         }
         result = decode_message(raw)
-        assert isinstance(result, WindowRescaled)
+        assert isinstance(result, WindowEvent)
         assert result.scale_factor == 1.5
 
     def test_file_hovered(self) -> None:
@@ -1393,7 +1379,7 @@ class TestDecodeWindowEvents:
             "data": {"window_id": "w1", "path": "/tmp/file.txt"},
         }
         result = decode_message(raw)
-        assert isinstance(result, FileHovered)
+        assert isinstance(result, WindowEvent)
         assert result.path == "/tmp/file.txt"
 
     def test_file_dropped(self) -> None:
@@ -1404,7 +1390,7 @@ class TestDecodeWindowEvents:
             "tag": "win",
             "data": {"window_id": "w1", "path": "/tmp/dropped.txt"},
         }
-        assert isinstance(decode_message(raw), FileDropped)
+        assert isinstance(decode_message(raw), WindowEvent)
 
     def test_files_hovered_left(self) -> None:
         raw = {
@@ -1414,7 +1400,7 @@ class TestDecodeWindowEvents:
             "tag": "win",
             "data": {"window_id": "w1"},
         }
-        assert isinstance(decode_message(raw), FilesHoveredLeft)
+        assert isinstance(decode_message(raw), WindowEvent)
 
 
 class TestDecodeSystemEvents:
@@ -1521,7 +1507,7 @@ class TestDecodePassthrough:
             "captured": True,
         }
         result = decode_message(raw)
-        assert isinstance(result, KeyPress)
+        assert isinstance(result, KeyEvent)
         assert result.captured is True
 
 

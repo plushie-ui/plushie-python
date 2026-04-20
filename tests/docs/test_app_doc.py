@@ -14,9 +14,7 @@ from plushie.events import (
     Click,
     Input,
     Submit,
-    WindowCloseRequested,
-    WindowFocused,
-    WindowResized,
+    WindowEvent,
 )
 from plushie.subscriptions import Subscription
 
@@ -318,10 +316,10 @@ class TestWindowEvents:
     def test_window_close_requested(self) -> None:
         """Docs: WindowCloseRequested match."""
         model = Model(inspector_open=True)
-        event = WindowCloseRequested(window_id="inspector")
+        event = WindowEvent(type="close_requested", window_id="inspector")
 
         match event:
-            case WindowCloseRequested(window_id="inspector"):
+            case WindowEvent(type="close_requested", window_id="inspector"):
                 model = replace(model, inspector_open=False)
 
         assert model.inspector_open is False
@@ -329,10 +327,12 @@ class TestWindowEvents:
     def test_window_resized(self) -> None:
         """Docs: WindowResized match updates window_size."""
         model = Model()
-        event = WindowResized(window_id="main", width=1024.0, height=768.0)
+        event = WindowEvent(
+            type="resized", window_id="main", width=1024.0, height=768.0
+        )
 
         match event:
-            case WindowResized(window_id="main", width=w, height=h):
+            case WindowEvent(type="resized", window_id="main", width=w, height=h):
                 model = replace(model, window_size=(w, h))
 
         assert model.window_size == (1024.0, 768.0)
@@ -340,10 +340,10 @@ class TestWindowEvents:
     def test_window_focused(self) -> None:
         """Docs: WindowFocused match updates active_window."""
         model = Model()
-        event = WindowFocused(window_id="editor")
+        event = WindowEvent(type="focused", window_id="editor")
 
         match event:
-            case WindowFocused(window_id=wid):
+            case WindowEvent(type="focused", window_id=wid):
                 model = replace(model, active_window=wid)
 
         assert model.active_window == "editor"
@@ -351,11 +351,11 @@ class TestWindowEvents:
     def test_window_close_main_unsaved(self) -> None:
         """Docs: close main window with unsaved changes."""
         model = Model(unsaved_changes=True)
-        event = WindowCloseRequested(window_id="main")
+        event = WindowEvent(type="close_requested", window_id="main")
 
         result: Model | tuple[Model, Command] = model
         match event:
-            case WindowCloseRequested(window_id="main"):
+            case WindowEvent(type="close_requested", window_id="main"):
                 if model.unsaved_changes:
                     result = replace(model, confirm_exit=True)
                 else:
@@ -367,11 +367,11 @@ class TestWindowEvents:
     def test_window_close_main_saved(self) -> None:
         """Docs: close main window when no unsaved changes."""
         model = Model(unsaved_changes=False)
-        event = WindowCloseRequested(window_id="main")
+        event = WindowEvent(type="close_requested", window_id="main")
 
         result: Model | tuple[Model, Command] = model
         match event:
-            case WindowCloseRequested(window_id="main"):
+            case WindowEvent(type="close_requested", window_id="main"):
                 if model.unsaved_changes:
                     result = replace(model, confirm_exit=True)
                 else:

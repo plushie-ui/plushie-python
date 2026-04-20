@@ -32,20 +32,13 @@ from plushie.events import (
     EffectStubAck,
     Enter,
     Exit,
-    FileDropped,
-    FileHovered,
-    FilesHoveredLeft,
     Focused,
     FocusedWidget,
     ImageList,
-    ImeClose,
-    ImeCommit,
-    ImeOpened,
-    ImePreedit,
+    ImeEvent,
     Input,
     KeyBinding,
-    KeyPress,
-    KeyRelease,
+    KeyEvent,
     ModifiersChanged,
     Move,
     Open,
@@ -80,14 +73,7 @@ from plushie.events import (
     TransitionComplete,
     TreeHash,
     WidgetStatus,
-    WindowClosed,
-    WindowCloseRequested,
-    WindowFocused,
-    WindowMoved,
-    WindowOpen,
-    WindowRescaled,
-    WindowResized,
-    WindowUnfocused,
+    WindowEvent,
     split_scoped_id,
 )
 from plushie.types import HelloInfo, KeyModifiers
@@ -868,24 +854,10 @@ def decode_message(
     | PaneDragged
     | PaneClicked
     | PaneFocusCycle
-    | KeyPress
-    | KeyRelease
+    | KeyEvent
     | ModifiersChanged
-    | ImeOpened
-    | ImePreedit
-    | ImeCommit
-    | ImeClose
-    | WindowOpen
-    | WindowClosed
-    | WindowCloseRequested
-    | WindowResized
-    | WindowMoved
-    | WindowFocused
-    | WindowUnfocused
-    | WindowRescaled
-    | FileHovered
-    | FileDropped
-    | FilesHoveredLeft
+    | ImeEvent
+    | WindowEvent
     | AnimationFrame
     | ThemeChanged
     | AllWindowsClosed
@@ -1376,7 +1348,8 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         mods = _parse_modifiers(modifiers_raw)
         if wire_id:
             local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
-            return KeyPress(
+            return KeyEvent(
+                type="press",
                 key=str(data.get("key", "")),
                 modified_key=str(data.get("modified_key", data.get("key", ""))),
                 modifiers=mods,
@@ -1389,7 +1362,8 @@ def _decode_event(msg: dict[str, Any]) -> Any:
                 id=local_id,
                 scope=scope,
             )
-        return KeyPress(
+        return KeyEvent(
+            type="press",
             key=str(data.get("key", "")),
             modified_key=str(data.get("modified_key", data.get("key", ""))),
             modifiers=mods,
@@ -1405,7 +1379,8 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         mods = _parse_modifiers(modifiers_raw)
         if wire_id:
             local_id, _wid, scope = _split_scoped_with_window(wire_id, msg)
-            return KeyRelease(
+            return KeyEvent(
+                type="release",
                 key=str(data.get("key", "")),
                 modified_key=str(data.get("modified_key", data.get("key", ""))),
                 modifiers=mods,
@@ -1417,7 +1392,8 @@ def _decode_event(msg: dict[str, Any]) -> Any:
                 id=local_id,
                 scope=scope,
             )
-        return KeyRelease(
+        return KeyEvent(
+            type="release",
             key=str(data.get("key", "")),
             modified_key=str(data.get("modified_key", data.get("key", ""))),
             modifiers=mods,
@@ -1640,7 +1616,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- IME events (global subscription) -------
 
     if family == "ime_opened":
-        return ImeOpened(captured=captured, window_id=sub_window_id)
+        return ImeEvent(type="opened", captured=captured, window_id=sub_window_id)
 
     if family == "ime_preedit":
         cursor_raw = data.get("cursor")
@@ -1655,7 +1631,8 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             )
         else:
             cursor = None
-        return ImePreedit(
+        return ImeEvent(
+            type="preedit",
             text=str(data.get("text", "")),
             cursor=cursor,
             captured=captured,
@@ -1663,18 +1640,22 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         )
 
     if family == "ime_commit":
-        return ImeCommit(
-            text=str(data.get("text", "")), captured=captured, window_id=sub_window_id
+        return ImeEvent(
+            type="commit",
+            text=str(data.get("text", "")),
+            captured=captured,
+            window_id=sub_window_id,
         )
 
     if family == "ime_closed":
-        return ImeClose(captured=captured, window_id=sub_window_id)
+        return ImeEvent(type="closed", captured=captured, window_id=sub_window_id)
 
     # ------- Window events (global subscription) -------
 
     if family == "window_opened":
         pos = data.get("position") or {}
-        return WindowOpen(
+        return WindowEvent(
+            type="opened",
             window_id=str(data.get("window_id", "")),
             width=float(data.get("width", 0)),
             height=float(data.get("height", 0)),
@@ -1684,51 +1665,60 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         )
 
     if family == "window_closed":
-        return WindowClosed(window_id=str(data.get("window_id", "")))
+        return WindowEvent(type="closed", window_id=str(data.get("window_id", "")))
 
     if family == "window_close_requested":
-        return WindowCloseRequested(window_id=str(data.get("window_id", "")))
+        return WindowEvent(
+            type="close_requested", window_id=str(data.get("window_id", ""))
+        )
 
     if family == "window_resized":
-        return WindowResized(
+        return WindowEvent(
+            type="resized",
             window_id=str(data.get("window_id", "")),
             width=float(data.get("width", 0)),
             height=float(data.get("height", 0)),
         )
 
     if family == "window_moved":
-        return WindowMoved(
+        return WindowEvent(
+            type="moved",
             window_id=str(data.get("window_id", "")),
             x=float(data.get("x", 0)),
             y=float(data.get("y", 0)),
         )
 
     if family == "window_focused":
-        return WindowFocused(window_id=str(data.get("window_id", "")))
+        return WindowEvent(type="focused", window_id=str(data.get("window_id", "")))
 
     if family == "window_unfocused":
-        return WindowUnfocused(window_id=str(data.get("window_id", "")))
+        return WindowEvent(type="unfocused", window_id=str(data.get("window_id", "")))
 
     if family == "window_rescaled":
-        return WindowRescaled(
+        return WindowEvent(
+            type="rescaled",
             window_id=str(data.get("window_id", "")),
             scale_factor=float(data.get("scale_factor", 1.0)),
         )
 
     if family == "file_hovered":
-        return FileHovered(
+        return WindowEvent(
+            type="file_hovered",
             window_id=str(data.get("window_id", "")),
             path=str(data.get("path", "")),
         )
 
     if family == "file_dropped":
-        return FileDropped(
+        return WindowEvent(
+            type="file_dropped",
             window_id=str(data.get("window_id", "")),
             path=str(data.get("path", "")),
         )
 
     if family == "files_hovered_left":
-        return FilesHoveredLeft(window_id=str(data.get("window_id", "")))
+        return WindowEvent(
+            type="files_hovered_left", window_id=str(data.get("window_id", ""))
+        )
 
     # ------- System / animation / theme -------
 

@@ -20,20 +20,13 @@ from plushie.events import (
     EffectResult,
     Enter,
     Exit,
-    FileDropped,
-    FileHovered,
-    FilesHoveredLeft,
     Focused,
     FocusedWidget,
     ImageList,
-    ImeClose,
-    ImeCommit,
-    ImeOpened,
-    ImePreedit,
+    ImeEvent,
     Input,
     KeyBinding,
-    KeyPress,
-    KeyRelease,
+    KeyEvent,
     ModifiersChanged,
     Move,
     Open,
@@ -63,14 +56,7 @@ from plushie.events import (
     TimerTick,
     Toggle,
     TreeHash,
-    WindowClosed,
-    WindowCloseRequested,
-    WindowFocused,
-    WindowMoved,
-    WindowOpen,
-    WindowRescaled,
-    WindowResized,
-    WindowUnfocused,
+    WindowEvent,
     build_renderer_exit,
     split_scoped_id,
     target,
@@ -96,7 +82,7 @@ class TestFrozen:
             e.value = "world"  # type: ignore[misc]
 
     def test_key_press_frozen(self) -> None:
-        e = KeyPress(key="a", modified_key="a", modifiers=KeyModifiers())
+        e = KeyEvent(type="press", key="a", modified_key="a", modifiers=KeyModifiers())
         with pytest.raises(AttributeError):
             e.key = "b"  # type: ignore[misc]
 
@@ -298,7 +284,8 @@ class TestUnifiedCanvasEvents:
         assert e.id == "area"
 
     def test_key_press_widget_scoped(self) -> None:
-        e = KeyPress(
+        e = KeyEvent(
+            type="press",
             key="ArrowRight",
             modified_key="ArrowRight",
             modifiers=KeyModifiers(),
@@ -310,7 +297,8 @@ class TestUnifiedCanvasEvents:
         assert e.scope == ("canvas", "form")
 
     def test_key_press_subscription(self) -> None:
-        e = KeyPress(
+        e = KeyEvent(
+            type="press",
             key="Enter",
             modified_key="Enter",
             modifiers=KeyModifiers(),
@@ -319,7 +307,8 @@ class TestUnifiedCanvasEvents:
         assert e.scope == ()
 
     def test_key_release_widget_scoped(self) -> None:
-        e = KeyRelease(
+        e = KeyEvent(
+            type="release",
             key="Enter",
             modified_key="Enter",
             modifiers=KeyModifiers(),
@@ -388,7 +377,7 @@ class TestPaneEvents:
 class TestKeyEvents:
     def test_key_press_minimal(self) -> None:
         mods = KeyModifiers()
-        e = KeyPress(key="a", modified_key="a", modifiers=mods)
+        e = KeyEvent(type="press", key="a", modified_key="a", modifiers=mods)
         assert e.key == "a"
         assert e.repeat is False
         assert e.captured is False
@@ -398,7 +387,8 @@ class TestKeyEvents:
 
     def test_key_press_full(self) -> None:
         mods = KeyModifiers(shift=True)
-        e = KeyPress(
+        e = KeyEvent(
+            type="press",
             key="a",
             modified_key="A",
             modifiers=mods,
@@ -416,7 +406,7 @@ class TestKeyEvents:
 
     def test_key_release(self) -> None:
         mods = KeyModifiers()
-        e = KeyRelease(key="Enter", modified_key="Enter", modifiers=mods)
+        e = KeyEvent(type="release", key="Enter", modified_key="Enter", modifiers=mods)
         assert e.key == "Enter"
         assert e.captured is False
 
@@ -468,24 +458,26 @@ class TestSubscriptionPointerEvents:
 
 class TestImeEvents:
     def test_ime_open(self) -> None:
-        e = ImeOpened()
+        e = ImeEvent(
+            type="opened",
+        )
         assert e.captured is False
 
     def test_ime_preedit(self) -> None:
-        e = ImePreedit(text="ni", cursor=(0, 2))
+        e = ImeEvent(type="preedit", text="ni", cursor=(0, 2))
         assert e.text == "ni"
         assert e.cursor == (0, 2)
 
     def test_ime_preedit_no_cursor(self) -> None:
-        e = ImePreedit(text="test")
+        e = ImeEvent(type="preedit", text="test")
         assert e.cursor is None
 
     def test_ime_commit(self) -> None:
-        e = ImeCommit(text="hello")
+        e = ImeEvent(type="commit", text="hello")
         assert e.text == "hello"
 
     def test_ime_close(self) -> None:
-        e = ImeClose(captured=True)
+        e = ImeEvent(type="closed", captured=True)
         assert e.captured is True
 
 
@@ -496,7 +488,8 @@ class TestImeEvents:
 
 class TestWindowEvents:
     def test_window_open(self) -> None:
-        e = WindowOpen(
+        e = WindowEvent(
+            type="opened",
             window_id="main",
             width=1024.0,
             height=768.0,
@@ -509,48 +502,50 @@ class TestWindowEvents:
         assert e.position_x == 100.0
 
     def test_window_open_no_position(self) -> None:
-        e = WindowOpen(window_id="main", width=800.0, height=600.0, scale_factor=1.0)
+        e = WindowEvent(
+            type="opened", window_id="main", width=800.0, height=600.0, scale_factor=1.0
+        )
         assert e.position_x is None
         assert e.position_y is None
 
     def test_window_closed(self) -> None:
-        e = WindowClosed(window_id="popup")
+        e = WindowEvent(type="closed", window_id="popup")
         assert e.window_id == "popup"
 
     def test_window_close_requested(self) -> None:
-        e = WindowCloseRequested(window_id="main")
+        e = WindowEvent(type="close_requested", window_id="main")
         assert e.window_id == "main"
 
     def test_window_resized(self) -> None:
-        e = WindowResized(window_id="main", width=1920.0, height=1080.0)
+        e = WindowEvent(type="resized", window_id="main", width=1920.0, height=1080.0)
         assert e.width == 1920.0
 
     def test_window_moved(self) -> None:
-        e = WindowMoved(window_id="main", x=50.0, y=100.0)
+        e = WindowEvent(type="moved", window_id="main", x=50.0, y=100.0)
         assert e.x == 50.0
 
     def test_window_focused(self) -> None:
-        e = WindowFocused(window_id="main")
+        e = WindowEvent(type="focused", window_id="main")
         assert e.window_id == "main"
 
     def test_window_unfocused(self) -> None:
-        e = WindowUnfocused(window_id="main")
+        e = WindowEvent(type="unfocused", window_id="main")
         assert e.window_id == "main"
 
     def test_window_rescaled(self) -> None:
-        e = WindowRescaled(window_id="main", scale_factor=1.5)
+        e = WindowEvent(type="rescaled", window_id="main", scale_factor=1.5)
         assert e.scale_factor == 1.5
 
     def test_file_hovered(self) -> None:
-        e = FileHovered(window_id="main", path="/tmp/test.txt")
+        e = WindowEvent(type="file_hovered", window_id="main", path="/tmp/test.txt")
         assert e.path == "/tmp/test.txt"
 
     def test_file_dropped(self) -> None:
-        e = FileDropped(window_id="main", path="/tmp/test.txt")
+        e = WindowEvent(type="file_dropped", window_id="main", path="/tmp/test.txt")
         assert e.path == "/tmp/test.txt"
 
     def test_files_hovered_left(self) -> None:
-        e = FilesHoveredLeft(window_id="main")
+        e = WindowEvent(type="files_hovered_left", window_id="main")
         assert e.window_id == "main"
 
 
@@ -841,14 +836,15 @@ class TestPatternMatching:
         assert captured_value == "hello world"
 
     def test_match_key_press(self) -> None:
-        event = KeyPress(
+        event = KeyEvent(
+            type="press",
             key="Escape",
             modified_key="Escape",
             modifiers=KeyModifiers(),
         )
         matched = False
         match event:
-            case KeyPress(key="Escape"):
+            case KeyEvent(type="press", key="Escape"):
                 matched = True
         assert matched is True
 
