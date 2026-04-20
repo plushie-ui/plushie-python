@@ -17,7 +17,7 @@ Categories:
   ``move_cursor_to_end``, ``scroll_to``,
   ``snap_to``, ``snap_to_end``, ``scroll_by``,
   ``pane_split``, ``pane_close``, ``pane_swap``, ``pane_maximize``,
-  ``pane_restore``, ``widget_command``, ``widget_commands``
+  ``pane_restore``, ``widget_command``, ``widget_batch``
 - **Widget ops** (global): ``focus_next``, ``focus_previous``,
   ``announce``, ``load_font``, ``tree_hash_query``,
   ``find_focused_query``, ``list_images_query``, ``clear_images``
@@ -124,9 +124,9 @@ class Command:
         return Command(type="cancel", payload={"tag": tag})
 
     @staticmethod
-    def done(value: Any, mapper: Callable[[Any], Any]) -> Command:
+    def dispatch(value: Any, mapper: Callable[[Any], Any]) -> Command:
         """Deliver an already-resolved *value* through ``update`` via *mapper*."""
-        return Command(type="done", payload={"value": value, "mapper": mapper})
+        return Command(type="dispatch", payload={"value": value, "mapper": mapper})
 
     @staticmethod
     def send_after(delay_ms: int, event: Any) -> Command:
@@ -848,7 +848,7 @@ class Command:
         return Command(type="command", payload=payload)
 
     @staticmethod
-    def widget_commands(
+    def widget_batch(
         commands: list[tuple[str, str, Any]],
     ) -> Command:
         """Send a batch of widget-targeted commands processed in one cycle.

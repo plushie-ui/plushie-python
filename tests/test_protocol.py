@@ -22,7 +22,7 @@ from plushie.events import (
     Focused,
     ImeClose,
     ImeCommit,
-    ImeOpen,
+    ImeOpened,
     ImePreedit,
     Input,
     KeyBinding,
@@ -88,8 +88,8 @@ from plushie.protocol import (
     subscribe_msg,
     tree_hash_msg,
     unsubscribe_msg,
+    widget_batch,
     widget_command,
-    widget_commands,
     widget_op,
     window_op,
 )
@@ -231,7 +231,7 @@ class TestWidgetCommand:
 class TestWidgetCommands:
     def test_batch(self) -> None:
         cmds = [("a", "x", None), ("b", "y", {"z": 1})]
-        msg = widget_commands(cmds)
+        msg = widget_batch(cmds)
         assert msg["type"] == "commands"
         assert len(msg["commands"]) == 2
         assert msg["commands"][0] == {"id": "a", "family": "x"}
@@ -1211,7 +1211,7 @@ class TestDecodeTouchEvents:
 class TestDecodeImeEvents:
     def test_ime_opened(self) -> None:
         raw = {"type": "event", "family": "ime_opened", "id": "", "tag": "ime"}
-        assert isinstance(decode_message(raw), ImeOpen)
+        assert isinstance(decode_message(raw), ImeOpened)
 
     def test_ime_preedit(self) -> None:
         raw = {

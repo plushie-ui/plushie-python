@@ -40,7 +40,7 @@ from plushie.events import (
     ImageList,
     ImeClose,
     ImeCommit,
-    ImeOpen,
+    ImeOpened,
     ImePreedit,
     Input,
     KeyBinding,
@@ -407,7 +407,7 @@ def widget_command(
     return msg
 
 
-def widget_commands(
+def widget_batch(
     commands: list[tuple[str, str, Any]],
     *,
     session: str = "",
@@ -871,7 +871,7 @@ def decode_message(
     | KeyPress
     | KeyRelease
     | ModifiersChanged
-    | ImeOpen
+    | ImeOpened
     | ImePreedit
     | ImeCommit
     | ImeClose
@@ -1640,7 +1640,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- IME events (global subscription) -------
 
     if family == "ime_opened":
-        return ImeOpen(captured=captured, window_id=sub_window_id)
+        return ImeOpened(captured=captured, window_id=sub_window_id)
 
     if family == "ime_preedit":
         cursor_raw = data.get("cursor")
@@ -1898,8 +1898,8 @@ __all__ = [
     "tree_hash_msg",
     "unregister_effect_stub",
     "unsubscribe_msg",
+    "widget_batch",
     "widget_command",
-    "widget_commands",
     "widget_op",
     "window_op",
 ]

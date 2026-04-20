@@ -280,7 +280,7 @@ class TestProcessCommands:
     def test_done_command(self) -> None:
         app = FakeApp()
         model = CounterModel()
-        cmd = Command.done("custom", lambda v: v)
+        cmd = Command.dispatch("custom", lambda v: v)
         result = _process_commands(app, model, [cmd])  # type: ignore[arg-type]
         assert result.count == 10
 

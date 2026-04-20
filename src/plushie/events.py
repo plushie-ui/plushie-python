@@ -839,7 +839,7 @@ class ModifiersChanged:
 
 
 @dataclass(frozen=True, slots=True)
-class ImeOpen:
+class ImeOpened:
     """The IME composition session started.
 
     Wire family: ``ime_opened``.
@@ -1824,7 +1824,7 @@ type PaneEvent = PaneResized | PaneDragged | PaneClicked | PaneFocusCycle
 type KeyEvent = KeyPress | KeyRelease | ModifiersChanged
 """Union of all keyboard events."""
 
-type ImeEvent = ImeOpen | ImePreedit | ImeCommit | ImeClose
+type ImeEvent = ImeOpened | ImePreedit | ImeCommit | ImeClose
 """Union of all IME events."""
 
 type WindowEvent = (
@@ -1927,7 +1927,7 @@ __all__ = [
     "ImeClose",
     "ImeCommit",
     "ImeEvent",
-    "ImeOpen",
+    "ImeOpened",
     "ImePreedit",
     "Input",
     "KeyBinding",

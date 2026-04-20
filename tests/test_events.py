@@ -28,7 +28,7 @@ from plushie.events import (
     ImageList,
     ImeClose,
     ImeCommit,
-    ImeOpen,
+    ImeOpened,
     ImePreedit,
     Input,
     KeyBinding,
@@ -468,7 +468,7 @@ class TestSubscriptionPointerEvents:
 
 class TestImeEvents:
     def test_ime_open(self) -> None:
-        e = ImeOpen()
+        e = ImeOpened()
         assert e.captured is False
 
     def test_ime_preedit(self) -> None:

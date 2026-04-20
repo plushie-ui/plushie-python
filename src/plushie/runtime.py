@@ -58,8 +58,8 @@ from plushie.protocol import (
     image_op,
     system_op,
     system_query,
+    widget_batch,
     widget_command,
-    widget_commands,
     widget_op,
     window_op,
 )
@@ -1121,7 +1121,7 @@ class Runtime:
             self._running = False
             return
 
-        if t == "done":
+        if t == "dispatch":
             mapper = p["mapper"]
             value = p["value"]
             event = mapper(value)
@@ -1219,7 +1219,7 @@ class Runtime:
         if t == "commands":
             raw_cmds = p.get("commands", [])
             cmds = [(c["id"], c["family"], c.get("value")) for c in raw_cmds]
-            msg = widget_commands(cmds, session=self._conn.session)
+            msg = widget_batch(cmds, session=self._conn.session)
             self._conn.send(msg)
             return
 

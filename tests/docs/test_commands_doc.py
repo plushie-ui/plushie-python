@@ -148,14 +148,14 @@ def test_command_cancel():
 
 
 def test_command_done():
-    """Command.done() wraps an already-resolved value."""
+    """Command.dispatch() wraps an already-resolved value."""
 
     def mapper(v):
         return ("config_loaded", v)
 
-    cmd = Command.done("defaults", mapper)
+    cmd = Command.dispatch("defaults", mapper)
 
-    assert cmd.type == "done"
+    assert cmd.type == "dispatch"
     assert cmd.payload["value"] == "defaults"
     assert cmd.payload["mapper"] is mapper
 
@@ -688,8 +688,8 @@ def test_command_widget_command():
 
 
 def test_command_widget_commands():
-    """Command.widget_commands() batches widget commands."""
-    cmd = Command.widget_commands(
+    """Command.widget_batch() batches widget commands."""
+    cmd = Command.widget_batch(
         [
             ("term-1", "write", {"data": "line1"}),
             ("log-1", "append", {"line": "entry"}),

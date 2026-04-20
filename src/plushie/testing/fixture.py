@@ -128,7 +128,7 @@ def _process_commands(
             model = _process_commands(app, new_model, new_cmds, depth + 1)
             continue
 
-        if t == "done":
+        if t == "dispatch":
             mapper = p["mapper"]
             value = p["value"]
             event = mapper(value)

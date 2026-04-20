@@ -40,8 +40,8 @@ class TestAsyncLifecycle:
         def mapper(v: object) -> object:
             return v
 
-        cmd = Command.done(42, mapper)
-        assert cmd.type == "done"
+        cmd = Command.dispatch(42, mapper)
+        assert cmd.type == "dispatch"
         assert cmd.payload["value"] == 42
         assert cmd.payload["mapper"] is mapper
 
@@ -430,7 +430,7 @@ class TestWidgetCommand:
 
     def test_widget_commands(self) -> None:
         cmds = [("a", "op1", None), ("b", "op2", {"x": 1})]
-        cmd = Command.widget_commands(cmds)
+        cmd = Command.widget_batch(cmds)
         assert cmd.type == "commands"
         wire = cmd.payload["commands"]
         assert len(wire) == 2
