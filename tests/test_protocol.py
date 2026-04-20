@@ -122,6 +122,19 @@ class TestSettings:
         msg = settings({}, session="s1")
         assert msg["session"] == "s1"
 
+    def test_required_widgets_passthrough(self) -> None:
+        # When the app supplies required_widgets, the names must
+        # land on the wire verbatim so the renderer can validate.
+        msg = settings({"required_widgets": ["gauge", "custom_chart"]})
+        assert msg["settings"]["required_widgets"] == ["gauge", "custom_chart"]
+
+    def test_required_widgets_absent_when_unset(self) -> None:
+        # The Python SDK forwards only keys the app explicitly
+        # provides; required_widgets stays absent when the app's
+        # settings() dict doesn't mention it.
+        msg = settings({})
+        assert "required_widgets" not in msg["settings"]
+
 
 class TestSnapshot:
     def test_structure(self) -> None:
