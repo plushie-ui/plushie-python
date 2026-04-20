@@ -34,6 +34,27 @@ class FramingError(Exception):
     """Raised when a framing violation is detected (e.g. oversized message)."""
 
 
+class BufferOverflowError(FramingError):
+    """Raised when a single wire frame exceeds the 64 MiB per-message cap.
+
+    Subclasses :class:`FramingError` so existing handlers still match;
+    callers who want to distinguish the overflow case can catch this
+    class directly. The exception carries both the offending size and
+    the configured cap for structured handling.
+
+    Attributes:
+        size: Size of the offending frame or payload in bytes.
+        limit: Configured cap in bytes (64 MiB).
+    """
+
+    __slots__ = ("limit", "size")
+
+    def __init__(self, *, size: int, limit: int) -> None:
+        super().__init__(f"wire frame of {size} bytes exceeds {limit} byte limit")
+        self.size = size
+        self.limit = limit
+
+
 # ---------------------------------------------------------------------------
 # MsgpackFraming
 # ---------------------------------------------------------------------------
@@ -60,9 +81,7 @@ class MsgpackFraming:
         """
         payload: bytes = msgpack.packb(msg, use_bin_type=True)  # type: ignore[assignment]
         if len(payload) > MAX_MESSAGE_SIZE:
-            raise FramingError(
-                f"message size {len(payload)} exceeds maximum {MAX_MESSAGE_SIZE}"
-            )
+            raise BufferOverflowError(size=len(payload), limit=MAX_MESSAGE_SIZE)
         return _LENGTH_PREFIX.pack(len(payload)) + payload
 
     def feed(self, data: bytes | bytearray) -> list[dict[str, Any]]:
@@ -79,10 +98,7 @@ class MsgpackFraming:
         while len(self._buffer) >= 4:
             (payload_len,) = _LENGTH_PREFIX.unpack_from(self._buffer, 0)
             if payload_len > MAX_MESSAGE_SIZE:
-                raise FramingError(
-                    f"frame declares size {payload_len} exceeding "
-                    f"maximum {MAX_MESSAGE_SIZE}"
-                )
+                raise BufferOverflowError(size=payload_len, limit=MAX_MESSAGE_SIZE)
             if len(self._buffer) < 4 + payload_len:
                 break
             payload = bytes(self._buffer[4 : 4 + payload_len])
@@ -126,9 +142,7 @@ class JsonFraming:
         line = json.dumps(converted, separators=(",", ":"), ensure_ascii=False)
         encoded = line.encode("utf-8") + b"\n"
         if len(encoded) > MAX_MESSAGE_SIZE:
-            raise FramingError(
-                f"message size {len(encoded)} exceeds maximum {MAX_MESSAGE_SIZE}"
-            )
+            raise BufferOverflowError(size=len(encoded), limit=MAX_MESSAGE_SIZE)
         return encoded
 
     def feed(self, data: bytes | bytearray) -> list[dict[str, Any]]:
@@ -147,12 +161,14 @@ class JsonFraming:
             line_bytes = bytes(self._buffer[:idx])
             del self._buffer[: idx + 1]
             if len(line_bytes) > MAX_MESSAGE_SIZE:
-                raise FramingError(
-                    f"line size {len(line_bytes)} exceeds maximum {MAX_MESSAGE_SIZE}"
-                )
+                raise BufferOverflowError(size=len(line_bytes), limit=MAX_MESSAGE_SIZE)
             if not line_bytes:
                 continue
             messages.append(json.loads(line_bytes))
+        # Guard the partial tail so an unterminated line cannot grow
+        # the internal buffer unboundedly across successive feeds.
+        if len(self._buffer) > MAX_MESSAGE_SIZE:
+            raise BufferOverflowError(size=len(self._buffer), limit=MAX_MESSAGE_SIZE)
         return messages
 
     def reset(self) -> None:
@@ -230,6 +246,7 @@ def decode_binary_from_json(value: str) -> bytes:
 
 __all__ = [
     "MAX_MESSAGE_SIZE",
+    "BufferOverflowError",
     "FramingError",
     "JsonFraming",
     "MsgpackFraming",

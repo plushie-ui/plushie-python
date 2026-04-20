@@ -63,6 +63,23 @@ class ProtocolMismatchError(ConnectionError):
     """Raised when the renderer reports an incompatible protocol version."""
 
 
+class ProtocolVersionMismatchError(ConnectionError):
+    """Raised when the renderer's advertised protocol version does not match the SDK's.
+
+    Attributes:
+        expected: Protocol version this SDK was built for.
+        got: Protocol version the renderer advertised (may be ``None``
+            when the renderer sent no ``protocol`` field).
+    """
+
+    __slots__ = ("expected", "got")
+
+    def __init__(self, *, expected: int, got: int | None) -> None:
+        super().__init__(f"protocol version mismatch: expected {expected}, got {got!r}")
+        self.expected = expected
+        self.got = got
+
+
 # ---------------------------------------------------------------------------
 # Request ID generator
 # ---------------------------------------------------------------------------
@@ -892,11 +909,20 @@ class Connection:
             decoded = decode_message(raw_msg)
             if isinstance(decoded, HelloInfo):
                 if decoded.protocol != PROTOCOL_VERSION:
-                    logger.error(
-                        "protocol mismatch: renderer reports %d, expected %d",
-                        decoded.protocol,
-                        PROTOCOL_VERSION,
+                    err = ProtocolVersionMismatchError(
+                        expected=PROTOCOL_VERSION,
+                        got=decoded.protocol,
                     )
+                    logger.error("plushie connection: %s", err)
+                    self._hello = decoded
+                    self._hello_event.set()
+                    # Surface the typed error to the runtime so the
+                    # caller observes a structured event. The reader
+                    # loop will exit once the renderer stream closes;
+                    # downstream consumers should treat the error as
+                    # terminal.
+                    self._event_queue.put(err)
+                    return
                 self._hello = decoded
                 self._hello_event.set()
                 self._event_queue.put(decoded)

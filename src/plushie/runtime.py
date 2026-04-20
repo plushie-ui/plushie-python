@@ -51,7 +51,7 @@ from plushie.events import (
     build_renderer_exit,
 )
 from plushie.events import Diagnostic as _Diagnostic
-from plushie.events import RendererDiagnostic as _RendererDiagnostic
+from plushie.events import DiagnosticMessage as _DiagnosticMessage
 from plushie.protocol import (
     advance_frame_msg,
     effect_msg,
@@ -724,7 +724,7 @@ class Runtime:
 
             # Renderer diagnostic wire messages: intercept for programmatic
             # observation. Logging already happened in protocol.decode_message.
-            if isinstance(event, _RendererDiagnostic):
+            if isinstance(event, _DiagnosticMessage):
                 with self._diagnostics_lock:
                     self._diagnostics.append(event)
                 continue

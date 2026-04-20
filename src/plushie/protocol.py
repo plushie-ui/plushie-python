@@ -24,6 +24,7 @@ from plushie.events import (
     Close,
     CommandError,
     Diagnostic,
+    DiagnosticMessage,
     DoubleClick,
     Drag,
     DragEnd,
@@ -54,7 +55,6 @@ from plushie.events import (
     Press,
     RawEvent,
     Release,
-    RendererDiagnostic,
     RendererError,
     Resize,
     Scroll,
@@ -870,7 +870,7 @@ def decode_message(
     | TreeHash
     | DuplicateNodeIds
     | Announce
-    | RendererDiagnostic
+    | DiagnosticMessage
     | SessionError
     | SessionClosed
     | EffectStubAck
@@ -1844,27 +1844,34 @@ def _decode_op_query_response(msg: dict[str, Any]) -> Any:
     return msg
 
 
-def _decode_diagnostic(msg: dict[str, Any]) -> RendererDiagnostic:
+def _decode_diagnostic(msg: dict[str, Any]) -> DiagnosticMessage:
     """Decode a top-level ``diagnostic`` wire message.
 
     Mirrors the diagnostic to the Python logging module at the matching
-    severity, then returns a ``RendererDiagnostic`` so the runtime can
-    expose it programmatically.
+    severity, then returns a :class:`DiagnosticMessage` carrying the
+    session, level, and the typed variant parsed from the payload.
+    Unknown variant kinds raise ``ValueError`` at decode time so host /
+    renderer version skew fails loudly instead of being silently
+    swallowed.
     """
+    from plushie.diagnostics import decode as _decode_variant
+
     session = str(msg.get("session", "") or "")
     level = str(msg.get("level", "warn") or "warn")
     raw = msg.get("diagnostic")
-    details: dict[str, Any] = raw if isinstance(raw, dict) else {}
-    kind = str(details.get("kind", "") or "")
+    if not isinstance(raw, dict):
+        raise ValueError(f"diagnostic wire message missing dict payload: {msg!r}")
+
+    variant = _decode_variant(raw)
 
     log_fn = {
         "error": logger.error,
         "warn": logger.warning,
         "info": logger.info,
     }.get(level, logger.warning)
-    log_fn("renderer diagnostic [%s] %s: %s", level, kind, details)
+    log_fn("renderer diagnostic [%s] %s", level, variant)
 
-    return RendererDiagnostic(session=session, level=level, kind=kind, details=details)
+    return DiagnosticMessage(session=session, level=level, diagnostic=variant)
 
 
 def _opt_float(val: Any) -> float | None:

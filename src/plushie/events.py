@@ -665,28 +665,10 @@ class Diagnostic:
     window_id: str | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class RendererDiagnostic:
-    """Structured diagnostic emitted by the renderer.
-
-    Wire message type: ``diagnostic`` (top-level, distinct from the
-    legacy ``diagnostic`` event family used for canvas a11y
-    validations). Carries a typed payload keyed by ``kind``.
-
-    Attributes:
-        session: Session the diagnostic is attributable to.
-        level: Severity: ``"info"``, ``"warn"``, or ``"error"``.
-        kind: Discriminator identifying the diagnostic variant
-            (e.g. ``"font_family_not_found"``).
-        details: The full typed payload dict as sent on the wire,
-            including ``kind`` and any variant-specific fields.
-    """
-
-    session: str
-    level: str
-    kind: str
-    details: dict[str, Any]
-
+# Typed diagnostic messages live in `plushie.diagnostics`; re-exported
+# here so existing `from plushie.events import DiagnosticMessage`
+# imports resolve alongside the other event types.
+from plushie.diagnostics import DiagnosticMessage  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Pane events (scoped)
@@ -1694,7 +1676,7 @@ type RuntimeEvent = AsyncResult | StreamChunk | TimerTick
 type Event = (
     ScopedWidgetEvent
     | Diagnostic
-    | RendererDiagnostic
+    | DiagnosticMessage
     | PaneEvent
     | KeyboardEvent
     | ImeEvent
@@ -1728,6 +1710,7 @@ __all__ = [
     "Close",
     "CommandError",
     "Diagnostic",
+    "DiagnosticMessage",
     "DirectoriesSelected",
     "DirectorySelected",
     "DoubleClick",
@@ -1776,7 +1759,6 @@ __all__ = [
     "RawEvent",
     "RecoveryFailed",
     "Release",
-    "RendererDiagnostic",
     "RendererError",
     "RendererExitInfo",
     "RendererRestarted",

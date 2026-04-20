@@ -29,7 +29,7 @@ from plushie.commands import Command
 from plushie.events import (
     AsyncResult,
     Diagnostic,
-    RendererDiagnostic,
+    DiagnosticMessage,
     StreamChunk,
 )
 from plushie.protocol import encode_selector, parse_selector
@@ -470,8 +470,8 @@ class AppFixture[M]:
         self._session_id = pool.register()
 
         # Diagnostic collector (legacy canvas Diagnostic events and
-        # new top-level RendererDiagnostic wire messages)
-        self._diagnostics: list[Diagnostic | RendererDiagnostic] = []
+        # new top-level DiagnosticMessage wire messages)
+        self._diagnostics: list[Diagnostic | DiagnosticMessage] = []
 
         # Initialize
         raw = app.init()
@@ -1047,18 +1047,19 @@ class AppFixture[M]:
         if diagnostics:
             lines: list[str] = []
             for d in diagnostics:
-                if isinstance(d, RendererDiagnostic):
-                    lines.append(f"  - [{d.level}] {d.kind}: {d.details}")
+                if isinstance(d, DiagnosticMessage):
+                    kind = type(d.diagnostic).__name__
+                    lines.append(f"  - [{d.level}] {kind}: {d.diagnostic}")
                 else:
                     lines.append(f"  - [{d.level}] {d.code}: {d.message}")
             details = "\n".join(lines)
             raise AssertionError(f"Expected no diagnostics, but found:\n{details}")
 
-    def get_diagnostics(self) -> list[Diagnostic | RendererDiagnostic]:
+    def get_diagnostics(self) -> list[Diagnostic | DiagnosticMessage]:
         """Return and clear accumulated diagnostic events.
 
         Returns:
-            List of ``Diagnostic`` or ``RendererDiagnostic`` events
+            List of ``Diagnostic`` or ``DiagnosticMessage`` events
             collected since the last call.
         """
         result = list(self._diagnostics)
@@ -1294,7 +1295,7 @@ class AppFixture[M]:
             # Raw dict events we don't recognize; skip
             return
 
-        if isinstance(event, (Diagnostic, RendererDiagnostic)):
+        if isinstance(event, (Diagnostic, DiagnosticMessage)):
             self._diagnostics.append(event)
             return
 

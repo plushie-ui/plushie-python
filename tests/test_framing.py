@@ -65,7 +65,7 @@ class TestMsgpackFramingEncode:
     def test_oversize_raises(self) -> None:
         # Craft a message that when packed exceeds 64 MiB
         huge = {"data": b"\x00" * (64 * 1024 * 1024 + 1)}
-        with pytest.raises(FramingError, match="exceeds maximum"):
+        with pytest.raises(FramingError, match="exceeds"):
             MsgpackFraming.encode(huge)
 
 
@@ -128,7 +128,7 @@ class TestMsgpackFramingFeed:
         # Forge a 4-byte header claiming a massive size
         header = struct.pack(">I", 64 * 1024 * 1024 + 1)
         framing = MsgpackFraming()
-        with pytest.raises(FramingError, match="exceeding"):
+        with pytest.raises(FramingError, match="exceeds"):
             framing.feed(header)
 
     def test_reset(self) -> None:
