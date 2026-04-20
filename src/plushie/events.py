@@ -1436,10 +1436,16 @@ class SessionError:
 
     Attributes:
         session: The session ID that errored.
-        error: Error description from the renderer.
+        code: Stable diagnostic code (``session_panic``,
+            ``max_sessions_reached``, ``session_channel_closed``,
+            ``writer_dead``, ``font_cap_exceeded``, ``renderer_panic``,
+            ``session_reset_in_progress``, ``session_backpressure_overflow``).
+            Use for programmatic branching.
+        error: Human-readable error description from the renderer.
     """
 
     session: str
+    code: str
     error: str
 
 

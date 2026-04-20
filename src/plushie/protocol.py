@@ -1787,7 +1787,11 @@ def _decode_event(msg: dict[str, Any]) -> Any:
         session_id = str(msg.get("session", ""))
         v = value if isinstance(value, dict) else data
         if family == "session_error":
-            return SessionError(session=session_id, error=str(v.get("error", "")))
+            return SessionError(
+                session=session_id,
+                code=str(v.get("code", "")),
+                error=str(v.get("error", "")),
+            )
         return SessionClosed(session=session_id, reason=str(v.get("reason", "")))
 
     # ------- Catch-all: unknown widget event -------

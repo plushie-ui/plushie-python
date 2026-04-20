@@ -1655,11 +1655,12 @@ class TestDecodeSessionLifecycle:
             "type": "event",
             "family": "session_error",
             "session": "pool_1",
-            "value": {"error": "widget crashed"},
+            "value": {"code": "session_panic", "error": "widget crashed"},
         }
         result = decode_message(raw)
         assert isinstance(result, SessionError)
         assert result.session == "pool_1"
+        assert result.code == "session_panic"
         assert result.error == "widget crashed"
 
     def test_session_closed(self) -> None:
@@ -1683,6 +1684,7 @@ class TestDecodeSessionLifecycle:
         result = decode_message(raw)
         assert isinstance(result, SessionError)
         assert result.session == "pool_3"
+        assert result.code == ""
         assert result.error == ""
 
     def test_session_closed_missing_value(self) -> None:
