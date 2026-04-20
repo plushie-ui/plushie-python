@@ -324,6 +324,18 @@ class DiagnosticMessage:
     Wire shape: ``{type: "diagnostic", session, level, diagnostic: {kind, ...}}``.
     The ``diagnostic`` field is one of the typed variants in this
     module, unified by the :data:`Diagnostic` alias.
+
+    Attributes:
+        session: Session the diagnostic is attributable to. Empty for
+            process-scoped diagnostics (font load failures, renderer
+            startup or panic, writer-dead, anything that affects the
+            whole renderer rather than one session). Non-empty for
+            session-scoped diagnostics (widget panics, view errors,
+            tree validation warnings, anything produced inside a
+            session's update / apply pipeline).
+        level: Severity: ``"info"``, ``"warn"``, or ``"error"``.
+        diagnostic: Typed variant, one of the classes unified by the
+            :data:`Diagnostic` alias.
     """
 
     session: str
