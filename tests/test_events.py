@@ -619,23 +619,49 @@ class TestErrorEvents:
 
 
 class TestEffectResult:
-    def test_ok(self) -> None:
-        e = EffectResult(
-            tag="import",
-            status="ok",
-            result={"path": "/tmp/file.txt"},
-        )
-        assert e.status == "ok"
-        assert e.result["path"] == "/tmp/file.txt"
-        assert e.error is None
+    def test_file_opened(self) -> None:
+        from plushie.events import FileOpened
+
+        e = EffectResult(tag="import", result=FileOpened(path="/tmp/file.txt"))
+        assert isinstance(e.result, FileOpened)
+        assert e.result.path == "/tmp/file.txt"
 
     def test_cancelled(self) -> None:
-        e = EffectResult(tag="save", status="cancelled")
-        assert e.result is None
+        from plushie.events import EffectCancelled
+
+        e = EffectResult(tag="save", result=EffectCancelled())
+        assert isinstance(e.result, EffectCancelled)
 
     def test_error(self) -> None:
-        e = EffectResult(tag="read", status="error", error="permission denied")
-        assert e.error == "permission denied"
+        from plushie.events import EffectError
+
+        e = EffectResult(tag="read", result=EffectError(message="permission denied"))
+        assert isinstance(e.result, EffectError)
+        assert e.result.message == "permission denied"
+
+    def test_decode_file_open(self) -> None:
+        from plushie.events import FileOpened, decode_effect_result
+
+        out = decode_effect_result("file_open", "ok", {"path": "/tmp/x.txt"}, None)
+        assert out == FileOpened(path="/tmp/x.txt")
+
+    def test_decode_clipboard_read(self) -> None:
+        from plushie.events import ClipboardText, decode_effect_result
+
+        out = decode_effect_result("clipboard_read", "ok", {"text": "hi"}, None)
+        assert out == ClipboardText(text="hi")
+
+    def test_decode_cancelled(self) -> None:
+        from plushie.events import EffectCancelled, decode_effect_result
+
+        out = decode_effect_result("file_open", "cancelled", None, None)
+        assert out == EffectCancelled()
+
+    def test_decode_error(self) -> None:
+        from plushie.events import EffectError, decode_effect_result
+
+        out = decode_effect_result("file_open", "error", None, "no disk")
+        assert out == EffectError(message="no disk")
 
 
 # ---------------------------------------------------------------------------

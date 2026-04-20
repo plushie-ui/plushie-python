@@ -669,27 +669,33 @@ class TestStreamChunkMatch:
 
 class TestEffectResultMatch:
     def test_effect_ok(self) -> None:
-        event = EffectResult(tag="import", status="ok", result={"path": "/f.txt"})
+        from plushie.events import FileOpened
+
+        event = EffectResult(tag="import", result=FileOpened(path="/f.txt"))
         match event:
-            case EffectResult(status="ok", result=result):
-                matched_path = result["path"]
+            case EffectResult(result=FileOpened(path=path)):
+                matched_path = path
             case _:
                 matched_path = ""
         assert matched_path == "/f.txt"
 
     def test_effect_cancelled(self) -> None:
-        event = EffectResult(tag="import", status="cancelled")
+        from plushie.events import EffectCancelled
+
+        event = EffectResult(tag="import", result=EffectCancelled())
         match event:
-            case EffectResult(status="cancelled"):
+            case EffectResult(result=EffectCancelled()):
                 matched = True
             case _:
                 matched = False
         assert matched
 
     def test_effect_error(self) -> None:
-        event = EffectResult(tag="import", status="error", error="err")
+        from plushie.events import EffectError
+
+        event = EffectResult(tag="import", result=EffectError(message="err"))
         match event:
-            case EffectResult(status="error", error=reason):
+            case EffectResult(result=EffectError(message=reason)):
                 matched_reason = reason
             case _:
                 matched_reason = ""

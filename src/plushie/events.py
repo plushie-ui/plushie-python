@@ -1345,6 +1345,117 @@ class Announce:
 
 
 @dataclass(frozen=True, slots=True)
+class FileOpened:
+    """A file was selected from an open-file dialog."""
+
+    path: str
+
+
+@dataclass(frozen=True, slots=True)
+class FilesOpened:
+    """Multiple files were selected from a multi-file open dialog."""
+
+    paths: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class FileSaved:
+    """A file path was chosen in a save dialog."""
+
+    path: str
+
+
+@dataclass(frozen=True, slots=True)
+class DirectorySelected:
+    """A directory was selected from a directory picker."""
+
+    path: str
+
+
+@dataclass(frozen=True, slots=True)
+class DirectoriesSelected:
+    """Multiple directories were selected from a multi-directory picker."""
+
+    paths: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ClipboardText:
+    """Clipboard text was read."""
+
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class ClipboardHtml:
+    """Clipboard HTML was read. ``alt_text`` may be None."""
+
+    html: str
+    alt_text: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ClipboardWritten:
+    """Clipboard write completed."""
+
+
+@dataclass(frozen=True, slots=True)
+class ClipboardCleared:
+    """Clipboard was cleared."""
+
+
+@dataclass(frozen=True, slots=True)
+class NotificationShown:
+    """An OS notification was shown."""
+
+
+@dataclass(frozen=True, slots=True)
+class EffectCancelled:
+    """The user dismissed a dialog."""
+
+
+@dataclass(frozen=True, slots=True)
+class EffectTimeout:
+    """The effect did not receive a response within its timeout."""
+
+
+@dataclass(frozen=True, slots=True)
+class EffectError:
+    """A platform error occurred."""
+
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
+class EffectUnsupported:
+    """The backend does not support this effect."""
+
+
+@dataclass(frozen=True, slots=True)
+class RendererRestarted:
+    """The renderer restarted while this effect was in flight."""
+
+
+EffectResultValue = (
+    FileOpened
+    | FilesOpened
+    | FileSaved
+    | DirectorySelected
+    | DirectoriesSelected
+    | ClipboardText
+    | ClipboardHtml
+    | ClipboardWritten
+    | ClipboardCleared
+    | NotificationShown
+    | EffectCancelled
+    | EffectTimeout
+    | EffectError
+    | EffectUnsupported
+    | RendererRestarted
+)
+
+
+@dataclass(frozen=True, slots=True)
 class EffectResult:
     """Response to a platform Effect command (file dialog, clipboard, etc.).
 
@@ -1352,16 +1463,81 @@ class EffectResult:
 
     Attributes:
         tag: The tag from the originating effect command.
-        status: Result status: ``"ok"``, ``"cancelled"``, or ``"error"``.
-        result: Result data when status is ``"ok"`` (shape depends on
-            effect kind), ``None`` otherwise.
-        error: Error message when status is ``"error"``, ``None`` otherwise.
+        result: A typed result dataclass (``FileOpened``, ``ClipboardText``,
+            ``EffectCancelled``, ``EffectTimeout``, etc.). Pattern match
+            on the dataclass type to branch on the outcome.
+
+    Example:
+        match event:
+            case EffectResult(tag="import", result=FileOpened(path=p)):
+                load_file(p)
+            case EffectResult(tag="import", result=EffectCancelled()):
+                ...
     """
 
     tag: str
-    status: EffectStatus
-    result: Any = None
-    error: str | None = None
+    result: EffectResultValue
+
+
+def decode_effect_result(
+    kind: str, status: str, result: Any, error: str | None
+) -> EffectResultValue:
+    """Decode a wire ``effect_response`` into a typed result dataclass.
+
+    `kind` is the effect's original kind string (e.g. ``"file_open"``)
+    tracked in the runtime alongside the user's tag. `status` is the
+    wire status. `result` is the decoded ok-payload; `error` is the
+    error reason.
+    """
+    if status == "cancelled":
+        return EffectCancelled()
+    if status == "unsupported":
+        return EffectUnsupported()
+    if status == "error":
+        return EffectError(message=str(error) if error is not None else "")
+    if status != "ok":
+        return EffectError(message=f"unknown effect status: {status}")
+
+    payload = result if isinstance(result, dict) else {}
+
+    if kind == "file_open":
+        return FileOpened(path=_str(payload.get("path")))
+    if kind == "file_open_multiple":
+        return FilesOpened(paths=_tuple_str(payload.get("paths")))
+    if kind == "file_save":
+        return FileSaved(path=_str(payload.get("path")))
+    if kind == "directory_select":
+        return DirectorySelected(path=_str(payload.get("path")))
+    if kind == "directory_select_multiple":
+        return DirectoriesSelected(paths=_tuple_str(payload.get("paths")))
+    if kind in ("clipboard_read", "clipboard_read_primary"):
+        return ClipboardText(text=_str(payload.get("text")))
+    if kind == "clipboard_read_html":
+        return ClipboardHtml(
+            html=_str(payload.get("html")),
+            alt_text=(
+                payload.get("alt_text")
+                if isinstance(payload.get("alt_text"), str)
+                else None
+            ),
+        )
+    if kind in ("clipboard_write", "clipboard_write_html", "clipboard_write_primary"):
+        return ClipboardWritten()
+    if kind == "clipboard_clear":
+        return ClipboardCleared()
+    if kind == "notification":
+        return NotificationShown()
+    return EffectError(message=f"unknown effect kind: {kind}")
+
+
+def _str(v: Any) -> str:
+    return v if isinstance(v, str) else ""
+
+
+def _tuple_str(v: Any) -> tuple[str, ...]:
+    if isinstance(v, (list, tuple)):
+        return tuple(x for x in v if isinstance(x, str))
+    return ()
 
 
 # ---------------------------------------------------------------------------
@@ -1715,22 +1891,36 @@ __all__ = [
     "AsyncResult",
     "Blurred",
     "Click",
+    "ClipboardCleared",
+    "ClipboardHtml",
+    "ClipboardText",
+    "ClipboardWritten",
     "Close",
     "CommandError",
     "Diagnostic",
+    "DirectoriesSelected",
+    "DirectorySelected",
     "DoubleClick",
     "Drag",
     "DragEnd",
     "DuplicateNodeIds",
+    "EffectCancelled",
+    "EffectError",
     "EffectResult",
+    "EffectResultValue",
     "EffectStatus",
     "EffectStubAck",
+    "EffectTimeout",
+    "EffectUnsupported",
     "Enter",
     "Event",
     "Exit",
     "FileDropped",
     "FileHovered",
+    "FileOpened",
+    "FileSaved",
     "FilesHoveredLeft",
+    "FilesOpened",
     "Focused",
     "FocusedWidget",
     "ImageList",
@@ -1747,6 +1937,7 @@ __all__ = [
     "KeyRelease",
     "ModifiersChanged",
     "Move",
+    "NotificationShown",
     "Open",
     "OptionHovered",
     "PaneClicked",
@@ -1765,6 +1956,7 @@ __all__ = [
     "RendererDiagnostic",
     "RendererError",
     "RendererExitInfo",
+    "RendererRestarted",
     "Resize",
     "RuntimeEvent",
     "ScopedWidgetEvent",
@@ -1799,6 +1991,7 @@ __all__ = [
     "WindowResized",
     "WindowUnfocused",
     "build_renderer_exit",
+    "decode_effect_result",
     "split_scoped_id",
     "target",
 ]

@@ -1353,36 +1353,31 @@ class Runtime:
         timeout_ms = DEFAULT_TIMEOUTS.get(kind, _EFFECT_TIMEOUT_MS)
 
         def timeout_fire() -> None:
+            from plushie.events import EffectTimeout
+
             entry = self._pending_effects.pop(wire_id, None)
             if entry is not None:
-                self._queue.put(
-                    EffectResult(
-                        tag=entry["tag"],
-                        status="error",
-                        result=None,
-                        error="timeout",
-                    )
-                )
+                self._queue.put(EffectResult(tag=entry["tag"], result=EffectTimeout()))
 
         timer = threading.Timer(timeout_ms / 1000.0, timeout_fire)
         timer.daemon = True
         timer.start()
-        self._pending_effects[wire_id] = {"tag": tag, "timer": timer}
+        # Track kind alongside tag so the response decoder can produce
+        # the right per-kind dataclass when the renderer replies.
+        self._pending_effects[wire_id] = {"tag": tag, "kind": kind, "timer": timer}
 
     def _resolve_effect_response(
         self, wire_id: str, status: str, result: Any, error: str | None
     ) -> EffectResult | None:
         """Map a wire effect response to an EffectResult with the user's tag."""
-        from plushie.events import EffectStatus
+        from plushie.events import decode_effect_result
 
         entry = self._pending_effects.pop(wire_id, None)
         if entry is None:
             return None
         entry["timer"].cancel()
-        typed_status: EffectStatus = status  # type: ignore[assignment]
-        return EffectResult(
-            tag=entry["tag"], status=typed_status, result=result, error=error
-        )
+        typed_result = decode_effect_result(entry["kind"], status, result, error)
+        return EffectResult(tag=entry["tag"], result=typed_result)
 
     def _cancel_pending_effect_by_tag(self, tag: str) -> None:
         """Cancel a pending effect by tag (one-per-tag enforcement)."""
@@ -1398,18 +1393,18 @@ class Runtime:
         Takes a snapshot before processing so new effects added during
         update callbacks are not silently discarded.
         """
+        from plushie.events import EffectError, RendererRestarted
+
         snapshot = dict(self._pending_effects)
         self._pending_effects.clear()
+        flush_result: Any = (
+            RendererRestarted()
+            if reason == "renderer_restarted"
+            else EffectError(message=reason)
+        )
         for _wire_id, entry in snapshot.items():
             entry["timer"].cancel()
-            self._run_update(
-                EffectResult(
-                    tag=entry["tag"],
-                    status="error",
-                    result=None,
-                    error=reason,
-                )
-            )
+            self._run_update(EffectResult(tag=entry["tag"], result=flush_result))
 
     # -------------------------------------------------------------------
     # Widget status tracking

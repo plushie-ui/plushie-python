@@ -14,18 +14,19 @@ previous one.
 Usage::
 
     from plushie import effects
+    from plushie.events import EffectCancelled, FileOpened
 
     def update(self, model, event):
         match event:
             case Click(id="open"):
                 return replace(model), effects.file_open("import", title="Pick a file")
-            case EffectResult(tag="import", status="ok", result=result):
-                return replace(model, file=result)
-            case EffectResult(tag="import", status="cancelled"):
+            case EffectResult(tag="import", result=FileOpened(path=p)):
+                return replace(model, file=p)
+            case EffectResult(tag="import", result=EffectCancelled()):
                 return model
 
 Timeouts: each effect has a default timeout. If the renderer does not
-respond in time, ``EffectResult(tag=tag, status="error", error="timeout")``
+respond in time, ``EffectResult(tag=tag, result=EffectTimeout())``
 arrives in ``update()``.
 """
 
