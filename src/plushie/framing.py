@@ -6,8 +6,10 @@ Two framing modes:
 - **JsonFraming**: newline-delimited JSON (JSONL).
 
 Both framings support ``encode`` (message -> bytes) and ``feed``
-(accumulate incoming bytes, yield complete frames). The ``detect_format``
-function inspects the first byte to choose the correct framing.
+(accumulate incoming bytes, yield complete frames). The caller
+picks the framing up front (via the ``format`` option on
+``Connection.open`` / ``IoStreamAdapter``); framings do not sniff
+the wire to detect the peer's format.
 
 Binary fields (image data, pixel buffers) use base64 encoding in JSON
 mode and native bytes in MessagePack mode.
@@ -177,28 +179,6 @@ class JsonFraming:
 
 
 # ---------------------------------------------------------------------------
-# Format detection
-# ---------------------------------------------------------------------------
-
-
-def detect_format(first_byte: int) -> str:
-    """Detect the wire format from the first byte of data.
-
-    Returns ``"json"`` if the byte is ``0x7B`` (``{``), otherwise
-    ``"msgpack"``.
-
-    Args:
-        first_byte: The first byte received from the renderer (0-255).
-
-    Returns:
-        ``"json"`` or ``"msgpack"``.
-    """
-    if first_byte == 0x7B:
-        return "json"
-    return "msgpack"
-
-
-# ---------------------------------------------------------------------------
 # Binary field helpers
 # ---------------------------------------------------------------------------
 
@@ -251,6 +231,5 @@ __all__ = [
     "JsonFraming",
     "MsgpackFraming",
     "decode_binary_from_json",
-    "detect_format",
     "encode_binary_for_json",
 ]

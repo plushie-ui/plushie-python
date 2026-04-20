@@ -13,29 +13,8 @@ from plushie.framing import (
     JsonFraming,
     MsgpackFraming,
     decode_binary_from_json,
-    detect_format,
     encode_binary_for_json,
 )
-
-# ===================================================================
-# detect_format
-# ===================================================================
-
-
-class TestDetectFormat:
-    def test_json_byte(self) -> None:
-        assert detect_format(0x7B) == "json"
-
-    def test_msgpack_byte_zero(self) -> None:
-        assert detect_format(0x00) == "msgpack"
-
-    def test_msgpack_byte_0x80(self) -> None:
-        # 0x80 is msgpack fixmap
-        assert detect_format(0x80) == "msgpack"
-
-    def test_msgpack_byte_0xFF(self) -> None:
-        assert detect_format(0xFF) == "msgpack"
-
 
 # ===================================================================
 # MsgpackFraming

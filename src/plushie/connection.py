@@ -29,7 +29,7 @@ from queue import Empty, Queue
 from typing import Any
 
 from plushie.binary import PlushieNotFoundError, resolve
-from plushie.framing import MsgpackFraming
+from plushie.framing import JsonFraming, MsgpackFraming
 from plushie.native_widget import NativeWidget
 from plushie.protocol import (
     PROTOCOL_VERSION,
@@ -53,6 +53,20 @@ from plushie.protocol import (
 from plushie.types import HelloInfo
 
 logger = logging.getLogger("plushie")
+
+
+def _framing_for(format: str) -> MsgpackFraming | JsonFraming:
+    """Return a framing instance for the given wire format.
+
+    Matches the ``format`` option the other plushie SDKs take
+    (Elixir's ``:format``, Gleam's ``format:``, Ruby's ``format:``).
+    Defaults are resolved at the call site, not here.
+    """
+    if format == "msgpack":
+        return MsgpackFraming()
+    if format == "json":
+        return JsonFraming()
+    raise ValueError(f"unknown wire format: {format!r} (expected 'msgpack' or 'json')")
 
 
 class ConnectionError(Exception):
@@ -151,6 +165,7 @@ class Connection:
         process: subprocess.Popen[bytes],
         *,
         session: str = "",
+        format: str = "msgpack",
         expected_widgets: list[str | NativeWidget]
         | tuple[str | NativeWidget, ...]
         | None = None,
@@ -159,9 +174,10 @@ class Connection:
     ) -> None:
         self._process = process
         self._session = session
+        self._format = format
         self._spawn_args = _spawn_args
         self._spawn_env = _spawn_env
-        self._framing = MsgpackFraming()
+        self._framing = _framing_for(format)
         self._send_lock = threading.Lock()
         self._event_queue: Queue[Any] = Queue()
         self._pending: dict[str, Queue[dict[str, Any]]] = {}
@@ -183,7 +199,7 @@ class Connection:
         *,
         binary_path: str | None = None,
         mode: str | None = None,
-        json: bool = False,
+        format: str = "msgpack",
         max_sessions: int | None = None,
         session: str = "",
         expected_widgets: list[str | NativeWidget]
@@ -199,7 +215,8 @@ class Connection:
                 automatically if ``None``.
             mode: Renderer mode: ``"mock"``, ``"headless"``, or
                 ``None`` for windowed (default).
-            json: If ``True``, force JSON wire format instead of msgpack.
+            format: Wire format: ``"msgpack"`` (default) or ``"json"``.
+                Matches the ``format`` option other plushie SDKs take.
             max_sessions: Maximum concurrent sessions for multiplexed
                 mode. Omit for single-session.
             session: Default session identifier for messages.
@@ -220,8 +237,12 @@ class Connection:
             args.append("--mock")
         elif mode == "headless":
             args.append("--headless")
-        if json:
+        if format == "json":
             args.append("--json")
+        elif format != "msgpack":
+            raise ValueError(
+                f"unknown wire format: {format!r} (expected 'msgpack' or 'json')"
+            )
         if max_sessions is not None:
             args.extend(["--max-sessions", str(max_sessions)])
         if extra_args:
@@ -248,6 +269,7 @@ class Connection:
         return cls(
             process,
             session=session,
+            format=format,
             expected_widgets=expected_widgets,
             _spawn_args=args,
             _spawn_env=proc_env,
@@ -421,7 +443,7 @@ class Connection:
         self._closed = False
         self._hello = None
         self._hello_event.clear()
-        self._framing = MsgpackFraming()
+        self._framing = _framing_for(self._format)
 
         # Drain queues
         while not self._event_queue.empty():
@@ -463,7 +485,7 @@ class Connection:
         if self._closed:
             raise ConnectionError("connection is closed")
 
-        data = MsgpackFraming.encode(msg)
+        data = type(self._framing).encode(msg)
         with self._send_lock:
             stdin = self._process.stdin
             if stdin is None:
@@ -966,9 +988,10 @@ class StdioConnection:
     management.
     """
 
-    def __init__(self, *, session: str = "") -> None:
+    def __init__(self, *, session: str = "", format: str = "msgpack") -> None:
         self._session = session
-        self._framing = MsgpackFraming()
+        self._format = format
+        self._framing = _framing_for(format)
         self._send_lock = threading.Lock()
         self._event_queue: Queue[Any] = Queue()
         self._pending: dict[str, Queue[dict[str, Any]]] = {}
@@ -1045,7 +1068,7 @@ class StdioConnection:
         """
         if self._closed:
             raise ConnectionError("connection is closed")
-        data = MsgpackFraming.encode(msg)
+        data = type(self._framing).encode(msg)
         with self._send_lock:
             try:
                 self._stdout_fd.write(data)

@@ -40,7 +40,7 @@ from collections.abc import Callable
 from queue import Empty, Queue
 from typing import Any, Protocol, runtime_checkable
 
-from plushie.framing import MsgpackFraming
+from plushie.framing import JsonFraming, MsgpackFraming
 from plushie.protocol import decode_message
 from plushie.types import HelloInfo
 
@@ -95,11 +95,19 @@ class IoStreamAdapter:
         reader: ReadableStream,
         writer: WritableStream,
         *,
+        format: str = "msgpack",
         on_event: Callable[[Any], None] | None = None,
     ) -> None:
         self._reader = reader
         self._writer = writer
-        self._framing = MsgpackFraming()
+        if format == "msgpack":
+            self._framing: MsgpackFraming | JsonFraming = MsgpackFraming()
+        elif format == "json":
+            self._framing = JsonFraming()
+        else:
+            raise ValueError(
+                f"unknown wire format: {format!r} (expected 'msgpack' or 'json')"
+            )
         self._send_lock = threading.Lock()
         self._event_queue: Queue[Any] = Queue()
         self._on_event = on_event
@@ -149,7 +157,7 @@ class IoStreamAdapter:
         """
         if self._closed:
             raise ConnectionError("iostream adapter is closed")
-        data = MsgpackFraming.encode(msg)
+        data = type(self._framing).encode(msg)
         with self._send_lock:
             try:
                 self._writer.write(data)
