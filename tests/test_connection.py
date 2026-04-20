@@ -6,8 +6,11 @@ Tests that require the plushie binary are marked with
 
 from __future__ import annotations
 
+import contextlib
+import json
 import os
 import stat
+import sys
 from pathlib import Path
 from unittest.mock import patch as mock_patch
 
@@ -32,6 +35,7 @@ from plushie.binary import (
 from plushie.connection import (
     Connection,
     ConnectionError,
+    StdioConnection,
     _decode_events_list,
     _next_request_id,
     _normalize_expected_widgets,
@@ -658,3 +662,118 @@ class TestConnectionWithBinary:
             resp = conn.reset_session(timeout=5.0)
             assert resp is not None
             assert resp.get("type") == "reset_response"
+
+
+# ===================================================================
+# StdioConnection format="json" round-trip
+# ===================================================================
+
+
+class TestStdioConnectionJsonFormat:
+    """Exercise ``StdioConnection`` with ``format='json'``.
+
+    The stdio transport is used when the renderer spawns the Python
+    process via ``plushie --exec``. With ``format='msgpack'`` the
+    framing tests already pin the expected byte layout; this class
+    locks down the JSON alternative end-to-end: a frame written by
+    ``send()`` must be newline-delimited JSON (not length-prefixed
+    msgpack), and a frame read on ``receive_event()`` must decode
+    from the same framing.
+
+    Because ``StdioConnection.__init__`` does ``os.dup(0) / os.dup(1)``
+    and reassigns ``sys.stdout`` to redirect prints, the test
+    substitutes fake fds with ``os.pipe()`` and ``os.dup2()`` before
+    the connection spins up, then restores the originals.
+    """
+
+    def test_json_round_trip(self) -> None:
+        # Pipe A: test -> connection (renderer writes, SDK reads on fd 0)
+        in_read, in_write = os.pipe()
+        # Pipe B: connection -> test (SDK writes on fd 1, renderer reads)
+        out_read, out_write = os.pipe()
+
+        # Preserve the real fd 0, fd 1, and sys.stdout so the test
+        # harness survives the connection's dup / reassignment dance.
+        saved_in = os.dup(0)
+        saved_out = os.dup(1)
+        saved_stdout = sys.stdout
+
+        conn: StdioConnection | None = None
+        try:
+            os.dup2(in_read, 0)
+            os.dup2(out_write, 1)
+            # The original descriptors are now duplicated on 0/1; close
+            # the spare copies so only the connection holds the ends it
+            # needs.
+            os.close(in_read)
+            os.close(out_write)
+
+            conn = StdioConnection(format="json")
+
+            # --- Outbound: a message sent through the connection
+            # lands on the out_read pipe as newline-delimited JSON.
+            conn.send({"type": "settings", "session": "", "value": 7})
+
+            out_buf = b""
+            # Read enough to cover the payload + trailing newline.
+            # Non-blocking: write end is closed after we capture.
+            while b"\n" not in out_buf:
+                chunk = os.read(out_read, 4096)
+                if not chunk:
+                    break
+                out_buf += chunk
+
+            assert out_buf.endswith(b"\n"), (
+                f"JSON framing must terminate with newline, got {out_buf!r}"
+            )
+            # A msgpack frame would begin with a 4-byte big-endian length
+            # prefix: the first bytes would almost never be ASCII '{'.
+            assert out_buf.startswith(b"{"), (
+                f"JSON framing should start with '{{', got {out_buf[:8]!r}"
+            )
+            decoded_out = json.loads(out_buf.rstrip(b"\n"))
+            assert decoded_out == {
+                "type": "settings",
+                "session": "",
+                "value": 7,
+            }
+
+            # --- Inbound: feeding a newline-delimited JSON hello into
+            # the connection's stdin surfaces a HelloInfo via wait_hello.
+            hello_frame = (
+                json.dumps(
+                    {
+                        "type": "hello",
+                        "session": "",
+                        "protocol": PROTOCOL_VERSION,
+                        "version": "0.6.0",
+                        "name": "plushie-renderer",
+                        "mode": "mock",
+                        "backend": "none",
+                        "transport": "stdio",
+                        "extensions": [],
+                    }
+                )
+                + "\n"
+            )
+            os.write(in_write, hello_frame.encode("utf-8"))
+
+            hello = conn.wait_hello(timeout=5.0)
+            assert hello.protocol == PROTOCOL_VERSION
+            assert hello.mode == "mock"
+            assert hello.name == "plushie-renderer"
+        finally:
+            if conn is not None:
+                conn.close()
+            # Restore the original stdio before closing the pipes, so
+            # nothing in the test runner attempts to write to the
+            # dead fd 1 in the window between.
+            os.dup2(saved_in, 0)
+            os.dup2(saved_out, 1)
+            os.close(saved_in)
+            os.close(saved_out)
+            sys.stdout = saved_stdout
+
+            for fd in (in_write, out_read):
+                with contextlib.suppress(OSError):
+                    os.close(fd)
