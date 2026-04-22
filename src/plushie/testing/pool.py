@@ -59,6 +59,7 @@ class SessionPool:
         self._binary_path = binary_path
         self._conn: Connection | None = None
         self._lock = threading.Lock()
+        self._session_swap_lock = threading.Lock()
         self._sessions: dict[str, _SessionSlot] = {}
         self._next_id = itertools.count(1)
 
@@ -131,11 +132,13 @@ class SessionPool:
             return
 
         try:
-            # Temporarily set session on the connection for the reset
-            old_session = conn.session
-            conn.session = session_id
-            conn.reset_session(timeout=timeout)
-            conn.session = old_session
+            with self._session_swap_lock:
+                old_session = conn.session
+                conn.session = session_id
+                try:
+                    conn.reset_session(timeout=timeout)
+                finally:
+                    conn.session = old_session
         except Exception:
             logger.debug(
                 "reset failed for session %s during unregister",
@@ -237,18 +240,19 @@ class SessionPool:
         if conn is None:
             raise RuntimeError("session pool is not started")
 
-        old_session = conn.session
-        conn.session = session_id
-        try:
-            return conn.interact(
-                action,
-                selector=selector,
-                payload=payload,
-                on_step=on_step,
-                timeout=timeout,
-            )
-        finally:
-            conn.session = old_session
+        with self._session_swap_lock:
+            old_session = conn.session
+            conn.session = session_id
+            try:
+                return conn.interact(
+                    action,
+                    selector=selector,
+                    payload=payload,
+                    on_step=on_step,
+                    timeout=timeout,
+                )
+            finally:
+                conn.session = old_session
 
     def query_find(
         self,
@@ -272,12 +276,13 @@ class SessionPool:
         if conn is None:
             raise RuntimeError("session pool is not started")
 
-        old_session = conn.session
-        conn.session = session_id
-        try:
-            return conn.query_find(selector, timeout=timeout)
-        finally:
-            conn.session = old_session
+        with self._session_swap_lock:
+            old_session = conn.session
+            conn.session = session_id
+            try:
+                return conn.query_find(selector, timeout=timeout)
+            finally:
+                conn.session = old_session
 
     def query_tree(
         self,
@@ -298,12 +303,13 @@ class SessionPool:
         if conn is None:
             raise RuntimeError("session pool is not started")
 
-        old_session = conn.session
-        conn.session = session_id
-        try:
-            return conn.query_tree(timeout=timeout)
-        finally:
-            conn.session = old_session
+        with self._session_swap_lock:
+            old_session = conn.session
+            conn.session = session_id
+            try:
+                return conn.query_tree(timeout=timeout)
+            finally:
+                conn.session = old_session
 
     def tree_hash(
         self,
@@ -326,12 +332,13 @@ class SessionPool:
         if conn is None:
             raise RuntimeError("session pool is not started")
 
-        old_session = conn.session
-        conn.session = session_id
-        try:
-            return conn.compute_tree_hash(name, timeout=timeout)
-        finally:
-            conn.session = old_session
+        with self._session_swap_lock:
+            old_session = conn.session
+            conn.session = session_id
+            try:
+                return conn.compute_tree_hash(name, timeout=timeout)
+            finally:
+                conn.session = old_session
 
     def screenshot(
         self,
@@ -358,14 +365,15 @@ class SessionPool:
         if conn is None:
             raise RuntimeError("session pool is not started")
 
-        old_session = conn.session
-        conn.session = session_id
-        try:
-            return conn.take_screenshot(
-                name, width=width, height=height, timeout=timeout
-            )
-        finally:
-            conn.session = old_session
+        with self._session_swap_lock:
+            old_session = conn.session
+            conn.session = session_id
+            try:
+                return conn.take_screenshot(
+                    name, width=width, height=height, timeout=timeout
+                )
+            finally:
+                conn.session = old_session
 
 
 class _SessionSlot:

@@ -24,6 +24,7 @@ Or via the top-level API::
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import threading
 import time
@@ -387,6 +388,7 @@ class Runtime:
 
         # Subscription state
         self._subscriptions: dict[tuple[str, ...], _SubEntry] = {}
+        self._subscriptions_lock = threading.Lock()
         self._subscription_keys: list[tuple[str, ...]] = []
 
         # Window state
@@ -1415,7 +1417,6 @@ class Runtime:
             old.cancel()
 
         def fire() -> None:
-            self._pending_timers.pop(event_key, None)
             self._queue.put(event)
 
         timer = threading.Timer(delay_ms / 1000.0, fire)
@@ -1647,7 +1648,8 @@ class Runtime:
             else:
                 kept[key] = old_entry
 
-        self._subscriptions = {**kept, **new_entries}
+        with self._subscriptions_lock:
+            self._subscriptions = {**kept, **new_entries}
         self._subscription_keys = new_sorted_keys
 
     def _update_max_rates(
@@ -1685,8 +1687,9 @@ class Runtime:
             def tick() -> None:
                 now_ms = int(time.monotonic() * 1000)
                 self._queue.put(TimerTick(tag=tag, timestamp=now_ms))
-                # Re-arm if still subscribed
-                if spec.key in self._subscriptions:
+                with self._subscriptions_lock:
+                    if spec.key not in self._subscriptions:
+                        return
                     entry = self._subscriptions[spec.key]
                     if entry.timer is not None:
                         entry.timer.cancel()
@@ -1732,7 +1735,8 @@ class Runtime:
 
     def _stop_subscription(self, key: tuple[str, ...]) -> None:
         """Stop a subscription by key."""
-        entry = self._subscriptions.pop(key, None)
+        with self._subscriptions_lock:
+            entry = self._subscriptions.pop(key, None)
         if entry is None:
             return
         if entry.source == "timer" and entry.timer is not None:
@@ -1949,6 +1953,9 @@ class Runtime:
 
     def _start_reader(self) -> None:
         """Start the background reader thread."""
+        old = self._reader_thread
+        if old is not None and old.is_alive():
+            old.join(timeout=2.0)
         self._reader_thread = threading.Thread(
             target=self._reader_loop,
             name="plushie-runtime-reader",
@@ -1977,8 +1984,16 @@ class Runtime:
         self._running = False
         self._cancel_heartbeat()
 
+        # Close the connection to unblock the reader thread, then join it.
+        if hasattr(self._conn, "close") and callable(self._conn.close):
+            with contextlib.suppress(Exception):
+                self._conn.close()
+        if self._reader_thread is not None:
+            self._reader_thread.join(timeout=2.0)
+            self._reader_thread = None
+
         # Cancel all pending timers
-        for timer in self._pending_timers.values():
+        for timer in list(self._pending_timers.values()):
             timer.cancel()
         self._pending_timers.clear()
 
@@ -1988,13 +2003,13 @@ class Runtime:
             self._coalesce_timer = None
 
         # Cancel all subscription timers
-        for entry in self._subscriptions.values():
+        for entry in list(self._subscriptions.values()):
             if entry.timer is not None:
                 entry.timer.cancel()
         self._subscriptions.clear()
 
         # Cancel all pending effects
-        for entry in self._pending_effects.values():
+        for entry in list(self._pending_effects.values()):
             entry["timer"].cancel()
         self._pending_effects.clear()
 
