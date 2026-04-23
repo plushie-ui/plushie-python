@@ -751,7 +751,13 @@ def parse_hello(msg: dict[str, Any]) -> HelloInfo:
     if missing:
         raise ValueError(f"hello message missing required fields: {missing}")
 
-    for key in ("protocol", "version", "name", "mode", "backend"):
+    if type(msg["protocol"]) is not int:
+        raise ValueError(
+            "hello message field 'protocol' must be int, "
+            f"got {type(msg['protocol']).__name__}"
+        )
+
+    for key in ("version", "name", "mode", "backend"):
         if not isinstance(msg[key], (str, int)):
             raise ValueError(
                 f"hello message field {key!r} must be str or int, got {type(msg[key]).__name__}"

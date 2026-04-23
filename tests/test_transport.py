@@ -15,7 +15,8 @@ from unittest.mock import MagicMock
 import msgpack
 import pytest
 
-from plushie.connection import Connection
+from plushie.connection import Connection, ProtocolMismatchError
+from plushie.protocol import PROTOCOL_VERSION
 from plushie.transport import IoStreamAdapter, SocketAdapter, WebSocketAdapter
 
 
@@ -182,6 +183,48 @@ class TestIoStreamAdapter:
             adapter.wait_hello(timeout=0.1)
         adapter.close()
 
+    def test_protocol_mismatch_raises(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+
+        hello_msg = {
+            "type": "hello",
+            "name": "plushie",
+            "version": "0.4.0",
+            "protocol": PROTOCOL_VERSION + 1,
+            "mode": "mock",
+            "backend": "mock",
+            "transport": "iostream",
+        }
+        reader.feed(_encode_msg(hello_msg))
+
+        with pytest.raises(ProtocolMismatchError, match="protocol version mismatch"):
+            adapter.wait_hello(timeout=2.0)
+        assert adapter.receive_event(timeout=0.01) is None
+        adapter.close()
+
+    def test_malformed_protocol_raises(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+
+        hello_msg = {
+            "type": "hello",
+            "name": "plushie",
+            "version": "0.4.0",
+            "protocol": "1",
+            "mode": "mock",
+            "backend": "mock",
+            "transport": "iostream",
+        }
+        reader.feed(_encode_msg(hello_msg))
+
+        with pytest.raises(ProtocolMismatchError, match=r"protocol.*int"):
+            adapter.wait_hello(timeout=2.0)
+        assert adapter.receive_event(timeout=0.01) is None
+        adapter.close()
+
 
 class TestWebSocketAdapter:
     """WebSocketAdapter with a mock WebSocket."""
@@ -247,6 +290,31 @@ class TestConnectionFromIostream:
         conn = Connection.from_iostream(adapter)
         conn.send_settings({"theme": "dark"})
         assert len(writer.chunks) == 1
+        conn.close()
+
+    def test_wait_hello_raises_protocol_mismatch(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        conn = Connection.from_iostream(adapter)
+
+        reader.feed(
+            _encode_msg(
+                {
+                    "type": "hello",
+                    "name": "plushie",
+                    "version": "0.4.0",
+                    "protocol": PROTOCOL_VERSION + 1,
+                    "mode": "mock",
+                    "backend": "mock",
+                    "transport": "iostream",
+                }
+            )
+        )
+
+        with pytest.raises(ProtocolMismatchError, match="protocol version mismatch"):
+            conn.wait_hello(timeout=2.0)
+        assert conn.receive_event(timeout=0.01) is None
         conn.close()
 
 

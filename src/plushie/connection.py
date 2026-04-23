@@ -77,18 +77,17 @@ class ProtocolMismatchError(ConnectionError):
     """Raised when the renderer reports an incompatible protocol version."""
 
 
-class ProtocolVersionMismatchError(ConnectionError):
+class ProtocolVersionMismatchError(ProtocolMismatchError):
     """Raised when the renderer's advertised protocol version does not match the SDK's.
 
     Attributes:
         expected: Protocol version this SDK was built for.
-        got: Protocol version the renderer advertised (may be ``None``
-            when the renderer sent no ``protocol`` field).
+        got: Protocol version the renderer advertised.
     """
 
     __slots__ = ("expected", "got")
 
-    def __init__(self, *, expected: int, got: int | None) -> None:
+    def __init__(self, *, expected: int, got: int) -> None:
         super().__init__(f"protocol version mismatch: expected {expected}, got {got!r}")
         self.expected = expected
         self.got = got
@@ -125,6 +124,24 @@ def _validate_required_extensions(hello: HelloInfo, expected: tuple[str, ...]) -
             f"renderer is missing required extensions {missing!r}. "
             f"Renderer reported {list(hello.extensions)!r}"
         )
+
+
+def _validate_hello_protocol(hello: HelloInfo) -> None:
+    if hello.protocol != PROTOCOL_VERSION:
+        raise ProtocolVersionMismatchError(
+            expected=PROTOCOL_VERSION,
+            got=hello.protocol,
+        )
+
+
+def _parse_hello_for_handshake(raw_msg: dict[str, Any]) -> HelloInfo:
+    try:
+        decoded = decode_message(raw_msg)
+    except ValueError as exc:
+        raise ProtocolMismatchError(str(exc)) from exc
+    if not isinstance(decoded, HelloInfo):
+        raise ProtocolMismatchError("renderer sent invalid hello message")
+    return decoded
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +200,7 @@ class Connection:
         self._pending: dict[str, Queue[dict[str, Any]]] = {}
         self._pending_lock = threading.Lock()
         self._hello: HelloInfo | None = None
+        self._hello_error: ProtocolMismatchError | None = None
         self._expected_widgets = _normalize_expected_widgets(expected_widgets)
         self._hello_event = threading.Event()
         self._closed = False
@@ -353,6 +371,8 @@ class Connection:
         """
         if not self._hello_event.wait(timeout):
             raise ConnectionError(f"renderer did not send hello within {timeout}s")
+        if self._hello_error is not None:
+            raise self._hello_error
         assert self._hello is not None
         _validate_required_extensions(self._hello, self._expected_widgets)
         return self._hello
@@ -442,6 +462,7 @@ class Connection:
         self._process = new_proc
         self._closed = False
         self._hello = None
+        self._hello_error = None
         self._hello_event.clear()
         self._framing = _framing_for(self._format)
 
@@ -928,27 +949,19 @@ class Connection:
 
         # Hello message
         if msg_type == "hello":
-            decoded = decode_message(raw_msg)
-            if isinstance(decoded, HelloInfo):
-                if decoded.protocol != PROTOCOL_VERSION:
-                    err = ProtocolVersionMismatchError(
-                        expected=PROTOCOL_VERSION,
-                        got=decoded.protocol,
-                    )
-                    logger.error("plushie connection: %s", err)
-                    self._hello = decoded
-                    self._hello_event.set()
-                    # Surface the typed error to the runtime so the
-                    # caller observes a structured event. The reader
-                    # loop will exit once the renderer stream closes;
-                    # downstream consumers should treat the error as
-                    # terminal.
-                    self._event_queue.put(err)
-                    return
-                self._hello = decoded
+            try:
+                decoded = _parse_hello_for_handshake(raw_msg)
+                _validate_hello_protocol(decoded)
+            except ProtocolMismatchError as err:
+                logger.error("plushie connection: %s", err)
+                self._hello_error = err
                 self._hello_event.set()
-                self._event_queue.put(decoded)
                 return
+            self._hello = decoded
+            self._hello_error = None
+            self._hello_event.set()
+            self._event_queue.put(decoded)
+            return
 
         # Response types: route to pending request queue
         response_types = (
@@ -997,6 +1010,7 @@ class StdioConnection:
         self._pending: dict[str, Queue[dict[str, Any]]] = {}
         self._pending_lock = threading.Lock()
         self._hello: HelloInfo | None = None
+        self._hello_error: ProtocolMismatchError | None = None
         self._expected_widgets: tuple[str, ...] = ()
         self._hello_event = threading.Event()
         self._closed = False
@@ -1051,6 +1065,8 @@ class StdioConnection:
         """
         if not self._hello_event.wait(timeout):
             raise ConnectionError(f"renderer did not send hello within {timeout}s")
+        if self._hello_error is not None:
+            raise self._hello_error
         assert self._hello is not None
         _validate_required_extensions(self._hello, self._expected_widgets)
         return self._hello
@@ -1142,12 +1158,19 @@ class StdioConnection:
         msg_id = raw_msg.get("id", "")
 
         if msg_type == "hello":
-            decoded = decode_message(raw_msg)
-            if isinstance(decoded, HelloInfo):
-                self._hello = decoded
+            try:
+                decoded = _parse_hello_for_handshake(raw_msg)
+                _validate_hello_protocol(decoded)
+            except ProtocolMismatchError as err:
+                logger.error("plushie stdio connection: %s", err)
+                self._hello_error = err
                 self._hello_event.set()
-                self._event_queue.put(decoded)
                 return
+            self._hello = decoded
+            self._hello_error = None
+            self._hello_event.set()
+            self._event_queue.put(decoded)
+            return
 
         response_types = (
             "query_response",
@@ -1355,5 +1378,6 @@ __all__ = [
     "Connection",
     "ConnectionError",
     "ProtocolMismatchError",
+    "ProtocolVersionMismatchError",
     "StdioConnection",
 ]

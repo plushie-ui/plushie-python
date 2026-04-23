@@ -682,6 +682,7 @@ class Runtime:
             logger.exception("plushie runtime: app.settings() raised")
 
         self._conn.send_settings(app_settings)
+        self._conn.wait_hello(timeout=10.0)
 
         # 3. Render initial view
         tree = self._safe_view(model)

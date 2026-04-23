@@ -40,6 +40,11 @@ from collections.abc import Callable
 from queue import Empty, Queue
 from typing import Any, Protocol, runtime_checkable
 
+from plushie.connection import (
+    ProtocolMismatchError,
+    _parse_hello_for_handshake,
+    _validate_hello_protocol,
+)
 from plushie.framing import JsonFraming, MsgpackFraming
 from plushie.protocol import decode_message
 from plushie.types import HelloInfo
@@ -112,6 +117,7 @@ class IoStreamAdapter:
         self._event_queue: Queue[Any] = Queue()
         self._on_event = on_event
         self._hello: HelloInfo | None = None
+        self._hello_error: ProtocolMismatchError | None = None
         self._hello_event = threading.Event()
         self._closed = False
 
@@ -141,6 +147,8 @@ class IoStreamAdapter:
         """
         if not self._hello_event.wait(timeout):
             raise TimeoutError(f"renderer did not send hello within {timeout}s")
+        if self._hello_error is not None:
+            raise self._hello_error
         assert self._hello is not None
         return self._hello
 
@@ -230,12 +238,19 @@ class IoStreamAdapter:
         msg_type = raw_msg.get("type", "")
 
         if msg_type == "hello":
-            decoded = decode_message(raw_msg)
-            if isinstance(decoded, HelloInfo):
-                self._hello = decoded
+            try:
+                decoded = _parse_hello_for_handshake(raw_msg)
+                _validate_hello_protocol(decoded)
+            except ProtocolMismatchError as err:
+                logger.error("plushie iostream adapter: %s", err)
+                self._hello_error = err
                 self._hello_event.set()
-                self._post_event(decoded)
                 return
+            self._hello = decoded
+            self._hello_error = None
+            self._hello_event.set()
+            self._post_event(decoded)
+            return
 
         decoded = decode_message(raw_msg)
         self._post_event(decoded)

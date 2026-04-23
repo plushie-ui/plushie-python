@@ -11,7 +11,10 @@ import json
 import os
 import stat
 import sys
+import threading
 from pathlib import Path
+from queue import Queue
+from typing import Any
 from unittest.mock import patch as mock_patch
 
 import pytest
@@ -35,6 +38,7 @@ from plushie.binary import (
 from plushie.connection import (
     Connection,
     ConnectionError,
+    ProtocolMismatchError,
     StdioConnection,
     _decode_events_list,
     _next_request_id,
@@ -532,9 +536,59 @@ class TestConnectionAttributes:
 
     def test_protocol_mismatch_error(self) -> None:
         """ProtocolMismatchError is a ConnectionError."""
-        from plushie.connection import ProtocolMismatchError
-
         assert issubclass(ProtocolMismatchError, ConnectionError)
+
+    def test_wait_hello_raises_protocol_mismatch(self) -> None:
+        conn: Any = Connection.__new__(Connection)
+        conn._hello = None
+        conn._hello_error = None
+        conn._hello_event = threading.Event()
+        conn._expected_widgets = ()
+        conn._event_queue = Queue()
+
+        conn._route_message(
+            {
+                "type": "hello",
+                "session": "",
+                "protocol": PROTOCOL_VERSION + 1,
+                "version": "0.4.0",
+                "name": "plushie",
+                "mode": "mock",
+                "backend": "none",
+                "transport": "stdio",
+                "extensions": [],
+            }
+        )
+
+        with pytest.raises(ProtocolMismatchError, match="protocol version mismatch"):
+            conn.wait_hello(timeout=0.1)
+        assert conn.receive_event(timeout=0.01) is None
+
+    def test_wait_hello_raises_malformed_protocol(self) -> None:
+        conn: Any = Connection.__new__(Connection)
+        conn._hello = None
+        conn._hello_error = None
+        conn._hello_event = threading.Event()
+        conn._expected_widgets = ()
+        conn._event_queue = Queue()
+
+        conn._route_message(
+            {
+                "type": "hello",
+                "session": "",
+                "protocol": "1",
+                "version": "0.4.0",
+                "name": "plushie",
+                "mode": "mock",
+                "backend": "none",
+                "transport": "stdio",
+                "extensions": [],
+            }
+        )
+
+        with pytest.raises(ProtocolMismatchError, match=r"protocol.*int"):
+            conn.wait_hello(timeout=0.1)
+        assert conn.receive_event(timeout=0.01) is None
 
     def test_plushie_not_found_is_file_not_found(self) -> None:
         """PlushieNotFoundError is a FileNotFoundError."""
@@ -768,6 +822,110 @@ class TestStdioConnectionJsonFormat:
             # Restore the original stdio before closing the pipes, so
             # nothing in the test runner attempts to write to the
             # dead fd 1 in the window between.
+            os.dup2(saved_in, 0)
+            os.dup2(saved_out, 1)
+            os.close(saved_in)
+            os.close(saved_out)
+            sys.stdout = saved_stdout
+
+            for fd in (in_write, out_read):
+                with contextlib.suppress(OSError):
+                    os.close(fd)
+
+    def test_json_protocol_mismatch_raises(self) -> None:
+        in_read, in_write = os.pipe()
+        out_read, out_write = os.pipe()
+
+        saved_in = os.dup(0)
+        saved_out = os.dup(1)
+        saved_stdout = sys.stdout
+
+        conn: StdioConnection | None = None
+        try:
+            os.dup2(in_read, 0)
+            os.dup2(out_write, 1)
+            os.close(in_read)
+            os.close(out_write)
+
+            conn = StdioConnection(format="json")
+
+            hello_frame = (
+                json.dumps(
+                    {
+                        "type": "hello",
+                        "session": "",
+                        "protocol": PROTOCOL_VERSION + 1,
+                        "version": "0.6.0",
+                        "name": "plushie-renderer",
+                        "mode": "mock",
+                        "backend": "none",
+                        "transport": "stdio",
+                        "extensions": [],
+                    }
+                )
+                + "\n"
+            )
+            os.write(in_write, hello_frame.encode("utf-8"))
+
+            with pytest.raises(
+                ProtocolMismatchError, match="protocol version mismatch"
+            ):
+                conn.wait_hello(timeout=5.0)
+            assert conn.receive_event(timeout=0.01) is None
+        finally:
+            if conn is not None:
+                conn.close()
+            os.dup2(saved_in, 0)
+            os.dup2(saved_out, 1)
+            os.close(saved_in)
+            os.close(saved_out)
+            sys.stdout = saved_stdout
+
+            for fd in (in_write, out_read):
+                with contextlib.suppress(OSError):
+                    os.close(fd)
+
+    def test_json_malformed_protocol_raises(self) -> None:
+        in_read, in_write = os.pipe()
+        out_read, out_write = os.pipe()
+
+        saved_in = os.dup(0)
+        saved_out = os.dup(1)
+        saved_stdout = sys.stdout
+
+        conn: StdioConnection | None = None
+        try:
+            os.dup2(in_read, 0)
+            os.dup2(out_write, 1)
+            os.close(in_read)
+            os.close(out_write)
+
+            conn = StdioConnection(format="json")
+
+            hello_frame = (
+                json.dumps(
+                    {
+                        "type": "hello",
+                        "session": "",
+                        "protocol": "1",
+                        "version": "0.6.0",
+                        "name": "plushie-renderer",
+                        "mode": "mock",
+                        "backend": "none",
+                        "transport": "stdio",
+                        "extensions": [],
+                    }
+                )
+                + "\n"
+            )
+            os.write(in_write, hello_frame.encode("utf-8"))
+
+            with pytest.raises(ProtocolMismatchError, match=r"protocol.*int"):
+                conn.wait_hello(timeout=5.0)
+            assert conn.receive_event(timeout=0.01) is None
+        finally:
+            if conn is not None:
+                conn.close()
             os.dup2(saved_in, 0)
             os.dup2(saved_out, 1)
             os.close(saved_in)

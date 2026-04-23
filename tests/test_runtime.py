@@ -600,6 +600,55 @@ class TestWindowConfig:
         assert app.window_config(0) == {}
 
 
+class TestRuntimeHandshake:
+    def test_initialize_waits_for_hello_before_initial_snapshot(self) -> None:
+        from plushie.connection import ProtocolMismatchError
+        from plushie.runtime import Runtime
+
+        calls: list[str] = []
+        builder = create_app("HandshakeTest")
+
+        @builder.init
+        def init() -> int:
+            calls.append("init")
+            return 0
+
+        @builder.update
+        def update(model: int, _event: object) -> int:
+            return model
+
+        @builder.settings
+        def settings() -> dict[str, Any]:
+            calls.append("settings")
+            return {}
+
+        @builder.view
+        def view(_model: int) -> dict[str, Any]:
+            calls.append("view")
+            return {"id": "root", "type": "container", "props": {}, "children": []}
+
+        class RejectingConnection:
+            session = ""
+
+            def send_settings(self, _settings: dict[str, Any]) -> None:
+                calls.append("send_settings")
+
+            def wait_hello(self, timeout: float = 10.0) -> Any:
+                calls.append(f"wait_hello:{timeout}")
+                raise ProtocolMismatchError("protocol version mismatch")
+
+            def send_snapshot(self, _tree: dict[str, Any]) -> None:
+                calls.append("send_snapshot")
+
+        conn: Any = RejectingConnection()
+        rt = Runtime(builder, conn)
+
+        with pytest.raises(ProtocolMismatchError, match="protocol version mismatch"):
+            rt._initialize()
+
+        assert calls == ["init", "settings", "send_settings", "wait_hello:10.0"]
+
+
 # ===================================================================
 # Dev overlay / frozen UI
 # ===================================================================

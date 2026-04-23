@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from plushie.events import (
     AllWindowsClosed,
     AnimationFrame,
@@ -451,6 +453,19 @@ class TestParseHello:
         info = parse_hello(raw)
         assert info.extensions == ()
         assert info.transport == "stdio"
+
+    def test_rejects_non_integer_protocol(self) -> None:
+        raw = {
+            "type": "hello",
+            "session": "",
+            "protocol": "1",
+            "version": "0.1.0",
+            "name": "plushie",
+            "mode": "headless",
+            "backend": "tiny-skia",
+        }
+        with pytest.raises(ValueError, match=r"protocol.*int"):
+            parse_hello(raw)
 
 
 class TestParseQueryResponse:
