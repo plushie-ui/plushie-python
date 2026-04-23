@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 import struct
 from typing import Any
 
@@ -81,7 +82,8 @@ class MsgpackFraming:
 
         Raises ``FramingError`` if the encoded payload exceeds 64 MiB.
         """
-        payload: bytes = msgpack.packb(msg, use_bin_type=True)  # type: ignore[assignment]
+        normalized = _normalize_outbound_fields(msg, binary_mode="msgpack")
+        payload: bytes = msgpack.packb(normalized, use_bin_type=True)  # type: ignore[assignment]
         if len(payload) > MAX_MESSAGE_SIZE:
             raise BufferOverflowError(size=len(payload), limit=MAX_MESSAGE_SIZE)
         return _LENGTH_PREFIX.pack(len(payload)) + payload
@@ -137,11 +139,17 @@ class JsonFraming:
 
         Binary values (``bytes`` / ``bytearray``) found in the message
         are replaced with their base64-encoded string representation.
+        Non-finite float values are normalized to ``null``.
 
         Raises ``FramingError`` if the encoded line exceeds 64 MiB.
         """
-        converted = _encode_binary_fields(msg)
-        line = json.dumps(converted, separators=(",", ":"), ensure_ascii=False)
+        normalized = _normalize_outbound_fields(msg, binary_mode="json")
+        line = json.dumps(
+            normalized,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
         encoded = line.encode("utf-8") + b"\n"
         if len(encoded) > MAX_MESSAGE_SIZE:
             raise BufferOverflowError(size=len(encoded), limit=MAX_MESSAGE_SIZE)
@@ -179,18 +187,36 @@ class JsonFraming:
 
 
 # ---------------------------------------------------------------------------
-# Binary field helpers
+# Outbound normalization helpers
 # ---------------------------------------------------------------------------
 
 
-def _encode_binary_fields(obj: Any) -> Any:
-    """Recursively replace bytes/bytearray values with base64 strings."""
+def _normalize_outbound_fields(obj: Any, *, binary_mode: str) -> Any:
+    """Normalize outbound wire values for JSONL and MessagePack.
+
+    Binary values keep their existing wire contract:
+    - JSON uses base64 strings
+    - MsgPack uses native bytes
+
+    Non-finite floats are normalized to ``None`` so both formats emit
+    `null` / `nil` instead of NaN or Infinity.
+    """
+    if isinstance(obj, bool | int | str) or obj is None:
+        return obj
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
     if isinstance(obj, (bytes, bytearray)):
-        return base64.b64encode(obj).decode("ascii")
+        data = bytes(obj)
+        if binary_mode == "json":
+            return base64.b64encode(data).decode("ascii")
+        return data
     if isinstance(obj, dict):
-        return {k: _encode_binary_fields(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_encode_binary_fields(v) for v in obj]
+        return {
+            k: _normalize_outbound_fields(v, binary_mode=binary_mode)
+            for k, v in obj.items()
+        }
+    if isinstance(obj, list | tuple):
+        return [_normalize_outbound_fields(v, binary_mode=binary_mode) for v in obj]
     return obj
 
 

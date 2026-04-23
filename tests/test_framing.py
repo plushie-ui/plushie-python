@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import struct
 
 import msgpack
@@ -40,6 +41,34 @@ class TestMsgpackFramingEncode:
         results = framing.feed(encoded)
         assert len(results) == 1
         assert results[0]["data"] == raw_bytes
+
+    def test_bytearray_data_preserved(self) -> None:
+        raw_bytes = bytearray(b"\x00\x01\x02\xff")
+        encoded = MsgpackFraming.encode({"data": raw_bytes})
+        framing = MsgpackFraming()
+        results = framing.feed(encoded)
+        assert len(results) == 1
+        assert results[0]["data"] == bytes(raw_bytes)
+
+    def test_non_finite_floats_normalized_to_none(self) -> None:
+        msg = {
+            "nan": math.nan,
+            "inf": math.inf,
+            "neg_inf": -math.inf,
+            "nested": [1.5, {"value": math.nan}],
+        }
+
+        encoded = MsgpackFraming.encode(msg)
+        framing = MsgpackFraming()
+        results = framing.feed(encoded)
+
+        assert len(results) == 1
+        assert results[0] == {
+            "nan": None,
+            "inf": None,
+            "neg_inf": None,
+            "nested": [1.5, {"value": None}],
+        }
 
     def test_oversize_raises(self) -> None:
         # Craft a message that when packed exceeds 64 MiB
@@ -144,6 +173,13 @@ class TestJsonFramingEncode:
         assert isinstance(decoded["data"], str)
         assert decode_binary_from_json(decoded["data"]) == raw_bytes
 
+    def test_bytearray_data_base64_encoded(self) -> None:
+        raw_bytes = bytearray(b"\x00\x01\x02\xff")
+        encoded = JsonFraming.encode({"data": raw_bytes})
+        decoded = json.loads(encoded.rstrip(b"\n"))
+        assert isinstance(decoded["data"], str)
+        assert decode_binary_from_json(decoded["data"]) == bytes(raw_bytes)
+
     def test_nested_binary_data(self) -> None:
         raw = b"hello"
         msg = {"outer": {"inner": raw, "list": [raw, "text"]}}
@@ -152,6 +188,32 @@ class TestJsonFramingEncode:
         assert decode_binary_from_json(decoded["outer"]["inner"]) == raw
         assert decode_binary_from_json(decoded["outer"]["list"][0]) == raw
         assert decoded["outer"]["list"][1] == "text"
+
+    def test_non_finite_floats_normalized_to_null(self) -> None:
+        msg = {
+            "nan": math.nan,
+            "inf": math.inf,
+            "neg_inf": -math.inf,
+            "nested": {
+                "items": [math.nan, 2.5],
+                "bytes": b"\x01\x02",
+            },
+        }
+
+        encoded = JsonFraming.encode(msg)
+        assert b"NaN" not in encoded
+        assert b"Infinity" not in encoded
+        decoded = json.loads(encoded.rstrip(b"\n"))
+
+        assert decoded == {
+            "nan": None,
+            "inf": None,
+            "neg_inf": None,
+            "nested": {
+                "items": [None, 2.5],
+                "bytes": encode_binary_for_json(b"\x01\x02"),
+            },
+        }
 
     def test_unicode_preserved(self) -> None:
         msg = {"text": "Hello, 世界"}
@@ -162,12 +224,12 @@ class TestJsonFramingEncode:
 
 class TestJsonFramingFeed:
     def test_single_message(self) -> None:
-        msg = {"type": "hello", "protocol": 1}
+        msg = {"type": "hello", "protocol": 1, "value": math.nan}
         encoded = JsonFraming.encode(msg)
         framing = JsonFraming()
         results = framing.feed(encoded)
         assert len(results) == 1
-        assert results[0] == msg
+        assert results[0] == {"type": "hello", "protocol": 1, "value": None}
 
     def test_multiple_messages(self) -> None:
         msg1 = {"type": "event", "family": "click"}
