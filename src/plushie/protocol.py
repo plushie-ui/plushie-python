@@ -365,7 +365,7 @@ def image_op(
     }
 
 
-def widget_command(
+def command(
     widget_id: str,
     family: str,
     value: Any = None,
@@ -394,8 +394,19 @@ def widget_command(
     return msg
 
 
-def widget_batch(
-    commands: list[tuple[str, str, Any]],
+def widget_command(
+    widget_id: str,
+    family: str,
+    value: Any = None,
+    *,
+    session: str = "",
+) -> dict[str, Any]:
+    """Compatibility alias for :func:`command`."""
+    return command(widget_id, family, value, session=session)
+
+
+def commands(
+    command_list: list[tuple[str, str, Any]],
     *,
     session: str = "",
 ) -> dict[str, Any]:
@@ -404,7 +415,7 @@ def widget_batch(
     Each item in ``commands`` should be a ``(id, family, value)`` tuple.
 
     Args:
-        commands: List of ``(widget_id, family, value)`` tuples.
+        command_list: List of ``(widget_id, family, value)`` tuples.
         session: Session identifier.
     """
     return {
@@ -416,9 +427,18 @@ def widget_batch(
                 "family": family,
                 **({"value": val} if val is not None else {}),
             }
-            for cmd_id, family, val in commands
+            for cmd_id, family, val in command_list
         ],
     }
+
+
+def widget_batch(
+    command_list: list[tuple[str, str, Any]],
+    *,
+    session: str = "",
+) -> dict[str, Any]:
+    """Compatibility alias for :func:`commands`."""
+    return commands(command_list, session=session)
 
 
 def interact_msg(
@@ -1906,6 +1926,8 @@ def _opt_float(val: Any) -> float | None:
 __all__ = [
     "PROTOCOL_VERSION",
     "advance_frame_msg",
+    "command",
+    "commands",
     "decode_message",
     "effect_msg",
     "encode_selector",

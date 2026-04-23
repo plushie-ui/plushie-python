@@ -517,13 +517,13 @@ Push data directly to a native Rust widget without triggering the
 view/diff/patch cycle. Used for high-frequency data like terminal output
 or streaming log lines.
 
-<!-- test: test_command_widget_command, test_command_widget_commands -- keep this code block in sync with the test -->
+<!-- test: test_command_command, test_command_commands -- keep this code block in sync with the test -->
 ```python
 # Single command
-Command.widget_command("term-1", "write", {"data": output})
+Command.command("term-1", "write", {"data": output})
 
 # Batch (all processed before next view cycle)
-Command.widget_commands([
+Command.commands([
     ("term-1", "write", {"data": line1}),
     ("log-1", "append", {"line": entry}),
 ])

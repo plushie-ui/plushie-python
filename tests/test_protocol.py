@@ -54,6 +54,8 @@ from plushie.events import (
 from plushie.protocol import (
     PROTOCOL_VERSION,
     advance_frame_msg,
+    command,
+    commands,
     decode_message,
     effect_msg,
     encode_selector,
@@ -77,7 +79,6 @@ from plushie.protocol import (
     subscribe_msg,
     tree_hash_msg,
     unsubscribe_msg,
-    widget_batch,
     widget_command,
     widget_op,
     window_op,
@@ -216,28 +217,37 @@ class TestImageOp:
         assert "data" not in msg["payload"]
 
 
-class TestWidgetCommand:
+class TestCommand:
     def test_structure(self) -> None:
-        msg = widget_command("chart1", "append_data", {"values": [1, 2]})
+        msg = command("chart1", "append_data", {"values": [1, 2]})
         assert msg["type"] == "command"
         assert msg["id"] == "chart1"
         assert msg["family"] == "append_data"
         assert msg["value"] == {"values": [1, 2]}
 
     def test_without_value(self) -> None:
-        msg = widget_command("chart1", "reset")
+        msg = command("chart1", "reset")
         assert msg["type"] == "command"
         assert "value" not in msg
 
+    def test_widget_command_alias(self) -> None:
+        assert widget_command("chart1", "reset") == command("chart1", "reset")
 
-class TestWidgetCommands:
+
+class TestCommands:
     def test_batch(self) -> None:
         cmds = [("a", "x", None), ("b", "y", {"z": 1})]
-        msg = widget_batch(cmds)
+        msg = commands(cmds)
         assert msg["type"] == "commands"
         assert len(msg["commands"]) == 2
         assert msg["commands"][0] == {"id": "a", "family": "x"}
         assert msg["commands"][1] == {"id": "b", "family": "y", "value": {"z": 1}}
+
+    def test_widget_batch_alias(self) -> None:
+        from plushie.protocol import widget_batch
+
+        cmds = [("a", "x", None), ("b", "y", {"z": 1})]
+        assert widget_batch(cmds) == commands(cmds)
 
 
 class TestInteractMsg:

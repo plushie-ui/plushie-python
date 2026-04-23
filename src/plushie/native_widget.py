@@ -285,8 +285,8 @@ def build_command(
     """
     _ = ext_def
     if payload:
-        return Command.widget_command(node_id, op, payload)
-    return Command.widget_command(node_id, op)
+        return Command.command(node_id, op, payload)
+    return Command.command(node_id, op)
 
 
 __all__ = [

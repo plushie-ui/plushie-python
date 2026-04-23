@@ -55,12 +55,12 @@ from plushie.events import Diagnostic as _Diagnostic
 from plushie.events import DiagnosticMessage as _DiagnosticMessage
 from plushie.protocol import (
     advance_frame_msg,
+    command,
+    commands,
     effect_msg,
     image_op,
     system_op,
     system_query,
-    widget_batch,
-    widget_command,
     widget_op,
     window_op,
 )
@@ -1320,7 +1320,7 @@ class Runtime:
             return
 
         if t == "command":
-            msg = widget_command(
+            msg = command(
                 p["id"],
                 p["family"],
                 p.get("value"),
@@ -1332,7 +1332,7 @@ class Runtime:
         if t == "commands":
             raw_cmds = p.get("commands", [])
             cmds = [(c["id"], c["family"], c.get("value")) for c in raw_cmds]
-            msg = widget_batch(cmds, session=self._conn.session)
+            msg = commands(cmds, session=self._conn.session)
             self._conn.send(msg)
             return
 

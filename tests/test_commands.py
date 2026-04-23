@@ -416,26 +416,35 @@ class TestImageOps:
         assert cmd.payload["handle"] == "logo"
 
 
-class TestWidgetCommand:
-    def test_widget_command(self) -> None:
-        cmd = Command.widget_command("chart", "set_data", {"values": [1, 2]})
+class TestCommand:
+    def test_command(self) -> None:
+        cmd = Command.command("chart", "set_data", {"values": [1, 2]})
         assert cmd.type == "command"
         assert cmd.payload["id"] == "chart"
         assert cmd.payload["family"] == "set_data"
         assert cmd.payload["value"] == {"values": [1, 2]}
 
-    def test_widget_command_default_value(self) -> None:
-        cmd = Command.widget_command("chart", "reset")
+    def test_command_default_value(self) -> None:
+        cmd = Command.command("chart", "reset")
         assert "value" not in cmd.payload
 
-    def test_widget_commands(self) -> None:
+    def test_widget_command_alias(self) -> None:
+        assert Command.widget_command("chart", "reset") == Command.command(
+            "chart", "reset"
+        )
+
+    def test_commands(self) -> None:
         cmds = [("a", "op1", None), ("b", "op2", {"x": 1})]
-        cmd = Command.widget_batch(cmds)
+        cmd = Command.commands(cmds)
         assert cmd.type == "commands"
         wire = cmd.payload["commands"]
         assert len(wire) == 2
         assert wire[0] == {"id": "a", "family": "op1"}
         assert wire[1] == {"id": "b", "family": "op2", "value": {"x": 1}}
+
+    def test_widget_batch_alias(self) -> None:
+        cmds = [("a", "op1", None), ("b", "op2", {"x": 1})]
+        assert Command.widget_batch(cmds) == Command.commands(cmds)
 
 
 class TestAdvanceFrame:

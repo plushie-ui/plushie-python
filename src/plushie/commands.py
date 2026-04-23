@@ -17,7 +17,7 @@ Categories:
   ``move_cursor_to_end``, ``scroll_to``,
   ``snap_to``, ``snap_to_end``, ``scroll_by``,
   ``pane_split``, ``pane_close``, ``pane_swap``, ``pane_maximize``,
-  ``pane_restore``, ``widget_command``, ``widget_batch``
+  ``pane_restore``, ``command``, ``commands``
 - **Widget ops** (global): ``focus_next``, ``focus_previous``,
   ``announce``, ``load_font``, ``tree_hash_query``,
   ``find_focused_query``, ``list_images_query``, ``clear_images``
@@ -836,7 +836,7 @@ class Command:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def widget_command(widget_id: str, family: str, value: Any = None) -> Command:
+    def command(widget_id: str, family: str, value: Any = None) -> Command:
         """Send a command to a widget by ID.
 
         Uses the unified wire format matching events:
@@ -848,7 +848,12 @@ class Command:
         return Command(type="command", payload=payload)
 
     @staticmethod
-    def widget_batch(
+    def widget_command(widget_id: str, family: str, value: Any = None) -> Command:
+        """Compatibility alias for :meth:`command`."""
+        return Command.command(widget_id, family, value)
+
+    @staticmethod
+    def commands(
         commands: list[tuple[str, str, Any]],
     ) -> Command:
         """Send a batch of widget-targeted commands processed in one cycle.
@@ -865,6 +870,13 @@ class Command:
             type="commands",
             payload={"commands": wire_cmds},
         )
+
+    @staticmethod
+    def widget_batch(
+        commands: list[tuple[str, str, Any]],
+    ) -> Command:
+        """Compatibility alias for :meth:`commands`."""
+        return Command.commands(commands)
 
     # ------------------------------------------------------------------
     # Animation

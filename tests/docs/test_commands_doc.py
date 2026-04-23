@@ -677,9 +677,9 @@ def test_command_batch():
 # ---------------------------------------------------------------------------
 
 
-def test_command_widget_command():
-    """Command.widget_command() sends data to a native widget."""
-    cmd = Command.widget_command("term-1", "write", {"data": "hello"})
+def test_command_command():
+    """Command.command() sends data to a native widget."""
+    cmd = Command.command("term-1", "write", {"data": "hello"})
 
     assert cmd.type == "command"
     assert cmd.payload["id"] == "term-1"
@@ -687,9 +687,9 @@ def test_command_widget_command():
     assert cmd.payload["value"] == {"data": "hello"}
 
 
-def test_command_widget_commands():
-    """Command.widget_batch() batches widget commands."""
-    cmd = Command.widget_batch(
+def test_command_commands():
+    """Command.commands() batches widget commands."""
+    cmd = Command.commands(
         [
             ("term-1", "write", {"data": "line1"}),
             ("log-1", "append", {"line": "entry"}),
