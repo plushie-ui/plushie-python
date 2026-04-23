@@ -17,7 +17,10 @@ from plushie.commands import Command
 from plushie.events import (
     AsyncResult,
     Click,
+    EffectResult,
     Move,
+    RecoveryFailed,
+    RendererRestarted,
     TimerTick,
 )
 from plushie.runtime import (
@@ -949,6 +952,220 @@ class TestReconnectStubAckCleanup:
 
         assert result["error"] is None
         assert rt._pending_stub_acks == {}
+
+
+class TestReconnectSequencing:
+    def _make_runtime(
+        self,
+        *,
+        handle_renderer_exit: Any,
+        update: Any,
+    ) -> Any:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import Runtime
+
+        builder = create_app("ReconnectSequencingTest")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, event: Any) -> int:
+            return update(model, event)
+
+        @builder.view
+        def _view(model: int) -> dict[str, Any]:
+            return {
+                "id": "root",
+                "type": "container",
+                "props": {"value": model},
+                "children": [],
+            }
+
+        @builder.handle_renderer_exit
+        def _handle_renderer_exit(model: int, reason: Any) -> int:
+            return handle_renderer_exit(model, reason)
+
+        conn = MagicMock()
+        conn.session = ""
+        conn.send_settings.return_value = None
+        conn.wait_hello.return_value = None
+        conn.send_snapshot.return_value = None
+
+        rt = Runtime(builder, conn)
+        rt._model = 5
+        rt._tree = {
+            "id": "root",
+            "type": "container",
+            "props": {"value": 5},
+            "children": [],
+        }
+        rt._widget_registry = {}
+        rt._subscriptions = {}
+        rt._subscription_keys = []
+        rt._windows = {"main"}
+        rt._widget_statuses = {"btn": "focused"}
+        rt._focused_widget_id = "btn"
+        rt._start_reader = lambda: None
+        return rt
+
+    def test_failed_reconnect_preserves_local_state_until_success(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class FakeTimer:
+            def __init__(self) -> None:
+                self.cancelled = False
+
+            def cancel(self) -> None:
+                self.cancelled = True
+
+        def update(model: int, event: Any) -> int:
+            match event:
+                case EffectResult(result=RendererRestarted()):
+                    return model + 10
+                case RecoveryFailed():
+                    return model + 100
+                case _:
+                    return model
+
+        rt = self._make_runtime(
+            handle_renderer_exit=lambda model, _reason: model + 1,
+            update=update,
+        )
+        rt._conn.restart.side_effect = RuntimeError("boom")
+        rt._pending_effects["wire-1"] = {
+            "tag": "reload",
+            "kind": "file_open",
+            "timer": FakeTimer(),
+        }
+        rt._subscriptions = {
+            ("every", "100", "tick"): rt._start_subscription(
+                Subscription.every(100, "tick")
+            )
+        }
+        rt._subscription_keys = [("every", "100", "tick")]
+
+        old_tree = rt._tree
+        old_subscriptions = dict(rt._subscriptions)
+        old_windows = set(rt._windows)
+        old_statuses = dict(rt._widget_statuses)
+        old_focus = rt._focused_widget_id
+
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is False
+        assert rt._model == 5
+        assert rt._tree == old_tree
+        assert rt._windows == old_windows
+        assert rt._widget_statuses == old_statuses
+        assert rt._focused_widget_id == old_focus
+        assert rt._subscriptions == old_subscriptions
+        assert rt._pending_effects == {}
+
+    def test_reconnect_replay_failure_restores_local_state(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class FakeTimer:
+            created: ClassVar[list[FakeTimer]] = []
+
+            def __init__(self, interval: float, callback: Any) -> None:
+                self.interval = interval
+                self.callback = callback
+                self.daemon = False
+                self.started = False
+                self.cancelled = False
+                FakeTimer.created.append(self)
+
+            def start(self) -> None:
+                self.started = True
+
+            def cancel(self) -> None:
+                self.cancelled = True
+
+        monkeypatch.setattr("plushie.runtime.threading.Timer", FakeTimer)
+
+        rt = self._make_runtime(
+            handle_renderer_exit=lambda model, _reason: model + 1,
+            update=lambda model, _event: model,
+        )
+        rt._conn.restart.return_value = None
+        rt._MAX_RESTART_ATTEMPTS = 1
+        rt._subscriptions = {
+            ("every", "100", "tick"): rt._start_subscription(
+                Subscription.every(100, "tick")
+            )
+        }
+        rt._subscription_keys = [("every", "100", "tick")]
+        rt._memo_cache_prev = {"memo": "old"}
+        rt._widget_cache_prev = {"widget": "old"}
+
+        old_timer = rt._subscriptions[("every", "100", "tick")].timer
+        assert old_timer is not None
+
+        def fail_snapshot(_tree: dict[str, Any]) -> None:
+            old_timer.callback()
+            raise RuntimeError("snapshot failed")
+
+        rt._conn.send_snapshot.side_effect = fail_snapshot
+
+        old_tree = rt._tree
+        old_subscriptions = dict(rt._subscriptions)
+        old_windows = set(rt._windows)
+        old_statuses = dict(rt._widget_statuses)
+        old_focus = rt._focused_widget_id
+
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is False
+        assert rt._model == 5
+        assert rt._tree == old_tree
+        assert rt._windows == old_windows
+        assert rt._widget_statuses == old_statuses
+        assert rt._focused_widget_id == old_focus
+        restored_entry = rt._subscriptions[("every", "100", "tick")]
+        assert restored_entry.token == old_subscriptions[("every", "100", "tick")].token
+        assert restored_entry.timer is not None
+        assert restored_entry.timer is not old_timer
+        assert restored_entry.timer.started is True
+        assert rt._memo_cache_prev == {"memo": "old"}
+        assert rt._widget_cache_prev == {"widget": "old"}
+
+    def test_successful_reconnect_commits_recovered_state_and_effect_flush(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class FakeTimer:
+            def __init__(self) -> None:
+                self.cancelled = False
+
+            def cancel(self) -> None:
+                self.cancelled = True
+
+        def update(model: int, event: Any) -> int:
+            match event:
+                case EffectResult(result=RendererRestarted()):
+                    return model + 10
+                case _:
+                    return model
+
+        rt = self._make_runtime(
+            handle_renderer_exit=lambda model, _reason: model + 1,
+            update=update,
+        )
+        rt._conn.restart.return_value = None
+        rt._pending_effects["wire-1"] = {
+            "tag": "reload",
+            "kind": "file_open",
+            "timer": FakeTimer(),
+        }
+
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is True
+        assert rt._model == 16
+        assert rt._widget_statuses == {}
+        assert rt._focused_widget_id is None
 
 
 class TestRuntimeConcurrency:

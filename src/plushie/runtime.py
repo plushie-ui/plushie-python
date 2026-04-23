@@ -1543,11 +1543,11 @@ class Runtime:
                 del self._pending_effects[wire_id]
                 return
 
-    def _flush_pending_effects(self, reason: str) -> None:
-        """Flush all pending effects (e.g. on renderer restart).
+    def _take_pending_effect_results(self, reason: str) -> list[EffectResult]:
+        """Drain pending effects into EffectResult events.
 
-        Takes a snapshot before processing so new effects added during
-        update callbacks are not silently discarded.
+        Takes a snapshot before processing so new effects added later
+        are not silently discarded.
         """
         from plushie.events import EffectError, RendererRestarted
 
@@ -1558,9 +1558,11 @@ class Runtime:
             if reason == "renderer_restarted"
             else EffectError(message=reason)
         )
+        events: list[EffectResult] = []
         for _wire_id, entry in snapshot.items():
             entry["timer"].cancel()
-            self._run_update(EffectResult(tag=entry["tag"], result=flush_result))
+            events.append(EffectResult(tag=entry["tag"], result=flush_result))
+        return events
 
     def _flush_pending_stub_acks(self) -> None:
         """Release stub-ack waiters tied to the dead renderer."""
@@ -1741,27 +1743,10 @@ class Runtime:
         if spec.kind == "every":
             interval_ms = spec.interval_ms or 1000
             tag = spec.tag if spec.tag is not None else ""
-
-            def tick() -> None:
-                with self._subscriptions_lock:
-                    entry = self._subscriptions.get(spec.key)
-                    if entry is None or entry.token != token:
-                        return
-                    now_ms = int(time.monotonic() * 1000)
-                    self._queue.put(TimerTick(tag=tag, timestamp=now_ms))
-                    new_timer = threading.Timer(interval_ms / 1000.0, tick)
-                    new_timer.daemon = True
-                    entry.timer = new_timer
-                new_timer.start()
-
-            timer = threading.Timer(interval_ms / 1000.0, tick)
-            timer.daemon = True
-            return _SubEntry(
-                source="timer",
+            return self._make_timer_entry(
+                key=spec.key,
                 kind=spec.kind,
                 tag=tag,
-                max_rate=None,
-                timer=timer,
                 interval_ms=interval_ms,
                 token=token,
             )
@@ -1773,6 +1758,41 @@ class Runtime:
             max_rate=spec.max_rate,
             timer=None,
             interval_ms=None,
+            token=token,
+        )
+
+    def _make_timer_entry(
+        self,
+        *,
+        key: tuple[str, ...],
+        kind: str,
+        tag: str,
+        interval_ms: int,
+        token: int,
+    ) -> _SubEntry:
+        """Build a timer subscription entry owned by a stable token."""
+
+        def tick() -> None:
+            with self._subscriptions_lock:
+                entry = self._subscriptions.get(key)
+                if entry is None or entry.token != token:
+                    return
+                now_ms = int(time.monotonic() * 1000)
+                self._queue.put(TimerTick(tag=tag, timestamp=now_ms))
+                new_timer = threading.Timer(interval_ms / 1000.0, tick)
+                new_timer.daemon = True
+                entry.timer = new_timer
+            new_timer.start()
+
+        timer = threading.Timer(interval_ms / 1000.0, tick)
+        timer.daemon = True
+        return _SubEntry(
+            source="timer",
+            kind=kind,
+            tag=tag,
+            max_rate=None,
+            timer=timer,
+            interval_ms=interval_ms,
             token=token,
         )
 
@@ -1892,33 +1912,26 @@ class Runtime:
             return False
 
         exit_info = build_renderer_exit(reason)
+        candidate_model = self._model
 
-        recovery_error: tuple[str, str] | None = None
+        recovery_event: RecoveryFailed | None = None
         try:
-            self._model = self._app.handle_renderer_exit(self._model, exit_info)
+            candidate_model = self._app.handle_renderer_exit(self._model, exit_info)
         except Exception as exc:
             logger.exception("app.handle_renderer_exit() raised")
-            recovery_error = (type(exc).__name__, str(exc))
-
-        if recovery_error is not None:
-            self._run_update(
-                RecoveryFailed(
-                    kind=recovery_error[0],
-                    error=recovery_error[1],
-                    renderer_exit=exit_info,
-                )
+            recovery_event = RecoveryFailed(
+                kind=type(exc).__name__,
+                error=str(exc),
+                renderer_exit=exit_info,
             )
+
+        deferred_effects = self._take_pending_effect_results("renderer_restarted")
 
         # Discard stale coalescable events from the old renderer.
         if self._coalesce_timer is not None:
             self._coalesce_timer.cancel()
             self._coalesce_timer = None
         self._pending_coalesce.clear()
-
-        # Flush pending effects synchronously (matching Elixir, which
-        # dispatches effect errors through update/2 before re-sending
-        # settings and the snapshot to the new renderer).
-        self._flush_pending_effects("renderer_restarted")
 
         # Release blocked effect-stub callers before we try to talk to
         # the replacement renderer. Their acks died with the old one.
@@ -1954,35 +1967,110 @@ class Runtime:
                 )
                 continue
 
-            # Success: re-send full snapshot and re-sync everything
-            logger.info("plushie runtime: renderer reconnected")
-            tree = self._safe_view(self._model)
-            if tree is None:
-                # view() failed; keep the previous tree so window
-                # sync still has something to work with (matches Elixir
-                # which falls back to state.tree on safe_view error).
-                tree = self._tree
-            self._tree = tree
-            if tree is not None:
-                self._conn.send_snapshot(tree)
+            old_model = self._model
+            old_tree = self._tree
+            old_subscriptions = dict(self._subscriptions)
+            old_subscription_keys = list(self._subscription_keys)
+            old_windows = set(self._windows)
+            old_widget_registry = dict(self._widget_registry)
+            old_memo_cache_prev = dict(self._memo_cache_prev)
+            old_widget_cache_prev = dict(self._widget_cache_prev)
+            old_widget_statuses = dict(self._widget_statuses)
+            old_focused_widget_id = self._focused_widget_id
+            old_consecutive_errors = self._consecutive_errors
+            old_consecutive_view_errors = self._consecutive_view_errors
+            old_dev_overlay = self._dev_overlay
 
-            # Re-sync subscriptions (force all to re-register)
-            self._subscriptions.clear()
-            self._subscription_keys = []
-            self._sync_subscriptions(self._model)
+            try:
+                logger.info("plushie runtime: renderer reconnected")
+                tree = self._safe_view(candidate_model)
+                if tree is None:
+                    # view() failed; keep the previous tree so window
+                    # sync still has something to work with (matches Elixir
+                    # which falls back to state.tree on safe_view error).
+                    tree = old_tree
 
-            # Re-sync windows (force all to re-open)
-            self._windows = set()
-            self._sync_windows(tree)
+                self._model = candidate_model
+                self._tree = tree
+                if tree is not None:
+                    self._conn.send_snapshot(tree)
 
-            # Clear widget status tracking (old renderer state is stale)
-            self._widget_statuses.clear()
-            self._focused_widget_id = None
+                from plushie.widget import collect_subscriptions, derive_registry
 
-            # Reset error counters (stale renderer may have accumulated them)
-            self._consecutive_errors = 0
-            self._consecutive_view_errors = 0
-            self._dev_overlay = None
+                self._widget_registry = (
+                    derive_registry(tree) if tree is not None else {}
+                )
+                widget_subs = collect_subscriptions(self._widget_registry)
+
+                # Re-sync subscriptions (force renderer subscriptions to re-register).
+                self._subscriptions.clear()
+                self._subscription_keys = []
+                self._sync_subscriptions(self._model, extra_subs=widget_subs)
+
+                # Re-sync windows (force all to re-open)
+                self._windows = set()
+                self._sync_windows(tree)
+
+                # Old renderer focus/hover state is stale once replay succeeds.
+                self._widget_statuses.clear()
+                self._focused_widget_id = None
+
+                # Reset error counters (stale renderer may have accumulated them)
+                self._consecutive_errors = 0
+                self._consecutive_view_errors = 0
+                self._dev_overlay = None
+
+                # Retire timer handles from the old subscription table now
+                # that the new state is fully installed.
+                for entry in old_subscriptions.values():
+                    if entry.source == "timer" and entry.timer is not None:
+                        entry.timer.cancel()
+
+            except Exception:
+                for entry in self._subscriptions.values():
+                    if entry.source == "timer" and entry.timer is not None:
+                        entry.timer.cancel()
+                self._model = old_model
+                self._tree = old_tree
+                restored_subscriptions: dict[tuple[str, ...], _SubEntry] = {}
+                for key, entry in old_subscriptions.items():
+                    if entry.source == "timer" and entry.interval_ms is not None:
+                        if entry.timer is not None:
+                            entry.timer.cancel()
+                        restored = self._make_timer_entry(
+                            key=key,
+                            kind=entry.kind,
+                            tag=entry.tag,
+                            interval_ms=entry.interval_ms,
+                            token=entry.token,
+                        )
+                        if restored.timer is not None:
+                            restored.timer.start()
+                        restored_subscriptions[key] = restored
+                    else:
+                        restored_subscriptions[key] = entry
+                self._subscriptions = restored_subscriptions
+                self._subscription_keys = old_subscription_keys
+                self._windows = old_windows
+                self._widget_registry = old_widget_registry
+                self._memo_cache_prev = old_memo_cache_prev
+                self._widget_cache_prev = old_widget_cache_prev
+                self._widget_statuses = old_widget_statuses
+                self._focused_widget_id = old_focused_widget_id
+                self._consecutive_errors = old_consecutive_errors
+                self._consecutive_view_errors = old_consecutive_view_errors
+                self._dev_overlay = old_dev_overlay
+                logger.warning(
+                    "plushie runtime: reconnect replay attempt %d failed",
+                    attempt + 1,
+                    exc_info=True,
+                )
+                continue
+
+            if recovery_event is not None:
+                self._run_update(recovery_event)
+            for event in deferred_effects:
+                self._run_update(event)
 
             # Restart reader thread
             self._start_reader()
