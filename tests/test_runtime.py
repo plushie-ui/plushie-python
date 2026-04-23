@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -949,3 +949,126 @@ class TestReconnectStubAckCleanup:
 
         assert result["error"] is None
         assert rt._pending_stub_acks == {}
+
+
+class TestRuntimeConcurrency:
+    def _make_runtime(self) -> Any:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import Runtime
+
+        builder = create_app("RuntimeConcurrencyTest")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model
+
+        @builder.view
+        def _view(_model: int) -> dict[str, Any]:
+            return {"id": "root", "type": "container", "props": {}, "children": []}
+
+        conn = MagicMock()
+        conn.session = ""
+        return Runtime(builder, conn)
+
+    def test_stale_timer_callback_does_not_rearm_new_occupant(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class FakeTimer:
+            created: ClassVar[list[FakeTimer]] = []
+
+            def __init__(self, interval: float, callback: Any) -> None:
+                self.interval = interval
+                self.callback = callback
+                self.daemon = False
+                self.started = False
+                self.cancelled = False
+                FakeTimer.created.append(self)
+
+            def start(self) -> None:
+                self.started = True
+
+            def cancel(self) -> None:
+                self.cancelled = True
+
+        monkeypatch.setattr("plushie.runtime.threading.Timer", FakeTimer)
+
+        rt = self._make_runtime()
+        spec = Subscription.every(100, "tick")
+        subscriptions: list[Subscription] = [spec]
+        rt._app.subscribe = lambda _model: list(subscriptions)  # type: ignore[method-assign]
+
+        rt._sync_subscriptions(0)
+        with rt._subscriptions_lock:
+            old_entry = rt._subscriptions[spec.key]
+
+        subscriptions.clear()
+        rt._sync_subscriptions(0)
+
+        subscriptions.append(spec)
+        rt._sync_subscriptions(0)
+        with rt._subscriptions_lock:
+            new_entry = rt._subscriptions[spec.key]
+
+        assert old_entry.token != new_entry.token
+        created_before = len(FakeTimer.created)
+        old_timer = old_entry.timer
+        assert old_timer is not None
+
+        old_timer.callback()
+
+        assert len(FakeTimer.created) == created_before
+        with rt._subscriptions_lock:
+            current = rt._subscriptions[spec.key]
+        assert current is new_entry
+        assert current.token == new_entry.token
+        assert current.timer is new_entry.timer
+        assert rt._queue.empty()
+
+    def test_concurrent_interact_rejects_second_caller(self) -> None:
+        rt = self._make_runtime()
+        sent = threading.Event()
+        first_error: list[BaseException] = []
+
+        def send(_msg: dict[str, Any]) -> None:
+            sent.set()
+
+        rt._conn.send.side_effect = send
+
+        def first_call() -> None:
+            try:
+                rt.interact("click", timeout=0.5)
+            except BaseException as exc:  # pragma: no cover - asserted below
+                first_error.append(exc)
+
+        worker = threading.Thread(target=first_call, daemon=True)
+        worker.start()
+
+        assert sent.wait(0.5), "first interact did not reach send()"
+
+        with pytest.raises(RuntimeError, match="already in progress"):
+            rt.interact("click", timeout=0.1)
+
+        rt._fail_pending_interact()
+        worker.join(timeout=0.5)
+        assert not worker.is_alive()
+        assert len(first_error) == 1
+        assert str(first_error[0]) == "renderer exited during interact('click')"
+
+    def test_runtime_handle_stop_uses_runtime_stop_path(self) -> None:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import RuntimeHandle
+
+        rt = self._make_runtime()
+        stop = MagicMock()
+        rt.stop = stop  # type: ignore[method-assign]
+
+        handle = RuntimeHandle(rt, threading.Thread())
+        handle.stop()
+
+        stop.assert_called_once_with()

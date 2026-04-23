@@ -86,6 +86,7 @@ loop is visible.
 _EFFECT_TIMEOUT_MS: int = 30_000
 
 _DEV_PREFIX = "__plushie_dev__"
+_STOP_SENTINEL = object()
 
 
 def _build_frozen_overlay_bar() -> dict[str, Any]:
@@ -385,6 +386,7 @@ class Runtime:
 
         # Running flag
         self._running: bool = False
+        self._control_lock = threading.Lock()
 
         # Subscription state
         self._subscriptions: dict[tuple[str, ...], _SubEntry] = {}
@@ -463,6 +465,9 @@ class Runtime:
         # Reader thread
         self._reader_thread: threading.Thread | None = None
 
+        # Subscription identity for timer rearm ownership.
+        self._subscription_token_counter: int = 0
+
     # -------------------------------------------------------------------
     # Public API
     # -------------------------------------------------------------------
@@ -476,7 +481,8 @@ class Runtime:
         normally.
         """
         try:
-            self._running = True
+            with self._control_lock:
+                self._running = True
             self._start_reader()
             self._initialize()
             self._main_loop()
@@ -493,6 +499,12 @@ class Runtime:
         """
         self._queue.put(event)
 
+    def stop(self) -> None:
+        """Request a clean runtime stop from any thread."""
+        with self._control_lock:
+            self._running = False
+        self._queue.put(_STOP_SENTINEL)
+
     @property
     def model(self) -> Any:
         """The current application model."""
@@ -501,7 +513,8 @@ class Runtime:
     @property
     def is_running(self) -> bool:
         """Whether the event loop is currently running."""
-        return self._running
+        with self._control_lock:
+            return self._running
 
     def register_effect_stub(
         self, kind: str, response: Any, *, timeout: float = 5.0
@@ -644,24 +657,26 @@ class Runtime:
         """
         from plushie.protocol import encode_selector, interact_msg
 
-        if self._pending_interact is not None:
-            raise RuntimeError(
-                "interact already in progress, concurrent calls are not supported"
-            )
-
         rid = f"interact_{self._next_nonce()}"
         sel: dict[str, str] | None = None
         if selector is not None:
             sel = encode_selector(selector)
 
         slot = _InteractSlot(request_id=rid)
-        self._pending_interact = slot
+        with self._control_lock:
+            if self._pending_interact is not None:
+                raise RuntimeError(
+                    "interact already in progress, concurrent calls are not supported"
+                )
+            self._pending_interact = slot
 
         msg = interact_msg(rid, action, sel, payload, session=self._conn.session)
         self._conn.send(msg)
 
         if not slot.done.wait(timeout):
-            self._pending_interact = None
+            with self._control_lock:
+                if self._pending_interact is slot:
+                    self._pending_interact = None
             raise TimeoutError(f"interact({action!r}) timed out after {timeout:.1f}s")
 
         if not slot.succeeded:
@@ -714,13 +729,20 @@ class Runtime:
 
     def _main_loop(self) -> None:
         """Process events until stopped."""
-        while self._running:
+        while self.is_running:
             try:
                 event = self._queue.get(timeout=0.1)
             except Empty:
                 continue
 
+            if event is _STOP_SENTINEL:
+                logger.info("plushie runtime: stop requested, stopping")
+                break
+
             if event is None:
+                if not self.is_running:
+                    logger.info("plushie runtime: connection closed after stop request")
+                    break
                 # Connection closed / reader thread finished / heartbeat timeout
                 self._cancel_heartbeat()
                 reason = self._exit_reason
@@ -729,7 +751,8 @@ class Runtime:
                     continue
                 self._fail_pending_interact()
                 logger.info("plushie runtime: connection closed, stopping")
-                self._running = False
+                with self._control_lock:
+                    self._running = False
                 break
 
             # HelloInfo from the renderer; log and continue
@@ -796,7 +819,8 @@ class Runtime:
             # AllWindowsClosed in non-daemon mode -> dispatch then stop
             if isinstance(event, AllWindowsClosed) and not self._daemon:
                 self._run_update(event)
-                self._running = False
+                with self._control_lock:
+                    self._running = False
                 break
 
             # Coalescable event -> store and defer
@@ -1169,11 +1193,12 @@ class Runtime:
 
         # Unblock the waiting caller
         rid = msg.get("id", "")
-        slot = self._pending_interact
-        if slot is not None and slot.request_id == rid:
-            self._pending_interact = None
-            slot.succeeded = True
-            slot.done.set()
+        with self._control_lock:
+            slot = self._pending_interact
+            if slot is not None and slot.request_id == rid:
+                self._pending_interact = None
+                slot.succeeded = True
+                slot.done.set()
 
     def _fail_pending_interact(self) -> None:
         """Unblock a waiting interact caller when the renderer is gone.
@@ -1181,11 +1206,18 @@ class Runtime:
         Signals failure so the caller can raise instead of silently
         returning as if the interaction succeeded.
         """
-        slot = self._pending_interact
-        if slot is not None:
-            self._pending_interact = None
-            slot.succeeded = False
-            slot.done.set()
+        with self._control_lock:
+            slot = self._pending_interact
+            if slot is not None:
+                self._pending_interact = None
+                slot.succeeded = False
+                slot.done.set()
+
+    def _next_subscription_token(self) -> int:
+        """Allocate a new identity token for a subscription entry."""
+        with self._control_lock:
+            self._subscription_token_counter += 1
+            return self._subscription_token_counter
 
     # -------------------------------------------------------------------
     # Command execution
@@ -1217,7 +1249,8 @@ class Runtime:
 
         if t == "exit":
             logger.info("plushie runtime: exit command received, stopping")
-            self._running = False
+            with self._control_lock:
+                self._running = False
             return
 
         if t == "dispatch":
@@ -1359,8 +1392,9 @@ class Runtime:
 
     def _next_nonce(self) -> int:
         """Generate a monotonically increasing nonce."""
-        self._nonce_counter += 1
-        return self._nonce_counter
+        with self._control_lock:
+            self._nonce_counter += 1
+            return self._nonce_counter
 
     def _start_task(self, fn: Any, tag: str) -> None:
         """Run fn in the executor.  Result delivered as AsyncResult."""
@@ -1644,111 +1678,84 @@ class Runtime:
             spec.key: spec for spec in new_specs
         }
         new_sorted_keys = sorted(new_by_key.keys())
-
-        if new_sorted_keys == self._subscription_keys:
-            # Keys unchanged; check for max_rate updates only
-            self._update_max_rates(new_by_key)
-            return
-
-        old_key_set = set(self._subscriptions.keys())
-        new_key_set = set(new_by_key.keys())
-
-        # Stop removed subscriptions
-        for key in old_key_set - new_key_set:
-            self._stop_subscription(key)
-
-        # Start new subscriptions
-        new_entries: dict[tuple[str, ...], _SubEntry] = {}
-        for key in new_key_set - old_key_set:
-            spec = new_by_key[key]
-            new_entries[key] = self._start_subscription(spec)
-
-        # Keep existing, updating max_rate if needed
-        kept: dict[tuple[str, ...], _SubEntry] = {}
-        for key in new_key_set & old_key_set:
-            old_entry = self._subscriptions[key]
-            new_spec = new_by_key[key]
-            if (
-                old_entry.source == "renderer"
-                and old_entry.max_rate != new_spec.max_rate
-            ):
-                self._conn.send_subscribe(
-                    new_spec.wire_kind,
-                    new_spec.wire_tag,
-                    max_rate=new_spec.max_rate,
-                    window_id=new_spec.window_id,
-                )
-                kept[key] = _SubEntry(
-                    source=old_entry.source,
-                    kind=old_entry.kind,
-                    tag=old_entry.tag,
-                    max_rate=new_spec.max_rate,
-                    timer=old_entry.timer,
-                    interval_ms=old_entry.interval_ms,
-                )
-            else:
-                kept[key] = old_entry
+        removed_entries: list[_SubEntry] = []
+        subscribe_specs: list[Subscription] = []
+        timers_to_start: list[threading.Timer] = []
 
         with self._subscriptions_lock:
-            self._subscriptions = {**kept, **new_entries}
-        self._subscription_keys = new_sorted_keys
+            old_key_set = set(self._subscriptions.keys())
+            new_key_set = set(new_by_key.keys())
 
-    def _update_max_rates(
-        self, new_by_key: dict[tuple[str, ...], Subscription]
-    ) -> None:
-        """Check and update max_rate on existing renderer subscriptions."""
-        for key, new_spec in new_by_key.items():
-            entry = self._subscriptions.get(key)
-            if (
-                entry is not None
-                and entry.source == "renderer"
-                and entry.max_rate != new_spec.max_rate
-            ):
-                self._conn.send_subscribe(
-                    new_spec.wire_kind,
-                    new_spec.wire_tag,
-                    max_rate=new_spec.max_rate,
-                    window_id=new_spec.window_id,
-                )
-                self._subscriptions[key] = _SubEntry(
-                    source=entry.source,
-                    kind=entry.kind,
-                    tag=entry.tag,
-                    max_rate=new_spec.max_rate,
-                    timer=entry.timer,
-                    interval_ms=entry.interval_ms,
-                )
+            for key in old_key_set - new_key_set:
+                entry = self._subscriptions.pop(key, None)
+                if entry is not None:
+                    removed_entries.append(entry)
+
+            for key in new_key_set - old_key_set:
+                spec = new_by_key[key]
+                entry = self._start_subscription(spec)
+                self._subscriptions[key] = entry
+                if entry.source == "timer":
+                    if entry.timer is not None:
+                        timers_to_start.append(entry.timer)
+                else:
+                    subscribe_specs.append(spec)
+
+            for key in new_key_set & old_key_set:
+                entry = self._subscriptions[key]
+                spec = new_by_key[key]
+                if entry.source == "renderer" and entry.max_rate != spec.max_rate:
+                    self._subscriptions[key] = _SubEntry(
+                        source=entry.source,
+                        kind=entry.kind,
+                        tag=entry.tag,
+                        max_rate=spec.max_rate,
+                        timer=entry.timer,
+                        interval_ms=entry.interval_ms,
+                        token=entry.token,
+                    )
+                    subscribe_specs.append(spec)
+
+            self._subscription_keys = new_sorted_keys
+
+        for entry in removed_entries:
+            if entry.source == "timer" and entry.timer is not None:
+                entry.timer.cancel()
+            elif entry.source == "renderer":
+                self._conn.send_unsubscribe(entry.kind, tag=entry.tag)
+
+        for spec in subscribe_specs:
+            self._conn.send_subscribe(
+                spec.wire_kind,
+                spec.wire_tag,
+                max_rate=spec.max_rate,
+                window_id=spec.window_id,
+            )
+
+        for timer in timers_to_start:
+            timer.start()
 
     def _start_subscription(self, spec: Subscription) -> _SubEntry:
         """Start a new subscription (timer or renderer)."""
+        token = self._next_subscription_token()
         if spec.kind == "every":
             interval_ms = spec.interval_ms or 1000
             tag = spec.tag if spec.tag is not None else ""
 
             def tick() -> None:
-                now_ms = int(time.monotonic() * 1000)
-                self._queue.put(TimerTick(tag=tag, timestamp=now_ms))
                 with self._subscriptions_lock:
-                    if spec.key not in self._subscriptions:
+                    entry = self._subscriptions.get(spec.key)
+                    if entry is None or entry.token != token:
                         return
-                    entry = self._subscriptions[spec.key]
-                    if entry.timer is not None:
-                        entry.timer.cancel()
+                    now_ms = int(time.monotonic() * 1000)
+                    self._queue.put(TimerTick(tag=tag, timestamp=now_ms))
                     new_timer = threading.Timer(interval_ms / 1000.0, tick)
                     new_timer.daemon = True
-                    new_timer.start()
-                    self._subscriptions[spec.key] = _SubEntry(
-                        source="timer",
-                        kind=spec.kind,
-                        tag=tag,
-                        max_rate=None,
-                        timer=new_timer,
-                        interval_ms=interval_ms,
-                    )
+                    entry.timer = new_timer
+                new_timer.start()
 
             timer = threading.Timer(interval_ms / 1000.0, tick)
             timer.daemon = True
-            timer.start()
             return _SubEntry(
                 source="timer",
                 kind=spec.kind,
@@ -1756,15 +1763,9 @@ class Runtime:
                 max_rate=None,
                 timer=timer,
                 interval_ms=interval_ms,
+                token=token,
             )
 
-        # Renderer subscription
-        self._conn.send_subscribe(
-            spec.wire_kind,
-            spec.wire_tag,
-            max_rate=spec.max_rate,
-            window_id=spec.window_id,
-        )
         return _SubEntry(
             source="renderer",
             kind=spec.kind,
@@ -1772,6 +1773,7 @@ class Runtime:
             max_rate=spec.max_rate,
             timer=None,
             interval_ms=None,
+            token=token,
         )
 
     def _stop_subscription(self, key: tuple[str, ...]) -> None:
@@ -2010,7 +2012,7 @@ class Runtime:
 
     def _reader_loop(self) -> None:
         """Read events from the connection and post to the queue."""
-        while self._running:
+        while self.is_running:
             event = self._conn.receive_event(timeout=0.5)
             if event is None:
                 # Check if connection is still alive
@@ -2026,7 +2028,8 @@ class Runtime:
 
     def _cleanup(self) -> None:
         """Clean up all resources."""
-        self._running = False
+        with self._control_lock:
+            self._running = False
         self._cancel_heartbeat()
 
         # Close the connection to unblock the reader thread, then join it.
@@ -2103,7 +2106,7 @@ class _StubAckWaiter:
 class _SubEntry:
     """Internal tracking for an active subscription."""
 
-    __slots__ = ("interval_ms", "kind", "max_rate", "source", "tag", "timer")
+    __slots__ = ("interval_ms", "kind", "max_rate", "source", "tag", "timer", "token")
 
     def __init__(
         self,
@@ -2113,6 +2116,7 @@ class _SubEntry:
         max_rate: int | None,
         timer: threading.Timer | None,
         interval_ms: int | None,
+        token: int,
     ) -> None:
         self.source = source
         self.kind = kind
@@ -2120,6 +2124,7 @@ class _SubEntry:
         self.max_rate = max_rate
         self.timer = timer
         self.interval_ms = interval_ms
+        self.token = token
 
 
 # ---------------------------------------------------------------------------
@@ -2140,7 +2145,7 @@ class RuntimeHandle:
 
     def stop(self) -> None:
         """Signal the runtime to stop."""
-        self._runtime._running = False
+        self._runtime.stop()
 
     def wait(self, timeout: float | None = None) -> None:
         """Wait for the runtime thread to finish.
