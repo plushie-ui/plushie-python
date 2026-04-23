@@ -754,11 +754,11 @@ actually renders, handles events, etc.).
 
 ### Python-side: unit tests (no renderer)
 
-Extension definitions produce nodes and commands via `build_node()` and
-`build_command()`. Test these directly:
+Native widget definitions produce nodes and commands via `build_node()`
+and `build_command()`. Test these directly:
 
 ```python
-from plushie.extension import build_node, build_command
+from plushie.native_widget import build_node, build_command
 
 def test_build_node_creates_correct_type():
     node = build_node(gauge_def, "g1", {"value": 50})

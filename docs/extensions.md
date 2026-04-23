@@ -19,7 +19,7 @@ repository:
 An extension has two halves:
 
 1. **Python side:** define the widget's props, commands, and (for native
-   widgets) the Rust crate and constructor using `ExtensionDef`.
+   widgets) the Rust crate and constructor using `NativeWidget`.
 
 2. **Rust side:** implement the `WidgetExtension` trait from `plushie-widget-sdk`.
    This receives tree nodes from Python and returns `iced::Element`s for
@@ -27,12 +27,12 @@ An extension has two halves:
 
 ```python
 # my_sparkline/extension.py
-from plushie.extension import (
-    ExtensionDef, PropDef, CommandDef, ParamDef,
+from plushie.native_widget import (
+    NativeWidget, PropDef, CommandDef, ParamDef,
     build_node, build_command,
 )
 
-sparkline_def = ExtensionDef(
+sparkline_def = NativeWidget(
     kind="sparkline",
     rust_crate="native/my_sparkline",
     rust_constructor="my_sparkline::SparklineExtension::new()",
@@ -211,13 +211,13 @@ instances get independent state, keyed by scoped widget ID.
 
 ### Native extensions (Rust-backed)
 
-Use `ExtensionDef` for widgets rendered by a Rust crate. The definition
+Use `NativeWidget` for widgets rendered by a Rust crate. The definition
 describes the Rust crate path, constructor expression, props, and commands.
 
 ```python
-from plushie.extension import ExtensionDef, PropDef
+from plushie.native_widget import NativeWidget, PropDef
 
-hex_view_def = ExtensionDef(
+hex_view_def = NativeWidget(
     kind="hex_view",
     rust_crate="native/hex_view",
     rust_constructor="hex_view::HexViewExtension::new()",
@@ -231,7 +231,7 @@ hex_view_def = ExtensionDef(
 
 ## Data definitions reference
 
-### ExtensionDef
+### NativeWidget
 
 The top-level definition for a native extension widget.
 
@@ -291,7 +291,7 @@ extension definitions: `id`, `type`, `children`, `a11y`, `event_rate`.
 Build a wire-compatible node dict for a native extension widget:
 
 ```python
-from plushie.extension import build_node
+from plushie.native_widget import build_node
 
 node = build_node(sparkline_def, "spark-1", {"data": [1, 2, 3], "color": "#ff0000"})
 # => {"id": "spark-1", "type": "sparkline", "props": {"data": [1, 2, 3], "color": "#ff0000"}, "children": []}
@@ -305,7 +305,7 @@ standard widget nodes.
 Build an extension command targeting a specific widget instance:
 
 ```python
-from plushie.extension import build_command
+from plushie.native_widget import build_command
 
 cmd = build_command(sparkline_def, "spark-1", "push", {"value": 42.0})
 # Returns Command(type="extension_command", payload={...})
@@ -316,7 +316,7 @@ cmd = build_command(sparkline_def, "spark-1", "push", {"value": 42.0})
 Check an extension definition for errors:
 
 ```python
-from plushie.extension import validate
+from plushie.native_widget import validate
 
 errors = validate(sparkline_def)
 if errors:
@@ -331,7 +331,7 @@ Checks: non-empty `kind`, no duplicate prop names, no reserved prop names.
 Introspect the declared properties and commands:
 
 ```python
-from plushie.extension import prop_names, command_names
+from plushie.native_widget import prop_names, command_names
 
 prop_names(sparkline_def)     # => ["data", "color", "capacity"]
 command_names(sparkline_def)  # => ["push"]
@@ -572,10 +572,16 @@ python -m plushie build --release
 Test your extension's node building and command generation:
 
 ```python
-from plushie.extension import build_node, build_command, validate
+from plushie.native_widget import (
+    NativeWidget,
+    PropDef,
+    build_node,
+    build_command,
+    validate,
+)
 
 def test_validate_catches_duplicate_props():
-    bad_def = ExtensionDef(
+    bad_def = NativeWidget(
         kind="bad",
         rust_crate="native/bad",
         rust_constructor="bad::new()",
@@ -1220,7 +1226,7 @@ def view(self, model):
 
 ### Native packages (Python + Rust)
 
-Native packages include both Python definitions (`ExtensionDef`) and a
+Native packages include both Python definitions (`NativeWidget`) and a
 Rust crate. Consumers need a Rust toolchain to build the custom
 renderer binary.
 
@@ -1230,13 +1236,13 @@ renderer binary.
 
 ```python
 # my_sparkline/__init__.py
-from plushie.extension import (
-    ExtensionDef, PropDef, CommandDef, ParamDef,
+from plushie.native_widget import (
+    NativeWidget, PropDef, CommandDef, ParamDef,
     build_node, build_command,
 )
 from plushie.commands import Command
 
-sparkline_def = ExtensionDef(
+sparkline_def = NativeWidget(
     kind="sparkline",
     rust_crate="native/my_sparkline",
     rust_constructor="my_sparkline::SparklineExtension::new()",
