@@ -414,8 +414,9 @@ class Runtime:
         # Consecutive error count for rate-limited logging
         self._consecutive_errors: int = 0
 
-        # Effect stub ack tracking: kind -> Event to unblock callers
-        self._pending_stub_acks: dict[str, threading.Event] = {}
+        # Effect stub ack tracking: kind -> waiter shared between the
+        # caller thread and the runtime loop.
+        self._pending_stub_acks: dict[str, _StubAckWaiter] = {}
 
         # Diagnostic accumulation
         self._diagnostics: list[Any] = []
@@ -525,13 +526,17 @@ class Runtime:
             raise RuntimeError(
                 f"register_effect_stub({kind!r}): another stub ack is already pending"
             )
-        ack = threading.Event()
+        ack = _StubAckWaiter()
         self._pending_stub_acks[kind] = ack
         msg = register_effect_stub(kind, response, session=self._conn.session)
         self._conn.send(msg)
-        if not ack.wait(timeout):
+        if not ack.done.wait(timeout):
             self._pending_stub_acks.pop(kind, None)
             logger.warning("register_effect_stub(%r) timed out", kind)
+        elif not ack.acknowledged:
+            logger.warning(
+                "register_effect_stub(%r) cancelled during renderer reconnect", kind
+            )
 
     def unregister_effect_stub(self, kind: str, *, timeout: float = 5.0) -> None:
         """Remove a previously registered effect stub.
@@ -552,13 +557,17 @@ class Runtime:
             raise RuntimeError(
                 f"unregister_effect_stub({kind!r}): another stub ack is already pending"
             )
-        ack = threading.Event()
+        ack = _StubAckWaiter()
         self._pending_stub_acks[kind] = ack
         msg = unregister_effect_stub(kind, session=self._conn.session)
         self._conn.send(msg)
-        if not ack.wait(timeout):
+        if not ack.done.wait(timeout):
             self._pending_stub_acks.pop(kind, None)
             logger.warning("unregister_effect_stub(%r) timed out", kind)
+        elif not ack.acknowledged:
+            logger.warning(
+                "unregister_effect_stub(%r) cancelled during renderer reconnect", kind
+            )
 
     def get_diagnostics(self) -> list[Any]:
         """Return and clear accumulated prop validation diagnostics.
@@ -768,7 +777,8 @@ class Runtime:
             if isinstance(event, EffectStubAck):
                 ack = self._pending_stub_acks.pop(event.kind, None)
                 if ack is not None:
-                    ack.set()
+                    ack.acknowledged = True
+                    ack.done.set()
                 continue
 
             # Interact step: batch events with apply_event, then snapshot
@@ -1518,6 +1528,13 @@ class Runtime:
             entry["timer"].cancel()
             self._run_update(EffectResult(tag=entry["tag"], result=flush_result))
 
+    def _flush_pending_stub_acks(self) -> None:
+        """Release stub-ack waiters tied to the dead renderer."""
+        snapshot = dict(self._pending_stub_acks)
+        self._pending_stub_acks.clear()
+        for waiter in snapshot.values():
+            waiter.done.set()
+
     # -------------------------------------------------------------------
     # Widget status tracking
     # -------------------------------------------------------------------
@@ -1901,6 +1918,10 @@ class Runtime:
         # settings and the snapshot to the new renderer).
         self._flush_pending_effects("renderer_restarted")
 
+        # Release blocked effect-stub callers before we try to talk to
+        # the replacement renderer. Their acks died with the old one.
+        self._flush_pending_stub_acks()
+
         # Fail any in-flight interact so the caller doesn't hang until
         # timeout waiting for a response from a dead renderer.
         self._fail_pending_interact()
@@ -2062,6 +2083,16 @@ class _InteractSlot:
         self.done: threading.Event = threading.Event()
         self.request_id: str = request_id
         self.succeeded: bool = True
+
+
+class _StubAckWaiter:
+    """Shared state for a pending effect-stub ack."""
+
+    __slots__ = ("acknowledged", "done")
+
+    def __init__(self) -> None:
+        self.done: threading.Event = threading.Event()
+        self.acknowledged: bool = False
 
 
 # ---------------------------------------------------------------------------

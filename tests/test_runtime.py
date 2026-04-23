@@ -6,6 +6,7 @@ detection, coalescing, subscription diffing, and the App ABC.
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -871,3 +872,80 @@ class TestInteractDecode:
         assert isinstance(msg, DiagnosticMessage)
         assert isinstance(msg.diagnostic, UnknownMessageType)
         assert msg.diagnostic.msg_type == "event/future_global_event"
+
+
+class TestReconnectStubAckCleanup:
+    def _make_runtime(self) -> Any:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import Runtime
+
+        builder = create_app("ReconnectStubAckTest")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model
+
+        @builder.view
+        def _view(_model: int) -> dict[str, Any]:
+            return {"id": "root", "type": "container", "props": {}, "children": []}
+
+        conn = MagicMock()
+        conn.session = ""
+        conn.restart.return_value = None
+        conn.send_settings.return_value = None
+        conn.wait_hello.return_value = None
+        conn.send_snapshot.return_value = None
+
+        rt = Runtime(builder, conn)
+        rt._model = 0
+        rt._start_reader = lambda: None
+        return rt
+
+    @pytest.mark.parametrize(
+        "method_name", ["register_effect_stub", "unregister_effect_stub"]
+    )
+    def test_reconnect_releases_pending_stub_ack_waiter(
+        self, monkeypatch: pytest.MonkeyPatch, method_name: str
+    ) -> None:
+        rt = self._make_runtime()
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        finished = threading.Event()
+        result: dict[str, Any] = {"error": None}
+
+        def call() -> None:
+            try:
+                if method_name == "register_effect_stub":
+                    rt.register_effect_stub(
+                        "file_open", {"path": "/tmp/file.txt"}, timeout=5.0
+                    )
+                else:
+                    rt.unregister_effect_stub("file_open", timeout=5.0)
+            except Exception as exc:  # pragma: no cover - assertion below
+                result["error"] = exc
+            finally:
+                finished.set()
+
+        worker = threading.Thread(target=call, daemon=True)
+        worker.start()
+
+        for _ in range(100):
+            if "file_open" in rt._pending_stub_acks:
+                break
+            threading.Event().wait(0.01)
+        else:  # pragma: no cover - test would fail below anyway
+            pytest.fail("stub ack waiter was never registered")
+
+        assert rt._attempt_reconnect("renderer_crashed") is True
+        assert finished.wait(0.5), (
+            "stub ack waiter was not released by reconnect cleanup"
+        )
+        worker.join(timeout=0.1)
+
+        assert result["error"] is None
+        assert rt._pending_stub_acks == {}
