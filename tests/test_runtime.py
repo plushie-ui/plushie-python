@@ -828,3 +828,46 @@ class TestDispatchDepthGuard:
         assert isinstance(msg.diagnostic, DispatchLoopExceeded)
         assert msg.diagnostic.depth == DISPATCH_DEPTH_LIMIT + 1
         assert msg.diagnostic.limit == DISPATCH_DEPTH_LIMIT
+
+
+class TestInteractDecode:
+    def _make_runtime(self) -> Any:
+        from unittest.mock import MagicMock
+
+        from plushie.app import create_app
+        from plushie.runtime import Runtime
+
+        builder = create_app("InteractDecodeTest")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model
+
+        @builder.view
+        def _view(_model: int) -> None:
+            return None
+
+        conn = MagicMock()
+        conn.session = ""
+        return Runtime(builder, conn)
+
+    def test_unknown_embedded_interact_event_emits_diagnostic(self) -> None:
+        from plushie.diagnostics import DiagnosticMessage, UnknownMessageType
+
+        rt = self._make_runtime()
+        decoded = rt._decode_interact_event({"family": "future_global_event"})
+
+        assert decoded is None
+
+        with rt._diagnostics_lock:
+            diags = list(rt._diagnostics)
+
+        assert len(diags) == 1
+        msg = diags[0]
+        assert isinstance(msg, DiagnosticMessage)
+        assert isinstance(msg.diagnostic, UnknownMessageType)
+        assert msg.diagnostic.msg_type == "event/future_global_event"

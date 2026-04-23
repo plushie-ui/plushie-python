@@ -1609,6 +1609,13 @@ class TestDecodePassthrough:
         result = decode_message(raw)
         assert isinstance(result, dict)
 
+    def test_unknown_top_level_message_passthrough(self) -> None:
+        raw = {"type": "future_response", "session": "", "payload": {"x": 1}}
+        result = decode_message(raw)
+        assert isinstance(result, dict)
+        assert result["type"] == "future_response"
+        assert result["payload"] == {"x": 1}
+
     def test_unknown_event_with_id_becomes_widget_event(self) -> None:
         raw = {
             "type": "event",

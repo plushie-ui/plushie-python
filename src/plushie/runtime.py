@@ -1097,8 +1097,31 @@ class Runtime:
         wrapped = {"type": "event", **event_map}
         decoded = decode_message(wrapped)
         if isinstance(decoded, dict):
-            return None  # unrecognized; skip
+            self._record_unknown_interact_event(decoded)
+            return None
         return decoded
+
+    def _record_unknown_interact_event(self, raw_msg: dict[str, Any]) -> None:
+        from plushie.diagnostics import DiagnosticMessage, UnknownMessageType
+
+        family = raw_msg.get("family")
+        msg_type = raw_msg.get("type")
+        if isinstance(family, str) and family:
+            kind = f"event/{family}"
+        elif isinstance(msg_type, str) and msg_type:
+            kind = msg_type
+        else:
+            kind = "embedded_event"
+
+        logger.error("plushie runtime: unknown embedded interact event: %r", raw_msg)
+        with self._diagnostics_lock:
+            self._diagnostics.append(
+                DiagnosticMessage(
+                    session=self._conn.session,
+                    level="error",
+                    diagnostic=UnknownMessageType(msg_type=kind),
+                )
+            )
 
     def _handle_interact_step(self, events: list[dict[str, Any]]) -> None:
         """Process an interact_step batch.
