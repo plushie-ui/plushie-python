@@ -595,6 +595,80 @@ class TestConnectionAttributes:
         assert issubclass(PlushieNotFoundError, FileNotFoundError)
 
 
+class _FakeWritePipe:
+    def __init__(self) -> None:
+        self.data = bytearray()
+
+    def write(self, data: bytes) -> int:
+        self.data.extend(data)
+        return len(data)
+
+    def flush(self) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+
+class _FakeReadPipe:
+    def read(self, _n: int = -1) -> bytes:
+        return b""
+
+    def close(self) -> None:
+        pass
+
+
+class _FakeProcess:
+    def __init__(self) -> None:
+        self.stdin = _FakeWritePipe()
+        self.stdout = _FakeReadPipe()
+        self.stderr = _FakeReadPipe()
+        self._returncode: int | None = None
+
+    def poll(self) -> int | None:
+        return self._returncode
+
+    def terminate(self) -> None:
+        self._returncode = 0
+
+    def kill(self) -> None:
+        self._returncode = 0
+
+    def wait(self, timeout: float | None = None) -> int:
+        self._returncode = 0
+        return 0
+
+
+class TestConnectionOpenFormat:
+    def test_open_json_uses_json_cli_arg_and_framing(self) -> None:
+        process = _FakeProcess()
+
+        with mock_patch(
+            "plushie.connection.subprocess.Popen", return_value=process
+        ) as popen:
+            conn = Connection.open(
+                binary_path="/tmp/plushie-renderer",
+                mode="mock",
+                format="json",
+            )
+            try:
+                assert popen.call_args.args[0] == [
+                    "/tmp/plushie-renderer",
+                    "--mock",
+                    "--json",
+                ]
+
+                msg = {"type": "settings", "session": "", "value": {"theme": "dark"}}
+                conn.send(msg)
+
+                data = bytes(process.stdin.data)
+                assert data.startswith(b"{")
+                assert data.endswith(b"\n")
+                assert json.loads(data) == msg
+            finally:
+                conn.close()
+
+
 # ===================================================================
 # Binary-requiring tests (skipped when binary not available)
 # ===================================================================

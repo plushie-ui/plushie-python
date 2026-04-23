@@ -119,7 +119,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
 
     conn_opts: dict[str, Any] = {}
     if use_json:
-        conn_opts["json"] = True
+        conn_opts["format"] = "json"
 
     daemon = getattr(args, "daemon", False)
 
@@ -140,7 +140,9 @@ def _cmd_connect(args: argparse.Namespace) -> None:
     app_class = _import_app(args.app)
     app = app_class()
 
-    with StdioConnection() as conn:
+    wire_format = "json" if args.json else "msgpack"
+
+    with StdioConnection(format=wire_format) as conn:
         # StdioConnection doesn't have the same interface as Connection
         # but Runtime expects Connection. We use duck typing here since
         # both implement the same send/receive interface.
@@ -428,6 +430,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="stdio transport mode (for plushie --exec)",
     )
     connect_parser.add_argument("app", help="app specifier (module:Class)")
+    connect_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="use JSON wire format instead of msgpack",
+    )
 
     # download
     download_parser = subparsers.add_parser(

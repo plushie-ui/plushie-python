@@ -61,11 +61,13 @@ the Python process via `plushie --exec`.
 
 ```bash
 plushie --exec "python -m plushie connect myapp:Dashboard"
+plushie --json --exec "python -m plushie connect --json myapp:Dashboard"
 ```
 
 | Flag | Description |
 |---|---|
 | `app` | App specifier as `module:Class` (required) |
+| `--json` | Use JSON wire format instead of msgpack |
 
 The Python process reads from stdin and writes to stdout using the
 wire protocol. Stderr is available for logging. This is the
