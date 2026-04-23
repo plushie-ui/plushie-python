@@ -716,11 +716,16 @@ class Runtime:
         if tree is not None:
             self._conn.send_snapshot(tree)
 
+        from plushie.widget import collect_subscriptions, derive_registry
+
+        self._widget_registry = derive_registry(tree)
+        widget_subs = collect_subscriptions(self._widget_registry)
+
         # 5. Execute initial commands
         self._execute_commands(commands)
 
         # 6. Sync subscriptions and windows
-        self._sync_subscriptions(model)
+        self._sync_subscriptions(model, extra_subs=widget_subs)
         self._sync_windows(tree)
 
     # -------------------------------------------------------------------
@@ -930,6 +935,9 @@ class Runtime:
         # Execute commands
         self._execute_commands(commands)
 
+        if state_changed:
+            self._widget_cache_prev = {}
+
         # Render and sync
         new_tree = self._render_and_sync(new_model)
         prev_tree = self._tree
@@ -966,6 +974,7 @@ class Runtime:
         """
         from plushie.widget import collect_subscriptions, derive_registry
 
+        self._widget_cache_prev = {}
         new_tree = self._safe_view(self._model)
         if new_tree is None:
             # View failed: revert widget state to avoid state-tree desync
@@ -1033,7 +1042,7 @@ class Runtime:
             widget_new: dict[Any, Any] = {}
             result = normalize_view(
                 raw_tree,
-                registry=self._widget_registry or None,
+                registry=self._widget_registry,
                 memo_cache_prev=self._memo_cache_prev,
                 memo_cache_new=memo_new,
                 widget_cache_prev=self._widget_cache_prev,
@@ -1101,27 +1110,26 @@ class Runtime:
     # Interact protocol
     # -------------------------------------------------------------------
 
-    def _apply_event(self, event: Any) -> None:
+    def _apply_event(self, event: Any) -> bool:
         """Update + commands only, no re-render.
 
         Used by interact_step where events are batched and a single
         snapshot follows after all events are processed.
         """
-        event, self._widget_registry, _state_changed = self._route_through_widgets(
-            event
-        )
+        event, self._widget_registry, state_changed = self._route_through_widgets(event)
         if event is None:
-            return
+            return state_changed
 
         result = self._safe_update(self._app, self._model, event)
         if result is None:
             self._consecutive_errors += 1
-            return
+            return state_changed
 
         new_model, commands = result
         self._model = new_model
         self._consecutive_errors = 0
         self._execute_commands(commands)
+        return state_changed
 
     def _decode_interact_event(self, event_map: dict[str, Any]) -> Any:
         """Decode a wire-format event from an interact_step/interact_response."""
@@ -1163,10 +1171,16 @@ class Runtime:
         Applies each event through update + commands without rendering,
         then sends a single full snapshot back to the renderer.
         """
+        widget_state_changed = False
         for event_map in events:
             decoded = self._decode_interact_event(event_map)
             if decoded is not None:
-                self._apply_event(decoded)
+                widget_state_changed = (
+                    self._apply_event(decoded) or widget_state_changed
+                )
+
+        if widget_state_changed:
+            self._widget_cache_prev = {}
 
         # Re-render and send a full snapshot (not a patch)
         new_tree = self._safe_view(self._model)
@@ -1176,7 +1190,12 @@ class Runtime:
         if new_tree is not None:
             self._conn.send_snapshot(new_tree)
 
-        self._sync_subscriptions(self._model)
+        from plushie.widget import collect_subscriptions, derive_registry
+
+        self._widget_registry = derive_registry(new_tree)
+        widget_subs = collect_subscriptions(self._widget_registry)
+
+        self._sync_subscriptions(self._model, extra_subs=widget_subs)
         self._sync_windows(new_tree)
 
     def _handle_interact_response(self, msg: dict[str, Any]) -> None:

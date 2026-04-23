@@ -877,6 +877,92 @@ class TestInteractDecode:
         assert msg.diagnostic.msg_type == "event/future_global_event"
 
 
+class TestInteractStepWidgetState:
+    def test_widget_state_change_updates_snapshot_and_registry(self) -> None:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import Runtime
+        from plushie.widget import EventAction, EventActionResult, WidgetDef
+
+        class StepWidget(WidgetDef):
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {"count": 0}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {
+                    "id": widget_id,
+                    "type": "container",
+                    "props": {},
+                    "children": [
+                        {
+                            "id": "value",
+                            "type": "text",
+                            "props": {"content": str(state["count"])},
+                            "children": [],
+                        }
+                    ],
+                }
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.update_state({"count": state["count"] + 1})
+
+        builder = create_app("InteractStepWidgetState")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model + 100
+
+        @builder.view
+        def _view(_model: int) -> dict[str, Any]:
+            return {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [StepWidget.build("counter")],
+            }
+
+        conn = MagicMock()
+        conn.session = ""
+        rt = Runtime(builder, conn)
+        rt._model = 0
+
+        from plushie.widget import derive_registry
+
+        initial = rt._safe_view(rt._model)
+        assert initial is not None
+        rt._tree = initial
+        rt._widget_registry = derive_registry(initial)
+        conn.send_snapshot.reset_mock()
+
+        rt._handle_interact_step(
+            [
+                {
+                    "type": "event",
+                    "family": "click",
+                    "id": "counter/value",
+                    "window_id": "main",
+                }
+            ]
+        )
+
+        snapshot = conn.send_snapshot.call_args.args[0]
+        widget_node = snapshot["children"][0]
+        value_node = widget_node["children"][0]
+
+        assert rt._model == 0
+        assert value_node["props"]["content"] == "1"
+        assert rt._widget_registry[("main", "main#counter")].state == {"count": 1}
+        assert derive_registry(snapshot)[("main", "main#counter")].state == {"count": 1}
+
+
 class TestReconnectStubAckCleanup:
     def _make_runtime(self) -> Any:
         from unittest.mock import MagicMock

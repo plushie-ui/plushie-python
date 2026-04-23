@@ -579,7 +579,7 @@ def _normalize_with_scope(
     # with stored state and normalize the output.
     if ctx.registry is not None and meta and "__widget__" in meta:
         try:
-            from plushie.widget import render_placeholder
+            from plushie.widget import _with_widget_metadata, render_placeholder
 
             widget_cls = meta.get("__widget__")
             widget_props = meta.get("__widget_props__", {})
@@ -591,38 +591,47 @@ def _normalize_with_scope(
                 and ctx.widget_prev is not None
                 and ctx.widget_new is not None
             ):
-                existing = ctx.registry.get((str(current_window_id), str(scoped_id)))
-                if existing is not None:
-                    widget_state = existing.state
-                else:
-                    widget_state = widget_cls().init(widget_props)
-                try:
-                    widget_cache_key_value = widget_cls().cache_key(
-                        widget_props, widget_state
-                    )
-                except Exception:
-                    widget_cache_key_value = None
-                if widget_cache_key_value is not None:
-                    widget_cache_lookup_key = (
-                        str(current_window_id),
-                        str(scoped_id),
-                    )
-                    cached_entry = ctx.widget_prev.get(widget_cache_lookup_key)
-                    if (
-                        cached_entry is not None
-                        and cached_entry[0] == widget_cache_key_value
-                    ):
-                        # Cache hit: reuse the previously-normalized
-                        # subtree. Copy the entry into the new cache so
-                        # the next render still sees it.
-                        ctx.widget_new[widget_cache_lookup_key] = cached_entry
-                        return cached_entry[1]
+                existing_entry = ctx.registry.get(
+                    (str(current_window_id), str(scoped_id))
+                )
+                if (
+                    existing_entry is not None
+                    and type(existing_entry.definition) is widget_cls
+                ):
+                    try:
+                        widget_cache_key_value = existing_entry.definition.cache_key(
+                            widget_props, existing_entry.state
+                        )
+                    except Exception:
+                        widget_cache_key_value = None
+                    if widget_cache_key_value is not None:
+                        widget_cache_lookup_key = (
+                            str(current_window_id),
+                            str(scoped_id),
+                        )
+                        cached_entry = ctx.widget_prev.get(widget_cache_lookup_key)
+                        if (
+                            cached_entry is not None
+                            and cached_entry[0] == widget_cache_key_value
+                        ):
+                            cached_node = _with_widget_metadata(
+                                cached_entry[1],
+                                widget_cls=widget_cls,
+                                widget_props=widget_props,
+                                widget_state=existing_entry.state,
+                                widget_definition=existing_entry.definition,
+                            )
+                            ctx.widget_new[widget_cache_lookup_key] = (
+                                widget_cache_key_value,
+                                cached_node,
+                            )
+                            return cached_node
 
             placeholder = render_placeholder(
                 node, current_window_id, scoped_id, node_id, ctx.registry
             )
             if placeholder is not None:
-                _key, rendered_node, _entry = placeholder
+                _key, rendered_node, entry = placeholder
                 rendered_type = rendered_node.get("type", "container")
                 if rendered_type == "window":
                     child_scope = f"{scoped_id}#"
@@ -659,6 +668,23 @@ def _normalize_with_scope(
                     "children": normalized_children,
                     "meta": rendered_node.get("meta", {}),
                 }
+                if (
+                    widget_cache_key_value is None
+                    and isinstance(widget_cls, type)
+                    and current_window_id is not None
+                    and ctx.widget_new is not None
+                ):
+                    try:
+                        widget_cache_key_value = entry.definition.cache_key(
+                            widget_props, entry.state
+                        )
+                    except Exception:
+                        widget_cache_key_value = None
+                    if widget_cache_key_value is not None:
+                        widget_cache_lookup_key = (
+                            str(current_window_id),
+                            str(scoped_id),
+                        )
                 if (
                     widget_cache_key_value is not None
                     and widget_cache_lookup_key is not None

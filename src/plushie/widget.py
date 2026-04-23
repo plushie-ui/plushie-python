@@ -552,26 +552,26 @@ def render_placeholder(
     # Look up existing state or initialize
     key = _widget_key(window_id, scoped_id)
     existing = registry.get(key)
-    if existing is not None:
+    if existing is not None and type(existing.definition) is widget_cls:
+        instance = existing.definition
         state = existing.state
     else:
         instance = widget_cls()
         state = instance.init(widget_props)
 
     # Produce the widget's view tree
-    instance = widget_cls()
     rendered = instance.view(local_id, widget_props, state)
 
     # Attach metadata to the rendered node for registry derivation
     entry = RegistryEntry(definition=instance, state=state, props=widget_props)
-    widget_meta = {
-        "__widget__": widget_cls,
-        "__widget_props__": widget_props,
-        "__widget_state__": state,
-    }
-    rendered_with_meta = dict(rendered)
+    rendered_with_meta = _with_widget_metadata(
+        rendered,
+        widget_cls=widget_cls,
+        widget_props=widget_props,
+        widget_state=state,
+        widget_definition=instance,
+    )
     rendered_with_meta["id"] = scoped_id
-    rendered_with_meta["meta"] = widget_meta
     return key, rendered_with_meta, entry
 
 
@@ -591,6 +591,28 @@ class RegistryEntry:
     props: dict[str, Any]
 
 
+def _with_widget_metadata(
+    node: dict[str, Any],
+    *,
+    widget_cls: type[WidgetDef],
+    widget_props: dict[str, Any],
+    widget_state: dict[str, Any],
+    widget_definition: WidgetDef,
+) -> dict[str, Any]:
+    rendered = dict(node)
+    meta = dict(rendered.get("meta") or {})
+    meta.update(
+        {
+            "__widget__": widget_cls,
+            "__widget_props__": widget_props,
+            "__widget_state__": widget_state,
+            "__widget_definition__": widget_definition,
+        }
+    )
+    rendered["meta"] = meta
+    return rendered
+
+
 def derive_registry(tree: dict[str, Any] | None) -> WidgetRegistry:
     """Derive the widget registry from the normalized tree.
 
@@ -604,20 +626,6 @@ def derive_registry(tree: dict[str, Any] | None) -> WidgetRegistry:
     return registry
 
 
-def _handles_events(cls: type) -> bool:
-    """Check whether a widget class participates in event dispatch.
-
-    View-only widgets (no event_specs, no handle_event override, no
-    subscribe override) are transparent layout wrappers that don't need
-    to be in the handler registry.
-    """
-    if getattr(cls, "event_specs", None):
-        return True
-    if "handle_event" in cls.__dict__:
-        return True
-    return "subscribe" in cls.__dict__
-
-
 def _collect_entries(
     node: dict[str, Any],
     registry: WidgetRegistry,
@@ -628,11 +636,7 @@ def _collect_entries(
     meta = node.get("meta")
     if isinstance(meta, dict):
         widget_cls = meta.get("__widget__")
-        if (
-            widget_cls is not None
-            and isinstance(widget_cls, type)
-            and _handles_events(widget_cls)
-        ):
+        if widget_cls is not None and isinstance(widget_cls, type):
             if not current_window_id:
                 raise ValueError(
                     f"widget {node.get('id', '')!r} must be rendered inside a window"
@@ -640,13 +644,11 @@ def _collect_entries(
             node_id = node.get("id", "")
             state = meta.get("__widget_state__", {})
             props = meta.get("__widget_props__", {})
-            instance = widget_cls()
-            # Initialize state for new widgets
-            if not state and hasattr(instance, "init"):
-                state = instance.init(props)
-            registry[_widget_key(str(current_window_id), str(node_id))] = RegistryEntry(
-                definition=instance, state=state, props=props
-            )
+            instance = meta.get("__widget_definition__")
+            if isinstance(instance, WidgetDef):
+                registry[_widget_key(str(current_window_id), str(node_id))] = (
+                    RegistryEntry(definition=instance, state=state, props=props)
+                )
 
     for child in node.get("children", []):
         if isinstance(child, dict):

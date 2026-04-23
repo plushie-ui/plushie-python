@@ -1990,3 +1990,68 @@ class TestWidgetViewCache:
             widget_cache_new=widget_new2,
         )
         assert calls["n"] == 2
+
+    def test_cached_widget_view_keeps_current_instance_and_state(self) -> None:
+        from plushie.widget import WidgetDef, derive_registry
+
+        calls = {"view": 0}
+
+        class CachedState(WidgetDef):
+            def init(self, props: dict[str, object]) -> dict[str, object]:
+                return {"label": "first"}
+
+            def view(
+                self,
+                widget_id: str,
+                props: dict[str, object],
+                state: dict[str, object],
+            ) -> dict[str, object]:
+                calls["view"] += 1
+                return {
+                    "id": widget_id,
+                    "type": "button",
+                    "props": {"label": str(state["label"])},
+                    "children": [],
+                }
+
+            def cache_key(
+                self,
+                props: dict[str, object],
+                state: dict[str, object],
+            ) -> object:
+                return "stable"
+
+        tree = {
+            "id": "main",
+            "type": "window",
+            "props": {},
+            "children": [CachedState.build("w1")],
+        }
+
+        widget_prev: dict[object, object] = {}
+        widget_new1: dict[object, object] = {}
+        normalized1 = normalize(
+            tree,
+            registry={},
+            widget_cache_prev=widget_prev,
+            widget_cache_new=widget_new1,
+        )
+        registry = derive_registry(normalized1)
+        entry = registry[("main", "main#w1")]
+        entry.state = {"label": "second"}
+
+        widget_new2: dict[object, object] = {}
+        normalized2 = normalize(
+            tree,
+            registry=registry,
+            widget_cache_prev=widget_new1,
+            widget_cache_new=widget_new2,
+        )
+        registry2 = derive_registry(normalized2)
+
+        assert calls["view"] == 1
+        assert normalized2["children"][0]["meta"]["__widget_state__"] == {
+            "label": "second"
+        }
+        assert registry2[("main", "main#w1")].definition is entry.definition
+        assert registry2[("main", "main#w1")].state == {"label": "second"}

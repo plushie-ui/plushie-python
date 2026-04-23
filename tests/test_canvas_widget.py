@@ -245,7 +245,8 @@ class TestDeriveRegistry:
                 "type": "window",
                 "props": {},
                 "children": [StarRating.build("stars", props={"max": 5})],
-            }
+            },
+            registry={},
         )
         reg = derive_registry(tree)
         assert ("main", "main#stars") in reg
@@ -253,6 +254,236 @@ class TestDeriveRegistry:
         assert isinstance(entry.definition, StarRating)
         assert entry.state == {"hovered": None, "max": 5}
         assert entry.props == {"max": 5}
+
+    def test_new_widget_init_runs_once_and_dispatch_uses_view_instance(self) -> None:
+        calls: list[str] = []
+        instances: list[WidgetDef] = []
+
+        class ProbeWidget(WidgetDef):
+            def __init__(self) -> None:
+                calls.append("construct")
+                instances.append(self)
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                calls.append("init")
+                return {"token": id(self)}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                calls.append("view")
+                assert state["token"] == id(self)
+                return {
+                    "id": widget_id,
+                    "type": "container",
+                    "props": {},
+                    "children": [
+                        {
+                            "id": "target",
+                            "type": "button",
+                            "props": {"label": "hit"},
+                            "children": [],
+                        }
+                    ],
+                }
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                calls.append(f"handle:{state['token'] == id(self)}")
+                return EventAction.emit("select", "ok")
+
+        tree = normalize(
+            {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [ProbeWidget.build("probe")],
+            },
+            registry={},
+        )
+        reg = derive_registry(tree)
+
+        assert calls == ["construct", "init", "view"]
+        assert len(instances) == 1
+
+        result, _new_reg, _changed = dispatch_through_widgets(
+            reg,
+            Click(id="target", window_id="main", scope=("probe", "main")),
+        )
+
+        assert isinstance(result, Select)
+        assert calls == ["construct", "init", "view", "handle:True"]
+        assert reg[("main", "main#probe")].definition is instances[0]
+
+    def test_derive_registry_uses_rendered_metadata_only(self) -> None:
+        calls: list[str] = []
+
+        class MetadataWidget(WidgetDef):
+            def __init__(self) -> None:
+                calls.append("construct")
+
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                calls.append("init")
+                return {"ready": True}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                calls.append("view")
+                return {"id": widget_id, "type": "canvas", "props": {}, "children": []}
+
+            def handle_event(
+                self, event: Any, state: dict[str, Any]
+            ) -> EventActionResult:
+                return EventAction.ignored()
+
+        rendered = normalize(
+            {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [MetadataWidget.build("probe")],
+            },
+            registry={},
+        )
+
+        reg1 = derive_registry(rendered)
+        reg2 = derive_registry(rendered)
+
+        assert calls == ["construct", "init", "view"]
+        assert (
+            reg1[("main", "main#probe")].definition
+            is reg2[("main", "main#probe")].definition
+        )
+
+    def test_view_only_widget_is_transparent_registry_entry(self) -> None:
+        class ViewOnly(WidgetDef):
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {"ready": True}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                return {
+                    "id": widget_id,
+                    "type": "container",
+                    "props": {},
+                    "children": [
+                        {
+                            "id": "target",
+                            "type": "button",
+                            "props": {"label": "hit"},
+                            "children": [],
+                        }
+                    ],
+                }
+
+        tree = normalize(
+            {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [ViewOnly.build("view_only")],
+            },
+            registry={},
+        )
+        reg = derive_registry(tree)
+
+        assert ("main", "main#view_only") in reg
+        assert collect_subscriptions(reg) == []
+
+        event = Click(id="target", window_id="main", scope=("view_only", "main"))
+        result, _new_reg, changed = dispatch_through_widgets(reg, event)
+
+        assert result is event
+        assert changed is False
+
+    @pytest.mark.parametrize("second_kind", ["sibling", "base"])
+    def test_same_id_with_new_widget_class_gets_new_instance(
+        self, second_kind: str
+    ) -> None:
+        calls: list[str] = []
+
+        class BaseWidget(WidgetDef):
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                calls.append("base:init")
+                return {"name": "base"}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                calls.append("base:view")
+                return {
+                    "id": widget_id,
+                    "type": "text",
+                    "props": {"content": state["name"]},
+                    "children": [],
+                }
+
+        class ChildWidget(BaseWidget):
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                calls.append("child:init")
+                return {"name": "child"}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                calls.append("child:view")
+                return {
+                    "id": widget_id,
+                    "type": "text",
+                    "props": {"content": state["name"]},
+                    "children": [],
+                }
+
+        class SiblingWidget(WidgetDef):
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                calls.append("sibling:init")
+                return {"name": "sibling"}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                calls.append("sibling:view")
+                return {
+                    "id": widget_id,
+                    "type": "text",
+                    "props": {"content": state["name"]},
+                    "children": [],
+                }
+
+        first_tree = normalize(
+            {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [ChildWidget.build("slot")],
+            },
+            registry={},
+        )
+        first_registry = derive_registry(first_tree)
+        second_widget = BaseWidget if second_kind == "base" else SiblingWidget
+
+        second_tree = normalize(
+            {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [second_widget.build("slot")],
+            },
+            registry=first_registry,
+        )
+        second_registry = derive_registry(second_tree)
+
+        assert calls == [
+            "child:init",
+            "child:view",
+            f"{second_kind}:init",
+            f"{second_kind}:view",
+        ]
+        assert type(second_registry[("main", "main#slot")].definition) is second_widget
+        assert second_tree["children"][0]["props"]["content"] == second_kind
 
 
 # ---------------------------------------------------------------------------
