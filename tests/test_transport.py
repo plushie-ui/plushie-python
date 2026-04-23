@@ -6,6 +6,7 @@ frame encoding/decoding, event routing, and lifecycle management.
 
 from __future__ import annotations
 
+import logging
 import socket
 import struct
 import threading
@@ -25,6 +26,7 @@ from plushie.connection import (
 from plushie.connection import (
     ConnectionError as PlushieConnectionError,
 )
+from plushie.events import Input
 from plushie.protocol import PROTOCOL_VERSION
 from plushie.transport import IoStreamAdapter, SocketAdapter, WebSocketAdapter
 from plushie.types import HelloInfo
@@ -377,6 +379,74 @@ class TestWebSocketAdapter:
         assert mock_ws.send.called
 
         adapter.close()
+
+    def test_receives_concatenated_frames_from_one_payload(self) -> None:
+        closed = threading.Event()
+
+        class MockWebSocket:
+            def __init__(self, payload: bytes) -> None:
+                self._payload = payload
+                self._recv_count = 0
+                self.send = MagicMock()
+
+            def recv(self) -> bytes:
+                self._recv_count += 1
+                if self._recv_count == 1:
+                    return self._payload
+                closed.wait()
+                return b""
+
+            def close(self) -> None:
+                closed.set()
+
+        hello_msg = _encode_msg(
+            {
+                "type": "hello",
+                "name": "plushie",
+                "version": "0.4.0",
+                "protocol": PROTOCOL_VERSION,
+                "mode": "wasm",
+                "backend": "wasm",
+                "transport": "websocket",
+            }
+        )
+        event_msg = _encode_msg(
+            {
+                "type": "event",
+                "family": "input",
+                "id": "message",
+                "value": "x" * 5000,
+                "window_id": "main",
+            }
+        )
+        adapter = WebSocketAdapter(MockWebSocket(hello_msg + event_msg))
+        event: Any = None
+        try:
+            assert adapter.wait_hello(timeout=2.0).transport == "websocket"
+            assert isinstance(adapter.receive_event(timeout=0.2), HelloInfo)
+            event = adapter.receive_event(timeout=0.2)
+        finally:
+            adapter.close()
+        assert isinstance(event, Input)
+        assert event.id == "message"
+        assert len(event.value) == 5000
+
+    def test_recv_exception_is_logged(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        mock_ws = MagicMock()
+        mock_ws.recv.side_effect = ConnectionError("websocket dropped")
+
+        def logged_recv_failure() -> None:
+            assert "websocket recv failed" in caplog.text
+
+        with caplog.at_level(logging.ERROR, logger="plushie"):
+            adapter = WebSocketAdapter(mock_ws)
+            _wait_until(logged_recv_failure)
+
+        adapter.close()
+        assert "websocket dropped" in caplog.text
 
 
 class TestConnectionFromIostream:

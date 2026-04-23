@@ -330,18 +330,22 @@ class _WebSocketReader:
 
     def read(self, n: int = 4096) -> bytes:
         """Read up to n bytes, fetching a new message if buffer is empty."""
-        while len(self._buffer) < n:
+        if n <= 0:
+            return bytes(0)
+        if not self._buffer:
             try:
                 data = self._ws.recv()
             except Exception:
+                logger.exception(
+                    "plushie websocket recv failed; treating %s as EOF",
+                    type(self._ws).__name__,
+                )
+                return bytes(0)
+            if not data:
                 return bytes(0)
             if isinstance(data, str):
                 data = data.encode("utf-8")
-            if not data:
-                break
             self._buffer.extend(data)
-            # WebSocket messages are complete frames, return what we have
-            break
         result = bytes(self._buffer[:n])
         del self._buffer[:n]
         return result
