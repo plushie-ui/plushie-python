@@ -210,8 +210,10 @@ class Connection:
         self._expected_widgets = _normalize_expected_widgets(expected_widgets)
         self._hello_event = threading.Event()
         self._closed = False
+        self._reader_generation = 0
         self._reader_thread = threading.Thread(
             target=self._reader_loop,
+            args=(self._reader_generation,),
             name="plushie-reader",
             daemon=True,
         )
@@ -433,6 +435,8 @@ class Connection:
 
         # Clean up old process
         self._closed = True
+        self._reader_generation += 1
+        old_reader = self._reader_thread
         proc = self._process
         if proc.stdin:
             with contextlib.suppress(OSError):
@@ -451,6 +455,7 @@ class Connection:
         if proc.stderr:
             with contextlib.suppress(OSError):
                 proc.stderr.close()
+        old_reader.join(timeout=2.0)
 
         # Start new process
         try:
@@ -471,6 +476,7 @@ class Connection:
         self._hello_error = None
         self._hello_event.clear()
         self._framing = _framing_for(self._format)
+        generation = self._reader_generation
 
         # Drain queues
         while not self._event_queue.empty():
@@ -484,6 +490,7 @@ class Connection:
         # Start new reader thread
         self._reader_thread = threading.Thread(
             target=self._reader_loop,
+            args=(generation,),
             name="plushie-reader",
             daemon=True,
         )
@@ -913,7 +920,7 @@ class Connection:
     # Reader thread
     # -------------------------------------------------------------------
 
-    def _reader_loop(self) -> None:
+    def _reader_loop(self, generation: int) -> None:
         """Background thread that reads and routes incoming messages.
 
         Events go to the event queue. Responses for pending requests
@@ -925,22 +932,29 @@ class Connection:
             return
 
         try:
-            while not self._closed:
+            while self._reader_is_current(generation):
                 chunk = stdout.read(4096)
                 if not chunk:
+                    break
+                if not self._reader_is_current(generation):
                     break
 
                 messages = self._framing.feed(chunk)
                 for raw_msg in messages:
+                    if not self._reader_is_current(generation):
+                        break
                     self._route_message(raw_msg)
         except OSError:
             pass
         except Exception:
             logger.exception("plushie reader thread error")
         finally:
-            if not self._closed:
+            if self._reader_is_current(generation):
                 # Signal that the connection is broken
                 self._event_queue.put(None)
+
+    def _reader_is_current(self, generation: int) -> bool:
+        return not self._closed and generation == self._reader_generation
 
     def _route_message(self, raw_msg: dict[str, Any]) -> None:
         """Route a decoded message to the appropriate destination.
@@ -1313,6 +1327,10 @@ class _IoStreamConnection:
         self._adapter = adapter
         self._session = session
         self._expected_widgets = _normalize_expected_widgets(expected_widgets)
+        self._pending: dict[str, Queue[dict[str, Any]]] = {}
+        self._pending_lock = threading.Lock()
+        if self._supports_request_response:
+            adapter.set_message_handler(self._route_message)
 
     @property
     def hello(self) -> HelloInfo | None:
@@ -1347,6 +1365,23 @@ class _IoStreamConnection:
     def receive_event(self, timeout: float | None = None) -> Any:
         return self._adapter.receive_event(timeout)
 
+    @property
+    def _supports_request_response(self) -> bool:
+        return callable(getattr(self._adapter, "set_message_handler", None))
+
+    def _send_request(self, msg: dict[str, Any], request_id: str) -> None:
+        if not self._supports_request_response:
+            raise ConnectionError(
+                "request-response methods require an adapter with "
+                "set_message_handler() support"
+            )
+        q: Queue[dict[str, Any]] = Queue(maxsize=1)
+        with self._pending_lock:
+            self._pending[request_id] = q
+        self.send(msg)
+
+    _wait_response = Connection._wait_response
+
     def send_settings(self, settings_dict: dict[str, Any] | None = None) -> None:
         msg = settings(settings_dict or {}, session=self._session)
         self.send(msg)
@@ -1376,7 +1411,63 @@ class _IoStreamConnection:
         msg = unsubscribe_msg(kind, tag=tag, session=self._session)
         self.send(msg)
 
+    send_widget_op = Connection.send_widget_op
+    send_window_op = Connection.send_window_op
+    send_advance_frame = Connection.send_advance_frame
+    query_find = Connection.query_find
+    query_tree = Connection.query_tree
+    request_effect = Connection.request_effect
+    take_screenshot = Connection.take_screenshot
+    compute_tree_hash = Connection.compute_tree_hash
+    reset_session = Connection.reset_session
+
+    def interact(
+        self,
+        action: str,
+        selector: str | None = None,
+        payload: dict[str, Any] | None = None,
+        *,
+        on_step: Callable[[list[Any]], dict[str, Any]] | None = None,
+        timeout: float = 30.0,
+    ) -> list[Any]:
+        if not self._supports_request_response:
+            raise ConnectionError(
+                "request-response methods require an adapter with "
+                "set_message_handler() support"
+            )
+        connection_interact: Any = Connection.interact
+        return connection_interact(
+            self,
+            action,
+            selector,
+            payload,
+            on_step=on_step,
+            timeout=timeout,
+        )
+
+    def _route_message(self, raw_msg: dict[str, Any]) -> bool:
+        msg_type = raw_msg.get("type", "")
+        msg_id = raw_msg.get("id", "")
+        response_types = (
+            "query_response",
+            "interact_response",
+            "interact_step",
+            "tree_hash_response",
+            "screenshot_response",
+            "reset_response",
+            "effect_response",
+        )
+        if msg_type in response_types and msg_id:
+            with self._pending_lock:
+                q = self._pending.get(msg_id)
+            if q is not None:
+                q.put(raw_msg)
+                return True
+        return False
+
     def close(self) -> None:
+        if self._supports_request_response:
+            self._adapter.set_message_handler(None)
         self._adapter.close()
 
 

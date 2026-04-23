@@ -10,21 +10,47 @@ import socket
 import struct
 import threading
 import time
+from collections.abc import Callable
+from queue import Empty, Queue
 from typing import Any
 from unittest.mock import MagicMock
 
 import msgpack
 import pytest
 
-from plushie.connection import Connection, ProtocolMismatchError
+from plushie.connection import (
+    Connection,
+    ProtocolMismatchError,
+)
+from plushie.connection import (
+    ConnectionError as PlushieConnectionError,
+)
 from plushie.protocol import PROTOCOL_VERSION
 from plushie.transport import IoStreamAdapter, SocketAdapter, WebSocketAdapter
+from plushie.types import HelloInfo
 
 
 def _encode_msg(msg: dict[str, Any]) -> bytes:
     """Encode a message as a length-prefixed msgpack frame."""
     payload: bytes = msgpack.packb(msg, use_bin_type=True)  # type: ignore[assignment]
     return struct.pack(">I", len(payload)) + payload
+
+
+def _decode_msg(data: bytes) -> dict[str, Any]:
+    """Decode one length-prefixed msgpack frame."""
+    (payload_len,) = struct.unpack(">I", data[:4])
+    payload = data[4:]
+    assert len(payload) == payload_len
+    return msgpack.unpackb(payload, raw=False)  # type: ignore[no-any-return]
+
+
+def _wait_for_written(writer: _PipeWriter, index: int) -> dict[str, Any]:
+    deadline = time.monotonic() + 2.0
+    while len(writer.chunks) <= index:
+        if time.monotonic() > deadline:
+            pytest.fail("timed out waiting for iostream request")
+        time.sleep(0.01)
+    return _decode_msg(writer.chunks[index])
 
 
 class _PipeReader:
@@ -76,6 +102,88 @@ class _PipeWriter:
 
     def close(self) -> None:
         pass
+
+
+def _call_with_response(
+    reader: _PipeReader,
+    writer: _PipeWriter,
+    index: int,
+    call: Any,
+    response: Any,
+) -> tuple[dict[str, Any], Any]:
+    results: Queue[Any] = Queue()
+    errors: Queue[BaseException] = Queue()
+
+    def run() -> None:
+        try:
+            results.put(call())
+        except BaseException as exc:
+            errors.put(exc)
+
+    thread = threading.Thread(target=run)
+    thread.start()
+    request = _wait_for_written(writer, index)
+    reader.feed(_encode_msg(response(request)))
+    thread.join(timeout=2.0)
+
+    assert not thread.is_alive()
+    if not errors.empty():
+        raise errors.get()
+    return request, results.get_nowait()
+
+
+def _valid_hello_msg() -> dict[str, Any]:
+    return {
+        "type": "hello",
+        "name": "plushie",
+        "version": "0.4.0",
+        "protocol": PROTOCOL_VERSION,
+        "mode": "mock",
+        "backend": "mock",
+        "transport": "iostream",
+    }
+
+
+def _wait_until(assertion: Callable[[], None]) -> None:
+    deadline = time.monotonic() + 2.0
+    while True:
+        try:
+            assertion()
+            return
+        except AssertionError:
+            if time.monotonic() > deadline:
+                raise
+            time.sleep(0.01)
+
+
+class _GenericAdapter:
+    def __init__(self) -> None:
+        self.hello = HelloInfo(
+            name="plushie",
+            version="0.4.0",
+            protocol=PROTOCOL_VERSION,
+            mode="mock",
+            backend="mock",
+            transport="generic",
+        )
+        self.is_closed = False
+        self.sent: list[dict[str, Any]] = []
+        self.events: Queue[Any] = Queue()
+
+    def wait_hello(self, timeout: float = 10.0) -> HelloInfo:
+        return self.hello
+
+    def send(self, msg: dict[str, Any]) -> None:
+        self.sent.append(msg)
+
+    def receive_event(self, timeout: float | None = None) -> Any:
+        try:
+            return self.events.get(timeout=timeout)
+        except Empty:
+            return None
+
+    def close(self) -> None:
+        self.is_closed = True
 
 
 class TestIoStreamAdapter:
@@ -316,6 +424,266 @@ class TestConnectionFromIostream:
         with pytest.raises(ProtocolMismatchError, match="protocol version mismatch"):
             conn.wait_hello(timeout=2.0)
         assert conn.receive_event(timeout=0.01) is None
+        conn.close()
+
+    def test_wrapped_adapter_preserves_on_event_callback(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        received: list[Any] = []
+        adapter = IoStreamAdapter(reader, writer, on_event=received.append)
+        conn = Connection.from_iostream(adapter)
+
+        reader.feed(
+            _encode_msg(
+                {
+                    "type": "event",
+                    "family": "click",
+                    "id": "btn",
+                    "window_id": "main",
+                }
+            )
+        )
+
+        def received_event() -> None:
+            assert len(received) == 1
+
+        _wait_until(received_event)
+        assert received[0] is not None
+        conn.close()
+
+    def test_wrap_after_valid_hello_uses_adapter_state(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+
+        reader.feed(_encode_msg(_valid_hello_msg()))
+        adapter.wait_hello(timeout=2.0)
+
+        conn = Connection.from_iostream(adapter)
+        assert conn.wait_hello(timeout=0.01).name == "plushie"
+        assert conn.hello is adapter.hello
+        conn.close()
+
+    def test_wrap_after_protocol_mismatch_raises_original_error(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+
+        hello_msg = _valid_hello_msg()
+        hello_msg["protocol"] = PROTOCOL_VERSION + 1
+        reader.feed(_encode_msg(hello_msg))
+
+        with pytest.raises(ProtocolMismatchError, match="protocol version mismatch"):
+            adapter.wait_hello(timeout=2.0)
+
+        conn = Connection.from_iostream(adapter)
+        with pytest.raises(ProtocolMismatchError, match="protocol version mismatch"):
+            conn.wait_hello(timeout=0.01)
+        conn.close()
+
+    def test_generic_adapter_request_response_fails_fast(self) -> None:
+        adapter = _GenericAdapter()
+        conn = Connection.from_iostream(adapter)
+
+        assert conn.wait_hello(timeout=0.01).transport == "generic"
+        conn.send_settings({"theme": "dark"})
+        assert adapter.sent[0]["type"] == "settings"
+
+        with pytest.raises(PlushieConnectionError, match="set_message_handler"):
+            conn.query_tree(timeout=0.01)
+        assert len(adapter.sent) == 1
+
+        with pytest.raises(PlushieConnectionError, match="set_message_handler"):
+            conn.interact("click", "#btn", timeout=0.01)
+        assert len(adapter.sent) == 1
+        conn.close()
+
+    def test_request_response_methods_route_through_iostream(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        conn = Connection.from_iostream(adapter, session="test")
+        request_index = 0
+
+        conn._send_request(
+            {"type": "query", "session": "test", "id": "manual", "target": "tree"},
+            "manual",
+        )
+        request = _wait_for_written(writer, request_index)
+        request_index += 1
+        assert request["id"] == "manual"
+        reader.feed(
+            _encode_msg(
+                {
+                    "type": "query_response",
+                    "id": "manual",
+                    "target": "tree",
+                    "data": {"id": "root"},
+                }
+            )
+        )
+        assert conn._wait_response("manual", timeout=2.0)["data"] == {"id": "root"}
+
+        request, result = _call_with_response(
+            reader,
+            writer,
+            request_index,
+            lambda: conn.query_find("#btn", timeout=2.0),
+            lambda req: {
+                "type": "query_response",
+                "id": req["id"],
+                "target": "find",
+                "data": {"id": "btn"},
+            },
+        )
+        request_index += 1
+        assert request["target"] == "find"
+        assert result == {"id": "btn"}
+
+        request, result = _call_with_response(
+            reader,
+            writer,
+            request_index,
+            lambda: conn.query_tree(timeout=2.0),
+            lambda req: {
+                "type": "query_response",
+                "id": req["id"],
+                "target": "tree",
+                "data": {"id": "root"},
+            },
+        )
+        request_index += 1
+        assert request["target"] == "tree"
+        assert result == {"id": "root"}
+
+        request, result = _call_with_response(
+            reader,
+            writer,
+            request_index,
+            lambda: conn.interact("click", "#btn", timeout=2.0),
+            lambda req: {
+                "type": "interact_response",
+                "id": req["id"],
+                "events": [],
+            },
+        )
+        request_index += 1
+        assert request["type"] == "interact"
+        assert result == []
+
+        stepped_events: Queue[Any] = Queue()
+        stepped_results: Queue[Any] = Queue()
+        stepped_errors: Queue[BaseException] = Queue()
+
+        def on_step(events: list[Any]) -> dict[str, Any]:
+            stepped_events.put(events)
+            return {"id": "root", "type": "column", "children": []}
+
+        def run_stepped_interact() -> None:
+            try:
+                stepped_results.put(
+                    conn.interact("click", "#btn", on_step=on_step, timeout=2.0)
+                )
+            except BaseException as exc:
+                stepped_errors.put(exc)
+
+        step_thread = threading.Thread(target=run_stepped_interact)
+        step_thread.start()
+        request = _wait_for_written(writer, request_index)
+        reader.feed(
+            _encode_msg(
+                {
+                    "type": "interact_step",
+                    "id": request["id"],
+                    "events": [
+                        {
+                            "type": "event",
+                            "family": "click",
+                            "id": "btn",
+                            "window_id": "main",
+                        }
+                    ],
+                }
+            )
+        )
+        snapshot = _wait_for_written(writer, request_index + 1)
+        reader.feed(
+            _encode_msg(
+                {
+                    "type": "interact_response",
+                    "id": request["id"],
+                    "events": [],
+                }
+            )
+        )
+        step_thread.join(timeout=2.0)
+        request_index += 2
+        assert not step_thread.is_alive()
+        if not stepped_errors.empty():
+            raise stepped_errors.get()
+        assert request["type"] == "interact"
+        assert snapshot["type"] == "snapshot"
+        assert stepped_results.get_nowait() == stepped_events.get_nowait()
+
+        request, result = _call_with_response(
+            reader,
+            writer,
+            request_index,
+            lambda: conn.request_effect(
+                "effect-1", "clipboard_read", {"format": "text"}, timeout=2.0
+            ),
+            lambda req: {
+                "type": "effect_response",
+                "id": req["id"],
+                "status": "ok",
+                "result": {"text": "copied"},
+            },
+        )
+        request_index += 1
+        assert request["type"] == "effect"
+        assert result["result"] == {"text": "copied"}
+
+        request, result = _call_with_response(
+            reader,
+            writer,
+            request_index,
+            lambda: conn.take_screenshot("main", timeout=2.0),
+            lambda req: {
+                "type": "screenshot_response",
+                "id": req["id"],
+                "name": req["name"],
+                "path": "/tmp/main.png",
+            },
+        )
+        request_index += 1
+        assert request["type"] == "screenshot"
+        assert result["path"] == "/tmp/main.png"
+
+        request, result = _call_with_response(
+            reader,
+            writer,
+            request_index,
+            lambda: conn.compute_tree_hash("main", timeout=2.0),
+            lambda req: {
+                "type": "tree_hash_response",
+                "id": req["id"],
+                "name": req["name"],
+                "hash": "abc123",
+            },
+        )
+        request_index += 1
+        assert request["type"] == "tree_hash"
+        assert result["hash"] == "abc123"
+
+        request, result = _call_with_response(
+            reader,
+            writer,
+            request_index,
+            lambda: conn.reset_session(timeout=2.0),
+            lambda req: {"type": "reset_response", "id": req["id"], "ok": True},
+        )
+        assert request["type"] == "reset"
+        assert result["ok"] is True
         conn.close()
 
 

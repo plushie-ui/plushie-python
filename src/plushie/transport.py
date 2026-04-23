@@ -116,6 +116,7 @@ class IoStreamAdapter:
         self._send_lock = threading.Lock()
         self._event_queue: Queue[Any] = Queue()
         self._on_event = on_event
+        self._on_message: Callable[[dict[str, Any]], bool] | None = None
         self._hello: HelloInfo | None = None
         self._hello_error: ProtocolMismatchError | None = None
         self._hello_event = threading.Event()
@@ -189,6 +190,17 @@ class IoStreamAdapter:
         except Empty:
             return None
 
+    def set_message_handler(
+        self,
+        on_message: Callable[[dict[str, Any]], bool] | None,
+    ) -> None:
+        """Set an optional raw-message interceptor.
+
+        The interceptor returns True when it consumed the message. Messages
+        it does not consume continue through normal hello and event routing.
+        """
+        self._on_message = on_message
+
     def close(self) -> None:
         """Close the adapter and underlying streams.
 
@@ -235,6 +247,9 @@ class IoStreamAdapter:
 
     def _route_message(self, raw_msg: dict[str, Any]) -> None:
         """Decode and route an incoming message."""
+        if self._on_message is not None and self._on_message(raw_msg):
+            return
+
         msg_type = raw_msg.get("type", "")
 
         if msg_type == "hello":

@@ -45,6 +45,7 @@ from plushie.connection import (
     _normalize_expected_widgets,
     _validate_required_widgets,
 )
+from plushie.framing import MsgpackFraming
 from plushie.native_widget import NativeWidget
 from plushie.protocol import PROTOCOL_VERSION, decode_message
 from plushie.types import HelloInfo
@@ -666,6 +667,52 @@ class _FakeReadPipe:
         pass
 
 
+class _BlockingReadPipe:
+    def __init__(self, *, close_unblocks: bool = True) -> None:
+        self._buffer = bytearray()
+        self._lock = threading.Lock()
+        self._ready = threading.Event()
+        self._read_entered = threading.Event()
+        self._read_event = threading.Event()
+        self._closed = False
+        self._close_unblocks = close_unblocks
+
+    def feed(self, data: bytes) -> None:
+        with self._lock:
+            self._buffer.extend(data)
+            self._ready.set()
+
+    def read(self, n: int = 4096) -> bytes:
+        self._read_entered.set()
+        while True:
+            with self._lock:
+                if self._buffer:
+                    result = bytes(self._buffer[:n])
+                    del self._buffer[:n]
+                    if not self._buffer:
+                        self._ready.clear()
+                    self._read_event.set()
+                    return result
+                if self._closed:
+                    return b""
+            if self._close_unblocks:
+                self._ready.wait(timeout=1.0)
+            else:
+                self._ready.wait()
+
+    def wait_for_read(self) -> None:
+        assert self._read_event.wait(timeout=2.0)
+
+    def wait_for_reader(self) -> None:
+        assert self._read_entered.wait(timeout=2.0)
+
+    def close(self) -> None:
+        with self._lock:
+            self._closed = True
+            if self._close_unblocks:
+                self._ready.set()
+
+
 class _FakeProcess:
     def __init__(self) -> None:
         self.stdin = _FakeWritePipe()
@@ -713,6 +760,51 @@ class TestConnectionOpenFormat:
                 assert data.startswith(b"{")
                 assert data.endswith(b"\n")
                 assert json.loads(data) == msg
+            finally:
+                conn.close()
+
+    def test_restart_ignores_output_from_old_reader(self) -> None:
+        old_stdout = _BlockingReadPipe(close_unblocks=False)
+        old_process: Any = _FakeProcess()
+        old_process.stdout = old_stdout
+
+        new_stdout = _BlockingReadPipe()
+        new_process: Any = _FakeProcess()
+        new_process.stdout = new_stdout
+
+        with mock_patch(
+            "plushie.connection.subprocess.Popen", return_value=new_process
+        ):
+            conn = Connection(
+                old_process,
+                _spawn_args=["/tmp/plushie-renderer", "--mock"],
+                _spawn_env={},
+            )
+            try:
+                old_stdout.wait_for_reader()
+                old_reader = conn._reader_thread
+                conn.restart()
+
+                old_stdout.feed(
+                    MsgpackFraming.encode(
+                        {
+                            "type": "hello",
+                            "session": "",
+                            "protocol": PROTOCOL_VERSION,
+                            "version": "0.4.0",
+                            "name": "old-renderer",
+                            "mode": "mock",
+                            "backend": "none",
+                            "transport": "spawn",
+                        }
+                    )
+                )
+                old_stdout.wait_for_read()
+                old_reader.join(timeout=2.0)
+
+                assert not old_reader.is_alive()
+                assert conn.hello is None
+                assert conn._event_queue.empty()
             finally:
                 conn.close()
 
