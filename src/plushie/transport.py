@@ -38,7 +38,7 @@ import socket
 import threading
 from collections.abc import Callable
 from queue import Empty, Queue
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from plushie.connection import (
     ProtocolMismatchError,
@@ -357,7 +357,9 @@ class SocketAdapter(IoStreamAdapter):
     """Connect to a plushie renderer over TCP or Unix domain socket.
 
     Parses the address string to determine the transport:
-    - ``":4567"`` or ``"localhost:4567"``: TCP (localhost when only port given)
+    - ``":4567"``: TCP on localhost
+    - ``"localhost:4567"`` or ``"127.0.0.1:4567"``: TCP
+    - ``"[::1]:4567"``: TCP over IPv6
     - ``"/path/to/sock"`` or ``"path/to/sock"``: Unix domain socket
 
     Usage::
@@ -379,18 +381,12 @@ class SocketAdapter(IoStreamAdapter):
         on_event: Callable[[Any], None] | None = None,
     ) -> None:
         self._socket: socket.socket
-        if address.startswith("/"):
+        parsed = _parse_socket_address(address)
+        if parsed[0] == "unix":
             self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            self._socket.connect(address)
-        elif ":" in address:
-            host, port_str = address.split(":", 1)
-            if host:
-                self._socket = socket.create_connection((host, int(port_str)))
-            else:
-                self._socket = socket.create_connection(("127.0.0.1", int(port_str)))
+            self._socket.connect(parsed[1])
         else:
-            self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            self._socket.connect(address)
+            self._socket = socket.create_connection(parsed[1])
 
         super().__init__(
             self._socket.makefile("rb"),
@@ -405,6 +401,51 @@ class SocketAdapter(IoStreamAdapter):
         super().close()
         with contextlib.suppress(OSError):
             self._socket.close()
+
+
+def _parse_socket_address(
+    address: str,
+) -> tuple[Literal["unix"], str] | tuple[Literal["tcp"], tuple[str, int]]:
+    """Parse a SocketAdapter address into an explicit Unix or TCP target."""
+    if address.startswith("/"):
+        return ("unix", address)
+
+    if address.startswith("["):
+        closing = address.find("]")
+        if closing <= 1 or closing + 1 >= len(address) or address[closing + 1] != ":":
+            raise ValueError(
+                "invalid socket address, expected [IPv6]:PORT for IPv6 TCP addresses"
+            )
+        host = address[1:closing]
+        port = _parse_socket_port(address[closing + 2 :])
+        return ("tcp", (host, port))
+
+    if ":" not in address:
+        return ("unix", address)
+
+    if address.startswith(":"):
+        return ("tcp", ("127.0.0.1", _parse_socket_port(address[1:])))
+
+    if address.count(":") > 1:
+        raise ValueError(
+            "invalid socket address, use [IPv6]:PORT for IPv6 TCP addresses"
+        )
+
+    host, port_str = address.split(":", 1)
+    if not host:
+        raise ValueError("invalid socket address, expected HOST:PORT or :PORT")
+    return ("tcp", (host, _parse_socket_port(port_str)))
+
+
+def _parse_socket_port(port_str: str) -> int:
+    """Parse and validate a TCP port number."""
+    try:
+        port = int(port_str)
+    except ValueError as exc:
+        raise ValueError(f"invalid socket port: {port_str!r}") from exc
+    if not 1 <= port <= 65535:
+        raise ValueError(f"invalid socket port: {port_str!r}")
+    return port
 
 
 __all__ = [

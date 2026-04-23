@@ -6,6 +6,7 @@ frame encoding/decoding, event routing, and lifecycle management.
 
 from __future__ import annotations
 
+import socket
 import struct
 import threading
 import time
@@ -321,6 +322,22 @@ class TestConnectionFromIostream:
 class TestSocketAdapterInit:
     """SocketAdapter address parsing and connection (no live server)."""
 
+    @staticmethod
+    def _connected_socket() -> MagicMock:
+        reader = MagicMock()
+        reader.read.return_value = b""
+        reader.close.return_value = None
+
+        writer = MagicMock()
+        writer.write.return_value = 0
+        writer.flush.return_value = None
+        writer.close.return_value = None
+
+        sock = MagicMock()
+        sock.makefile.side_effect = [reader, writer]
+        sock.close.return_value = None
+        return sock
+
     def test_tcp_connection_refused(self) -> None:
         with pytest.raises(ConnectionRefusedError):
             SocketAdapter(":1")
@@ -332,3 +349,67 @@ class TestSocketAdapterInit:
     def test_unix_connection_refused(self) -> None:
         with pytest.raises((ConnectionRefusedError, FileNotFoundError)):
             SocketAdapter("/tmp/_plushie_nonexistent_test.sock")
+
+    def test_tcp_localhost_shorthand_uses_ipv4_loopback(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_socket = self._connected_socket()
+        create_connection = MagicMock(return_value=fake_socket)
+        monkeypatch.setattr(socket, "create_connection", create_connection)
+
+        adapter = SocketAdapter(":4567")
+
+        create_connection.assert_called_once_with(("127.0.0.1", 4567))
+        adapter.close()
+
+    def test_tcp_host_port_uses_create_connection(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_socket = self._connected_socket()
+        create_connection = MagicMock(return_value=fake_socket)
+        monkeypatch.setattr(socket, "create_connection", create_connection)
+
+        adapter = SocketAdapter("example.test:4567")
+
+        create_connection.assert_called_once_with(("example.test", 4567))
+        adapter.close()
+
+    def test_tcp_ipv6_bracketed_strips_brackets(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_socket = self._connected_socket()
+        create_connection = MagicMock(return_value=fake_socket)
+        monkeypatch.setattr(socket, "create_connection", create_connection)
+
+        adapter = SocketAdapter("[::1]:4567")
+
+        create_connection.assert_called_once_with(("::1", 4567))
+        adapter.close()
+
+    def test_unix_relative_path_uses_unix_socket(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fake_socket = self._connected_socket()
+        socket_ctor = MagicMock(return_value=fake_socket)
+        monkeypatch.setattr(socket, "socket", socket_ctor)
+
+        adapter = SocketAdapter("tmp/plushie.sock")
+
+        socket_ctor.assert_called_once_with(socket.AF_UNIX, socket.SOCK_STREAM)
+        fake_socket.connect.assert_called_once_with("tmp/plushie.sock")
+        adapter.close()
+
+    @pytest.mark.parametrize(
+        "address",
+        [
+            "[::1]",
+            "[::1",
+            "::1:4567",
+            "2001:db8::1:4567",
+            "[::1]:abc",
+            "host:0",
+        ],
+    )
+    def test_invalid_socket_address_raises_value_error(self, address: str) -> None:
+        with pytest.raises(ValueError, match="invalid socket"):
+            SocketAdapter(address)
