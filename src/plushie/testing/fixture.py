@@ -33,6 +33,7 @@ from plushie.events import (
     StreamChunk,
 )
 from plushie.protocol import encode_selector, parse_selector
+from plushie.runtime import unwrap_result as _unwrap_update
 from plushie.testing.element import Element, ElementNotFoundError
 from plushie.testing.pool import SessionPool
 from plushie.tree import Node, diff, normalize_view, text_of
@@ -46,20 +47,6 @@ _MAX_COMMAND_DEPTH: int = 100
 # ---------------------------------------------------------------------------
 # Synchronous command processor
 # ---------------------------------------------------------------------------
-
-
-def _unwrap_update(
-    result: Any,
-) -> tuple[Any, list[Command]]:
-    """Normalize an update/init return value to (model, commands)."""
-    if isinstance(result, tuple) and len(result) == 2:
-        model, cmds = result
-        if isinstance(cmds, Command):
-            return model, [cmds]
-        if isinstance(cmds, list):
-            return model, cmds
-        return model, []
-    return result, []
 
 
 def _process_commands(

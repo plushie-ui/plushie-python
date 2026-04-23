@@ -1290,6 +1290,38 @@ class TestDecodeMouseEvents:
         assert isinstance(result, Scroll)
         assert result.delta_y == -3
 
+    @pytest.mark.parametrize(
+        ("family", "value", "data"),
+        [
+            ("cursor_entered", None, None),
+            ("cursor_left", None, None),
+            ("button_pressed", "left", None),
+            ("button_released", "right", None),
+            ("wheel_scrolled", None, {"delta_x": 1, "delta_y": -2, "unit": "line"}),
+        ],
+    )
+    def test_pointer_subscription_events_keep_captured(
+        self,
+        family: str,
+        value: object,
+        data: dict[str, object] | None,
+    ) -> None:
+        raw: dict[str, object] = {
+            "type": "event",
+            "family": family,
+            "id": "",
+            "tag": "m",
+            "captured": True,
+        }
+        if value is not None:
+            raw["value"] = value
+        if data is not None:
+            raw["data"] = data
+
+        result = decode_message(raw)
+        assert isinstance(result, (Enter, Exit, Press, Release, Scroll))
+        assert result.captured is True
+
 
 class TestDecodeTouchEvents:
     def test_finger_pressed(self) -> None:
@@ -1340,6 +1372,24 @@ class TestDecodeTouchEvents:
         result = decode_message(raw)
         assert isinstance(result, Release)
         assert result.pointer == "touch"
+
+    @pytest.mark.parametrize(
+        "family",
+        ["finger_pressed", "finger_moved", "finger_lifted", "finger_lost"],
+    )
+    def test_touch_subscription_events_keep_captured(self, family: str) -> None:
+        raw = {
+            "type": "event",
+            "family": family,
+            "id": "",
+            "tag": "t",
+            "captured": True,
+            "data": {"id": 7, "x": 10, "y": 20},
+        }
+
+        result = decode_message(raw)
+        assert isinstance(result, (Press, Move, Release))
+        assert result.captured is True
 
 
 class TestDecodeImeEvents:

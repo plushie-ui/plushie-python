@@ -197,10 +197,13 @@ class TestUnwrapUpdate:
         assert model == 42
         assert cmds == [c1, c2]
 
-    def test_model_with_non_command_second_element(self) -> None:
-        model, cmds = _unwrap_update((42, "not a command"))
-        assert model == 42
-        assert cmds == []
+    def test_rejects_non_command_second_element(self) -> None:
+        with pytest.raises(TypeError, match="expected a Command"):
+            _unwrap_update((42, "not a command"))
+
+    def test_rejects_list_with_non_command(self) -> None:
+        with pytest.raises(TypeError, match="command list contains"):
+            _unwrap_update((42, [Command.none(), "bad"]))
 
     def test_dict_model(self) -> None:
         """Dicts are not tuples, so they're treated as bare models."""
