@@ -115,15 +115,21 @@ def _normalize_expected_widgets(
     )
 
 
-def _validate_required_extensions(hello: HelloInfo, expected: tuple[str, ...]) -> None:
+def _validate_required_widgets(hello: HelloInfo, expected: tuple[str, ...]) -> None:
     if not expected:
         return
-    missing = sorted(set(expected) - set(hello.extensions))
+    capabilities = (
+        set(hello.native_widgets) | set(hello.widgets) | set(hello.extensions)
+    )
+    missing = sorted(set(expected) - capabilities)
     if missing:
         raise ConnectionError(
-            f"renderer is missing required extensions {missing!r}. "
-            f"Renderer reported {list(hello.extensions)!r}"
+            f"renderer is missing required widgets/capabilities {missing!r}. "
+            f"Renderer reported {sorted(capabilities)!r}"
         )
+
+
+_validate_required_extensions = _validate_required_widgets
 
 
 def _validate_hello_protocol(hello: HelloInfo) -> None:
@@ -374,7 +380,7 @@ class Connection:
         if self._hello_error is not None:
             raise self._hello_error
         assert self._hello is not None
-        _validate_required_extensions(self._hello, self._expected_widgets)
+        _validate_required_widgets(self._hello, self._expected_widgets)
         return self._hello
 
     def close(self) -> None:
@@ -1068,7 +1074,7 @@ class StdioConnection:
         if self._hello_error is not None:
             raise self._hello_error
         assert self._hello is not None
-        _validate_required_extensions(self._hello, self._expected_widgets)
+        _validate_required_widgets(self._hello, self._expected_widgets)
         return self._hello
 
     def send(self, msg: dict[str, Any]) -> None:
@@ -1332,7 +1338,7 @@ class _IoStreamConnection:
 
     def wait_hello(self, timeout: float = 10.0) -> HelloInfo:
         hello = self._adapter.wait_hello(timeout)
-        _validate_required_extensions(hello, self._expected_widgets)
+        _validate_required_widgets(hello, self._expected_widgets)
         return hello
 
     def send(self, msg: dict[str, Any]) -> None:

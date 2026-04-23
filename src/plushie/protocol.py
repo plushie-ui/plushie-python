@@ -746,15 +746,23 @@ def parse_hello(msg: dict[str, Any]) -> HelloInfo:
     Raises:
         ValueError: If required fields are missing or have wrong types.
     """
-    required_keys = ("protocol", "version", "name", "mode", "backend")
+    required_keys = ("version", "name", "mode", "backend")
     missing = [k for k in required_keys if k not in msg]
+    if "protocol_version" in msg:
+        protocol_key = "protocol_version"
+    elif "protocol" in msg:
+        protocol_key = "protocol"
+    else:
+        protocol_key = "protocol_version"
+        missing.insert(0, "protocol_version")
     if missing:
         raise ValueError(f"hello message missing required fields: {missing}")
 
-    if type(msg["protocol"]) is not int:
+    protocol = msg[protocol_key]
+    if type(protocol) is not int:
         raise ValueError(
-            "hello message field 'protocol' must be int, "
-            f"got {type(msg['protocol']).__name__}"
+            f"hello message field {protocol_key!r} must be int, "
+            f"got {type(protocol).__name__}"
         )
 
     for key in ("version", "name", "mode", "backend"):
@@ -765,9 +773,9 @@ def parse_hello(msg: dict[str, Any]) -> HelloInfo:
 
     extensions = msg.get("extensions", [])
     native_widgets = msg.get("native_widgets", msg.get("extension_widgets", []))
-    widgets = msg.get("widgets", msg.get("widget_sets", []))
+    widgets = msg.get("widgets", [])
     return HelloInfo(
-        protocol=msg["protocol"],
+        protocol=protocol,
         version=msg["version"],
         name=msg["name"],
         mode=msg["mode"],

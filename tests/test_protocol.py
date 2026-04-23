@@ -422,13 +422,15 @@ class TestParseHello:
         raw = {
             "type": "hello",
             "session": "",
-            "protocol": 1,
+            "protocol_version": 1,
             "version": "0.4.0",
             "name": "plushie",
             "mode": "mock",
             "backend": "none",
             "transport": "stdio",
             "extensions": ["charts"],
+            "native_widgets": ["gauge"],
+            "widgets": ["button"],
         }
         info = parse_hello(raw)
         assert isinstance(info, HelloInfo)
@@ -439,8 +441,10 @@ class TestParseHello:
         assert info.backend == "none"
         assert info.transport == "stdio"
         assert info.extensions == ("charts",)
+        assert info.native_widgets == ("gauge",)
+        assert info.widgets == ("button",)
 
-    def test_no_extensions(self) -> None:
+    def test_legacy_protocol_field(self) -> None:
         raw = {
             "type": "hello",
             "session": "",
@@ -451,10 +455,51 @@ class TestParseHello:
             "backend": "tiny-skia",
         }
         info = parse_hello(raw)
+        assert info.protocol == 1
+
+    def test_protocol_version_preferred_over_legacy_protocol(self) -> None:
+        raw = {
+            "type": "hello",
+            "session": "",
+            "protocol_version": 1,
+            "protocol": 99,
+            "version": "0.1.0",
+            "name": "plushie",
+            "mode": "headless",
+            "backend": "tiny-skia",
+        }
+        info = parse_hello(raw)
+        assert info.protocol == 1
+
+    def test_no_extensions(self) -> None:
+        raw = {
+            "type": "hello",
+            "session": "",
+            "protocol_version": 1,
+            "version": "0.1.0",
+            "name": "plushie",
+            "mode": "headless",
+            "backend": "tiny-skia",
+        }
+        info = parse_hello(raw)
         assert info.extensions == ()
         assert info.transport == "stdio"
 
-    def test_rejects_non_integer_protocol(self) -> None:
+    def test_rejects_non_integer_protocol_version(self) -> None:
+        raw = {
+            "type": "hello",
+            "session": "",
+            "protocol_version": "1",
+            "protocol": 1,
+            "version": "0.1.0",
+            "name": "plushie",
+            "mode": "headless",
+            "backend": "tiny-skia",
+        }
+        with pytest.raises(ValueError, match=r"protocol_version.*int"):
+            parse_hello(raw)
+
+    def test_rejects_non_integer_legacy_protocol(self) -> None:
         raw = {
             "type": "hello",
             "session": "",
@@ -466,6 +511,20 @@ class TestParseHello:
         }
         with pytest.raises(ValueError, match=r"protocol.*int"):
             parse_hello(raw)
+
+    def test_widget_sets_do_not_populate_widgets(self) -> None:
+        raw = {
+            "type": "hello",
+            "session": "",
+            "protocol_version": 1,
+            "version": "0.1.0",
+            "name": "plushie",
+            "mode": "headless",
+            "backend": "tiny-skia",
+            "widget_sets": ["provider_group"],
+        }
+        info = parse_hello(raw)
+        assert info.widgets == ()
 
 
 class TestParseQueryResponse:

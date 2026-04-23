@@ -43,7 +43,7 @@ from plushie.connection import (
     _decode_events_list,
     _next_request_id,
     _normalize_expected_widgets,
-    _validate_required_extensions,
+    _validate_required_widgets,
 )
 from plushie.native_widget import NativeWidget
 from plushie.protocol import PROTOCOL_VERSION, decode_message
@@ -96,8 +96,54 @@ class TestDetectOS:
                 detect_os()
 
 
-class TestHelloExtensionValidation:
-    def test_missing_required_extension_raises(self) -> None:
+class TestHelloRequiredWidgetValidation:
+    def test_accepts_native_widgets(self) -> None:
+        hello = HelloInfo(
+            protocol=PROTOCOL_VERSION,
+            version="0.5.0",
+            name="plushie",
+            mode="mock",
+            backend="none",
+            transport="spawn",
+            native_widgets=("gauge",),
+        )
+        expected = (
+            NativeWidget(
+                kind="gauge",
+                rust_crate="native/gauge",
+                rust_constructor="gauge::Gauge::new()",
+            ),
+        )
+
+        _validate_required_widgets(hello, _normalize_expected_widgets(expected))
+
+    def test_accepts_widgets(self) -> None:
+        hello = HelloInfo(
+            protocol=PROTOCOL_VERSION,
+            version="0.5.0",
+            name="plushie",
+            mode="mock",
+            backend="none",
+            transport="spawn",
+            widgets=("custom_chart",),
+        )
+
+        _validate_required_widgets(hello, ("custom_chart",))
+
+    def test_accepts_legacy_extensions(self) -> None:
+        hello = HelloInfo(
+            protocol=PROTOCOL_VERSION,
+            version="0.5.0",
+            name="plushie",
+            mode="mock",
+            backend="none",
+            transport="spawn",
+            extensions=("charts",),
+        )
+
+        _validate_required_widgets(hello, ("charts",))
+
+    def test_missing_required_widget_raises(self) -> None:
         hello = HelloInfo(
             protocol=PROTOCOL_VERSION,
             version="0.5.0",
@@ -115,8 +161,10 @@ class TestHelloExtensionValidation:
             ),
         )
 
-        with pytest.raises(ConnectionError, match="missing required extensions"):
-            _validate_required_extensions(hello, _normalize_expected_widgets(expected))
+        with pytest.raises(
+            ConnectionError, match="missing required widgets/capabilities"
+        ):
+            _validate_required_widgets(hello, _normalize_expected_widgets(expected))
 
 
 class TestDetectArch:
