@@ -846,6 +846,13 @@ class AppFixture[M]:
         Returns:
             ``True`` if the element exists.
         """
+        if self._tree is not None:
+            try:
+                if _find_node_by_selector(self._tree, selector) is not None:
+                    return True
+            except ValueError as exc:
+                if "widget not found" not in str(exc):
+                    raise
         return self.query(selector) is not None
 
     def find_by_role(self, role: str) -> Element | None:

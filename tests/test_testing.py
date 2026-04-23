@@ -557,6 +557,25 @@ class TestAssertExists:
         with _make_fixture() as app:
             app.assert_exists("#greeting")
 
+    def test_exists_uses_local_tree_before_renderer_query(self) -> None:
+        with _make_fixture() as app:
+            app._pool.query_find.side_effect = lambda *_args, **_kw: None  # type: ignore[union-attr]
+
+            assert app.exists("#greeting")
+
+    def test_exists_falls_back_to_renderer_query(self) -> None:
+        renderer_node = {
+            "id": "renderer-only",
+            "type": "button",
+            "props": {"label": "Renderer only"},
+            "children": [],
+        }
+
+        with _make_fixture() as app:
+            app._pool.query_find.side_effect = lambda *_args, **_kw: renderer_node  # type: ignore[union-attr]
+
+            assert app.exists("[role=button]")
+
     def test_fails_when_element_missing(self) -> None:
         with (
             _make_fixture() as app,
