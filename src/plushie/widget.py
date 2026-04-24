@@ -490,6 +490,7 @@ class WidgetDef(ABC):
         widget_id: str,
         *,
         props: dict[str, Any] | None = None,
+        event_rate: int | None = None,
     ) -> dict[str, Any]:
         """Build a placeholder node for this widget.
 
@@ -500,12 +501,16 @@ class WidgetDef(ABC):
         Args:
             widget_id: Widget ID.
             props: Widget props.
+            event_rate: Maximum event frequency for renderer-side events.
         """
-        resolved_props = props or {}
+        resolved_props = dict(props or {})
+        placeholder_props: dict[str, Any] = {}
+        if event_rate is not None:
+            placeholder_props["event_rate"] = event_rate
         return {
             "id": widget_id,
             "type": "canvas",
-            "props": {},
+            "props": placeholder_props,
             "children": [],
             "meta": {
                 "__widget__": cls,

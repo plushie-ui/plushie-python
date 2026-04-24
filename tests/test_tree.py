@@ -2071,6 +2071,56 @@ class TestWidgetViewCache:
     view tree when the key is unchanged.
     """
 
+    def test_widget_placeholder_event_rate_is_forwarded(self) -> None:
+        from plushie.widget import WidgetDef
+
+        seen_props: list[dict[str, object]] = []
+
+        class EventRateWidget(WidgetDef):
+            def init(self, props: dict[str, object]) -> dict[str, object]:
+                seen_props.append(props)
+                return {}
+
+            def view(
+                self,
+                widget_id: str,
+                props: dict[str, object],
+                state: dict[str, object],
+            ) -> dict[str, object]:
+                seen_props.append(props)
+                return {
+                    "id": widget_id,
+                    "type": "canvas",
+                    "props": {},
+                    "children": [],
+                }
+
+        tree = {
+            "id": "main",
+            "type": "window",
+            "props": {},
+            "children": [
+                EventRateWidget.build(
+                    "w1",
+                    props={"label": "fast", "event_rate": 15},
+                    event_rate=60,
+                )
+            ],
+        }
+
+        normalized = normalize(tree, registry={})
+        child = normalized["children"][0]
+
+        assert child["props"]["event_rate"] == 60
+        assert child["meta"]["__widget_props__"] == {
+            "label": "fast",
+            "event_rate": 15,
+        }
+        assert seen_props == [
+            {"label": "fast", "event_rate": 15},
+            {"label": "fast", "event_rate": 15},
+        ]
+
     def test_widget_view_skipped_when_cache_key_unchanged(self) -> None:
         from plushie.widget import WidgetDef, derive_registry
 

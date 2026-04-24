@@ -215,6 +215,17 @@ class TestBuild:
         assert meta["__widget__"] is StarRating
         assert meta["__widget_props__"] == {"max": 5}
 
+    def test_build_sets_event_rate_on_placeholder(self) -> None:
+        props = {"max": 5, "event_rate": 15}
+        node = StarRating.build("stars", props=props, event_rate=60)
+
+        assert node["props"] == {"event_rate": 60}
+        assert node["meta"]["__widget_props__"] == {"max": 5, "event_rate": 15}
+        assert node["meta"]["__widget_props__"] is not props
+
+        props["max"] = 10
+        assert node["meta"]["__widget_props__"]["max"] == 5
+
     def test_meta_preserved_through_normalize(self) -> None:
         node = StarRating.build("stars", props={"max": 5})
         tree = {
