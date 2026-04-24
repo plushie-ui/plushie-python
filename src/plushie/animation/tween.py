@@ -157,35 +157,54 @@ class Tween:
             return (self.current_value, FINISHED)
 
         elapsed = timestamp - self.started_at
-        t = _clamp(elapsed / self.duration_ms)
-        current = interpolate(self.from_val, self.to_val, t, self.easing)
-
-        if t < 1.0:
-            return (current, replace(self, current_value=current))
 
         if self.repeat is None and not self.auto_reverse:
+            t = _clamp(elapsed / self.duration_ms)
+            current = interpolate(self.from_val, self.to_val, t, self.easing)
+            if t < 1.0:
+                return (current, replace(self, current_value=current))
             return (self.to_val, FINISHED)
 
-        updated = self._restart_cycle()
-        return (self.to_val, updated)
+        if self.repeat is not None and elapsed >= self.repeat * self.duration_ms:
+            final_value = self._final_value()
+            return (final_value, FINISHED)
 
-    def _restart_cycle(self) -> Tween:
-        if self.auto_reverse:
-            return replace(
-                self,
-                from_val=self.to_val,
-                to_val=self.from_val,
-                current_value=self.to_val,
-                started_at=(self.started_at or 0) + self.duration_ms,
-            )
-        if self.repeat is not None and self.repeat > 1:
-            return replace(
-                self,
-                repeat=self.repeat - 1,
-                current_value=self.from_val,
-                started_at=(self.started_at or 0) + self.duration_ms,
-            )
-        return replace(self, current_value=self.to_val, is_done=True)
+        cycle_count = max(0, elapsed // self.duration_ms)
+        cycle_elapsed = elapsed - (cycle_count * self.duration_ms)
+        cycle_start = self.started_at + (cycle_count * self.duration_ms)
+        from_val = self.from_val
+        to_val = self.to_val
+
+        if self.auto_reverse and cycle_count % 2 == 1:
+            from_val = self.to_val
+            to_val = self.from_val
+
+        t = _clamp(cycle_elapsed / self.duration_ms)
+        current = interpolate(from_val, to_val, t, self.easing)
+        returned_value = current
+        if cycle_elapsed == 0 and elapsed > 0:
+            returned_value = self._cycle_end_value(cycle_count - 1)
+        next_repeat = None if self.repeat is None else self.repeat - cycle_count
+
+        updated = replace(
+            self,
+            repeat=next_repeat,
+            from_val=from_val,
+            to_val=to_val,
+            current_value=current,
+            started_at=cycle_start,
+        )
+        return (returned_value, updated)
+
+    def _cycle_end_value(self, cycle_index: int) -> float:
+        if not self.auto_reverse or cycle_index % 2 == 0:
+            return self.to_val
+        return self.from_val
+
+    def _final_value(self) -> float:
+        if not self.auto_reverse or self.repeat is None or self.repeat % 2 == 1:
+            return self.to_val
+        return self.from_val
 
     def finished(self) -> bool:
         """Return ``True`` if the animation has completed."""

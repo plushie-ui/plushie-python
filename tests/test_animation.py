@@ -145,6 +145,78 @@ class TestAnimationLifecycle:
         assert val == 100.0
         assert result is FINISHED
 
+    def test_finite_repeat_without_auto_reverse_finishes(self) -> None:
+        anim = Tween.new(0.0, 100.0, 1000, repeat=2).start(0)
+
+        val, second_play = anim.advance(1000)
+        assert val == 100.0
+        assert isinstance(second_play, Tween)
+        assert second_play.repeat == 1
+        assert second_play.value() == 0.0
+
+        val, result = second_play.advance(2000)
+        assert val == 100.0
+        assert result is FINISHED
+
+    def test_finite_repeat_without_auto_reverse_finishes_on_direct_end(self) -> None:
+        anim = Tween.new(0.0, 100.0, 1000, repeat=2).start(0)
+
+        val, result = anim.advance(2000)
+        assert val == 100.0
+        assert result is FINISHED
+
+    def test_finite_repeat_without_auto_reverse_finishes_past_direct_end(self) -> None:
+        anim = Tween.new(0.0, 100.0, 1000, repeat=2).start(0)
+
+        val, result = anim.advance(2500)
+        assert val == 100.0
+        assert result is FINISHED
+
+    def test_finite_repeat_with_auto_reverse_finishes_at_final_end(self) -> None:
+        anim = Tween.new(0.0, 100.0, 1000, repeat=2, auto_reverse=True).start(0)
+
+        val, reverse_play = anim.advance(1000)
+        assert val == 100.0
+        assert isinstance(reverse_play, Tween)
+        assert reverse_play.repeat == 1
+        assert reverse_play.from_val == 100.0
+        assert reverse_play.to_val == 0.0
+
+        val, result = reverse_play.advance(2000)
+        assert val == 0.0
+        assert result is FINISHED
+
+    def test_finite_repeat_with_auto_reverse_finishes_on_direct_end(self) -> None:
+        anim = Tween.new(0.0, 100.0, 1000, repeat=2, auto_reverse=True).start(0)
+
+        val, result = anim.advance(2000)
+        assert val == 0.0
+        assert result is FINISHED
+
+    def test_finite_repeat_with_auto_reverse_finishes_past_direct_end(self) -> None:
+        anim = Tween.new(0.0, 100.0, 1000, repeat=2, auto_reverse=True).start(0)
+
+        val, result = anim.advance(2500)
+        assert val == 0.0
+        assert result is FINISHED
+
+    def test_looping_ping_pong_does_not_finish(self) -> None:
+        anim = Tween.looping(0.0, 100.0, 1000).start(0)
+
+        val, reverse_play = anim.advance(1000)
+        assert val == 100.0
+        assert isinstance(reverse_play, Tween)
+        assert reverse_play.repeat is None
+        assert reverse_play.from_val == 100.0
+        assert reverse_play.to_val == 0.0
+
+        val, forward_play = reverse_play.advance(2000)
+        assert val == 0.0
+        assert isinstance(forward_play, Tween)
+        assert forward_play.repeat is None
+        assert forward_play.from_val == 0.0
+        assert forward_play.to_val == 100.0
+
     def test_finished_not_started(self) -> None:
         anim = Tween.new(0.0, 100.0, 1000)
         assert anim.finished() is False
