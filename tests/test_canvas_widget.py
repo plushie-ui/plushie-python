@@ -239,6 +239,58 @@ class TestBuild:
         assert "meta" in child
         assert child["meta"]["__widget__"] is StarRating
 
+    def test_view_returning_none_raises_clear_error(self) -> None:
+        class NoneView(WidgetDef):
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> Any:
+                return None
+
+        tree = {
+            "id": "main",
+            "type": "window",
+            "props": {},
+            "children": [NoneView.build("empty")],
+        }
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"NoneView\.view\(\) returned None for widget 'main#empty' "
+                r"\(local id 'empty'\)"
+            ),
+        ):
+            normalize(tree, registry={})
+
+    def test_view_returning_non_dict_raises_clear_error(self) -> None:
+        class ListView(WidgetDef):
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                return {}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> Any:
+                return []
+
+        tree = {
+            "id": "main",
+            "type": "window",
+            "props": {},
+            "children": [ListView.build("items")],
+        }
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"ListView\.view\(\) must return a dict for widget 'main#items' "
+                r"\(local id 'items'\); got list"
+            ),
+        ):
+            normalize(tree, registry={})
+
 
 # ---------------------------------------------------------------------------
 # Registry tests

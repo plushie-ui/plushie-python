@@ -566,6 +566,17 @@ def render_placeholder(
 
     # Produce the widget's view tree
     rendered = instance.view(local_id, widget_props, state)
+    if rendered is None:
+        raise ValueError(
+            f"{widget_cls.__name__}.view() returned None for widget {scoped_id!r} "
+            f"(local id {local_id!r})"
+        )
+    if not isinstance(rendered, dict):
+        raise ValueError(
+            f"{widget_cls.__name__}.view() must return a dict for widget "
+            f"{scoped_id!r} (local id {local_id!r}); got "
+            f"{type(rendered).__name__}"
+        )
 
     # Attach metadata to the rendered node for registry derivation
     entry = RegistryEntry(definition=instance, state=state, props=widget_props)

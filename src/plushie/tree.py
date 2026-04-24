@@ -726,6 +726,8 @@ def _normalize_with_scope(
                         result_node,
                     )
                 return result_node
+        except ValueError:
+            raise
         except Exception:
             logger.exception("plushie: canvas widget render failed for %s", scoped_id)
 
