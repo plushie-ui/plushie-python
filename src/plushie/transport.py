@@ -292,12 +292,17 @@ class WebSocketAdapter(IoStreamAdapter):
 
         with ws.connect("ws://localhost:8080") as websocket:
             adapter = WebSocketAdapter(websocket)
-            conn = Connection.from_iostream(adapter)
+            conn = Connection.from_iostream(adapter, token="shared-secret")
 
     The WebSocket object must support:
     - ``recv()`` -> bytes (blocking receive of a complete message)
     - ``send(data: bytes)`` -> None (send a complete message)
     - Optionally ``close()`` for cleanup.
+
+    WebSocketAdapter wraps an already-connected socket, so it does not
+    add authentication headers. Pass ``token=...`` to
+    ``Connection.from_iostream()`` to authenticate through the Settings
+    handshake without sending the plaintext token.
     """
 
     def __init__(

@@ -98,6 +98,7 @@ _SUPPORTED_SETTING_KEYS: frozenset[str] = frozenset(
         "widget_config",
         "required_widgets",
         "validate_props",
+        "token_sha256",
         "protocol_version",
     }
 )

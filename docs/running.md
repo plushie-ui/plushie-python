@@ -217,6 +217,7 @@ Override the global rate for specific event sources:
 ```python
 from plushie.subscriptions import Subscription
 
+
 def subscribe(self, model):
     return [
         Subscription.on_mouse_move("mouse", max_rate=30),
@@ -290,14 +291,22 @@ import websockets.sync.client as ws
 from plushie.transport import WebSocketAdapter
 from plushie.connection import Connection
 
-with ws.connect("ws://localhost:8080") as websocket:
+with ws.connect("wss://example.com/plushie") as websocket:
     adapter = WebSocketAdapter(websocket)
-    conn = Connection.from_iostream(adapter)
+    conn = Connection.from_iostream(adapter, token="shared-secret")
     # Use conn as normal...
 ```
 
 The WebSocket object must support `recv()` (blocking receive) and
 `send(data: bytes)`. The adapter handles framing internally.
+Because `WebSocketAdapter` wraps a WebSocket that is already connected,
+it cannot add authentication headers. Pass `token=...` to
+`Connection.from_iostream()` to authenticate through the renderer's
+Settings handshake. Python sends only the SHA-256 digest as
+`token_sha256`, not the plaintext token. The digest is still a bearer
+credential if someone can observe the connection, so use `wss://` for
+remote WebSockets. Plain `ws://` is only reasonable on localhost or a
+trusted private link.
 
 ### Custom adapter example: TCP
 
@@ -308,6 +317,7 @@ import socket
 import threading
 from plushie.transport import IoStreamAdapter
 from plushie.connection import Connection
+
 
 def accept_renderer(host: str, port: int, app_class):
     """Accept a renderer connection over TCP and run a plushie app."""
@@ -349,8 +359,13 @@ from plushie.connection import Connection
 
 # The WASM renderer connects to this WebSocket endpoint
 adapter = WebSocketAdapter(websocket)
-conn = Connection.from_iostream(adapter)
+conn = Connection.from_iostream(adapter, token="shared-secret")
 ```
+
+If a gateway in front of the WebSocket also needs HTTP-level
+authentication, pass the gateway headers when creating the WebSocket.
+`WebSocketAdapter` only handles the already-open socket and renderer
+Settings authentication.
 
 Build the WASM renderer:
 
@@ -372,13 +387,13 @@ from plushie.framing import MsgpackFraming, JsonFraming
 
 # MessagePack: 4-byte big-endian length prefix
 framing = MsgpackFraming()
-encoded = MsgpackFraming.encode(msg_dict)    # -> bytes with length prefix
-messages = framing.feed(raw_bytes)            # -> list of decoded dicts
+encoded = MsgpackFraming.encode(msg_dict)  # -> bytes with length prefix
+messages = framing.feed(raw_bytes)  # -> list of decoded dicts
 
 # JSON: newline-delimited
 framing = JsonFraming()
-encoded = JsonFraming.encode(msg_dict)       # -> bytes with newline
-messages = framing.feed(raw_bytes)            # -> list of decoded dicts
+encoded = JsonFraming.encode(msg_dict)  # -> bytes with newline
+messages = framing.feed(raw_bytes)  # -> list of decoded dicts
 ```
 
 The `IoStreamAdapter` handles framing automatically. You only need

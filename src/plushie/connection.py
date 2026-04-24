@@ -18,6 +18,7 @@ automatic cleanup.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import itertools
 import logging
 import os
@@ -310,6 +311,8 @@ class Connection:
         expected_widgets: list[str | NativeWidget]
         | tuple[str | NativeWidget, ...]
         | None = None,
+        token: str | None = None,
+        token_sha256: str | None = None,
     ) -> _IoStreamConnection:
         """Create a Connection-like object backed by an iostream adapter.
 
@@ -322,12 +325,23 @@ class Connection:
                 ``send()``, ``receive_event()``, ``close()``, ``hello``,
                 and ``wait_hello()`` methods).
             session: Default session identifier for outbound messages.
+            token: Optional shared secret for renderer authentication.
+                The connection sends only the SHA-256 digest in Settings.
+            token_sha256: Optional precomputed token digest for callers
+                that do not keep the plaintext token.
 
         Returns:
             A connection-like object wrapping the adapter.
         """
+        if token is not None and token_sha256 is not None:
+            raise ValueError("pass either token or token_sha256, not both")
+
         return _IoStreamConnection(
-            adapter, session=session, expected_widgets=expected_widgets
+            adapter,
+            session=session,
+            expected_widgets=expected_widgets,
+            token=token,
+            token_sha256=token_sha256,
         )
 
     @property
@@ -1314,6 +1328,10 @@ def _decode_events_list(raw_events: list[dict[str, Any]]) -> list[Any]:
     return decoded
 
 
+def _token_sha256(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 # ---------------------------------------------------------------------------
 # __all__
 # ---------------------------------------------------------------------------
@@ -1335,10 +1353,20 @@ class _IoStreamConnection:
         expected_widgets: list[str | NativeWidget]
         | tuple[str | NativeWidget, ...]
         | None = None,
+        token: str | None = None,
+        token_sha256: str | None = None,
     ) -> None:
         self._adapter = adapter
         self._session = session
         self._expected_widgets = _normalize_expected_widgets(expected_widgets)
+        self._token_sha256 = (
+            token_sha256
+            if token_sha256 is not None
+            else _token_sha256(token)
+            if token is not None
+            else None
+        )
+        self._sent_initial_settings = False
         self._pending: dict[str, Queue[dict[str, Any]]] = {}
         self._pending_lock = threading.Lock()
         if self._supports_request_response:
@@ -1395,10 +1423,18 @@ class _IoStreamConnection:
     _wait_response = Connection._wait_response
 
     def send_settings(self, settings_dict: dict[str, Any] | None = None) -> None:
-        msg = settings(
-            {} if settings_dict is None else settings_dict, session=self._session
-        )
+        merged = {} if settings_dict is None else dict(settings_dict)
+        if (
+            self._token_sha256 is not None
+            and "token_sha256" in merged
+            and merged["token_sha256"] != self._token_sha256
+        ):
+            raise ValueError("settings token_sha256 conflicts with connection token")
+        if self._token_sha256 is not None and not self._sent_initial_settings:
+            merged["token_sha256"] = self._token_sha256
+        msg = settings(merged, session=self._session)
         self.send(msg)
+        self._sent_initial_settings = True
 
     def send_snapshot(self, tree: dict[str, Any]) -> None:
         msg = snapshot(tree, session=self._session)

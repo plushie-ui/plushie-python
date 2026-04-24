@@ -6,6 +6,7 @@ frame encoding/decoding, event routing, and lifecycle management.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import socket
 import struct
@@ -469,6 +470,112 @@ class TestConnectionFromIostream:
         conn = Connection.from_iostream(adapter)
         conn.send_settings({"theme": "dark"})
         assert len(writer.chunks) == 1
+        conn.close()
+
+    def test_send_settings_adds_token_digest(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        conn = Connection.from_iostream(adapter, token="shared-secret")
+
+        conn.send_settings({"theme": "dark"})
+
+        sent = _decode_msg(writer.chunks[0])
+        sent_settings = sent["settings"]
+        assert (
+            sent_settings["token_sha256"]
+            == hashlib.sha256(b"shared-secret").hexdigest()
+        )
+        assert "token" not in sent_settings
+        conn.close()
+
+    def test_send_settings_preserves_caller_token_digest(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        caller_digest = hashlib.sha256(b"shared-secret").hexdigest()
+        conn = Connection.from_iostream(adapter, token="shared-secret")
+
+        conn.send_settings({"token_sha256": caller_digest})
+
+        sent = _decode_msg(writer.chunks[0])
+        assert sent["settings"]["token_sha256"] == caller_digest
+        conn.close()
+
+    def test_send_settings_rejects_conflicting_token_digest(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        conn = Connection.from_iostream(adapter, token="shared-secret")
+
+        with pytest.raises(ValueError, match="token_sha256 conflicts"):
+            conn.send_settings({"token_sha256": "b" * 64})
+        assert writer.chunks == []
+        conn.close()
+
+    def test_send_settings_adds_token_digest_only_once(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        conn = Connection.from_iostream(adapter, token="shared-secret")
+
+        conn.send_settings({"theme": "dark"})
+        conn.send_settings({"theme": "light"})
+
+        first = _decode_msg(writer.chunks[0])
+        second = _decode_msg(writer.chunks[1])
+        assert "token_sha256" in first["settings"]
+        assert "token_sha256" not in second["settings"]
+        conn.close()
+
+    def test_send_settings_rejects_later_conflicting_token_digest(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        conn = Connection.from_iostream(adapter, token="shared-secret")
+
+        conn.send_settings({})
+        with pytest.raises(ValueError, match="token_sha256 conflicts"):
+            conn.send_settings({"token_sha256": "b" * 64})
+
+        assert len(writer.chunks) == 1
+        conn.close()
+
+    def test_from_iostream_accepts_precomputed_token_digest(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        caller_digest = "b" * 64
+        conn = Connection.from_iostream(adapter, token_sha256=caller_digest)
+
+        conn.send_settings({})
+
+        sent = _decode_msg(writer.chunks[0])
+        assert sent["settings"]["token_sha256"] == caller_digest
+        conn.close()
+
+    def test_from_iostream_rejects_both_token_forms(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+
+        with pytest.raises(ValueError, match="either token or token_sha256"):
+            Connection.from_iostream(
+                adapter,
+                token="shared-secret",
+                token_sha256="b" * 64,
+            )
+        adapter.close()
+
+    def test_send_settings_rejects_plaintext_token(self) -> None:
+        reader = _PipeReader()
+        writer = _PipeWriter()
+        adapter = IoStreamAdapter(reader, writer)
+        conn = Connection.from_iostream(adapter, token="shared-secret")
+
+        with pytest.raises(ValueError, match="unknown setting key: token"):
+            conn.send_settings({"token": "do-not-send"})
+        assert writer.chunks == []
         conn.close()
 
     def test_wait_hello_raises_protocol_mismatch(self) -> None:

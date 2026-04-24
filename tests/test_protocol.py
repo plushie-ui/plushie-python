@@ -142,6 +142,16 @@ class TestSettings:
         msg = settings({"validate_props": True})
         assert msg["settings"]["validate_props"] is True
 
+    def test_token_sha256_accepted(self) -> None:
+        digest = "a" * 64
+        msg = settings({"token_sha256": digest})
+        assert msg["settings"]["token_sha256"] == digest
+        assert "token" not in msg["settings"]
+
+    def test_rejects_plaintext_token(self) -> None:
+        with pytest.raises(ValueError, match="unknown setting key: token"):
+            settings({"token": "secret"})
+
     def test_rejects_extension_config(self) -> None:
         with pytest.raises(ValueError, match="unknown setting key: extension_config"):
             settings({"extension_config": {}})
