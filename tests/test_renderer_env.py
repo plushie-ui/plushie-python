@@ -23,6 +23,26 @@ def test_forwards_whitelisted_exact_vars(monkeypatch):
     assert env.get("RUST_LOG") == "plushie=debug"
 
 
+def test_forwards_wayland_session_and_backend_vars(monkeypatch):
+    expected = {
+        "XDG_CURRENT_DESKTOP": "sway",
+        "XDG_SESSION_TYPE": "wayland",
+        "GDK_BACKEND": "wayland",
+        "GSK_RENDERER": "ngl",
+        "CLUTTER_BACKEND": "wayland",
+        "SDL_VIDEO_wayland": "1",
+        "QT_QPA_PLATFORM": "wayland",
+        "SWAYSOCK": "/run/user/1000/sway-ipc.sock",
+    }
+    for key, value in expected.items():
+        monkeypatch.setenv(key, value)
+
+    env = _build_env()
+
+    for key, value in expected.items():
+        assert env.get(key) == value
+
+
 def test_forwards_prefix_matched_vars(monkeypatch):
     monkeypatch.setenv("LC_ALL", "en_US.UTF-8")
     monkeypatch.setenv("MESA_GL_VERSION_OVERRIDE", "4.5")

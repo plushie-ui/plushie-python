@@ -426,6 +426,9 @@ def _parse_socket_address(
     address: str,
 ) -> tuple[Literal["unix"], str] | tuple[Literal["tcp"], tuple[str, int]]:
     """Parse a SocketAdapter address into an explicit Unix or TCP target."""
+    if _is_windows_named_pipe_address(address):
+        raise ValueError("Windows named pipe transport is not supported yet")
+
     if address.startswith("/"):
         return ("unix", address)
 
@@ -454,6 +457,12 @@ def _parse_socket_address(
     if not host:
         raise ValueError("invalid socket address, expected HOST:PORT or :PORT")
     return ("tcp", (host, _parse_socket_port(port_str)))
+
+
+def _is_windows_named_pipe_address(address: str) -> bool:
+    r"""Return True for Windows pipe paths like ``\\.\pipe\plushie``."""
+    normalized = address.replace("\\", "/").lower()
+    return normalized.startswith("//./pipe/")
 
 
 def _parse_socket_port(port_str: str) -> int:

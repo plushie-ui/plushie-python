@@ -840,6 +840,19 @@ class TestSocketAdapterInit:
     @pytest.mark.parametrize(
         "address",
         [
+            r"\\.\pipe\plushie",
+            "//./pipe/plushie",
+        ],
+    )
+    def test_windows_named_pipe_raises_clear_error(self, address: str) -> None:
+        with pytest.raises(
+            ValueError, match=r"named pipe support|named pipe transport"
+        ):
+            SocketAdapter(address)
+
+    @pytest.mark.parametrize(
+        "address",
+        [
             "[::1]",
             "[::1",
             "::1:4567",
