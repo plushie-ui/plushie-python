@@ -20,8 +20,8 @@ Usage::
 
 from __future__ import annotations
 
-import itertools
 import logging
+import secrets
 import threading
 from typing import Any
 
@@ -29,8 +29,6 @@ from plushie.connection import Connection
 from plushie.protocol import PROTOCOL_VERSION
 
 logger = logging.getLogger("plushie.testing")
-
-_session_counter = itertools.count(1)
 
 
 class SessionPool:
@@ -61,7 +59,6 @@ class SessionPool:
         self._lock = threading.Lock()
         self._session_swap_lock = threading.Lock()
         self._sessions: dict[str, _SessionSlot] = {}
-        self._next_id = itertools.count(1)
 
     def start(self) -> None:
         """Start the renderer subprocess and wait for the hello handshake.
@@ -114,7 +111,9 @@ class SessionPool:
                     f"session pool is full ({self._max_sessions} sessions). "
                     "Increase max_sessions or release unused sessions."
                 )
-            sid = f"pool_{next(self._next_id)}"
+            sid = f"pool_r{secrets.token_hex(16)}"
+            while sid in self._sessions:
+                sid = f"pool_r{secrets.token_hex(16)}"
             self._sessions[sid] = _SessionSlot(session_id=sid)
             return sid
 

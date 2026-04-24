@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -23,6 +23,7 @@ from plushie.testing.fixture import (
     _resolve_selector,
     _unwrap_update,
 )
+from plushie.testing.pool import SessionPool
 
 # ---------------------------------------------------------------------------
 # Element tests
@@ -492,6 +493,44 @@ class SimpleApp:
 
     def settings(self) -> dict[str, Any]:
         return {}
+
+
+class TestSessionPoolIds:
+    def test_register_returns_prefixed_unique_ids(self) -> None:
+        pool = SessionPool(max_sessions=20)
+        pool._conn = object()  # type: ignore[assignment]
+
+        ids = {pool.register() for _ in range(20)}
+
+        assert len(ids) == 20
+        assert all(sid.startswith("pool_") for sid in ids)
+
+    def test_register_ids_are_not_sequential_numbers(self) -> None:
+        pool = SessionPool(max_sessions=3)
+        pool._conn = object()  # type: ignore[assignment]
+
+        ids = [pool.register() for _ in range(3)]
+
+        assert all(not sid.removeprefix("pool_").isdecimal() for sid in ids)
+
+    def test_register_uses_random_token_and_retries_collisions(self) -> None:
+        pool = SessionPool(max_sessions=2)
+        pool._conn = object()  # type: ignore[assignment]
+
+        token_values = iter(["same", "same", "other"])
+
+        def next_token(_bytes: int) -> str:
+            return next(token_values)
+
+        token_hex = MagicMock(side_effect=next_token)
+        with patch("plushie.testing.pool.secrets.token_hex", token_hex):
+            first = pool.register()
+            second = pool.register()
+
+        assert first == "pool_rsame"
+        assert second == "pool_rother"
+        assert token_hex.call_count == 3
+        token_hex.assert_called_with(16)
 
 
 def _make_fixture() -> AppFixture[SimpleModel]:

@@ -493,6 +493,13 @@ class TestRequestId:
         rid = _next_request_id()
         assert rid.startswith("py-")
 
+    def test_uses_random_token(self) -> None:
+        with mock_patch("plushie.connection.secrets.token_hex") as token_hex:
+            token_hex.return_value = "abc123"
+
+            assert _next_request_id() == "py-rabc123"
+            token_hex.assert_called_once_with(16)
+
 
 # ===================================================================
 # Decode events list

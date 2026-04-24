@@ -19,9 +19,9 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-import itertools
 import logging
 import os
+import secrets
 import subprocess
 import sys
 import threading
@@ -98,12 +98,10 @@ class ProtocolVersionMismatchError(ProtocolMismatchError):
 # Request ID generator
 # ---------------------------------------------------------------------------
 
-_request_counter = itertools.count(1)
-
 
 def _next_request_id() -> str:
     """Generate a unique request ID for request-response correlation."""
-    return f"py-{next(_request_counter)}"
+    return f"py-r{secrets.token_hex(16)}"
 
 
 def _normalize_expected_widgets(
