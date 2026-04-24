@@ -195,6 +195,7 @@ def validate(ext_def: NativeWidget) -> list[str]:
 
     - ``kind`` must be non-empty.
     - No duplicate prop names.
+    - No duplicate command names.
     - No reserved prop names (id, type, children, a11y, event_rate).
     """
     errors: list[str] = []
@@ -213,6 +214,12 @@ def validate(ext_def: NativeWidget) -> list[str]:
 
         if prop.name in RESERVED_PROP_NAMES:
             errors.append(f'prop name "{prop.name}" is reserved')
+
+    seen_commands: set[str] = set()
+    for command in ext_def.commands:
+        if command.name in seen_commands:
+            errors.append(f'duplicate command name "{command.name}"')
+        seen_commands.add(command.name)
 
     return errors
 
@@ -282,8 +289,21 @@ def build_command(
     Returns:
         A :class:`~plushie.commands.Command` of type
         ``"command"``.
+
+    Raises:
+        ValueError: If ``op`` is not declared by ``ext_def.commands``.
     """
-    _ = ext_def
+    declared_commands = command_names(ext_def)
+    if op not in declared_commands:
+        detail = (
+            f"declared commands: {', '.join(declared_commands)}"
+            if declared_commands
+            else "no commands declared"
+        )
+        raise ValueError(
+            f'native widget "{ext_def.kind}" does not declare command "{op}" ({detail})'
+        )
+
     if payload:
         return Command.command(node_id, op, payload)
     return Command.command(node_id, op)

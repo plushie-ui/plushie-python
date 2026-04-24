@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from plushie.commands import Command
 from plushie.native_widget import (
     CommandDef,
@@ -133,6 +135,16 @@ class TestValidate:
         )
         errors = validate(ext)
         assert any("duplicate" in e and "value" in e for e in errors)
+
+    def test_duplicate_command_names(self) -> None:
+        ext = NativeWidget(
+            kind="dupe",
+            rust_crate="native/dupe",
+            rust_constructor="dupe::D::new()",
+            commands=[CommandDef("refresh"), CommandDef("refresh")],
+        )
+        errors = validate(ext)
+        assert any("duplicate command" in e and "refresh" in e for e in errors)
 
     def test_reserved_prop_name(self) -> None:
         ext = NativeWidget(
@@ -285,6 +297,32 @@ class TestBuildCommand:
         via_ext = build_command(ext, "g1", "set_value", {"value": 50})
         via_cmd = Command.command("g1", "set_value", {"value": 50})
         assert via_ext == via_cmd
+
+    def test_rejects_undeclared_command(self) -> None:
+        ext = _gauge_def()
+        with pytest.raises(
+            ValueError,
+            match=(
+                r'native widget "gauge" does not declare command "calibrate" '
+                r"\(declared commands: set_value, reset\)"
+            ),
+        ):
+            build_command(ext, "g1", "calibrate")
+
+    def test_rejects_command_when_widget_declares_none(self) -> None:
+        ext = NativeWidget(
+            kind="meter",
+            rust_crate="native/meter",
+            rust_constructor="meter::M::new()",
+        )
+        with pytest.raises(
+            ValueError,
+            match=(
+                r'native widget "meter" does not declare command "refresh" '
+                r"\(no commands declared\)"
+            ),
+        ):
+            build_command(ext, "m1", "refresh")
 
 
 # Workspace Cargo.toml and main.rs generation moved to cargo-plushie.
