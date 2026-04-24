@@ -563,6 +563,70 @@ class TestWindowConfig:
         assert app.window_config("hello") == {"title": "Hello"}
         assert app.window_config("world") == {"title": "World"}
 
+    def test_sync_windows_opens_nested_normalized_window(self) -> None:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import Runtime
+        from plushie.tree import normalize_view
+
+        builder = create_app("NestedWindow")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model
+
+        @builder.view
+        def _view(_model: int) -> dict[str, Any]:
+            return {}
+
+        @builder.window_config
+        def _window_config(_model: int) -> dict[str, Any]:
+            return {"width": 320}
+
+        conn = MagicMock()
+        conn.session = "session-1"
+        rt = Runtime(builder, conn)
+        rt._model = 0
+        tree = normalize_view(
+            {
+                "id": "root",
+                "type": "container",
+                "props": {},
+                "children": [
+                    {
+                        "id": "shell",
+                        "type": "container",
+                        "props": {},
+                        "children": [
+                            {
+                                "id": "main",
+                                "type": "window",
+                                "props": {"title": "Nested"},
+                                "children": [],
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+
+        rt._sync_windows(tree)
+
+        conn.send.assert_called_once_with(
+            {
+                "type": "window_op",
+                "session": "session-1",
+                "op": "open",
+                "window_id": "root/shell/main",
+                "payload": {"width": 320, "title": "Nested"},
+            }
+        )
+        assert rt._windows == {"root/shell/main"}
+
     def test_decorator_app_window_config(self) -> None:
         builder = create_app("WinApp")
 
@@ -817,6 +881,42 @@ class TestFrozenOverlay:
         assert win2["type"] == "window"
         assert win2["children"][0]["type"] == "stack"
 
+    def test_inject_overlay_into_nested_window(self) -> None:
+        tree = {
+            "id": "root",
+            "type": "container",
+            "props": {},
+            "children": [
+                {
+                    "id": "wrapper",
+                    "type": "container",
+                    "props": {},
+                    "children": [
+                        {
+                            "id": "main",
+                            "type": "window",
+                            "props": {},
+                            "children": [
+                                {
+                                    "id": "root/wrapper/main#content",
+                                    "type": "text",
+                                    "props": {},
+                                    "children": [],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+
+        result = _inject_frozen_overlay(tree)
+
+        window = result["children"][0]["children"][0]
+        assert window["type"] == "window"
+        assert window["children"][0]["type"] == "stack"
+        assert window["children"][0]["children"][1]["id"] == f"{_DEV_PREFIX}/anchor"
+
     def test_inject_overlay_window_no_children_unchanged(self) -> None:
         tree = {"id": "main", "type": "window", "props": {}, "children": []}
         result = _inject_frozen_overlay(tree)
@@ -833,6 +933,43 @@ class TestFrozenOverlay:
     def test_event_without_id_not_overlay(self) -> None:
         tick = TimerTick(tag="t1", timestamp=0)
         assert _is_overlay_event(tick) is False
+
+    def test_overlay_dismiss_without_tree_clears_overlay_without_diff(self) -> None:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import Runtime
+
+        builder = create_app("OverlayDismiss")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model
+
+        @builder.view
+        def _view(_model: int) -> dict[str, Any]:
+            return {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [],
+            }
+
+        conn = MagicMock()
+        conn.session = ""
+        rt = Runtime(builder, conn)
+        rt._model = 0
+        rt._tree = None
+        rt._dev_overlay = "frozen_ui"
+
+        rt._handle_overlay_event(Click(id=f"{_DEV_PREFIX}/dismiss"))
+
+        assert rt._dev_overlay is None
+        conn.send_patch.assert_not_called()
+        conn.send_snapshot.assert_not_called()
 
 
 def _collect_ids(node: dict[str, Any]) -> list[str]:

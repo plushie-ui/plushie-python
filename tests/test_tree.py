@@ -16,6 +16,7 @@ from plushie.tree import (
     find_all,
     ids,
     normalize,
+    normalize_view,
     text_of,
 )
 from plushie.types import (
@@ -86,6 +87,51 @@ class TestNormalizeMultipleElementList:
         assert len(result["children"]) == 2
         assert result["children"][0]["id"] == "win1"
         assert result["children"][1]["id"] == "win2"
+
+
+class TestNormalizeView:
+    def test_accepts_nested_window(self) -> None:
+        tree = _node(
+            "root",
+            "container",
+            children=[
+                _node(
+                    "wrapper",
+                    "container",
+                    children=[_node("main", "window")],
+                )
+            ],
+        )
+
+        result = normalize_view(tree)
+
+        assert result["id"] == "root"
+        assert result["children"][0]["children"][0]["type"] == "window"
+
+    def test_accepts_structural_wrapper_around_window(self) -> None:
+        tree = _node("theme", "themer", children=[_node("main", "window")])
+
+        result = normalize_view(tree)
+
+        assert result["id"] == "theme"
+        assert result["children"][0]["type"] == "window"
+
+    def test_rejects_tree_without_window(self) -> None:
+        with pytest.raises(ValueError, match="window tree"):
+            normalize_view(_node("root", "container", children=[_node("body", "text")]))
+
+    def test_rejects_unwindowed_sibling(self) -> None:
+        with pytest.raises(ValueError, match="window tree"):
+            normalize_view(
+                _node(
+                    "root",
+                    "container",
+                    children=[
+                        _node("main", "window"),
+                        _node("body", "text"),
+                    ],
+                )
+            )
 
 
 class TestNormalizeSingleNode:

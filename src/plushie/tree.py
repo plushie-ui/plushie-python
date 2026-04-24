@@ -378,9 +378,40 @@ def normalize_view(
     ):
         return normalized
 
+    if _is_window_layout(normalized):
+        return normalized
+
     raise ValueError(
-        "view() must return a window node or a root node whose direct children are window nodes"
+        "view() must be a window tree: every top-level branch must end at a window node"
     )
+
+
+def _is_window_layout(node: Node) -> bool:
+    if node.get("type") == "window":
+        return True
+    if node.get("type") not in _WINDOW_LAYOUT_WRAPPERS:
+        return False
+    children = [child for child in node.get("children", []) if isinstance(child, dict)]
+    return bool(children) and all(_is_window_layout(child) for child in children)
+
+
+_WINDOW_LAYOUT_WRAPPERS = frozenset(
+    {
+        "container",
+        "scrollable",
+        "pin",
+        "float",
+        "pointer_area",
+        "sensor",
+        "themer",
+        "column",
+        "row",
+        "stack",
+        "grid",
+        "keyed_column",
+        "responsive",
+    }
+)
 
 
 def _empty_container() -> Node:

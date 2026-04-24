@@ -167,10 +167,7 @@ def _inject_frozen_overlay(tree: Node) -> Node:
     if not children:
         return tree
 
-    new_children = [
-        (_inject_overlay_into_window(child) if child.get("type") == "window" else child)
-        for child in children
-    ]
+    new_children = [_inject_frozen_overlay(child) for child in children]
 
     return {**tree, "children": new_children}
 
@@ -1113,6 +1110,8 @@ class Runtime:
         event_id = getattr(event, "id", "")
         if event_id == f"{_DEV_PREFIX}/dismiss" and self._dev_overlay is not None:
             self._dev_overlay = None
+            if self._tree is None:
+                return
             new_tree = self._safe_view(self._model)
             if new_tree is not None:
                 old_tree = self._tree
