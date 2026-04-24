@@ -654,6 +654,84 @@ class TestRuntimeHandshake:
 
         assert calls == ["init", "settings", "send_settings", "wait_hello:10.0"]
 
+    def test_initialize_rejects_non_dict_settings(self) -> None:
+        from plushie.protocol import settings as settings_msg
+        from plushie.runtime import Runtime
+
+        builder = create_app("InvalidSettingsTest")
+
+        @builder.init
+        def init() -> int:
+            return 0
+
+        @builder.update
+        def update(model: int, _event: object) -> int:
+            return model
+
+        @builder.settings
+        def settings() -> Any:
+            return []
+
+        @builder.view
+        def view(_model: int) -> dict[str, Any]:
+            return {"id": "root", "type": "container", "props": {}, "children": []}
+
+        class ValidatingConnection:
+            session = ""
+
+            def send_settings(self, settings_dict: dict[str, Any]) -> None:
+                settings_msg(settings_dict)
+
+            def wait_hello(self, timeout: float = 10.0) -> Any:
+                return None
+
+            def send_snapshot(self, _tree: dict[str, Any]) -> None:
+                pass
+
+        rt = Runtime(builder, ValidatingConnection())  # type: ignore[arg-type]
+
+        with pytest.raises(ValueError, match="settings must be a dict"):
+            rt._initialize()
+
+    def test_initialize_rejects_unknown_settings(self) -> None:
+        from plushie.protocol import settings as settings_msg
+        from plushie.runtime import Runtime
+
+        builder = create_app("UnknownSettingsTest")
+
+        @builder.init
+        def init() -> int:
+            return 0
+
+        @builder.update
+        def update(model: int, _event: object) -> int:
+            return model
+
+        @builder.settings
+        def settings() -> dict[str, Any]:
+            return {"defualt_text_size": 14}
+
+        @builder.view
+        def view(_model: int) -> dict[str, Any]:
+            return {"id": "root", "type": "container", "props": {}, "children": []}
+
+        class ValidatingConnection:
+            session = ""
+
+            def send_settings(self, settings_dict: dict[str, Any]) -> None:
+                settings_msg(settings_dict)
+
+            def wait_hello(self, timeout: float = 10.0) -> Any:
+                return None
+
+            def send_snapshot(self, _tree: dict[str, Any]) -> None:
+                pass
+
+        rt = Runtime(builder, ValidatingConnection())  # type: ignore[arg-type]
+
+        with pytest.raises(ValueError, match="unknown setting key: defualt_text_size"):
+            rt._initialize()
+
 
 # ===================================================================
 # Dev overlay / frozen UI

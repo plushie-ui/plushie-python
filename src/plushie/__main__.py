@@ -20,7 +20,7 @@ import logging
 import sys
 import tomllib
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast, get_args
 
 if TYPE_CHECKING:
     from plushie.native_widget import NativeWidget
@@ -229,27 +229,105 @@ def _parse_extensions(raw: list[dict[str, Any]]) -> list[NativeWidget]:
     Works for both JSON config files and pyproject.toml ``[tool.plushie]``
     extension entries.
     """
-    from plushie.native_widget import CommandDef, NativeWidget, ParamDef, PropDef
+    from plushie.native_widget import (
+        CommandDef,
+        NativeWidget,
+        ParamDef,
+        ParamType,
+        PropDef,
+        PropType,
+        validate,
+    )
+
+    if not isinstance(raw, list):
+        raise ValueError("extensions must be a list")
+
+    allowed_prop_types = set(get_args(PropType))
+    allowed_param_types = set(get_args(ParamType))
 
     extensions: list[NativeWidget] = []
-    for ext_data in raw:
-        props = [PropDef(p["name"], p["prop_type"]) for p in ext_data.get("props", [])]
-        commands = [
-            CommandDef(
-                c["name"],
-                [ParamDef(pm["name"], pm["param_type"]) for pm in c.get("params", [])],
+    for ext_index, ext_data in enumerate(raw):
+        ext_path = f"extensions[{ext_index}]"
+        if not isinstance(ext_data, dict):
+            raise ValueError(f"{ext_path} must be a dict")
+
+        for field in ("kind", "rust_crate", "rust_constructor"):
+            if field not in ext_data:
+                raise ValueError(f"{ext_path}.{field} is required")
+            if not isinstance(ext_data[field], str):
+                raise ValueError(f"{ext_path}.{field} must be a string")
+
+        raw_props = ext_data.get("props", [])
+        if not isinstance(raw_props, list):
+            raise ValueError(f"{ext_path}.props must be a list")
+
+        props: list[PropDef] = []
+        for prop_index, prop_data in enumerate(raw_props):
+            prop_path = f"{ext_path}.props[{prop_index}]"
+            if not isinstance(prop_data, dict):
+                raise ValueError(f"{prop_path} must be a dict")
+            for field in ("name", "prop_type"):
+                if field not in prop_data:
+                    raise ValueError(f"{prop_path}.{field} is required")
+                if not isinstance(prop_data[field], str):
+                    raise ValueError(f"{prop_path}.{field} must be a string")
+            prop_type = prop_data["prop_type"]
+            if prop_type not in allowed_prop_types:
+                raise ValueError(f"{prop_path}.prop_type must be a valid PropType")
+            props.append(
+                PropDef(prop_data["name"], cast("PropType", prop_type)),
             )
-            for c in ext_data.get("commands", [])
-        ]
-        extensions.append(
-            NativeWidget(
-                kind=ext_data["kind"],
-                rust_crate=ext_data["rust_crate"],
-                rust_constructor=ext_data["rust_constructor"],
-                props=props,
-                commands=commands,
-            )
+
+        raw_commands = ext_data.get("commands", [])
+        if not isinstance(raw_commands, list):
+            raise ValueError(f"{ext_path}.commands must be a list")
+
+        commands: list[CommandDef] = []
+        for command_index, command_data in enumerate(raw_commands):
+            command_path = f"{ext_path}.commands[{command_index}]"
+            if not isinstance(command_data, dict):
+                raise ValueError(f"{command_path} must be a dict")
+            if "name" not in command_data:
+                raise ValueError(f"{command_path}.name is required")
+            if not isinstance(command_data["name"], str):
+                raise ValueError(f"{command_path}.name must be a string")
+
+            raw_params = command_data.get("params", [])
+            if not isinstance(raw_params, list):
+                raise ValueError(f"{command_path}.params must be a list")
+
+            params: list[ParamDef] = []
+            for param_index, param_data in enumerate(raw_params):
+                param_path = f"{command_path}.params[{param_index}]"
+                if not isinstance(param_data, dict):
+                    raise ValueError(f"{param_path} must be a dict")
+                for field in ("name", "param_type"):
+                    if field not in param_data:
+                        raise ValueError(f"{param_path}.{field} is required")
+                    if not isinstance(param_data[field], str):
+                        raise ValueError(f"{param_path}.{field} must be a string")
+                param_type = param_data["param_type"]
+                if param_type not in allowed_param_types:
+                    raise ValueError(
+                        f"{param_path}.param_type must be a valid ParamType"
+                    )
+                params.append(
+                    ParamDef(param_data["name"], cast("ParamType", param_type))
+                )
+
+            commands.append(CommandDef(command_data["name"], params))
+
+        extension = NativeWidget(
+            kind=ext_data["kind"],
+            rust_crate=ext_data["rust_crate"],
+            rust_constructor=ext_data["rust_constructor"],
+            props=props,
+            commands=commands,
         )
+        errors = validate(extension)
+        if errors:
+            raise ValueError(f"{ext_path}: {'; '.join(errors)}")
+        extensions.append(extension)
     return extensions
 
 

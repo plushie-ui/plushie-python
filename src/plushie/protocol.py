@@ -85,6 +85,23 @@ PROTOCOL_VERSION: int = 1
 logger = logging.getLogger("plushie.protocol")
 """Module logger. Used to mirror renderer diagnostics to Python logging."""
 
+_SUPPORTED_SETTING_KEYS: frozenset[str] = frozenset(
+    {
+        "default_font",
+        "default_text_size",
+        "antialiasing",
+        "vsync",
+        "scale_factor",
+        "theme",
+        "fonts",
+        "default_event_rate",
+        "widget_config",
+        "required_widgets",
+        "validate_props",
+        "protocol_version",
+    }
+)
+
 
 def _strip_internal_meta(value: Any) -> Any:
     """Remove runtime-only ``meta`` fields before sending data on the wire."""
@@ -118,11 +135,15 @@ def settings(
         settings_dict: Application settings (all fields optional).
         session: Session identifier.
     """
+    if not isinstance(settings_dict, dict):
+        raise ValueError("settings must be a dict")
+    unknown = set(settings_dict) - _SUPPORTED_SETTING_KEYS
+    if unknown:
+        keys = ", ".join(sorted(unknown))
+        raise ValueError(f"unknown setting key: {keys}")
+
     inner = dict(settings_dict)
     inner.setdefault("protocol_version", PROTOCOL_VERSION)
-    # Map user-facing key to the renderer's wire key.
-    if "widget_config" in inner:
-        inner["extension_config"] = inner.pop("widget_config")
     return {"type": "settings", "session": session, "settings": inner}
 
 

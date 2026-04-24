@@ -608,7 +608,9 @@ class Connection:
             settings_dict: Application settings (all fields optional).
                 Defaults to empty dict.
         """
-        msg = settings(settings_dict or {}, session=self._session)
+        msg = settings(
+            {} if settings_dict is None else settings_dict, session=self._session
+        )
         self.send(msg)
 
     def send_snapshot(self, tree: dict[str, Any]) -> None:
@@ -1128,7 +1130,9 @@ class StdioConnection:
 
     def send_settings(self, settings_dict: dict[str, Any] | None = None) -> None:
         """Send a Settings message."""
-        msg = settings(settings_dict or {}, session=self._session)
+        msg = settings(
+            {} if settings_dict is None else settings_dict, session=self._session
+        )
         self.send(msg)
 
     def send_snapshot(self, tree: dict[str, Any]) -> None:
@@ -1391,7 +1395,9 @@ class _IoStreamConnection:
     _wait_response = Connection._wait_response
 
     def send_settings(self, settings_dict: dict[str, Any] | None = None) -> None:
-        msg = settings(settings_dict or {}, session=self._session)
+        msg = settings(
+            {} if settings_dict is None else settings_dict, session=self._session
+        )
         self.send(msg)
 
     def send_snapshot(self, tree: dict[str, Any]) -> None:

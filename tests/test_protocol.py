@@ -125,6 +125,27 @@ class TestSettings:
         msg = settings({})
         assert "required_widgets" not in msg["settings"]
 
+    def test_rejects_non_dict_settings(self) -> None:
+        with pytest.raises(ValueError, match="settings must be a dict"):
+            settings([])  # type: ignore[arg-type]
+
+    def test_rejects_unknown_setting_key(self) -> None:
+        with pytest.raises(ValueError, match="unknown setting key: defualt_text_size"):
+            settings({"defualt_text_size": 14})
+
+    def test_widget_config_passthrough(self) -> None:
+        widget_cfg = {"sparkline": {"color": "red"}}
+        msg = settings({"widget_config": widget_cfg})
+        assert msg["settings"]["widget_config"] == widget_cfg
+
+    def test_validate_props_accepted(self) -> None:
+        msg = settings({"validate_props": True})
+        assert msg["settings"]["validate_props"] is True
+
+    def test_rejects_extension_config(self) -> None:
+        with pytest.raises(ValueError, match="unknown setting key: extension_config"):
+            settings({"extension_config": {}})
+
 
 class TestSnapshot:
     def test_structure(self) -> None:

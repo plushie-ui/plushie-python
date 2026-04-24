@@ -166,6 +166,278 @@ class TestParseExtensions:
         assert exts[0].kind == "a"
         assert exts[1].kind == "b"
 
+    def test_requires_extension_list(self) -> None:
+        with pytest.raises(ValueError, match="extensions must be a list"):
+            _parse_extensions({"kind": "spark"})  # type: ignore[arg-type]
+
+    def test_requires_extension_dict_entries(self) -> None:
+        with pytest.raises(ValueError, match=r"extensions\[0\] must be a dict"):
+            _parse_extensions(["spark"])  # type: ignore[list-item]
+
+    @pytest.mark.parametrize("field", ["kind", "rust_crate", "rust_constructor"])
+    def test_requires_extension_fields(self, field: str) -> None:
+        raw: dict[str, Any] = {
+            "kind": "spark",
+            "rust_crate": "native/spark",
+            "rust_constructor": "spark::new()",
+        }
+        del raw[field]
+
+        with pytest.raises(ValueError, match=rf"extensions\[0\]\.{field} is required"):
+            _parse_extensions([raw])
+
+    @pytest.mark.parametrize("field", ["kind", "rust_crate", "rust_constructor"])
+    def test_requires_extension_string_fields(self, field: str) -> None:
+        raw: dict[str, Any] = {
+            "kind": "spark",
+            "rust_crate": "native/spark",
+            "rust_constructor": "spark::new()",
+        }
+        raw[field] = 42
+
+        with pytest.raises(
+            ValueError, match=rf"extensions\[0\]\.{field} must be a string"
+        ):
+            _parse_extensions([raw])
+
+    def test_requires_props_list(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "props": {"name": "value", "prop_type": "number"},
+            }
+        ]
+
+        with pytest.raises(ValueError, match=r"extensions\[0\]\.props must be a list"):
+            _parse_extensions(raw)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("field", ["name", "prop_type"])
+    def test_requires_prop_fields(self, field: str) -> None:
+        prop = {"name": "value", "prop_type": "number"}
+        del prop[field]
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "props": [prop],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError, match=rf"extensions\[0\]\.props\[0\]\.{field} is required"
+        ):
+            _parse_extensions(raw)
+
+    def test_requires_prop_name_string(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "props": [{"name": 42, "prop_type": "number"}],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError, match=r"extensions\[0\]\.props\[0\]\.name must be a string"
+        ):
+            _parse_extensions(raw)  # type: ignore[arg-type]
+
+    def test_validates_prop_entry(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "props": [{"name": "value", "prop_type": "integer"}],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=r"extensions\[0\]\.props\[0\]\.prop_type must be a valid PropType",
+        ):
+            _parse_extensions(raw)
+
+    def test_requires_commands_list(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "commands": {"name": "refresh"},
+            }
+        ]
+
+        with pytest.raises(
+            ValueError, match=r"extensions\[0\]\.commands must be a list"
+        ):
+            _parse_extensions(raw)  # type: ignore[arg-type]
+
+    def test_requires_command_name(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "commands": [{"params": []}],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError, match=r"extensions\[0\]\.commands\[0\]\.name is required"
+        ):
+            _parse_extensions(raw)
+
+    def test_requires_command_name_string(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "commands": [{"name": 42}],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=r"extensions\[0\]\.commands\[0\]\.name must be a string",
+        ):
+            _parse_extensions(raw)  # type: ignore[arg-type]
+
+    def test_validates_command_params(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "commands": [{"name": "set", "params": {"name": "value"}}],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=r"extensions\[0\]\.commands\[0\]\.params must be a list",
+        ):
+            _parse_extensions(raw)  # type: ignore[arg-type]
+
+    def test_validates_param_entry(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "commands": [
+                    {"name": "set", "params": [{"name": "value", "param_type": "any"}]}
+                ],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"extensions\[0\]\.commands\[0\]\.params\[0\]\.param_type "
+                "must be a valid ParamType"
+            ),
+        ):
+            _parse_extensions(raw)
+
+    @pytest.mark.parametrize("field", ["name", "param_type"])
+    def test_requires_param_fields(self, field: str) -> None:
+        param = {"name": "value", "param_type": "number"}
+        del param[field]
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "commands": [{"name": "set", "params": [param]}],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                rf"extensions\[0\]\.commands\[0\]\.params\[0\]\.{field} "
+                "is required"
+            ),
+        ):
+            _parse_extensions(raw)
+
+    def test_requires_param_name_string(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "commands": [
+                    {"name": "set", "params": [{"name": 42, "param_type": "number"}]}
+                ],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"extensions\[0\]\.commands\[0\]\.params\[0\]\.name "
+                "must be a string"
+            ),
+        ):
+            _parse_extensions(raw)  # type: ignore[arg-type]
+
+    def test_validates_native_widget_definition(self) -> None:
+        raw = [
+            {
+                "kind": "button",
+                "rust_crate": "native/button",
+                "rust_constructor": "button::new()",
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=r'extensions\[0\]: widget type "button" shadows a built-in widget',
+        ):
+            _parse_extensions(raw)
+
+    def test_validates_duplicate_prop_names(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "props": [
+                    {"name": "value", "prop_type": "number"},
+                    {"name": "value", "prop_type": "number"},
+                ],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=r'extensions\[0\]: duplicate prop name "value"',
+        ):
+            _parse_extensions(raw)
+
+    def test_validates_reserved_prop_names(self) -> None:
+        raw = [
+            {
+                "kind": "spark",
+                "rust_crate": "native/spark",
+                "rust_constructor": "spark::new()",
+                "props": [{"name": "id", "prop_type": "string"}],
+            }
+        ]
+
+        with pytest.raises(
+            ValueError,
+            match=r'extensions\[0\]: prop name "id" is reserved',
+        ):
+            _parse_extensions(raw)
+
 
 # ===================================================================
 # widget_config in settings
@@ -173,21 +445,26 @@ class TestParseExtensions:
 
 
 class TestWidgetConfigInSettings:
-    """The widget_config key maps to extension_config on the wire."""
+    """The widget_config key is sent unchanged on the wire."""
 
-    def test_widget_config_forwarded_as_extension_config(self) -> None:
+    def test_widget_config_forwarded(self) -> None:
         from plushie.protocol import settings
 
         widget_cfg = {"sparkline": {"color": "red"}}
         msg = settings({"widget_config": widget_cfg})
-        assert msg["settings"]["extension_config"] == widget_cfg
-        assert "widget_config" not in msg["settings"]
+        assert msg["settings"]["widget_config"] == widget_cfg
 
     def test_widget_config_absent_when_not_set(self) -> None:
         from plushie.protocol import settings
 
         msg = settings({})
-        assert "extension_config" not in msg["settings"]
+        assert "widget_config" not in msg["settings"]
+
+    def test_validate_props_accepted(self) -> None:
+        from plushie.protocol import settings
+
+        msg = settings({"validate_props": True})
+        assert msg["settings"]["validate_props"] is True
 
 
 # ===================================================================

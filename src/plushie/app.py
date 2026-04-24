@@ -115,7 +115,7 @@ class App[M](ABC):
         Supported keys: ``default_font``, ``default_text_size``,
         ``antialiasing``, ``vsync``, ``scale_factor``, ``theme``,
         ``fonts``, ``default_event_rate``, ``widget_config``,
-        ``required_widgets``.
+        ``required_widgets``, ``validate_props``.
 
         The ``widget_config`` key accepts a dict keyed by native
         widget type. It is forwarded to the renderer and made available
