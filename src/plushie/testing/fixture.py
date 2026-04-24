@@ -513,7 +513,17 @@ class AppFixture[M]:
 
     @property
     def model(self) -> Any:
-        """The current application model."""
+        """The current local application model.
+
+        On the mock backend this is the model used for all fixture
+        assertions and rendering. On the headless backend, renderer
+        ``interact_step`` messages are replayed through this local model
+        so the fixture can send the renderer an updated tree. The Python
+        model still lives only in-process; it is not read back from the
+        renderer. If local ``update()`` or ``view()`` fails while handling
+        a headless step, the interaction fails instead of sending a stale
+        tree.
+        """
         return self._model
 
     @property
@@ -1233,8 +1243,12 @@ class AppFixture[M]:
         processes each through app.update(), processes resulting
         commands synchronously, re-renders, diffs, and sends patches.
 
-        For headless mode, interact_step messages are handled
-        transparently by the Connection's on_step callback.
+        For headless mode, ``interact_step`` messages are handled by
+        replaying the step events through the local model and returning
+        a fresh snapshot to the renderer. The renderer does not own or
+        return the Python model, so exact model synchronization is not
+        possible; failures in the local replay path are raised because
+        otherwise the renderer would continue from a stale tree.
 
         Args:
             action: Interaction type.
@@ -1265,13 +1279,22 @@ class AppFixture[M]:
         old_session = conn.session
         conn.session = self._session_id
 
+        step_event_count = 0
+
         def on_step(step_events: list[Any]) -> dict[str, Any]:
             """Handle headless interact_step: process events, return updated tree."""
+            nonlocal step_event_count
             for event in step_events:
-                self._dispatch_event(event)
+                self._dispatch_event(event, strict=True)
+            step_event_count += len(step_events)
             tree = self._render()
+            if tree is None:
+                raise RuntimeError(
+                    "app.view() failed while handling a headless interact_step; "
+                    "the fixture cannot send a synchronized tree to the renderer"
+                )
             self._tree = tree
-            return tree or {}
+            return tree
 
         try:
             events = conn.interact(
@@ -1284,8 +1307,11 @@ class AppFixture[M]:
         finally:
             conn.session = old_session
 
-        # Process final events
-        for event in events:
+        # Connection.interact returns every decoded event, including
+        # headless step events that on_step already applied before the
+        # renderer continued. Only replay events that were not part of a
+        # step.
+        for event in events[step_event_count:]:
             self._dispatch_event(event)
 
         # Re-render and sync
@@ -1300,7 +1326,7 @@ class AppFixture[M]:
                     self._pool.send_patch(self._session_id, ops)
         self._tree = new_tree
 
-    def _dispatch_event(self, event: Any) -> None:
+    def _dispatch_event(self, event: Any, *, strict: bool = False) -> None:
         """Process a single event through app.update + sync command processing."""
         if event is None or isinstance(event, dict):
             # Raw dict events we don't recognize; skip
@@ -1312,11 +1338,21 @@ class AppFixture[M]:
 
         try:
             result = self._app.update(self._model, event)
-        except Exception:
+        except Exception as exc:
             logger.exception("app.update() raised during test interaction")
+            if strict:
+                raise RuntimeError(
+                    "app.update() raised while handling a headless interact_step; "
+                    "the fixture cannot send a synchronized tree to the renderer"
+                ) from exc
             return
 
         if result is None:
+            if strict:
+                raise RuntimeError(
+                    "app.update() returned None while handling a headless "
+                    "interact_step; return the current model for ignored events"
+                )
             return
 
         model, commands = _unwrap_update(result)

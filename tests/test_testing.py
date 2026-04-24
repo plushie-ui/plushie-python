@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from plushie.commands import Command
-from plushie.events import AsyncResult, StreamChunk
+from plushie.events import AsyncResult, Click, StreamChunk
 from plushie.testing.element import Element, ElementNotFoundError
 from plushie.testing.fixture import (
     AppFixture,
@@ -493,6 +493,154 @@ class SimpleApp:
 
     def settings(self) -> dict[str, Any]:
         return {}
+
+
+@dataclass(frozen=True)
+class StepModel:
+    count: int = 0
+
+
+class StepApp:
+    def init(self) -> StepModel:
+        return StepModel()
+
+    def update(self, model: StepModel, event: object) -> StepModel | None:
+        if isinstance(event, Click):
+            return replace(model, count=model.count + 1)
+        return model
+
+    def view(self, model: StepModel) -> dict[str, Any]:
+        return {
+            "id": "main",
+            "type": "window",
+            "props": {},
+            "children": [
+                {
+                    "id": "count",
+                    "type": "text",
+                    "props": {"content": f"Count: {model.count}"},
+                    "children": [],
+                },
+                {
+                    "id": "btn",
+                    "type": "button",
+                    "props": {"label": "Increment"},
+                    "children": [],
+                },
+            ],
+        }
+
+    def subscribe(self, model: StepModel) -> list[Any]:
+        return []
+
+    def settings(self) -> dict[str, Any]:
+        return {}
+
+
+class FailingStepApp(StepApp):
+    def update(self, model: StepModel, event: object) -> StepModel:
+        if isinstance(event, Click):
+            raise ValueError("boom")
+        return model
+
+
+class NoneStepApp(StepApp):
+    def update(self, model: StepModel, event: object) -> StepModel | None:
+        if isinstance(event, Click):
+            return None
+        return model
+
+
+class FakeStepConnection:
+    def __init__(
+        self,
+        step_batches: list[list[Any]],
+        final_events: list[Any] | None = None,
+    ) -> None:
+        self.session: str | None = None
+        self.step_batches = step_batches
+        self.final_events = final_events or []
+        self.step_trees: list[dict[str, Any]] = []
+
+    def interact(
+        self,
+        _action: str,
+        _selector: str | None,
+        _payload: dict[str, Any] | None,
+        *,
+        on_step: Any,
+        timeout: float,
+    ) -> list[Any]:
+        events: list[Any] = []
+        for batch in self.step_batches:
+            self.step_trees.append(on_step(batch))
+            events.extend(batch)
+        events.extend(self.final_events)
+        return events
+
+
+def _make_step_fixture(
+    app: Any,
+    *,
+    step_batches: list[list[Any]] | None = None,
+    final_events: list[Any] | None = None,
+) -> tuple[AppFixture[StepModel], FakeStepConnection]:
+    pool = MagicMock()
+    pool.register.return_value = "test-session-1"
+    pool.send_settings = MagicMock()
+    pool.send_snapshot = MagicMock()
+    pool.send_patch = MagicMock()
+    pool.unregister = MagicMock()
+    conn = FakeStepConnection(
+        step_batches or [[Click(id="btn", window_id="main")]],
+        final_events,
+    )
+    pool._conn = conn
+    return AppFixture(app, pool), conn  # type: ignore[arg-type]
+
+
+class TestHeadlessInteractStep:
+    def test_step_events_are_not_replayed_after_interact_returns(self) -> None:
+        app, conn = _make_step_fixture(StepApp())
+        with app:
+            app.click("#btn")
+
+            assert app.model.count == 1
+            assert conn.step_trees
+            assert conn.step_trees[0]["children"][0]["props"]["content"] == "Count: 1"
+
+    def test_multiple_step_batches_and_final_events_are_processed_once(self) -> None:
+        app, conn = _make_step_fixture(
+            StepApp(),
+            step_batches=[
+                [Click(id="btn", window_id="main")],
+                [Click(id="btn", window_id="main")],
+            ],
+            final_events=[Click(id="btn", window_id="main")],
+        )
+        with app:
+            app.click("#btn")
+
+            assert app.model.count == 3
+            assert len(conn.step_trees) == 2
+            assert conn.step_trees[0]["children"][0]["props"]["content"] == "Count: 1"
+            assert conn.step_trees[1]["children"][0]["props"]["content"] == "Count: 2"
+
+    def test_step_update_exception_fails_interaction(self) -> None:
+        app, _conn = _make_step_fixture(FailingStepApp())
+        with (
+            app,
+            pytest.raises(RuntimeError, match=r"app.update\(\) raised"),
+        ):
+            app.click("#btn")
+
+    def test_step_update_none_fails_interaction(self) -> None:
+        app, _conn = _make_step_fixture(NoneStepApp())
+        with (
+            app,
+            pytest.raises(RuntimeError, match=r"app.update\(\) returned None"),
+        ):
+            app.click("#btn")
 
 
 class TestSessionPoolIds:

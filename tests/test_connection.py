@@ -815,6 +815,70 @@ class TestConnectionOpenFormat:
             finally:
                 conn.close()
 
+    def test_interact_cleans_pending_when_step_callback_raises(self) -> None:
+        process: Any = _FakeProcess()
+        conn = Connection(process)
+        try:
+            with mock_patch("plushie.connection._next_request_id", return_value="rid"):
+
+                def call() -> None:
+                    with pytest.raises(RuntimeError, match="step failed"):
+                        conn.interact(
+                            "click",
+                            "#btn",
+                            on_step=lambda _events: (_ for _ in ()).throw(
+                                RuntimeError("step failed")
+                            ),
+                            timeout=1.0,
+                        )
+
+                worker = threading.Thread(target=call)
+                worker.start()
+
+                for _ in range(100):
+                    with conn._pending_lock:
+                        q = conn._pending.get("rid")
+                    if q is not None:
+                        break
+                    threading.Event().wait(0.01)
+                else:  # pragma: no cover - test would fail below anyway
+                    pytest.fail("interact request was never registered")
+
+                q.put(
+                    {
+                        "type": "interact_step",
+                        "events": [
+                            {
+                                "type": "event",
+                                "family": "click",
+                                "id": "btn",
+                                "window_id": "main",
+                            }
+                        ],
+                    }
+                )
+
+                worker.join(timeout=1.0)
+                assert not worker.is_alive()
+                assert conn._pending == {}
+        finally:
+            conn.close()
+
+    def test_interact_cleans_pending_when_send_fails(self) -> None:
+        process: Any = _FakeProcess()
+        conn = Connection(process)
+        try:
+            conn.close()
+            with (
+                mock_patch("plushie.connection._next_request_id", return_value="rid"),
+                pytest.raises(ConnectionError, match="closed"),
+            ):
+                conn.interact("click", "#btn", timeout=1.0)
+
+            assert conn._pending == {}
+        finally:
+            conn.close()
+
 
 # ===================================================================
 # Binary-requiring tests (skipped when binary not available)

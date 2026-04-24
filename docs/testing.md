@@ -355,6 +355,23 @@ changing assertions.
 You never choose a backend in your test code. Backend selection is an
 infrastructure decision made via environment variable.
 
+### Fixture model state
+
+`AppFixture.model` is always the Python model held by the fixture. The
+renderer never owns or returns that model.
+
+On the mock backend, interactions are processed entirely through that
+local model. On the headless backend, the renderer may pause an
+interaction and send `interact_step` events that need an updated tree
+before rendering can continue. The fixture handles those events by
+calling `update()` on the local model, rendering a new tree, and sending
+that tree back to the renderer.
+
+If `update()` raises, returns `None`, or `view()` fails during a
+headless step, the fixture raises instead of sending a stale tree. That
+prevents tests from continuing after the renderer and local model have
+already lost a shared view of the app state.
+
 | Priority | Source | Example |
 |---|---|---|
 | 1 | Environment variable | `PLUSHIE_TEST_BACKEND=headless pytest` |

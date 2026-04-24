@@ -802,44 +802,43 @@ class Connection:
         with self._pending_lock:
             self._pending[rid] = q
 
-        self.send(msg)
-
         all_events: list[Any] = []
 
-        while True:
-            try:
-                resp = q.get(timeout=timeout)
-            except Empty:
-                with self._pending_lock:
-                    self._pending.pop(rid, None)
-                raise ConnectionError(
-                    f"timeout waiting for interact response (id={rid!r})"
-                ) from None
+        try:
+            self.send(msg)
 
-            resp_type = resp.get("type", "")
+            while True:
+                try:
+                    resp = q.get(timeout=timeout)
+                except Empty:
+                    raise ConnectionError(
+                        f"timeout waiting for interact response (id={rid!r})"
+                    ) from None
 
-            if resp_type == "interact_step":
-                step_events = _decode_events_list(resp.get("events", []))
-                all_events.extend(step_events)
-                if on_step is not None:
-                    updated_tree = on_step(step_events)
-                    self.send_snapshot(updated_tree)
-                continue
+                resp_type = resp.get("type", "")
 
-            if resp_type == "interact_response":
-                final_events = _decode_events_list(resp.get("events", []))
-                all_events.extend(final_events)
+                if resp_type == "interact_step":
+                    step_events = _decode_events_list(resp.get("events", []))
+                    all_events.extend(step_events)
+                    if on_step is not None:
+                        updated_tree = on_step(step_events)
+                        self.send_snapshot(updated_tree)
+                    continue
+
+                if resp_type == "interact_response":
+                    final_events = _decode_events_list(resp.get("events", []))
+                    all_events.extend(final_events)
+                    break
+
+                # Unexpected message type; treat as final
+                logger.warning(
+                    "unexpected message during interact: type=%s",
+                    resp_type,
+                )
                 break
-
-            # Unexpected message type; treat as final
-            logger.warning(
-                "unexpected message during interact: type=%s",
-                resp_type,
-            )
-            break
-
-        with self._pending_lock:
-            self._pending.pop(rid, None)
+        finally:
+            with self._pending_lock:
+                self._pending.pop(rid, None)
 
         return all_events
 
