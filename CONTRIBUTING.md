@@ -87,18 +87,6 @@ twine check dist/*
 This is not part of `./preflight` (too slow for every run), but should
 be checked before publishing a release.
 
-## Documentation
-
-Build the docs site locally:
-
-```bash
-mkdocs serve       # live preview at http://127.0.0.1:8000
-mkdocs build       # build static site to site/
-```
-
-CI runs `mkdocs build --strict` on every push and deploys to GitHub
-Pages on pushes to `main`.
-
 ## Code style
 
 Formatting and linting are handled by ruff. No manual style rules

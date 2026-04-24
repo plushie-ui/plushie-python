@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mirrors CI: format check, lint, type check, test, docs.
+# Mirrors CI: format check, lint, type check, test.
 # Run before committing.
 set -euo pipefail
 
@@ -17,12 +17,6 @@ pyright src tests examples
 
 echo "==> pytest"
 pytest
-
-echo "==> verify doc tests"
-python scripts/verify_doc_tests.py
-
-echo "==> mkdocs build --strict"
-NO_MKDOCS_2_WARNING=1 mkdocs build --strict --quiet
 
 echo ""
 echo "All checks passed."

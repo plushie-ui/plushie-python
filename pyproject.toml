@@ -35,10 +35,6 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.9",
     "pyright>=1.1",
-    "mkdocs>=1.6",
-    "mkdocs-material>=9.0",
-    "mkdocstrings[python]>=0.24",
-    "mkdocs-htmlproofer-plugin>=1.5",
     "interrogate>=1.7",
     "build>=1.0",
     "twine>=6.0",
@@ -57,15 +53,12 @@ packages = ["src/plushie"]
 [tool.hatch.build.targets.sdist]
 include = [
     "src/",
-    "docs/",
     "examples/",
     "tests/",
-    "scripts/",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "LICENSE",
     "README.md",
-    "mkdocs.yml",
     "preflight",
 ]
 

@@ -17,8 +17,6 @@ SDKs are also available for
 
 ## Quick start
 
-<!-- test: test_readme_counter_init, test_readme_counter_increment, test_readme_counter_decrement, test_readme_counter_unknown_event, test_readme_counter_view_structure, test_readme_counter_view_after_increment -- keep this code block in sync with tests/docs/test_readme.py -->
-
 ```python
 from dataclasses import dataclass, replace
 
@@ -81,10 +79,6 @@ including native Rust extensions, see the
 [plushie-demos](https://github.com/plushie-ui/plushie-demos/tree/main/python)
 repo.
 
-To add Plushie to your own project, see the
-[getting started guide](docs/getting-started.md), or browse the
-[docs](docs/) for all guides and references.
-
 ## How it works
 
 Under the hood, a renderer built on
@@ -95,13 +89,11 @@ user events back over stdout.
 
 You don't need Rust to use plushie. The renderer is a precompiled
 binary, similar to how your app talks to a database without you
-writing C. If you ever need custom native rendering, the
-[extension system](docs/extensions.md) lets you write Rust for just
-those parts.
+writing C. If you ever need custom native rendering, the extension
+system lets you write Rust for just those parts.
 
 The same protocol works over a local pipe, an SSH connection, or
 any bidirectional byte stream - your code doesn't need to change.
-See the [running guide](docs/running.md) for deployment options.
 
 ## Features
 
@@ -174,9 +166,6 @@ pytest                                    # mock (fast, no display)
 PLUSHIE_TEST_BACKEND=headless pytest      # real rendering, no display
 PLUSHIE_TEST_BACKEND=windowed pytest      # real windows (needs display)
 ```
-
-See the [testing guide](docs/testing.md) for the full API, backend
-details, and CI configuration.
 
 ## Status
 
