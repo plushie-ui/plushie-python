@@ -578,8 +578,8 @@ process), so the format option has no effect on it.
 The mock backend executes `task`, `stream`, and `done` commands
 synchronously. When `update()` returns a command like
 `Command.task(fn, tag="data_loaded")`, the fixture immediately calls the
-function, gets the result, and dispatches the result through `update()` --
-all within the same call.
+function, gets the result, and dispatches the result through `update()`.
+All of that happens within the same call.
 
 This means `await_async()` is a no-op (the work is already done):
 

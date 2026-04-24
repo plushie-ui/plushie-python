@@ -48,8 +48,8 @@ does not inspect or modify the model; it is fully owned by the app.
 
 ### update
 
-Receives the current model and an event, returns the next model --
-optionally with commands.
+Receives the current model and an event, and returns the next model.
+It can also return commands.
 
 <!-- test: TestUpdateModelChange, TestUpdateCommandReturn -- keep this code block in sync with the test -->
 ```python

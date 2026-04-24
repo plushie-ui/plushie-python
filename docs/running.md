@@ -272,7 +272,7 @@ states) and accepting that model updates lag by the round-trip time.
 
 For advanced use cases, the iostream transport lets you bridge any
 I/O mechanism to plushie. Write an adapter that wraps a pair of byte
-streams, and plushie handles the rest. Most projects don't need this --
+streams, and plushie handles the rest. Most projects don't need this:
 the built-in local and SSH transports cover the common cases.
 
 ### IoStreamAdapter

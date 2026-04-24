@@ -595,8 +595,8 @@ def update(self, model, event):
 ```
 
 Each step is a separate match arm with its own model state. The UI
-reflects progress at every stage. No special chaining API needed --
-the architecture is the API.
+reflects progress at every stage. No special chaining API is needed.
+The architecture is the API.
 
 ### How commands work internally
 

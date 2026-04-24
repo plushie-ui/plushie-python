@@ -716,7 +716,7 @@ renderer maps it to a standard plushie event:
 | Focus | (internal) | Focus tracking, no event emitted |
 | Other | `A11yAction(id=id, action=name)` | Scroll, dismiss, etc. |
 
-Your `update()` already handles `Click(...)` and `Input(...)` --
+Your `update()` already handles `Click(...)` and `Input(...)`.
 AT actions produce identical events. Handle `A11yAction` for the catch-all:
 
 ```python
