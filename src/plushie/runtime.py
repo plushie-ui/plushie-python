@@ -1666,6 +1666,7 @@ class Runtime:
         model: Any,
         *,
         extra_subs: list[Subscription] | None = None,
+        raise_subscribe_errors: bool = False,
     ) -> None:
         """Synchronize subscriptions with the app's subscribe() output."""
         try:
@@ -1678,6 +1679,8 @@ class Runtime:
                 new_specs = []
         except Exception:
             logger.exception("plushie runtime: subscribe() raised")
+            if raise_subscribe_errors:
+                raise
             new_specs = []
 
         if extra_subs:
@@ -2024,7 +2027,11 @@ class Runtime:
                 # Re-sync subscriptions (force renderer subscriptions to re-register).
                 self._subscriptions.clear()
                 self._subscription_keys = []
-                self._sync_subscriptions(self._model, extra_subs=widget_subs)
+                self._sync_subscriptions(
+                    self._model,
+                    extra_subs=widget_subs,
+                    raise_subscribe_errors=True,
+                )
 
                 # Re-sync windows (force all to re-open)
                 self._windows = set()

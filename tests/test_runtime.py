@@ -1218,6 +1218,83 @@ class TestReconnectSequencing:
         assert rt._memo_cache_prev == {"memo": "old"}
         assert rt._widget_cache_prev == {"widget": "old"}
 
+    def test_reconnect_subscribe_failure_preserves_existing_subscriptions(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class FakeTimer:
+            created: ClassVar[list[FakeTimer]] = []
+
+            def __init__(self, interval: float, callback: Any) -> None:
+                self.interval = interval
+                self.callback = callback
+                self.daemon = False
+                self.started = False
+                self.cancelled = False
+                FakeTimer.created.append(self)
+
+            def start(self) -> None:
+                self.started = True
+
+            def cancel(self) -> None:
+                self.cancelled = True
+
+        def update(model: int, event: Any) -> int:
+            match event:
+                case EffectResult(result=RendererRestarted()):
+                    return model + 10
+                case _:
+                    return model
+
+        monkeypatch.setattr("plushie.runtime.threading.Timer", FakeTimer)
+
+        rt = self._make_runtime(
+            handle_renderer_exit=lambda model, _reason: model + 1,
+            update=update,
+        )
+        rt._conn.restart.return_value = None
+        rt._MAX_RESTART_ATTEMPTS = 1
+        rt._pending_effects["wire-1"] = {
+            "tag": "reload",
+            "kind": "file_open",
+            "timer": FakeTimer(0.1, lambda: None),
+        }
+        rt._subscriptions = {
+            ("every", "100", "tick"): rt._start_subscription(
+                Subscription.every(100, "tick")
+            )
+        }
+        rt._subscription_keys = [("every", "100", "tick")]
+
+        old_entry = rt._subscriptions[("every", "100", "tick")]
+        old_timer = old_entry.timer
+        assert old_timer is not None
+
+        def fail_subscribe(_model: int) -> list[Subscription]:
+            raise RuntimeError("subscribe failed")
+
+        rt._app.subscribe = fail_subscribe  # type: ignore[method-assign]
+
+        reader_started = False
+
+        def start_reader() -> None:
+            nonlocal reader_started
+            reader_started = True
+
+        rt._start_reader = start_reader
+
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is False
+        assert rt._model == 5
+        assert reader_started is False
+        assert rt._subscription_keys == [("every", "100", "tick")]
+
+        restored_entry = rt._subscriptions[("every", "100", "tick")]
+        assert restored_entry.token == old_entry.token
+        assert restored_entry.timer is not None
+        assert restored_entry.timer is not old_timer
+        assert restored_entry.timer.started is True
+
     def test_successful_reconnect_commits_recovered_state_and_effect_flush(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
