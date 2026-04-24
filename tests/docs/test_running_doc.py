@@ -7,6 +7,7 @@ and framing encode/decode usage.
 from __future__ import annotations
 
 import io
+from pathlib import Path
 from typing import Any
 
 from plushie import ui
@@ -14,6 +15,18 @@ from plushie.app import App
 from plushie.framing import JsonFraming, MsgpackFraming
 from plushie.subscriptions import Subscription
 from plushie.transport import IoStreamAdapter
+
+RUNNING_DOC = Path(__file__).parents[2] / "docs" / "running.md"
+
+
+def test_running_doc_does_not_use_transport_kwarg_for_run() -> None:
+    """The stdio mode example should use connect, not a run() transport kwarg."""
+    text = RUNNING_DOC.read_text()
+
+    assert 'transport="stdio"' not in text
+    assert "plushie.run(MyApp, daemon=True)" in text
+    assert "python -m plushie connect my_app:MyApp" in text
+
 
 # ---------------------------------------------------------------------------
 # Settings / rate limiting

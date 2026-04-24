@@ -110,24 +110,42 @@ project and its dependencies.
 
 ## Daemon mode
 
-When running in exec/stdio mode, the host normally exits when the renderer
-disconnects (window close, SSH drop). Daemon mode keeps the host alive with
-the model preserved, waiting for a new renderer to connect.
+Daemon mode is available for the default spawned renderer mode. It keeps the
+Python runtime alive after all windows close, with the model preserved. This
+is useful for apps that continue background work and may open windows again
+later.
 
 ```python
 import plushie
 
-plushie.run(MyApp, transport="stdio", daemon=True)
+plushie.run(MyApp, daemon=True)
+```
+<!-- test: test_running_doc_does_not_use_transport_kwarg_for_run -- keep this section in sync with the test -->
+
+The same mode is available from the CLI:
+
+```bash
+python -m plushie run my_app:MyApp --daemon
 ```
 
-When a new renderer connects (another SSH session), the host sends a
-snapshot of the current state. No restart, no state loss, no cold start.
+Exec/stdio mode is still started with `connect`:
+
+```bash
+plushie --exec "python -m plushie connect my_app:MyApp"
+```
+
+The `connect` command currently supports `--json`, but does not expose a
+daemon option. When the stdio renderer disconnects, the host exits. Starting
+another SSH session starts a fresh host process.
 
 
 ## Resiliency
 
-Things go wrong. Renderers crash, code has bugs, networks drop.
-Plushie handles these without losing your model state.
+Things go wrong. Renderers crash, code has bugs, networks drop. In default
+spawned renderer mode, Plushie can restart a crashed renderer without losing
+your model state. Callback exceptions also preserve the previous model. In
+exec/stdio `connect` mode, a broken stdio stream ends the host process, so
+persist app state yourself if it must survive a new connection.
 
 ### Renderer crashes
 
@@ -160,19 +178,20 @@ When an SSH connection drops, both sides detect the broken pipe:
 
 - **The renderer** sees the host's stdout close. It can display an
   error or retry the connection.
-- **The host** sees stdin close. Without daemon mode, the plushie
-  process exits (the rest of your service is unaffected). With
-  daemon mode, plushie keeps running with the model preserved.
+- **The host** sees stdin close. In `python -m plushie connect` mode,
+  the plushie process exits. Persist state in your app if it must
+  survive a new SSH session.
 
-When a new renderer connects (another SSH session), the host sends a
-snapshot of the current state.
+Starting another SSH session starts a fresh host process.
 
 ### Window close
 
 When the user closes the last window, your `update()` receives the
 event. You can save state, persist data, or show a confirmation
-dialog. In non-daemon mode, the plushie process exits. In daemon mode,
-plushie keeps running and waits for a new renderer to connect.
+dialog. In default spawned renderer mode, `daemon=True` keeps the
+runtime alive after all windows close. In exec/stdio `connect` mode,
+the last window sends `AllWindowsClosed`; because `connect` runs the
+runtime in non-daemon mode, the host exits, which closes stdio.
 
 ### Demo: crash-test
 
