@@ -399,6 +399,7 @@ class Runtime:
         )
         self._async_tasks: dict[str, tuple[Future[Any], int]] = {}
         self._nonce_counter: int = 0
+        self._async_task_lock = threading.Lock()
 
         # Pending effect requests: wire_id -> {"tag": str, "timer": Timer}
         self._pending_effects: dict[str, dict[str, Any]] = {}
@@ -619,21 +620,25 @@ class Runtime:
             timeout: Maximum seconds to wait.
 
         Returns:
-            ``True`` if the task completed, ``False`` if timed out.
+            ``True`` if the task completed, ``False`` if it timed out,
+            was cancelled, or was released during cleanup.
         """
-        if tag not in self._async_tasks:
-            return True
-
-        if tag in self._pending_await_async:
-            raise RuntimeError(
-                f"await_async({tag!r}): another caller is already waiting"
-            )
         waiter = _AsyncWaiter()
-        self._pending_await_async[tag] = waiter
+        with self._async_task_lock:
+            if tag not in self._async_tasks:
+                return True
+
+            if tag in self._pending_await_async:
+                raise RuntimeError(
+                    f"await_async({tag!r}): another caller is already waiting"
+                )
+            self._pending_await_async[tag] = waiter
+
         if waiter.done.wait(timeout):
             return waiter.completed
-        if self._pending_await_async.get(tag) is waiter:
-            self._pending_await_async.pop(tag, None)
+        with self._async_task_lock:
+            if self._pending_await_async.get(tag) is waiter:
+                self._pending_await_async.pop(tag, None)
         return False
 
     def interact(
@@ -1431,7 +1436,6 @@ class Runtime:
 
     def _start_task(self, fn: Any, tag: str) -> None:
         """Run fn in the executor.  Result delivered as AsyncResult."""
-        self._cancel_task(tag)
         nonce = self._next_nonce()
 
         def task_wrapper() -> None:
@@ -1442,11 +1446,18 @@ class Runtime:
                 self._queue.put(("_async_result", tag, nonce, ("_error", exc)))
 
         future = self._executor.submit(task_wrapper)
-        self._async_tasks[tag] = (future, nonce)
+        with self._async_task_lock:
+            old_entry = self._async_tasks.pop(tag, None)
+            old_waiter = self._pending_await_async.pop(tag, None)
+            self._async_tasks[tag] = (future, nonce)
+        if old_entry is not None:
+            old_future, _old_nonce = old_entry
+            old_future.cancel()
+        if old_waiter is not None:
+            old_waiter.done.set()
 
     def _start_stream(self, fn: Any, tag: str) -> None:
         """Run fn(emit) in the executor.  emit() delivers StreamChunk events."""
-        self._cancel_task(tag)
         nonce = self._next_nonce()
 
         def emit(value: Any) -> None:
@@ -1460,22 +1471,40 @@ class Runtime:
                 self._queue.put(("_async_result", tag, nonce, ("_error", exc)))
 
         future = self._executor.submit(stream_wrapper)
-        self._async_tasks[tag] = (future, nonce)
+        with self._async_task_lock:
+            old_entry = self._async_tasks.pop(tag, None)
+            old_waiter = self._pending_await_async.pop(tag, None)
+            self._async_tasks[tag] = (future, nonce)
+        if old_entry is not None:
+            old_future, _old_nonce = old_entry
+            old_future.cancel()
+        if old_waiter is not None:
+            old_waiter.done.set()
 
     def _cancel_task(self, tag: str) -> None:
         """Cancel a running task by tag."""
-        entry = self._async_tasks.pop(tag, None)
+        with self._async_task_lock:
+            entry = self._async_tasks.pop(tag, None)
+            waiter = self._pending_await_async.pop(tag, None)
         if entry is not None:
             future, _nonce = entry
             future.cancel()
+        if waiter is not None:
+            waiter.done.set()
 
     def _handle_async_result(self, tag: str, nonce: int, result: Any) -> None:
         """Handle an async task completion, checking nonce for staleness."""
-        entry = self._async_tasks.get(tag)
-        if entry is None or entry[1] != nonce:
-            return  # stale or unknown
+        with self._async_task_lock:
+            entry = self._async_tasks.get(tag)
+            if entry is None or entry[1] != nonce:
+                return  # stale or unknown
 
-        self._async_tasks.pop(tag, None)
+            self._async_tasks.pop(tag, None)
+            waiter = self._pending_await_async.pop(tag, None)
+
+        if waiter is not None:
+            waiter.completed = True
+            waiter.done.set()
 
         if isinstance(result, tuple) and len(result) == 2 and result[0] == "_error":
             exc = result[1]
@@ -1484,15 +1513,10 @@ class Runtime:
         else:
             self._run_update(AsyncResult(tag=tag, value=result))
 
-        # Notify any await_async callers
-        waiter = self._pending_await_async.pop(tag, None)
-        if waiter is not None:
-            waiter.completed = True
-            waiter.done.set()
-
     def _handle_stream_value(self, tag: str, nonce: int, value: Any) -> None:
         """Handle a stream chunk, checking nonce for staleness."""
-        entry = self._async_tasks.get(tag)
+        with self._async_task_lock:
+            entry = self._async_tasks.get(tag)
         if entry is None or entry[1] != nonce:
             return  # stale
         self._run_update(StreamChunk(tag=tag, value=value))
@@ -1672,8 +1696,9 @@ class Runtime:
 
     def _flush_pending_await_async(self) -> None:
         """Release await_async waiters tied to the pre-reconnect task set."""
-        snapshot = dict(self._pending_await_async)
-        self._pending_await_async.clear()
+        with self._async_task_lock:
+            snapshot = dict(self._pending_await_async)
+            self._pending_await_async.clear()
         for waiter in snapshot.values():
             waiter.done.set()
 
@@ -2282,7 +2307,9 @@ class Runtime:
 
         # Shutdown executor (don't wait for tasks)
         self._executor.shutdown(wait=False, cancel_futures=True)
-        self._async_tasks.clear()
+        with self._async_task_lock:
+            self._async_tasks.clear()
+        self._flush_pending_await_async()
 
 
 # ---------------------------------------------------------------------------

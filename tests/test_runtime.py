@@ -1388,6 +1388,88 @@ class TestAwaitAsyncCleanup:
         assert rt.await_async("load", timeout=0.001) is False
         assert rt._pending_await_async == {}
 
+    def test_await_async_returns_true_during_successful_completion(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rt = self._make_runtime()
+        future: Future[Any] = Future()
+        rt._async_tasks["load"] = (future, 1)
+
+        update_started = threading.Event()
+        release_update = threading.Event()
+
+        def run_update(_event: object) -> None:
+            update_started.set()
+            assert release_update.wait(0.5)
+
+        monkeypatch.setattr(rt, "_run_update", run_update)
+
+        worker = threading.Thread(
+            target=lambda: rt._handle_async_result("load", 1, "ok"),
+            daemon=True,
+        )
+        worker.start()
+
+        assert update_started.wait(0.5)
+        assert "load" not in rt._async_tasks
+
+        assert rt.await_async("load", timeout=0.001) is True
+
+        release_update.set()
+        worker.join(timeout=0.5)
+        assert not worker.is_alive()
+        assert rt._pending_await_async == {}
+
+    def test_await_async_waiter_returns_true_before_slow_update_finishes(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rt = self._make_runtime()
+        future: Future[Any] = Future()
+        rt._async_tasks["load"] = (future, 1)
+
+        finished = threading.Event()
+        result: dict[str, Any] = {"value": None}
+
+        def call() -> None:
+            result["value"] = rt.await_async("load", timeout=0.5)
+            finished.set()
+
+        waiter_thread = threading.Thread(target=call, daemon=True)
+        waiter_thread.start()
+
+        for _ in range(100):
+            if "load" in rt._pending_await_async:
+                break
+            threading.Event().wait(0.01)
+        else:  # pragma: no cover - test would fail below anyway
+            pytest.fail("await_async waiter was never registered")
+
+        update_started = threading.Event()
+        release_update = threading.Event()
+
+        def run_update(_event: object) -> None:
+            update_started.set()
+            assert release_update.wait(0.5)
+
+        monkeypatch.setattr(rt, "_run_update", run_update)
+
+        result_thread = threading.Thread(
+            target=lambda: rt._handle_async_result("load", 1, "ok"),
+            daemon=True,
+        )
+        result_thread.start()
+
+        assert update_started.wait(0.5)
+        assert finished.wait(0.1)
+        waiter_thread.join(timeout=0.1)
+
+        assert result["value"] is True
+        assert rt._pending_await_async == {}
+
+        release_update.set()
+        result_thread.join(timeout=0.5)
+        assert not result_thread.is_alive()
+
     def test_reconnect_releases_pending_await_async_waiter_without_completion(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -1421,6 +1503,116 @@ class TestAwaitAsyncCleanup:
         assert result["value"] is False
         assert rt._async_tasks["load"] == (future, 1)
         assert rt._pending_await_async == {}
+
+    def test_flush_pending_await_async_releases_waiter(self) -> None:
+        rt = self._make_runtime()
+        future: Future[Any] = Future()
+        rt._async_tasks["load"] = (future, 1)
+
+        finished = threading.Event()
+        result: dict[str, Any] = {"value": None}
+
+        def call() -> None:
+            result["value"] = rt.await_async("load", timeout=5.0)
+            finished.set()
+
+        worker = threading.Thread(target=call, daemon=True)
+        worker.start()
+
+        for _ in range(100):
+            if "load" in rt._pending_await_async:
+                break
+            threading.Event().wait(0.01)
+        else:  # pragma: no cover - test would fail below anyway
+            pytest.fail("await_async waiter was never registered")
+
+        rt._flush_pending_await_async()
+
+        assert finished.wait(0.5)
+        worker.join(timeout=0.1)
+
+        assert result["value"] is False
+        assert rt._pending_await_async == {}
+
+    def test_cancel_task_releases_pending_await_async_waiter(self) -> None:
+        rt = self._make_runtime()
+        future: Future[Any] = Future()
+        rt._async_tasks["load"] = (future, 1)
+
+        finished = threading.Event()
+        result: dict[str, Any] = {"value": None}
+
+        def call() -> None:
+            result["value"] = rt.await_async("load", timeout=5.0)
+            finished.set()
+
+        worker = threading.Thread(target=call, daemon=True)
+        worker.start()
+
+        for _ in range(100):
+            if "load" in rt._pending_await_async:
+                break
+            threading.Event().wait(0.01)
+        else:  # pragma: no cover - test would fail below anyway
+            pytest.fail("await_async waiter was never registered")
+
+        rt._cancel_task("load")
+
+        assert finished.wait(0.5)
+        worker.join(timeout=0.1)
+
+        assert result["value"] is False
+        assert future.cancelled() is True
+        assert "load" not in rt._async_tasks
+        assert rt._pending_await_async == {}
+
+    def test_cleanup_releases_pending_await_async_waiter(self) -> None:
+        rt = self._make_runtime()
+        future: Future[Any] = Future()
+        rt._async_tasks["load"] = (future, 1)
+
+        finished = threading.Event()
+        result: dict[str, Any] = {"value": None}
+
+        def call() -> None:
+            result["value"] = rt.await_async("load", timeout=5.0)
+            finished.set()
+
+        worker = threading.Thread(target=call, daemon=True)
+        worker.start()
+
+        for _ in range(100):
+            if "load" in rt._pending_await_async:
+                break
+            threading.Event().wait(0.01)
+        else:  # pragma: no cover - test would fail below anyway
+            pytest.fail("await_async waiter was never registered")
+
+        rt._cleanup()
+
+        assert finished.wait(0.5)
+        worker.join(timeout=0.1)
+
+        assert result["value"] is False
+        assert rt._async_tasks == {}
+        assert rt._pending_await_async == {}
+
+    def test_cleanup_closes_connection_before_joining_reader_thread(self) -> None:
+        rt = self._make_runtime()
+        order: list[str] = []
+
+        rt._conn.close.side_effect = lambda: order.append("close")
+
+        class ReaderThread:
+            def join(self, timeout: float | None = None) -> None:
+                order.append(f"join:{timeout}")
+
+        rt._reader_thread = ReaderThread()  # type: ignore[assignment]
+
+        rt._cleanup()
+
+        assert order == ["close", "join:2.0"]
+        assert rt._reader_thread is None
 
 
 class TestReconnectWidgetRegistry:
