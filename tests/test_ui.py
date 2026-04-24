@@ -22,6 +22,14 @@ def test_ui_is_in_package_all() -> None:
     assert namespace["ui"] is ui
 
 
+def test_version_is_in_package_all() -> None:
+    namespace: dict[str, object] = {}
+    exec("from plushie import *", namespace)
+
+    assert "__version__" in plushie.__all__
+    assert namespace["__version__"] == plushie.__version__
+
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------

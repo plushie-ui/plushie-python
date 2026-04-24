@@ -179,6 +179,7 @@ __all__ = [
     "Subscription",
     "TimerTick",
     "Toggle",
+    "__version__",
     "create_app",
     "run",
     "start",
