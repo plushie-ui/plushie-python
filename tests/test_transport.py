@@ -107,6 +107,16 @@ class _PipeWriter:
         pass
 
 
+class _OSErrorReader:
+    """Readable stream that fails immediately."""
+
+    def read(self, n: int = 4096) -> bytes:
+        raise OSError("read exploded")
+
+    def close(self) -> None:
+        pass
+
+
 def _call_with_response(
     reader: _PipeReader,
     writer: _PipeWriter,
@@ -336,6 +346,28 @@ class TestIoStreamAdapter:
             adapter.wait_hello(timeout=2.0)
         assert adapter.receive_event(timeout=0.01) is None
         adapter.close()
+
+    def test_reader_oserror_is_logged_and_disconnects(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        writer = _PipeWriter()
+
+        def reader_failed() -> None:
+            assert "iostream reader thread read failed" in caplog.text
+
+        with caplog.at_level(logging.ERROR, logger="plushie"):
+            adapter = IoStreamAdapter(_OSErrorReader(), writer)
+
+            def disconnect_posted() -> None:
+                assert not adapter._event_queue.empty()
+
+            _wait_until(reader_failed)
+            _wait_until(disconnect_posted)
+
+        assert adapter.receive_event(timeout=0) is None
+        adapter.close()
+        assert "read exploded" in caplog.text
 
 
 class TestWebSocketAdapter:

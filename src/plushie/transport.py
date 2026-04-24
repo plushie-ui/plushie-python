@@ -238,7 +238,8 @@ class IoStreamAdapter:
                 for raw_msg in messages:
                     self._route_message(raw_msg)
         except OSError:
-            pass
+            if not self._closed:
+                logger.exception("plushie iostream reader thread read failed")
         except Exception:
             logger.exception("plushie iostream reader thread error")
         finally:
