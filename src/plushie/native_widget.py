@@ -119,7 +119,7 @@ BUILTIN_WIDGET_TYPES: frozenset[str] = frozenset(
 
 @dataclass(frozen=True, slots=True)
 class PropDef:
-    """Definition of a single property on an native widget.
+    """Definition of a single property on a native widget.
 
     Attributes:
         name: The property name as it appears on the wire.
@@ -145,7 +145,7 @@ class ParamDef:
 
 @dataclass(frozen=True, slots=True)
 class CommandDef:
-    """Definition of a command that can be sent to a native native widget.
+    """Definition of a command that can be sent to a native widget.
 
     Attributes:
         name: The command operation name.
@@ -186,7 +186,7 @@ class NativeWidget:
 
 
 def validate(ext_def: NativeWidget) -> list[str]:
-    """Validate an native widget definition.
+    """Validate a native widget definition.
 
     Returns an empty list when valid, or a list of human-readable error
     messages describing what is wrong.
