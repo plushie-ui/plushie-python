@@ -43,6 +43,7 @@ from typing import Any
 
 __version__ = "0.5.0"
 
+from plushie import ui as ui
 from plushie.app import App, AppBuilder, create_app
 from plushie.commands import Command
 from plushie.events import (
@@ -181,4 +182,5 @@ __all__ = [
     "create_app",
     "run",
     "start",
+    "ui",
 ]

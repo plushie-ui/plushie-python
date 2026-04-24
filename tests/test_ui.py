@@ -2,7 +2,25 @@
 
 from __future__ import annotations
 
+import types
+
+import plushie
 from plushie import ui
+
+
+def test_ui_is_top_level_package_export() -> None:
+    assert isinstance(plushie.ui, types.ModuleType)
+    assert plushie.ui is ui
+    assert plushie.ui.text("greeting", "Hello") == ui.text("greeting", "Hello")
+
+
+def test_ui_is_in_package_all() -> None:
+    namespace: dict[str, object] = {}
+    exec("from plushie import *", namespace)
+
+    assert "ui" in plushie.__all__
+    assert namespace["ui"] is ui
+
 
 # ---------------------------------------------------------------------------
 # Helper
