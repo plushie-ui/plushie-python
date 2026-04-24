@@ -315,6 +315,61 @@ class TestNormalizeA11yRefs:
         result = normalize(tree)
         assert result["children"][1]["props"]["a11y"]["error_message"] == "form/err"
 
+    def test_validation_error_message_stays_text_when_it_matches_declared_id(
+        self,
+    ) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("err", "text", {"content": "Error text"}),
+                _node(
+                    "input",
+                    "text_input",
+                    {"validation": ("invalid", "err")},
+                ),
+            ],
+        )
+        result = normalize(tree)
+        assert result["children"][1]["props"]["a11y"]["error_message"] == "err"
+
+    def test_dict_validation_error_message_stays_text(self) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node(
+                    "input",
+                    "text_input",
+                    {"validation": {"state": "invalid", "message": "err"}},
+                ),
+            ],
+        )
+        result = normalize(tree)
+        assert result["children"][0]["props"]["a11y"]["error_message"] == "err"
+
+    def test_unresolved_error_message_ref_warns_and_stays_scoped(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node(
+                    "input",
+                    "text_input",
+                    {
+                        "a11y": {"error_message": "missing"},
+                    },
+                ),
+            ],
+        )
+        with caplog.at_level(logging.WARNING, logger="plushie.tree"):
+            result = normalize(tree)
+
+        assert result["children"][0]["props"]["a11y"]["error_message"] == "form/missing"
+        assert "a11y_ref_unresolved: a11y.error_message" in caplog.text
+
     def test_already_scoped_ref_unchanged(self) -> None:
         tree = _node(
             "form",
@@ -516,6 +571,62 @@ class TestA11yDefaults:
         a11y = result["props"]["a11y"]
         assert a11y["role"] == "image"
 
+    def test_image_alt_flows_into_label(self) -> None:
+        tree = _node("img", "image", {"source": "photo.png", "alt": "Team photo"})
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "image"
+        assert a11y["label"] == "Team photo"
+
+    def test_svg_and_qr_code_alt_flow_into_label(self) -> None:
+        result = normalize(
+            [
+                _node("icon", "svg", {"source": "icon.svg", "alt": "Search"}),
+                _node("qr", "qr_code", {"data": "https://example.com", "alt": "URL"}),
+            ]
+        )
+        assert result["children"][0]["props"]["a11y"]["label"] == "Search"
+        assert result["children"][1]["props"]["a11y"]["label"] == "URL"
+
+    def test_explicit_image_a11y_label_wins_over_alt(self) -> None:
+        tree = _node(
+            "img",
+            "image",
+            {
+                "source": "photo.png",
+                "alt": "Generated",
+                "a11y": {"label": "Explicit"},
+            },
+        )
+        result = normalize(tree)
+        assert result["props"]["a11y"]["label"] == "Explicit"
+
+    def test_hidden_or_decorative_image_does_not_infer_alt_label(self) -> None:
+        result = normalize(
+            [
+                _node(
+                    "hidden",
+                    "image",
+                    {
+                        "source": "photo.png",
+                        "alt": "Hidden image",
+                        "a11y": {"hidden": True},
+                    },
+                ),
+                _node(
+                    "decorative",
+                    "image",
+                    {
+                        "source": "line.png",
+                        "alt": "Divider",
+                        "decorative": True,
+                    },
+                ),
+            ]
+        )
+        assert "label" not in result["children"][0]["props"]["a11y"]
+        assert "label" not in result["children"][1]["props"]["a11y"]
+
     def test_window_defaults(self) -> None:
         tree = _node("main", "window", {"title": "App"})
         result = normalize(tree)
@@ -603,6 +714,52 @@ class TestA11yDefaults:
 
 class TestRadioA11yInference:
     """Radio group position_in_set / size_of_set inference during normalize."""
+
+    def test_unlabelled_radio_warns_missing_accessible_name(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("r1", "radio", {"value": "a", "selected": "a"}),
+            ],
+        )
+        with caplog.at_level(logging.WARNING, logger="plushie.tree"):
+            normalize(tree)
+
+        assert "missing_accessible_name: radio 'form/r1'" in caplog.text
+
+    def test_radio_accessible_name_sources_do_not_warn(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        tree = _node(
+            "form",
+            "container",
+            children=[
+                _node("label", "text", {"content": "Choice"}),
+                _node("with_label", "radio", {"label": "Label prop"}),
+                _node(
+                    "with_a11y_label",
+                    "radio",
+                    {"a11y": {"label": "A11y label"}},
+                ),
+                _node(
+                    "with_labelled_by",
+                    "radio",
+                    {"a11y": {"labelled_by": "label"}},
+                ),
+                _node(
+                    "with_text_child",
+                    "radio",
+                    children=[_node("text", "text", {"content": "Text child"})],
+                ),
+            ],
+        )
+        with caplog.at_level(logging.WARNING, logger="plushie.tree"):
+            normalize(tree)
+
+        assert "missing_accessible_name" not in caplog.text
 
     def test_radio_group_inference(self) -> None:
         tree = _node(

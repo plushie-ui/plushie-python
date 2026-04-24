@@ -66,7 +66,7 @@ _EMPTY_CONTAINER: Node = {
     "children": [],
 }
 
-_A11Y_ID_REF_KEYS = ("labelled_by", "described_by", "error_message")
+_A11Y_ID_REF_KEYS = ("labelled_by", "described_by")
 
 _WIDGET_A11Y_DEFAULTS: dict[str, dict[str, Any]] = {
     "button": {"role": "button", "label_from": "label"},
@@ -923,7 +923,9 @@ _A11Y_SINGLE_REF_KEYS = (
     "active_descendant",
 )
 
-_NAMED_INTERACTIVE_TYPES = frozenset({"button", "toggler", "checkbox", "pointer_area"})
+_NAMED_INTERACTIVE_TYPES = frozenset(
+    {"button", "toggler", "checkbox", "pointer_area", "radio"}
+)
 
 _WIDGET_ROLE_DEFAULTS: dict[str, str] = {
     "button": "button",
@@ -1026,6 +1028,8 @@ _PLACEHOLDER_DESCRIPTION_WIDGETS = frozenset(
     {"text_input", "text_editor", "combo_box", "pick_list"}
 )
 
+_ALT_LABEL_WIDGETS = frozenset({"image", "svg", "qr_code"})
+
 # Widget types that honour :required / :validation builder props.
 _VALIDATABLE_WIDGETS = frozenset(
     {"text_input", "text_editor", "checkbox", "pick_list", "combo_box"}
@@ -1037,6 +1041,20 @@ def _placeholder_description(kind: str, props: dict[str, Any]) -> str | None:
         return None
     ph = props.get("placeholder")
     return ph if isinstance(ph, str) and ph else None
+
+
+def _alt_label(kind: str, props: dict[str, Any]) -> str | None:
+    if kind not in _ALT_LABEL_WIDGETS:
+        return None
+    alt = props.get("alt")
+    if not isinstance(alt, str) or not alt:
+        return None
+    if props.get("decorative") is True:
+        return None
+    a11y = props.get("a11y")
+    if isinstance(a11y, dict) and a11y.get("hidden") is True:
+        return None
+    return alt
 
 
 def _required_from_props(kind: str, props: dict[str, Any]) -> bool | None:
@@ -1107,6 +1125,7 @@ def _apply_a11y_rewrites(
             radio_ids = radio_groups.get((scope, group))
 
     placeholder_desc = _placeholder_description(kind, props)
+    alt_label = _alt_label(kind, props)
     required_prop = _required_from_props(kind, props)
     invalid_prop, error_text = _invalid_from_props(kind, props)
 
@@ -1120,6 +1139,7 @@ def _apply_a11y_rewrites(
         or radio_ids is not None
         or (a11y is not None and _has_any_ref(a11y))
         or placeholder_desc is not None
+        or alt_label is not None
         or required_prop is not None
         or invalid_prop is not None
         or error_text is not None
@@ -1160,6 +1180,9 @@ def _apply_a11y_rewrites(
 
     if placeholder_desc is not None and "description" not in a11y:
         a11y["description"] = placeholder_desc
+
+    if alt_label is not None and "label" not in a11y:
+        a11y["label"] = alt_label
 
     if required_prop is True and "required" not in a11y:
         a11y["required"] = True
@@ -1239,9 +1262,11 @@ def _has_text_child(children: list[Node]) -> bool:
 def _resolve_a11y_id_refs(props: dict[str, Any], scope: str) -> dict[str, Any]:
     """Resolve a11y ID references relative to the current scope.
 
-    Fields ``labelled_by``, ``described_by``, and ``error_message``
-    inside the ``a11y`` sub-dict reference sibling widgets by local
-    ID. The renderer needs the full scoped path.
+    Fields ``labelled_by`` and ``described_by`` inside the ``a11y``
+    sub-dict reference sibling widgets by local ID. The renderer needs
+    the full scoped path. ``error_message`` is resolved in the post
+    pass, after declared IDs are known, because validation can also
+    populate it with human-readable text.
     """
     a11y = props.get("a11y")
     if not isinstance(a11y, dict):
