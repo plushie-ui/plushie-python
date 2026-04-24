@@ -673,6 +673,67 @@ class TestA11yDefaults:
         assert "label" not in result["children"][0]["props"]["a11y"]
         assert "label" not in result["children"][1]["props"]["a11y"]
 
+    def test_canvas_alt_and_description_flow_into_a11y(self) -> None:
+        tree = _node(
+            "chart",
+            "canvas",
+            {
+                "shapes": [],
+                "alt": "Revenue chart",
+                "description": "Quarterly revenue by region",
+            },
+        )
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["role"] == "canvas"
+        assert a11y["label"] == "Revenue chart"
+        assert a11y["description"] == "Quarterly revenue by region"
+
+    def test_explicit_canvas_a11y_wins_over_alt_and_description(self) -> None:
+        tree = _node(
+            "chart",
+            "canvas",
+            {
+                "shapes": [],
+                "alt": "Generated label",
+                "description": "Generated description",
+                "a11y": {
+                    "label": "Explicit label",
+                    "description": "Explicit description",
+                },
+            },
+        )
+        result = normalize(tree)
+        a11y = result["props"]["a11y"]
+        assert a11y["label"] == "Explicit label"
+        assert a11y["description"] == "Explicit description"
+
+    def test_hidden_or_decorative_canvas_does_not_infer_alt_label(self) -> None:
+        result = normalize(
+            [
+                _node(
+                    "hidden",
+                    "canvas",
+                    {
+                        "shapes": [],
+                        "alt": "Hidden chart",
+                        "a11y": {"hidden": True},
+                    },
+                ),
+                _node(
+                    "decorative",
+                    "canvas",
+                    {
+                        "shapes": [],
+                        "alt": "Background flourish",
+                        "decorative": True,
+                    },
+                ),
+            ]
+        )
+        assert "label" not in result["children"][0]["props"]["a11y"]
+        assert "label" not in result["children"][1]["props"]["a11y"]
+
     def test_window_defaults(self) -> None:
         tree = _node("main", "window", {"title": "App"})
         result = normalize(tree)

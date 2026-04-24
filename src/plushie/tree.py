@@ -1061,7 +1061,8 @@ _PLACEHOLDER_DESCRIPTION_WIDGETS = frozenset(
     {"text_input", "text_editor", "combo_box", "pick_list"}
 )
 
-_ALT_LABEL_WIDGETS = frozenset({"image", "svg", "qr_code"})
+_ALT_LABEL_WIDGETS = frozenset({"canvas", "image", "svg", "qr_code"})
+_DESCRIPTION_WIDGETS = frozenset({"canvas"})
 
 # Widget types that honour :required / :validation builder props.
 _VALIDATABLE_WIDGETS = frozenset(
@@ -1072,22 +1073,36 @@ _VALIDATABLE_WIDGETS = frozenset(
 def _placeholder_description(kind: str, props: dict[str, Any]) -> str | None:
     if kind not in _PLACEHOLDER_DESCRIPTION_WIDGETS:
         return None
-    ph = props.get("placeholder")
-    return ph if isinstance(ph, str) and ph else None
+    return _non_empty_string_prop(props, "placeholder")
+
+
+def _non_empty_string_prop(props: dict[str, Any], key: str) -> str | None:
+    value = props.get(key)
+    return value if isinstance(value, str) and value else None
+
+
+def _suppresses_alt_label(props: dict[str, Any]) -> bool:
+    if props.get("decorative") is True:
+        return True
+    a11y = props.get("a11y")
+    return isinstance(a11y, dict) and a11y.get("hidden") is True
 
 
 def _alt_label(kind: str, props: dict[str, Any]) -> str | None:
     if kind not in _ALT_LABEL_WIDGETS:
         return None
-    alt = props.get("alt")
-    if not isinstance(alt, str) or not alt:
+    alt = _non_empty_string_prop(props, "alt")
+    if alt is None:
         return None
-    if props.get("decorative") is True:
-        return None
-    a11y = props.get("a11y")
-    if isinstance(a11y, dict) and a11y.get("hidden") is True:
+    if _suppresses_alt_label(props):
         return None
     return alt
+
+
+def _description(kind: str, props: dict[str, Any]) -> str | None:
+    if kind not in _DESCRIPTION_WIDGETS:
+        return None
+    return _non_empty_string_prop(props, "description")
 
 
 def _required_from_props(kind: str, props: dict[str, Any]) -> bool | None:
@@ -1158,6 +1173,7 @@ def _apply_a11y_rewrites(
             radio_ids = radio_groups.get((scope, group))
 
     placeholder_desc = _placeholder_description(kind, props)
+    description = _description(kind, props)
     alt_label = _alt_label(kind, props)
     required_prop = _required_from_props(kind, props)
     invalid_prop, error_text = _invalid_from_props(kind, props)
@@ -1172,6 +1188,7 @@ def _apply_a11y_rewrites(
         or radio_ids is not None
         or (a11y is not None and _has_any_ref(a11y))
         or placeholder_desc is not None
+        or description is not None
         or alt_label is not None
         or required_prop is not None
         or invalid_prop is not None
@@ -1213,6 +1230,9 @@ def _apply_a11y_rewrites(
 
     if placeholder_desc is not None and "description" not in a11y:
         a11y["description"] = placeholder_desc
+
+    if description is not None and "description" not in a11y:
+        a11y["description"] = description
 
     if alt_label is not None and "label" not in a11y:
         a11y["label"] = alt_label
