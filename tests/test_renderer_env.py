@@ -9,6 +9,7 @@ do.
 from __future__ import annotations
 
 import os
+from unittest.mock import patch
 
 from plushie.connection import _build_env
 
@@ -80,6 +81,20 @@ def test_extra_overrides_take_precedence():
 
     assert env.get("RUST_LOG") == "plushie=trace"
     assert env.get("CUSTOM_VAR") == "hi"
+
+
+def test_extra_values_are_converted_to_strings():
+    env = _build_env({"PLUSHIE_PORT": 1234, "PLUSHIE_ENABLED": True})
+
+    assert env.get("PLUSHIE_PORT") == "1234"
+    assert env.get("PLUSHIE_ENABLED") == "True"
+
+
+def test_forwarded_environment_values_are_converted_to_strings():
+    with patch("plushie.connection.os.environ", {"HOME": 1234}):
+        env = _build_env()
+
+    assert env.get("HOME") == "1234"
 
 
 def test_subprocess_does_not_see_leaked_secret(monkeypatch):

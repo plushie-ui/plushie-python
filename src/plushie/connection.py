@@ -25,7 +25,7 @@ import secrets
 import subprocess
 import sys
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from queue import Empty, Queue
 from typing import Any
 
@@ -1286,7 +1286,7 @@ _ENV_WHITELIST_PREFIXES = (
 )
 
 
-def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+def _build_env(extra: Mapping[str, object] | None = None) -> dict[str, str]:
     """Build a safe, whitelisted environment for the renderer subprocess.
 
     Only forwards display, rendering, locale, accessibility, font, and
@@ -1305,9 +1305,9 @@ def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
         if key in _ENV_WHITELIST_EXACT or any(
             key.startswith(p) for p in _ENV_WHITELIST_PREFIXES
         ):
-            env[key] = value
+            env[key] = str(value)
     if extra:
-        env.update(extra)
+        env.update({key: str(value) for key, value in extra.items()})
     return env
 
 

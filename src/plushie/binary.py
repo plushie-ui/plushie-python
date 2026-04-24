@@ -66,6 +66,23 @@ cargo-plushie build tool, and generated crate dependency versions."""
 MIN_RUST_VERSION = (1, 92, 0)
 """Minimum required Rust toolchain version for building from source."""
 
+_RELEASE_VERSION_RE = re.compile(
+    r"(?:0|[1-9]\d*)\."
+    r"(?:0|[1-9]\d*)\."
+    r"(?:0|[1-9]\d*)"
+    r"(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?"
+    r"(?:\+[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?"
+)
+
+
+def _validate_release_version(version: str) -> str:
+    if _RELEASE_VERSION_RE.fullmatch(version) is None:
+        raise ValueError(
+            f"invalid plushie release version {version!r}; expected a version like "
+            "'0.6.1' or '0.6.1-rc.1'"
+        )
+    return version
+
 
 # ---------------------------------------------------------------------------
 # Checksum verification
@@ -479,8 +496,11 @@ def download(
         ChecksumError: On checksum mismatch or unavailable checksum.
         urllib.error.URLError: On network errors.
     """
+    release_version = _validate_release_version(
+        PLUSHIE_RUST_VERSION if version is None else version
+    )
     name = download_name()
-    tag = f"v{version or PLUSHIE_RUST_VERSION}"
+    tag = f"v{release_version}"
     url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
 
     if bin_file is not None:
@@ -547,8 +567,11 @@ def download_wasm(
         RuntimeError: On download failure or extraction error.
         ChecksumError: On checksum mismatch or unavailable checksum.
     """
+    release_version = _validate_release_version(
+        PLUSHIE_RUST_VERSION if version is None else version
+    )
     archive_name = wasm_download_name()
-    tag = f"v{version or PLUSHIE_RUST_VERSION}"
+    tag = f"v{release_version}"
     url = f"{GITHUB_RELEASE_URL}/{tag}/{archive_name}"
 
     dest_dir = Path(wasm_dir_path) if wasm_dir_path else wasm_dir()
