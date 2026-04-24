@@ -419,6 +419,9 @@ class Runtime:
         # Effect stub ack tracking: kind -> waiter shared between the
         # caller thread and the runtime loop.
         self._pending_stub_acks: dict[str, _StubAckWaiter] = {}
+        self._stale_stub_acks: dict[tuple[str, bool], int] = {}
+        self._stub_ack_lock = threading.Lock()
+        self._stub_ack_generation: int = 0
 
         # Diagnostic accumulation
         self._diagnostics: list[Any] = []
@@ -430,8 +433,8 @@ class Runtime:
         # `_execute_command` can cap the chain.
         self._current_dispatch_depth: int = 0
 
-        # Pending await_async callers: tag -> Event
-        self._pending_await_async: dict[str, threading.Event] = {}
+        # Pending await_async callers: tag -> waiter
+        self._pending_await_async: dict[str, _AsyncWaiter] = {}
 
         # Pending interact slot (see _InteractSlot below)
         self._pending_interact: _InteractSlot | None = None
@@ -535,17 +538,21 @@ class Runtime:
         """
         from plushie.protocol import register_effect_stub
 
-        if kind in self._pending_stub_acks:
-            raise RuntimeError(
-                f"register_effect_stub({kind!r}): another stub ack is already pending"
-            )
-        ack = _StubAckWaiter()
-        self._pending_stub_acks[kind] = ack
+        ack = self._begin_stub_ack_waiter(
+            kind,
+            registered=True,
+            operation="register_effect_stub",
+        )
         msg = register_effect_stub(kind, response, session=self._conn.session)
         self._conn.send(msg)
         if not ack.done.wait(timeout):
-            self._pending_stub_acks.pop(kind, None)
-            logger.warning("register_effect_stub(%r) timed out", kind)
+            if self._retire_stub_ack_waiter(kind, ack):
+                logger.warning("register_effect_stub(%r) timed out", kind)
+            elif not ack.acknowledged:
+                logger.warning(
+                    "register_effect_stub(%r) cancelled during renderer reconnect",
+                    kind,
+                )
         elif not ack.acknowledged:
             logger.warning(
                 "register_effect_stub(%r) cancelled during renderer reconnect", kind
@@ -566,17 +573,21 @@ class Runtime:
         """
         from plushie.protocol import unregister_effect_stub
 
-        if kind in self._pending_stub_acks:
-            raise RuntimeError(
-                f"unregister_effect_stub({kind!r}): another stub ack is already pending"
-            )
-        ack = _StubAckWaiter()
-        self._pending_stub_acks[kind] = ack
+        ack = self._begin_stub_ack_waiter(
+            kind,
+            registered=False,
+            operation="unregister_effect_stub",
+        )
         msg = unregister_effect_stub(kind, session=self._conn.session)
         self._conn.send(msg)
         if not ack.done.wait(timeout):
-            self._pending_stub_acks.pop(kind, None)
-            logger.warning("unregister_effect_stub(%r) timed out", kind)
+            if self._retire_stub_ack_waiter(kind, ack):
+                logger.warning("unregister_effect_stub(%r) timed out", kind)
+            elif not ack.acknowledged:
+                logger.warning(
+                    "unregister_effect_stub(%r) cancelled during renderer reconnect",
+                    kind,
+                )
         elif not ack.acknowledged:
             logger.warning(
                 "unregister_effect_stub(%r) cancelled during renderer reconnect", kind
@@ -620,9 +631,13 @@ class Runtime:
             raise RuntimeError(
                 f"await_async({tag!r}): another caller is already waiting"
             )
-        done = threading.Event()
-        self._pending_await_async[tag] = done
-        return done.wait(timeout)
+        waiter = _AsyncWaiter()
+        self._pending_await_async[tag] = waiter
+        if waiter.done.wait(timeout):
+            return waiter.completed
+        if self._pending_await_async.get(tag) is waiter:
+            self._pending_await_async.pop(tag, None)
+        return False
 
     def interact(
         self,
@@ -803,10 +818,7 @@ class Runtime:
 
             # Effect stub ack; unblock the waiting caller
             if isinstance(event, EffectStubAck):
-                ack = self._pending_stub_acks.pop(event.kind, None)
-                if ack is not None:
-                    ack.acknowledged = True
-                    ack.done.set()
+                self._handle_effect_stub_ack(event)
                 continue
 
             # Interact step: batch events with apply_event, then snapshot
@@ -862,6 +874,9 @@ class Runtime:
                     )
                     if resolved is not None:
                         self._run_update(resolved)
+                    continue
+                if event[0] == "_effect_stub_ack" and len(event) == 3:
+                    self._handle_effect_stub_ack(event[2], generation=event[1])
                     continue
                 if event[0] == "_async_result" and len(event) == 4:
                     self._flush_coalescables()
@@ -1473,7 +1488,8 @@ class Runtime:
         # Notify any await_async callers
         waiter = self._pending_await_async.pop(tag, None)
         if waiter is not None:
-            waiter.set()
+            waiter.completed = True
+            waiter.done.set()
 
     def _handle_stream_value(self, tag: str, nonce: int, value: Any) -> None:
         """Handle a stream chunk, checking nonce for staleness."""
@@ -1585,8 +1601,80 @@ class Runtime:
 
     def _flush_pending_stub_acks(self) -> None:
         """Release stub-ack waiters tied to the dead renderer."""
-        snapshot = dict(self._pending_stub_acks)
-        self._pending_stub_acks.clear()
+        with self._stub_ack_lock:
+            self._stub_ack_generation += 1
+            snapshot = dict(self._pending_stub_acks)
+            self._pending_stub_acks.clear()
+            self._stale_stub_acks.clear()
+        for waiter in snapshot.values():
+            waiter.done.set()
+
+    def _begin_stub_ack_waiter(
+        self,
+        kind: str,
+        *,
+        registered: bool,
+        operation: str,
+    ) -> _StubAckWaiter:
+        """Create and install a stub ack waiter for one kind."""
+        with self._stub_ack_lock:
+            if kind in self._pending_stub_acks:
+                raise RuntimeError(
+                    f"{operation}({kind!r}): another stub ack is already pending"
+                )
+            ack = _StubAckWaiter(
+                registered=registered,
+                generation=self._stub_ack_generation,
+            )
+            self._pending_stub_acks[kind] = ack
+            return ack
+
+    def _retire_stub_ack_waiter(self, kind: str, waiter: _StubAckWaiter) -> bool:
+        """Retire a timed-out waiter without removing a newer waiter."""
+        with self._stub_ack_lock:
+            if self._pending_stub_acks.get(kind) is not waiter:
+                return False
+            self._pending_stub_acks.pop(kind, None)
+            stale_key = (kind, waiter.registered)
+            self._stale_stub_acks[stale_key] = (
+                self._stale_stub_acks.get(stale_key, 0) + 1
+            )
+            return True
+
+    def _handle_effect_stub_ack(
+        self,
+        event: EffectStubAck,
+        *,
+        generation: int | None = None,
+    ) -> None:
+        """Release the waiter that matches this stub ack."""
+        with self._stub_ack_lock:
+            if generation is None:
+                generation = self._stub_ack_generation
+            stale_key = (event.kind, event.registered)
+            stale_count = self._stale_stub_acks.get(stale_key, 0)
+            if stale_count > 0:
+                if stale_count == 1:
+                    self._stale_stub_acks.pop(stale_key, None)
+                else:
+                    self._stale_stub_acks[stale_key] = stale_count - 1
+                return
+
+            ack = self._pending_stub_acks.get(event.kind)
+            if (
+                ack is None
+                or ack.registered != event.registered
+                or ack.generation != generation
+            ):
+                return
+            self._pending_stub_acks.pop(event.kind, None)
+        ack.acknowledged = True
+        ack.done.set()
+
+    def _flush_pending_await_async(self) -> None:
+        """Release await_async waiters tied to the pre-reconnect task set."""
+        snapshot = dict(self._pending_await_async)
+        self._pending_await_async.clear()
         for waiter in snapshot.values():
             waiter.done.set()
 
@@ -1959,6 +2047,10 @@ class Runtime:
         # the replacement renderer. Their acks died with the old one.
         self._flush_pending_stub_acks()
 
+        # Release callers waiting for async completion against the
+        # pre-reconnect runtime state.
+        self._flush_pending_await_async()
+
         # Fail any in-flight interact so the caller doesn't hang until
         # timeout waiting for a response from a dead renderer.
         self._fail_pending_interact()
@@ -2005,24 +2097,32 @@ class Runtime:
 
             try:
                 logger.info("plushie runtime: renderer reconnected")
-                tree = self._safe_view(candidate_model)
-                if tree is None:
+                from plushie.widget import collect_subscriptions, derive_registry
+
+                self._widget_registry = old_widget_registry
+                self._memo_cache_prev = {}
+                self._widget_cache_prev = {}
+                rendered_tree = self._safe_view(candidate_model)
+                if rendered_tree is None:
                     # view() failed; keep the previous tree so window
                     # sync still has something to work with (matches Elixir
                     # which falls back to state.tree on safe_view error).
                     tree = old_tree
+                    next_widget_registry = old_widget_registry
+                    widget_subs = collect_subscriptions(next_widget_registry)
+                    self._memo_cache_prev = old_memo_cache_prev
+                    self._widget_cache_prev = old_widget_cache_prev
+                else:
+                    tree = rendered_tree
+                    next_widget_registry = derive_registry(tree)
+                    widget_subs = collect_subscriptions(next_widget_registry)
 
                 self._model = candidate_model
                 self._tree = tree
                 if tree is not None:
                     self._conn.send_snapshot(tree)
 
-                from plushie.widget import collect_subscriptions, derive_registry
-
-                self._widget_registry = (
-                    derive_registry(tree) if tree is not None else {}
-                )
-                widget_subs = collect_subscriptions(self._widget_registry)
+                self._widget_registry = next_widget_registry
 
                 # Re-sync subscriptions (force renderer subscriptions to re-register).
                 self._subscriptions.clear()
@@ -2119,13 +2219,16 @@ class Runtime:
             old.join(timeout=2.0)
         self._reader_thread = threading.Thread(
             target=self._reader_loop,
+            args=(self._stub_ack_generation,),
             name="plushie-runtime-reader",
             daemon=True,
         )
         self._reader_thread.start()
 
-    def _reader_loop(self) -> None:
+    def _reader_loop(self, stub_ack_generation: int | None = None) -> None:
         """Read events from the connection and post to the queue."""
+        if stub_ack_generation is None:
+            stub_ack_generation = self._stub_ack_generation
         while self.is_running:
             event = self._conn.receive_event(timeout=0.5)
             if event is None:
@@ -2133,6 +2236,9 @@ class Runtime:
                 if not self._conn.is_alive:
                     self._queue.put(None)
                     break
+                continue
+            if isinstance(event, EffectStubAck):
+                self._queue.put(("_effect_stub_ack", stub_ack_generation, event))
                 continue
             self._queue.put(event)
 
@@ -2205,11 +2311,23 @@ class _InteractSlot:
 class _StubAckWaiter:
     """Shared state for a pending effect-stub ack."""
 
-    __slots__ = ("acknowledged", "done")
+    __slots__ = ("acknowledged", "done", "generation", "registered")
+
+    def __init__(self, *, registered: bool, generation: int) -> None:
+        self.done: threading.Event = threading.Event()
+        self.acknowledged: bool = False
+        self.generation: int = generation
+        self.registered: bool = registered
+
+
+class _AsyncWaiter:
+    """Shared state for a pending await_async call."""
+
+    __slots__ = ("completed", "done")
 
     def __init__(self) -> None:
         self.done: threading.Event = threading.Event()
-        self.acknowledged: bool = False
+        self.completed: bool = False
 
 
 # ---------------------------------------------------------------------------

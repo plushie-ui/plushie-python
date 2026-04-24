@@ -7,6 +7,7 @@ detection, coalescing, subscription diffing, and the App ABC.
 from __future__ import annotations
 
 import threading
+from concurrent.futures import Future
 from dataclasses import dataclass
 from typing import Any, ClassVar
 
@@ -18,6 +19,7 @@ from plushie.events import (
     AsyncResult,
     Click,
     EffectResult,
+    EffectStubAck,
     Move,
     RecoveryFailed,
     RendererRestarted,
@@ -1038,6 +1040,335 @@ class TestReconnectStubAckCleanup:
 
         assert result["error"] is None
         assert rt._pending_stub_acks == {}
+
+    def test_late_ack_with_wrong_operation_does_not_release_new_waiter(self) -> None:
+        from plushie.runtime import _StubAckWaiter
+
+        rt = self._make_runtime()
+        waiter = _StubAckWaiter(registered=True, generation=rt._stub_ack_generation)
+        rt._pending_stub_acks["file_open"] = waiter
+
+        rt._handle_effect_stub_ack(EffectStubAck(kind="file_open", registered=False))
+
+        assert rt._pending_stub_acks["file_open"] is waiter
+        assert waiter.acknowledged is False
+        assert waiter.done.is_set() is False
+
+        rt._handle_effect_stub_ack(EffectStubAck(kind="file_open", registered=True))
+
+        assert rt._pending_stub_acks == {}
+        assert waiter.acknowledged is True
+        assert waiter.done.is_set() is True
+
+    def test_late_ack_with_old_generation_does_not_release_new_waiter(self) -> None:
+        from plushie.runtime import _StubAckWaiter
+
+        rt = self._make_runtime()
+        old_generation = rt._stub_ack_generation
+        old_waiter = _StubAckWaiter(registered=True, generation=old_generation)
+        rt._pending_stub_acks["file_open"] = old_waiter
+
+        rt._flush_pending_stub_acks()
+
+        new_generation = rt._stub_ack_generation
+        new_waiter = _StubAckWaiter(registered=True, generation=new_generation)
+        rt._pending_stub_acks["file_open"] = new_waiter
+
+        rt._handle_effect_stub_ack(
+            EffectStubAck(kind="file_open", registered=True),
+            generation=old_generation,
+        )
+
+        assert old_waiter.acknowledged is False
+        assert old_waiter.done.is_set() is True
+        assert rt._pending_stub_acks["file_open"] is new_waiter
+        assert new_waiter.acknowledged is False
+        assert new_waiter.done.is_set() is False
+
+        rt._handle_effect_stub_ack(
+            EffectStubAck(kind="file_open", registered=True),
+            generation=new_generation,
+        )
+
+        assert rt._pending_stub_acks == {}
+        assert new_waiter.acknowledged is True
+        assert new_waiter.done.is_set() is True
+
+    def test_timed_out_waiter_only_retires_itself(self) -> None:
+        from plushie.runtime import _StubAckWaiter
+
+        rt = self._make_runtime()
+        old_waiter = _StubAckWaiter(registered=True, generation=rt._stub_ack_generation)
+        new_waiter = _StubAckWaiter(registered=True, generation=rt._stub_ack_generation)
+        rt._pending_stub_acks["file_open"] = new_waiter
+
+        assert rt._retire_stub_ack_waiter("file_open", old_waiter) is False
+
+        assert rt._pending_stub_acks["file_open"] is new_waiter
+        assert rt._stale_stub_acks == {}
+
+    def test_late_timed_out_ack_does_not_release_later_waiter(self) -> None:
+        from plushie.runtime import _StubAckWaiter
+
+        rt = self._make_runtime()
+        old_waiter = _StubAckWaiter(registered=True, generation=rt._stub_ack_generation)
+        rt._pending_stub_acks["file_open"] = old_waiter
+
+        assert rt._retire_stub_ack_waiter("file_open", old_waiter) is True
+
+        new_waiter = _StubAckWaiter(registered=True, generation=rt._stub_ack_generation)
+        rt._pending_stub_acks["file_open"] = new_waiter
+
+        rt._handle_effect_stub_ack(EffectStubAck(kind="file_open", registered=True))
+
+        assert rt._pending_stub_acks["file_open"] is new_waiter
+        assert new_waiter.acknowledged is False
+        assert new_waiter.done.is_set() is False
+        assert rt._stale_stub_acks == {}
+
+        rt._handle_effect_stub_ack(EffectStubAck(kind="file_open", registered=True))
+
+        assert rt._pending_stub_acks == {}
+        assert new_waiter.acknowledged is True
+        assert new_waiter.done.is_set() is True
+
+
+class TestAwaitAsyncCleanup:
+    def _make_runtime(self) -> Any:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import Runtime
+
+        builder = create_app("AwaitAsyncCleanupTest")
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model
+
+        @builder.view
+        def _view(_model: int) -> dict[str, Any]:
+            return {"id": "root", "type": "container", "props": {}, "children": []}
+
+        conn = MagicMock()
+        conn.session = ""
+        conn.restart.return_value = None
+        conn.send_settings.return_value = None
+        conn.wait_hello.return_value = None
+        conn.send_snapshot.return_value = None
+
+        rt = Runtime(builder, conn)
+        rt._model = 0
+        rt._start_reader = lambda: None
+        return rt
+
+    def test_await_async_timeout_removes_waiter(self) -> None:
+        rt = self._make_runtime()
+        future: Future[Any] = Future()
+        rt._async_tasks["load"] = (future, 1)
+
+        assert rt.await_async("load", timeout=0.001) is False
+        assert rt._pending_await_async == {}
+
+    def test_reconnect_releases_pending_await_async_waiter_without_completion(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rt = self._make_runtime()
+        future: Future[Any] = Future()
+        rt._async_tasks["load"] = (future, 1)
+
+        finished = threading.Event()
+        result: dict[str, Any] = {"value": None}
+
+        def call() -> None:
+            result["value"] = rt.await_async("load", timeout=5.0)
+            finished.set()
+
+        worker = threading.Thread(target=call, daemon=True)
+        worker.start()
+
+        for _ in range(100):
+            if "load" in rt._pending_await_async:
+                break
+            threading.Event().wait(0.01)
+        else:  # pragma: no cover - test would fail below anyway
+            pytest.fail("await_async waiter was never registered")
+
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is True
+        assert finished.wait(0.5)
+        worker.join(timeout=0.1)
+
+        assert result["value"] is False
+        assert rt._async_tasks["load"] == (future, 1)
+        assert rt._pending_await_async == {}
+
+
+class TestReconnectWidgetRegistry:
+    def _make_runtime(
+        self,
+        *,
+        initial_widget_ids: tuple[str, ...] = ("probe",),
+        reconnect_widget_ids: tuple[str, ...] | None = None,
+    ) -> Any:
+        from unittest.mock import MagicMock
+
+        from plushie.runtime import Runtime
+        from plushie.tree import normalize_view
+        from plushie.widget import WidgetDef, derive_registry
+
+        class StatefulWidget(WidgetDef):
+            def init(self, props: dict[str, Any]) -> dict[str, Any]:
+                _ = props
+                return {"value": "fresh"}
+
+            def view(
+                self, widget_id: str, props: dict[str, Any], state: dict[str, Any]
+            ) -> dict[str, Any]:
+                _ = props
+                return {
+                    "id": widget_id,
+                    "type": "text",
+                    "props": {"content": state["value"]},
+                    "children": [],
+                }
+
+            def subscribe(
+                self, props: dict[str, Any], state: dict[str, Any]
+            ) -> list[Subscription]:
+                _ = props, state
+                return [Subscription.on_key_press(max_rate=30)]
+
+        builder = create_app("ReconnectWidgetRegistryTest")
+        next_widget_ids = (
+            reconnect_widget_ids
+            if reconnect_widget_ids is not None
+            else initial_widget_ids
+        )
+
+        @builder.init
+        def _init() -> int:
+            return 0
+
+        @builder.update
+        def _update(model: int, _event: object) -> int:
+            return model
+
+        @builder.view
+        def _view(model: int) -> dict[str, Any]:
+            widget_ids = initial_widget_ids if model == 0 else next_widget_ids
+            return {
+                "id": "main",
+                "type": "window",
+                "props": {},
+                "children": [
+                    StatefulWidget.build(widget_id) for widget_id in widget_ids
+                ],
+            }
+
+        @builder.handle_renderer_exit
+        def _handle_renderer_exit(model: int, _reason: Any) -> int:
+            return 1 if reconnect_widget_ids is not None else model
+
+        conn = MagicMock()
+        conn.session = ""
+        conn.restart.return_value = None
+        conn.send_settings.return_value = None
+        conn.wait_hello.return_value = None
+        conn.send_snapshot.return_value = None
+
+        rt = Runtime(builder, conn)
+        old_tree = normalize_view(rt._app.view(0), registry={})
+        old_registry = derive_registry(old_tree)
+        for entry in old_registry.values():
+            entry.state["value"] = "old"
+        old_tree = normalize_view(rt._app.view(0), registry=old_registry)
+        old_registry = derive_registry(old_tree)
+
+        rt._model = 0
+        rt._tree = old_tree
+        rt._widget_registry = old_registry
+        rt._memo_cache_prev = {"memo": "old"}
+        rt._widget_cache_prev = {"widget": "old"}
+        rt._windows = {"main"}
+        rt._start_reader = lambda: None
+        return rt
+
+    def test_successful_reconnect_preserves_widget_state(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rt = self._make_runtime()
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is True
+
+        snapshot = rt._conn.send_snapshot.call_args.args[0]
+        assert snapshot["children"][0]["props"]["content"] == "old"
+        assert rt._widget_registry[("main", "main#probe")].state == {"value": "old"}
+        assert rt._memo_cache_prev == {}
+        assert rt._widget_cache_prev == {}
+
+    def test_successful_reconnect_prunes_removed_widgets(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rt = self._make_runtime(
+            initial_widget_ids=("probe", "removed"),
+            reconnect_widget_ids=("probe",),
+        )
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is True
+
+        snapshot = rt._conn.send_snapshot.call_args.args[0]
+        assert [child["id"] for child in snapshot["children"]] == ["main#probe"]
+        assert rt._widget_registry[("main", "main#probe")].state == {"value": "old"}
+        assert ("main", "main#removed") not in rt._widget_registry
+
+    def test_reconnect_replay_failure_restores_previous_widget_registry(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rt = self._make_runtime()
+        old_registry = dict(rt._widget_registry)
+        old_tree = rt._tree
+        rt._conn.send_snapshot.side_effect = RuntimeError("snapshot failed")
+        rt._MAX_RESTART_ATTEMPTS = 1
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is False
+
+        assert rt._tree is old_tree
+        assert rt._widget_registry == old_registry
+        assert rt._widget_registry[("main", "main#probe")].state == {"value": "old"}
+        assert rt._memo_cache_prev == {"memo": "old"}
+        assert rt._widget_cache_prev == {"widget": "old"}
+
+    def test_reconnect_view_failure_fallback_keeps_widget_registry_and_subscriptions(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rt = self._make_runtime()
+        old_tree = rt._tree
+        old_registry = dict(rt._widget_registry)
+
+        def fail_view(_model: int) -> dict[str, Any]:
+            raise RuntimeError("view failed")
+
+        rt._app.view = fail_view  # type: ignore[method-assign]
+        monkeypatch.setattr("plushie.runtime.time.sleep", lambda _seconds: None)
+
+        assert rt._attempt_reconnect("renderer_crashed") is True
+
+        snapshot = rt._conn.send_snapshot.call_args.args[0]
+        assert snapshot is old_tree
+        assert rt._widget_registry == old_registry
+        assert rt._widget_registry[("main", "main#probe")].state == {"value": "old"}
+        assert rt._subscription_keys == [("on_key_press", "")]
+        assert rt._subscriptions[("on_key_press", "")].max_rate == 30
+        assert rt._memo_cache_prev == {"memo": "old"}
+        assert rt._widget_cache_prev == {"widget": "old"}
 
 
 class TestReconnectSequencing:
