@@ -1,18 +1,14 @@
-"""Tree normalization, diffing, and search utilities."""
+"""Tree normalization, diffing, and search/query helpers."""
 
 from plushie.tree._types import Node, PatchOp, WireEncodable
 from plushie.tree.diff import diff
 from plushie.tree.normalize import (
     ScopedId,
-    exists,
     expand_rows,
-    find,
-    find_all,
-    ids,
     normalize,
     normalize_view,
-    text_of,
 )
+from plushie.tree.search import exists, find, find_all, ids, text_of
 
 __all__ = [
     "Node",
