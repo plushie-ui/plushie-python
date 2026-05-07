@@ -156,6 +156,33 @@ class TestSettings:
         with pytest.raises(ValueError, match="unknown setting key: extension_config"):
             settings({"extension_config": {}})
 
+    def test_default_font_string_normalized_to_object(self) -> None:
+        # The renderer reads `default_font` as an object keyed by `family`;
+        # bare strings fall through to the platform default. The encoder
+        # rewraps a convenience string to the canonical object shape.
+        msg = settings({"default_font": "monospace"})
+        assert msg["settings"]["default_font"] == {"family": "monospace"}
+
+    def test_default_font_object_passthrough(self) -> None:
+        msg = settings({"default_font": {"family": "Fira Code", "weight": "bold"}})
+        assert msg["settings"]["default_font"] == {
+            "family": "Fira Code",
+            "weight": "bold",
+        }
+
+    def test_default_font_dataclass_normalized(self) -> None:
+        from plushie.types import Font
+
+        msg = settings({"default_font": Font(family="Inter", weight="medium")})
+        assert msg["settings"]["default_font"] == {
+            "family": "Inter",
+            "weight": "medium",
+        }
+
+    def test_default_font_rejects_other_types(self) -> None:
+        with pytest.raises(ValueError, match="default_font"):
+            settings({"default_font": 42})  # type: ignore[dict-item]
+
 
 class TestSnapshot:
     def test_structure(self) -> None:

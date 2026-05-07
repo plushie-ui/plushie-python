@@ -145,7 +145,31 @@ def settings(
 
     inner = dict(settings_dict)
     inner.setdefault("protocol_version", PROTOCOL_VERSION)
+    if "default_font" in inner:
+        inner["default_font"] = _normalize_default_font(inner["default_font"])
     return {"type": "settings", "session": session, "settings": inner}
+
+
+def _normalize_default_font(font: Any) -> dict[str, Any]:
+    """Coerce ``default_font`` to the canonical ``{family: ...}`` object form.
+
+    The renderer reads ``default_font`` strictly as an object and looks
+    for the ``family`` key; a bare string falls through silently to the
+    platform default. Accept the convenience shapes (bare family string,
+    ``Font`` dataclass instance) and rewrap them to the canonical
+    object before they hit the wire.
+    """
+    from plushie.types import Font
+
+    if isinstance(font, Font):
+        return font.to_wire()
+    if isinstance(font, str):
+        return {"family": font}
+    if isinstance(font, dict):
+        return font
+    raise ValueError(
+        f"default_font must be a dict, str, or Font; got {type(font).__name__}"
+    )
 
 
 def snapshot(

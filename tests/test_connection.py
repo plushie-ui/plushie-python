@@ -1002,6 +1002,34 @@ class TestConnectionWithBinary:
             assert resp is not None
             assert resp.get("type") == "reset_response"
 
+    def test_default_font_string_accepted_by_renderer(self) -> None:
+        """A bare-string ``default_font`` is rewrapped before the wire so
+        the renderer sees the canonical ``{family: ...}`` object and does
+        not emit an ``invalid_settings`` diagnostic.
+        """
+        from plushie.diagnostics import DiagnosticMessage, InvalidSettings
+
+        with Connection.open(mode="mock") as conn:
+            conn.send_settings({"default_font": "monospace"})
+            conn.wait_hello(timeout=5.0)
+            tree = {
+                "id": "root",
+                "type": "column",
+                "props": {},
+                "children": [],
+            }
+            conn.send_snapshot(tree)
+            # Drain any pending events; settings problems would surface
+            # as a diagnostic on this queue.
+            for _ in range(8):
+                evt = conn.receive_event(timeout=0.1)
+                if evt is None:
+                    break
+                if isinstance(evt, DiagnosticMessage) and isinstance(
+                    evt.diagnostic, InvalidSettings
+                ):
+                    pytest.fail(f"renderer rejected default_font: {evt.diagnostic!r}")
+
 
 # ===================================================================
 # StdioConnection format="json" round-trip
