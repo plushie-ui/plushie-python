@@ -1481,7 +1481,8 @@ class TestDecodeWindowEvents:
                 "window_id": "win1",
                 "width": 800,
                 "height": 600,
-                "position": {"x": 100, "y": 50},
+                "x": 100,
+                "y": 50,
                 "scale_factor": 2.0,
             },
         }
@@ -1490,6 +1491,7 @@ class TestDecodeWindowEvents:
         assert result.window_id == "win1"
         assert result.width == 800
         assert result.position_x == 100
+        assert result.position_y == 50
         assert result.scale_factor == 2.0
 
     def test_window_opened_no_position(self) -> None:

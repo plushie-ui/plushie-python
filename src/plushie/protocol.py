@@ -1636,15 +1636,14 @@ def _decode_event(msg: dict[str, Any]) -> Any:
     # ------- Window events (global subscription) -------
 
     if family == "window_opened":
-        pos = data.get("position") or {}
         return WindowEvent(
             type="opened",
             window_id=str(data.get("window_id", "")),
             width=float(data.get("width", 0)),
             height=float(data.get("height", 0)),
             scale_factor=float(data.get("scale_factor", 1.0)),
-            position_x=_opt_float(pos.get("x")),
-            position_y=_opt_float(pos.get("y")),
+            position_x=_opt_float(data.get("x")),
+            position_y=_opt_float(data.get("y")),
         )
 
     if family == "window_closed":
