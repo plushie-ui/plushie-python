@@ -184,8 +184,10 @@ Wire IDs use the canonical format `window#scope/path/id`:
 
 Events on the runtime side carry split fields: `id` (local),
 `window_id`, `scope` (tuple of scope components from immediate
-parent outward). This shape is what user pattern matching
-operates on:
+parent outward, with `window_id` appended as the last element).
+User pattern matching usually only cares about the head of the
+scope (the immediate parent), so the trailing `window_id` does
+not get in the way:
 
 ```python
 match event:
@@ -200,7 +202,8 @@ Commands use forward-order path strings:
 window context onto commands as needed.
 
 `plushie.tree.ScopedId` parses and constructs the canonical
-form. `"/"` is forbidden in user-provided IDs.
+form. Both `"/"` and `"#"` are forbidden in user-provided IDs
+(`/` is the scope separator; `#` is the window separator).
 
 ## What these invariants buy
 

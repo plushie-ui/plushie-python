@@ -7,8 +7,6 @@ own concurrency shape; this is plushie-python's, and it is
 downstream of Python and the GIL rather than cross-SDK
 convergence.
 
-The Python equivalent of `plushie-elixir/otp-shape.md`.
-
 ## The runtime/connection split
 
 Two long-lived concerns, separated by responsibility:

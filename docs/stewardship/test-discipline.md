@@ -42,8 +42,9 @@ follow them by name. The naming is a cross-SDK contract.
   layout-affecting bugs. `PLUSHIE_TEST_BACKEND=headless pytest`.
 - **windowed**: seconds per test. Full iced rendering with a
   real display (headless weston on Linux, native display
-  elsewhere). Used when the test cares about full window
-  lifecycle, focus events, or platform-specific behavior.
+  elsewhere; Xvfb works for X11-only environments). Used when
+  the test cares about full window lifecycle, focus events, or
+  platform-specific behavior.
   `PLUSHIE_TEST_BACKEND=windowed pytest`.
 
 The names mean the same thing in plushie-rust, plushie-elixir,

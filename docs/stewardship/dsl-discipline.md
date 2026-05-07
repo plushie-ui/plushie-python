@@ -7,8 +7,6 @@ This doc describes the posture for adding to that surface,
 deciding where compile-time-ish guarantees come from
 (type hints, pyright), and keeping the user-facing API honest.
 
-The Python equivalent of `plushie-elixir/macro-dsl.md`.
-
 ## What the user-facing surface is
 
 A small handful of import points cover the full vocabulary:
