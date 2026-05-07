@@ -434,12 +434,12 @@ class Command:
     @staticmethod
     def list_images_query(tag: str) -> Command:
         """List all registered image handles.  Result arrives as a system event."""
-        return Command(type="widget_op", payload={"op": "list_images", "tag": tag})
+        return Command(type="image_op", payload={"op": "list", "tag": tag})
 
     @staticmethod
     def clear_images() -> Command:
         """Delete all registered in-memory images."""
-        return Command(type="widget_op", payload={"op": "clear_images"})
+        return Command(type="image_op", payload={"op": "clear"})
 
     # ------------------------------------------------------------------
     # Window ops

@@ -169,12 +169,15 @@ class TestWidgetOps:
 
     def test_list_images_query(self) -> None:
         cmd = Command.list_images_query("img")
-        assert cmd.payload["op"] == "list_images"
+        assert cmd.type == "image_op"
+        assert cmd.payload["op"] == "list"
         assert cmd.payload["tag"] == "img"
 
     def test_clear_images(self) -> None:
         cmd = Command.clear_images()
-        assert cmd.payload["op"] == "clear_images"
+        assert cmd.type == "image_op"
+        assert cmd.payload["op"] == "clear"
+        assert "tag" not in cmd.payload
 
     def test_pane_split(self) -> None:
         cmd = Command.pane_split("grid", "p1", "horizontal", "p2")

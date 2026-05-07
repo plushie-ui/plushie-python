@@ -1002,6 +1002,69 @@ class TestConnectionWithBinary:
             assert resp is not None
             assert resp.get("type") == "reset_response"
 
+    def test_image_list_and_clear_round_trip_through_typed_channel(self) -> None:
+        """`list` / `clear` ride the typed ``image_op`` channel and the
+        renderer's ``op_query_response`` for ``list_images`` round-trips
+        through the existing decoder.
+        """
+        from plushie.events import ImageList
+        from plushie.protocol import image_op
+
+        # Smallest valid PNG: 1x1 transparent pixel. The renderer's
+        # image registry parses encoded bytes through the `image` crate
+        # and rejects malformed input, so a real PNG is required for the
+        # handle to land in the registry.
+        valid_png = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+            b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00"
+            b"\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\xcf\xc0"
+            b"\xf0\x1f\x00\x05\x00\x01\xff\x89\x99=\x1d\x00\x00\x00"
+            b"\x00IEND\xaeB`\x82"
+        )
+
+        with Connection.open(mode="mock") as conn:
+            conn.send_settings({})
+            conn.wait_hello(timeout=5.0)
+
+            # Register one image so the listing has something to show.
+            conn.send(image_op("create_image", "logo", data=valid_png, session=""))
+
+            # Drive the typed list op and walk the event queue for
+            # the matching ImageList response.
+            conn.send(image_op("list", tag="t1", session=""))
+
+            list_event: ImageList | None = None
+            for _ in range(20):
+                evt = conn.receive_event(timeout=1.0)
+                if evt is None:
+                    break
+                if isinstance(evt, ImageList) and evt.tag == "t1":
+                    list_event = evt
+                    break
+
+            assert list_event is not None, (
+                "renderer did not return an ImageList for the typed list op"
+            )
+            assert "logo" in list_event.handles
+
+            # The typed `clear` op is accepted by the renderer (no
+            # `unknown_message_type` diagnostic); a follow-up `list`
+            # still round-trips correctly. Mock mode's image-registry
+            # state on `clear` is checked in the renderer's own tests.
+            conn.send(image_op("clear", session=""))
+            conn.send(image_op("list", tag="t2", session=""))
+
+            after_clear: ImageList | None = None
+            for _ in range(20):
+                evt = conn.receive_event(timeout=1.0)
+                if evt is None:
+                    break
+                if isinstance(evt, ImageList) and evt.tag == "t2":
+                    after_clear = evt
+                    break
+
+            assert after_clear is not None
+
     def test_default_font_string_accepted_by_renderer(self) -> None:
         """A bare-string ``default_font`` is rewrapped before the wire so
         the renderer sees the canonical ``{family: ...}`` object and does

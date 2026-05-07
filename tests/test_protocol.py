@@ -274,6 +274,21 @@ class TestImageOp:
         assert msg["op"] == "delete_image"
         assert "data" not in msg["payload"]
 
+    def test_list_carries_tag_only(self) -> None:
+        # `list` rides the typed ImageOp channel; payload carries the
+        # response tag and nothing else. The renderer no longer accepts
+        # the old `widget_op` envelope for this op.
+        msg = image_op("list", tag="t1")
+        assert msg["type"] == "image_op"
+        assert msg["op"] == "list"
+        assert msg["payload"] == {"tag": "t1"}
+
+    def test_clear_has_empty_payload(self) -> None:
+        msg = image_op("clear")
+        assert msg["type"] == "image_op"
+        assert msg["op"] == "clear"
+        assert msg["payload"] == {}
+
 
 class TestCommand:
     def test_structure(self) -> None:

@@ -393,34 +393,41 @@ def effect_msg(
 
 def image_op(
     op: str,
-    handle: str,
+    handle: str | None = None,
     *,
     data: bytes | str | None = None,
     pixels: bytes | str | None = None,
     width: int | None = None,
     height: int | None = None,
+    tag: str | None = None,
     session: str = "",
 ) -> dict[str, Any]:
     """Build an ImageOp message.
 
-    Uses the unified ``_op`` envelope: op-specific data (``handle``,
-    ``data``, ``pixels``, ``width``, ``height``) lives under ``payload``.
+    Uses the unified ``_op`` envelope: op-specific data lives under
+    ``payload``.
 
-    For ``create_image`` / ``update_image``, provide either ``data``
-    (encoded image bytes) or ``pixels`` + ``width`` + ``height``
-    (raw RGBA). For ``delete_image``, only ``handle`` is needed.
+    For ``create_image`` / ``update_image``, provide ``handle`` plus
+    either ``data`` (encoded image bytes) or ``pixels`` + ``width`` +
+    ``height`` (raw RGBA). For ``delete_image``, only ``handle`` is
+    needed. ``list`` carries a ``tag`` for the response correlation;
+    ``clear`` carries no payload data at all.
 
     Args:
         op: Operation (``"create_image"``, ``"update_image"``,
-            ``"delete_image"``).
-        handle: Image handle name.
+            ``"delete_image"``, ``"list"``, ``"clear"``).
+        handle: Image handle name. Required for create / update / delete.
         data: Encoded image data (PNG/JPEG bytes or base64 string).
         pixels: Raw RGBA pixel data (bytes or base64 string).
         width: Image width (required with ``pixels``).
         height: Image height (required with ``pixels``).
+        tag: Tag used to correlate the ``op_query_response`` from
+            ``list``.
         session: Session identifier.
     """
-    payload: dict[str, Any] = {"handle": handle}
+    payload: dict[str, Any] = {}
+    if handle is not None:
+        payload["handle"] = handle
     if data is not None:
         payload["data"] = data
     if pixels is not None:
@@ -429,6 +436,8 @@ def image_op(
         payload["width"] = width
     if height is not None:
         payload["height"] = height
+    if tag is not None:
+        payload["tag"] = tag
     return {
         "type": "image_op",
         "session": session,

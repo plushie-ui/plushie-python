@@ -1393,14 +1393,14 @@ class Runtime:
 
         if t == "image_op":
             op_name = p.get("op", "")
-            handle = p.get("handle", "")
             msg = image_op(
                 op_name,
-                handle,
+                p.get("handle"),
                 data=p.get("data"),
                 pixels=p.get("pixels"),
                 width=p.get("width"),
                 height=p.get("height"),
+                tag=p.get("tag"),
                 session=self._conn.session,
             )
             self._conn.send(msg)
