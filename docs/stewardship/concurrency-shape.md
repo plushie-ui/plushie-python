@@ -110,8 +110,7 @@ a renderer-exit event. The runtime thread handles it:
    effects.
 2. Call `app.handle_renderer_exit(model, reason)` (default:
    identity).
-3. Try to reconnect with exponential backoff (100ms, 200ms,
-   400ms, 800ms, 1600ms; up to a small attempt cap).
+3. Try to reconnect with bounded exponential backoff.
 4. On success: replay settings, send a fresh full snapshot,
    re-subscribe, re-open windows.
 5. On failure: emit `RecoveryFailed`. In daemon mode, the

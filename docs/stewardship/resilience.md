@@ -30,13 +30,12 @@ holds up that half.
   stale UI. The overlay clears on the next successful render.
 - **Renderer crash auto-recovery.** The reader thread detects
   a broken pipe and posts a renderer-exit event. The runtime
-  reconnects with exponential backoff (100ms, 200ms, 400ms,
-  800ms, 1600ms; up to a small attempt cap), replays settings,
-  sends a fresh full snapshot to re-sync the tree, re-syncs
-  all subscriptions, and re-opens all windows. The user's
+  reconnects with bounded exponential backoff, replays settings,
+  sends a fresh full snapshot to re-sync the tree, re-syncs all
+  subscriptions, and re-opens all windows. The user's
   `handle_renderer_exit(model, reason)` callback can adjust
   the model before re-sync (e.g., reset transient UI state).
-  If reconnection exhausts attempts, the runtime emits a
+  If reconnection exhausts its attempt cap, the runtime emits a
   `RecoveryFailed` event; daemon mode keeps the runtime alive
   for a fresh connection.
 - **Async task isolation.** `Command.task` runs the function
