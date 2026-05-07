@@ -253,6 +253,32 @@ def widget_op(
     return msg
 
 
+def load_font_msg(
+    family: str,
+    data: bytes,
+    *,
+    session: str = "",
+) -> dict[str, Any]:
+    """Build a typed LoadFont message.
+
+    Wire shape: ``type = "load_font"`` with ``payload = {family, data}``.
+    JSON framing emits ``data`` as a base64 string; MessagePack framing
+    emits ``data`` as a native binary value. The framing layer handles
+    that conversion.
+
+    Args:
+        family: Font family name the renderer should register the data
+            under.
+        data: Raw TrueType or OpenType font bytes.
+        session: Session identifier.
+    """
+    return {
+        "type": "load_font",
+        "session": session,
+        "payload": {"family": family, "data": data},
+    }
+
+
 def window_op(
     op: str,
     window_id: str,
@@ -1863,6 +1889,7 @@ __all__ = [
     "encode_selector",
     "image_op",
     "interact_msg",
+    "load_font_msg",
     "parse_effect_response",
     "parse_hello",
     "parse_query_response",

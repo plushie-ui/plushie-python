@@ -59,6 +59,7 @@ from plushie.protocol import (
     commands,
     effect_msg,
     image_op,
+    load_font_msg,
     system_op,
     system_query,
     widget_op,
@@ -1340,6 +1341,11 @@ class Runtime:
 
         if t == "effect":
             self._send_effect(p["id"], p["tag"], p["kind"], p.get("opts", {}))
+            return
+
+        if t == "load_font":
+            msg = load_font_msg(p["family"], p["data"], session=self._conn.session)
+            self._conn.send(msg)
             return
 
         if t == "widget_op":

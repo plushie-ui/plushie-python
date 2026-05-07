@@ -19,8 +19,9 @@ Categories:
   ``pane_split``, ``pane_close``, ``pane_swap``, ``pane_maximize``,
   ``pane_restore``, ``command``, ``commands``
 - **Widget ops** (global): ``focus_next``, ``focus_previous``,
-  ``announce``, ``load_font``, ``tree_hash_query``,
+  ``announce``, ``tree_hash_query``,
   ``find_focused_query``, ``list_images_query``, ``clear_images``
+- **Font**: ``load_font``
 - **Window ops**: ``close_window``, ``resize_window``, ``move_window``,
   ``maximize_window``, ``minimize_window``, ``set_window_mode``,
   ``toggle_maximize``, ``toggle_decorations``, ``focus_window``,
@@ -416,8 +417,8 @@ class Command:
             data: Raw TrueType or OpenType binary font data.
         """
         return Command(
-            type="widget_op",
-            payload={"op": "load_font", "family": family, "data": data},
+            type="load_font",
+            payload={"family": family, "data": data},
         )
 
     @staticmethod

@@ -153,7 +153,7 @@ class TestWidgetOps:
 
     def test_load_font(self) -> None:
         cmd = Command.load_font("Inter", b"\x00\x01")
-        assert cmd.payload["op"] == "load_font"
+        assert cmd.type == "load_font"
         assert cmd.payload["family"] == "Inter"
         assert cmd.payload["data"] == b"\x00\x01"
 
