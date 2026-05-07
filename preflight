@@ -1,7 +1,31 @@
 #!/usr/bin/env bash
 # Mirrors CI: format check, lint, type check, test.
 # Run before committing.
+#
+# When PLUSHIE_RUST_SOURCE_PATH points at a plushie-rust checkout,
+# rebuild plushie-renderer from that source first and export
+# PLUSHIE_BINARY_PATH so the test runs use the fresh binary. Tests
+# exercise the real renderer, so a stale binary hides real bugs and
+# surfaces phantom ones. Without the variable set, the existing
+# binary resolution chain is used unchanged.
 set -euo pipefail
+
+if [[ -n "${PLUSHIE_RUST_SOURCE_PATH:-}" ]]; then
+    workspace="$(cd "$PLUSHIE_RUST_SOURCE_PATH" && pwd)"
+    if [[ ! -f "$workspace/Cargo.toml" ]]; then
+        echo "PLUSHIE_RUST_SOURCE_PATH=$PLUSHIE_RUST_SOURCE_PATH but no Cargo.toml at $workspace/Cargo.toml" >&2
+        exit 1
+    fi
+    echo "==> cargo build -p plushie-renderer (from $workspace)"
+    (cd "$workspace" && cargo build --release -p plushie-renderer)
+    binary="$workspace/target/release/plushie-renderer"
+    if [[ ! -f "$binary" ]]; then
+        echo "cargo build succeeded but $binary is missing" >&2
+        exit 1
+    fi
+    export PLUSHIE_BINARY_PATH="$binary"
+    echo "    using $PLUSHIE_BINARY_PATH"
+fi
 
 echo "==> ruff format --check"
 ruff format --check src tests examples
