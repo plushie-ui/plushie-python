@@ -20,9 +20,9 @@ Pin applications accordingly in `pyproject.toml`:
 ```toml
 [project]
 dependencies = [
-    "plushie==0.5.0",         # exact pin, safest pre-1.0
+    "plushie==0.6.0",         # exact pin, safest pre-1.0
     # or
-    "plushie>=0.5,<0.6",      # allow patch bumps, reject minor
+    "plushie>=0.6,<0.7",      # allow patch bumps, reject minor
 ]
 ```
 

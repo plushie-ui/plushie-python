@@ -42,7 +42,7 @@ breaking changes.
 # pyproject.toml
 [project]
 dependencies = [
-    "plushie==0.5.0",
+    "plushie==0.6.0",
 ]
 ```
 
