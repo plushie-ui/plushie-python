@@ -59,7 +59,7 @@ class ChecksumError(RuntimeError):
     """Raised when SHA-256 verification of a downloaded artifact fails."""
 
 
-PLUSHIE_RUST_VERSION = "0.6.1"
+PLUSHIE_RUST_VERSION = "0.7.1"
 """plushie-rust release this SDK pins to. Identifies the matching renderer binary,
 cargo-plushie build tool, and generated crate dependency versions."""
 
