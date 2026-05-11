@@ -1054,20 +1054,25 @@ def _parse_modifiers(raw: dict[str, Any] | None) -> KeyModifiers:
 
 
 _POINTER_TYPES = {"mouse", "touch", "pen"}
+_POINTER_BUTTONS = {"left", "right", "middle", "back", "forward"}
 
 
 def _parse_pointer_type(raw: Any) -> PointerType:
-    """Parse a wire pointer type string, defaulting to ``"mouse"``."""
+    """Parse a wire pointer type string."""
+    if raw is None or raw == "":
+        return "mouse"
     if raw in _POINTER_TYPES:
         return raw  # type: ignore[return-value]
-    return "mouse"
+    raise ValueError(f"unknown pointer type: {raw!r}")
 
 
 def _parse_pointer_button(raw: Any) -> PointerButton:
-    """Parse a wire button string, defaulting to ``"left"``."""
-    if isinstance(raw, str) and raw:
+    """Parse a wire button string."""
+    if raw is None or raw == "":
+        return "left"
+    if raw in _POINTER_BUTTONS:
         return raw  # type: ignore[return-value]
-    return "left"
+    raise ValueError(f"unknown pointer button: {raw!r}")
 
 
 def _extract_window_id(msg: dict[str, Any]) -> str:
@@ -1291,6 +1296,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             pointer=_parse_pointer_type(data.get("pointer")),
             modifiers=mods,
             finger=data.get("finger"),
+            lost=bool(data.get("lost", False)),
             window_id=_wid,
             scope=scope,
         )
@@ -1568,7 +1574,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=sub_window_id,
             x=0.0,
             y=0.0,
-            button=str(value or "left"),
+            button=_parse_pointer_button(value),
             pointer="mouse",
             modifiers=_parse_modifiers(modifiers_raw),
             captured=captured,
@@ -1580,7 +1586,7 @@ def _decode_event(msg: dict[str, Any]) -> Any:
             id=sub_window_id,
             x=0.0,
             y=0.0,
-            button=str(value or "left"),
+            button=_parse_pointer_button(value),
             pointer="mouse",
             modifiers=_parse_modifiers(modifiers_raw),
             captured=captured,

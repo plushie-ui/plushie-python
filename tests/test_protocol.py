@@ -933,6 +933,41 @@ class TestDecodePointerEvents:
         result = decode_message(raw)
         assert isinstance(result, Release)
         assert result.button == "right"
+        assert result.lost is False
+
+    def test_release_lost(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "release",
+            "id": "area1",
+            "window_id": "main",
+            "data": {"x": 50, "y": 60, "button": "left", "lost": True},
+        }
+        result = decode_message(raw)
+        assert isinstance(result, Release)
+        assert result.lost is True
+
+    def test_press_rejects_unknown_pointer_type(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "press",
+            "id": "area1",
+            "window_id": "main",
+            "data": {"x": 50, "y": 60, "pointer": "stylus"},
+        }
+        with pytest.raises(ValueError, match="unknown pointer type"):
+            decode_message(raw)
+
+    def test_press_rejects_unknown_button(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "press",
+            "id": "area1",
+            "window_id": "main",
+            "data": {"x": 50, "y": 60, "button": "primary"},
+        }
+        with pytest.raises(ValueError, match="unknown pointer button"):
+            decode_message(raw)
 
     def test_move(self) -> None:
         raw = {
@@ -1339,6 +1374,23 @@ class TestDecodeMouseEvents:
         assert result.button == "left"
         assert result.pointer == "mouse"
 
+    def test_button_pressed_missing_button_defaults_left(self) -> None:
+        raw = {"type": "event", "family": "button_pressed", "id": "", "tag": "m"}
+        result = decode_message(raw)
+        assert isinstance(result, Press)
+        assert result.button == "left"
+
+    def test_button_pressed_rejects_unknown_button(self) -> None:
+        raw = {
+            "type": "event",
+            "family": "button_pressed",
+            "id": "",
+            "tag": "m",
+            "value": "primary",
+        }
+        with pytest.raises(ValueError, match="unknown pointer button"):
+            decode_message(raw)
+
     def test_button_released(self) -> None:
         raw = {
             "type": "event",
@@ -1350,6 +1402,7 @@ class TestDecodeMouseEvents:
         result = decode_message(raw)
         assert isinstance(result, Release)
         assert result.button == "right"
+        assert result.lost is False
 
     def test_wheel_scrolled(self) -> None:
         raw = {
@@ -1433,6 +1486,7 @@ class TestDecodeTouchEvents:
         result = decode_message(raw)
         assert isinstance(result, Release)
         assert result.pointer == "touch"
+        assert result.lost is False
 
     def test_finger_lost(self) -> None:
         raw = {
@@ -1445,6 +1499,7 @@ class TestDecodeTouchEvents:
         result = decode_message(raw)
         assert isinstance(result, Release)
         assert result.pointer == "touch"
+        assert result.lost is True
 
     @pytest.mark.parametrize(
         "family",
