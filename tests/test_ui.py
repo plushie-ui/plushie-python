@@ -131,6 +131,10 @@ class TestSensor:
         node = ui.sensor("s")
         _assert_node(node, id="s", type="sensor")
 
+    def test_on_resize_serializes_bool(self) -> None:
+        node = ui.sensor("s", on_resize=True)
+        _assert_node(node, id="s", type="sensor", props={"on_resize": True})
+
 
 class TestThemer:
     def test_basic(self) -> None:
