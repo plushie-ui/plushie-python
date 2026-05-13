@@ -3,7 +3,7 @@
 Provides commands matching the Elixir mix tasks:
 
 - ``run`` - resolve binary, spawn renderer, start runtime, block
-- ``connect`` - stdio transport mode (for ``plushie --exec``)
+- ``connect`` - stdio transport mode for renderer-parent startup
 - ``download`` - fetch precompiled binary
 - ``build`` - build custom binary with extensions
 - ``inspect`` - init app, call view, normalize, print as JSON

@@ -12,7 +12,7 @@ of the Python CLI; it is a bash script in the project root.
 | Command | Purpose |
 |---|---|
 | [`run`](#python--m-plushie-run) | Run a Plushie app |
-| [`connect`](#python--m-plushie-connect) | Stdio transport mode (for `plushie --exec`) |
+| [`connect`](#python--m-plushie-connect) | Stdio transport mode for renderer-parent startup |
 | [`download`](#python--m-plushie-download) | Fetch a precompiled renderer binary or WASM bundle |
 | [`build`](#python--m-plushie-build) | Build the renderer binary from source with extensions |
 | [`inspect`](#python--m-plushie-inspect) | Print the initial UI tree as JSON |
@@ -96,10 +96,15 @@ RUST_LOG=plushie=debug python -m plushie run myapp:Counter --json
 Runs a Plushie app in stdio transport mode. The Rust renderer spawns
 the Python process (not the other way around) and communicates over
 stdin and stdout. Use this when embedding Plushie inside a host that
-manages the renderer lifecycle, typically via `plushie --exec`.
+manages the renderer lifecycle, typically via renderer-parent exec.
 
 ```bash
-plushie --exec "python -m plushie connect myapp:Counter"
+plushie \
+  --exec-bin python \
+  --exec-arg -m \
+  --exec-arg plushie \
+  --exec-arg connect \
+  --exec-arg myapp:Counter
 ```
 
 ### Flags

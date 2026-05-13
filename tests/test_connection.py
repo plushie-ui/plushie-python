@@ -1093,7 +1093,7 @@ class TestStdioConnectionJsonFormat:
     """Exercise ``StdioConnection`` with ``format='json'``.
 
     The stdio transport is used when the renderer spawns the Python
-    process via ``plushie --exec``. With ``format='msgpack'`` the
+    process via renderer-parent exec. With ``format='msgpack'`` the
     framing tests already pin the expected byte layout; this class
     locks down the JSON alternative end-to-end: a frame written by
     ``send()`` must be newline-delimited JSON (not length-prefixed

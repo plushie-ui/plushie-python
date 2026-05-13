@@ -248,7 +248,13 @@ def handle_ssh_channel(channel, runtime_handle, client_id):
 Client connect:
 
 ```bash
-plushie --exec "ssh -p 2222 server.example -s plushie"
+plushie \
+  --exec-bin ssh \
+  --exec-arg -p \
+  --exec-arg 2222 \
+  --exec-arg server.example \
+  --exec-arg -s \
+  --exec-arg plushie
 ```
 
 Chapter 17 walks through a full browser scaffold with the WASM renderer; SSH follows the same pattern with a different transport.

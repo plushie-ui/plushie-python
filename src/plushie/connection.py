@@ -9,7 +9,7 @@ Two connection modes:
   with stdin/stdout pipes. Used by the runtime and testing framework.
 
 - **StdioConnection**: reads/writes the process's own fd 0 and fd 1.
-  Used when the renderer spawns the Python process (``plushie --exec``).
+  Used when the renderer spawns the Python process via structured exec args.
 
 Both modes support context manager protocol (``with`` blocks) for
 automatic cleanup.
@@ -1027,7 +1027,7 @@ class StdioConnection:
     """Connection using the process's own stdin/stdout (fd 0/1).
 
     Used when the renderer spawns the Python process via
-    ``plushie --exec``. The renderer writes to our stdin and reads
+    renderer-parent exec. The renderer writes to our stdin and reads
     from our stdout.
 
     The same interface as ``Connection`` but without subprocess
