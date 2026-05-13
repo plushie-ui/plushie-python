@@ -158,6 +158,8 @@ carry through to widget kwargs when you pass them:
 | `Color` | `str` | Canonical hex color string |
 | `FontWeight`, `FontStyle`, `FontStretch` | `Literal[...]` | Font axis values |
 | `AlignX`, `AlignY`, `Alignment` | `Literal[...]` | Alignment values |
+| `TextDirection` | `Literal["auto", "ltr", "rtl"]` | Direction hint for `text`, `text_input`, and `text_editor` |
+| `Ellipsis` | `Literal["none", "start", "middle", "end"]` | Closed text truncation modes |
 | `A11yRole`, `A11yLive`, `A11yHasPopup` | `Literal[...]` | Accessibility enums |
 | `Border`, `Shadow`, `Gradient`, `Font`, `StyleMap`, `A11y`, `Span` | frozen dataclasses | Structured style / a11y values |
 

@@ -285,6 +285,10 @@ class TestTextInput:
             props={"value": "hello", "placeholder": "Type..."},
         )
 
+    def test_text_direction_kwarg(self) -> None:
+        node = ui.text_input("search", "", text_direction="rtl")
+        assert node["props"]["text_direction"] == "rtl"
+
 
 class TestCheckbox:
     def test_basic(self) -> None:
@@ -377,6 +381,11 @@ class TestTextEditor:
             props={"content": "initial text"},
         )
 
+    def test_text_direction_and_on_paste_kwargs(self) -> None:
+        node = ui.text_editor("ed", "", text_direction="ltr", on_paste=True)
+        assert node["props"]["text_direction"] == "ltr"
+        assert node["props"]["on_paste"] is True
+
 
 # ---------------------------------------------------------------------------
 # Display with auto-id
@@ -395,6 +404,10 @@ class TestText:
     def test_with_kwargs(self) -> None:
         node = ui.text("Hello", size=24)
         assert node["props"]["size"] == 24
+
+    def test_text_direction_kwarg(self) -> None:
+        node = ui.text("Hello", text_direction="auto")
+        assert node["props"]["text_direction"] == "auto"
 
     def test_too_many_args(self) -> None:
         import pytest

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import get_args
+
 import pytest
 
 from plushie.types import (
@@ -10,6 +12,7 @@ from plushie.types import (
     A11y,
     Border,
     Colors,
+    Ellipsis,
     Font,
     Gradient,
     HelloInfo,
@@ -17,8 +20,22 @@ from plushie.types import (
     Shadow,
     StatusOverride,
     StyleMap,
+    TextDirection,
     Theme,
 )
+
+
+def _literal_values(alias: object) -> tuple[object, ...]:
+    return get_args(getattr(alias, "__value__", alias))
+
+
+class TestLiteralAliases:
+    def test_text_direction_is_closed(self) -> None:
+        assert _literal_values(TextDirection) == ("auto", "ltr", "rtl")
+
+    def test_ellipsis_is_closed(self) -> None:
+        assert _literal_values(Ellipsis) == ("none", "start", "middle", "end")
+
 
 # ---------------------------------------------------------------------------
 # Colors

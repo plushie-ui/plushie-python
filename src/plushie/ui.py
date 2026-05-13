@@ -411,9 +411,9 @@ def text_input(id: str, value: str, /, **kwargs: Any) -> Node:
         value: Current text content.
         **kwargs: Text input props (placeholder, padding, width, size,
             font, line_height, align_x, on_submit, on_paste, secure,
-            ime_purpose, style, icon, placeholder_color, selection_color,
-            a11y). Use ``input_purpose`` (preferred) or ``ime_purpose``
-            (deprecated alias).
+            input_purpose, text_direction, style, icon, placeholder_color,
+            selection_color, validation, a11y). Use ``input_purpose``
+            (preferred) or ``ime_purpose`` (deprecated alias).
     """
     return _node(id, "text_input", {"value": value, **kwargs})
 
@@ -552,10 +552,11 @@ def text_editor(id: str, content: str, /, **kwargs: Any) -> Node:
         content: Initial text content.
         **kwargs: Text editor props (placeholder, width, height,
             min_height, max_height, font, size, line_height, padding,
-            wrapping, ime_purpose, highlight_syntax, highlight_theme,
-            style, key_bindings, placeholder_color, selection_color, a11y).
-            Use ``input_purpose`` (preferred) or ``ime_purpose``
-            (deprecated alias).
+            wrapping, input_purpose, text_direction, highlight_syntax,
+            highlight_theme, style, key_bindings, placeholder_color,
+            selection_color, on_paste, validation, a11y). Use
+            ``input_purpose`` (preferred) or ``ime_purpose`` (deprecated
+            alias).
     """
     return _node(id, "text_editor", {"content": content, **kwargs})
 
@@ -592,7 +593,7 @@ def text(*args: Any, **kwargs: Any) -> Node:
         content: Text string to display.
         **kwargs: Text props (size, color, font, width, height,
             line_height, align_x, align_y, wrapping, ellipsis,
-            shaping, style, a11y).
+            shaping, text_direction, style, a11y).
     """
     if len(args) == 1:
         return _node(None, "text", {"content": args[0], **kwargs})

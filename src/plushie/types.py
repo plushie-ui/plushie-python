@@ -156,6 +156,12 @@ type Shaping = Literal["basic", "advanced"]
 type Wrapping = Literal["none", "word", "glyph", "word_or_glyph"]
 """Text wrapping strategy."""
 
+type TextDirection = Literal["auto", "ltr", "rtl"]
+"""Text direction hint for text and editable text widgets."""
+
+type Ellipsis = Literal["none", "start", "middle", "end"]
+"""Closed set of text truncation positions."""
+
 type Position = Literal["top", "bottom", "left", "right", "follow_cursor"]
 """Tooltip/overlay position."""
 
@@ -1313,6 +1319,7 @@ __all__ = [
     "Colors",
     "ContentFit",
     "Direction",
+    "Ellipsis",
     "FilterMethod",
     "Font",
     "FontStretch",
@@ -1333,6 +1340,7 @@ __all__ = [
     "SpanHighlight",
     "StatusOverride",
     "StyleMap",
+    "TextDirection",
     "Theme",
     "ValidationState",
     "WindowLevel",

@@ -519,6 +519,34 @@ class TestNormalizeA11yBuilderDefaults:
         assert a11y["invalid"] is True
         assert a11y["error_message"] == "Not a valid email"
 
+    def test_validation_invalid_tuple_normalizes_to_wire_map(self) -> None:
+        tree = _node(
+            "email",
+            "text_input",
+            {"validation": ("invalid", "Not a valid email")},
+        )
+        result = normalize(tree)
+        assert result["props"]["validation"] == {
+            "state": "invalid",
+            "message": "Not a valid email",
+        }
+        assert result["props"]["a11y"]["invalid"] is True
+        assert result["props"]["a11y"]["error_message"] == "Not a valid email"
+
+    def test_validation_invalid_list_normalizes_to_wire_map(self) -> None:
+        tree = _node(
+            "body",
+            "text_editor",
+            {"validation": ["invalid", "Required"]},
+        )
+        result = normalize(tree)
+        assert result["props"]["validation"] == {
+            "state": "invalid",
+            "message": "Required",
+        }
+        assert result["props"]["a11y"]["invalid"] is True
+        assert result["props"]["a11y"]["error_message"] == "Required"
+
     def test_validation_valid_sets_invalid_false(self) -> None:
         tree = _node(
             "form",

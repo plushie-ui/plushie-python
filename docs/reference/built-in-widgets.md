@@ -46,7 +46,7 @@ Full prop tables for all layout containers are in the
 |---|---|---|
 | `ui.button` | `button(id, label, **opts)` | `Click` |
 | `ui.text_input` | `text_input(id, value, **opts)` | `Input`, `Submit`, `Paste` |
-| `ui.text_editor` | `text_editor(id, content, **opts)` | `Input` |
+| `ui.text_editor` | `text_editor(id, content, **opts)` | `Input`, `Paste` |
 | `ui.checkbox` | `checkbox(id, checked, **opts)` | `Toggle` (bool) |
 | `ui.toggler` | `toggler(id, is_toggled, **opts)` | `Toggle` (bool) |
 | `ui.radio` | `radio(id, value, selected, **opts)` | `Select` |
@@ -67,12 +67,15 @@ second positional argument. Emits `Click` on press.
 **text_input** is a single-line editable field. Emits `Input` on
 every keystroke with the full text as `value`. Emits `Submit` on
 Enter when `on_submit=True` is set. `Paste` fires when the user
-pastes into the field and `on_paste=True` is set.
+pastes into the field and `on_paste=True` is set. Pass
+`text_direction="auto"`, `"ltr"`, or `"rtl"` to hint layout direction.
 
 **text_editor** is a multi-line editable area with syntax highlighting
 support (`highlight_syntax="python"`). The `content` argument seeds
 the initial text. Holds renderer-side state (cursor, selection,
-scroll).
+scroll). Pass `text_direction="auto"`, `"ltr"`, or `"rtl"` to hint
+layout direction. `Paste` fires when the user pastes into the editor
+and `on_paste=True` is set.
 
 **checkbox** / **toggler** are boolean toggles. Both emit `Toggle`
 with the new boolean on the `value` field. `checkbox` shows a box;
@@ -114,7 +117,8 @@ the model. The radio is checked when `value == selected`. Emits
 
 **text** supports auto-ID (`ui.text("Hello")`) and explicit-ID
 (`ui.text("greeting", "Hello")`). Key props: `size`, `color`, `font`,
-`wrapping`, `shaping`, `align_x`, `align_y`.
+`wrapping`, `shaping`, `align_x`, `align_y`, `text_direction`,
+`ellipsis`.
 
 **rich_text** displays styled text with individually formatted spans.
 Each span is a `plushie.types.Span` instance or a plain dict with
@@ -572,6 +576,16 @@ Used by: `text`, `rich_text`, `text_input`, `text_editor`.
 | `"basic"` | Simple left-to-right shaping (fastest) |
 | `"advanced"` | Full Unicode shaping (ligatures, RTL, complex scripts) |
 
+### Text direction
+
+Used by: `text`, `text_input`, `text_editor`.
+
+| Value | Meaning |
+|---|---|
+| `"auto"` | Renderer chooses direction from text content |
+| `"ltr"` | Left-to-right text |
+| `"rtl"` | Right-to-left text |
+
 ### Wrapping
 
 Used by: `text`, `rich_text`.
@@ -582,6 +596,17 @@ Used by: `text`, `rich_text`.
 | `"word"` | Break at word boundaries |
 | `"glyph"` | Break at any character |
 | `"word_or_glyph"` | Try word boundaries first, fall back to glyph |
+
+### Ellipsis
+
+Used by: `text`, `rich_text`, `pick_list`, `combo_box`.
+
+| Value | Meaning |
+|---|---|
+| `"none"` | No ellipsis |
+| `"start"` | Truncate from the start |
+| `"middle"` | Truncate from the middle |
+| `"end"` | Truncate from the end |
 
 ### Content fit
 

@@ -531,7 +531,7 @@ def _normalize_with_scope(
                 props_raw = node.get("props") or {}
                 for key in ("a11y", "event_rate"):
                     if key in props_raw and key not in rendered_props:
-                        rendered_props[key] = _encode_prop_value(props_raw[key])
+                        rendered_props[key] = _encode_prop_value(key, props_raw[key])
                 rendered_props = _apply_a11y_defaults(
                     rendered_node.get("type", "canvas"), rendered_props
                 )
@@ -763,13 +763,32 @@ def _check_duplicate_ids(children: list[Node]) -> None:
         )
 
 
-def _encode_prop_value(value: Any) -> Any:
+def _encode_validation_state(value: Any) -> Any:
+    """Normalize validation states to the renderer-facing wire shape."""
+    if isinstance(value, tuple) and len(value) == 2 and value[0] == "invalid":
+        msg = value[1]
+        if isinstance(msg, str):
+            return {"state": "invalid", "message": msg}
+    if isinstance(value, list) and len(value) == 2 and value[0] == "invalid":
+        msg = value[1]
+        if isinstance(msg, str):
+            return {"state": "invalid", "message": msg}
+    if isinstance(value, dict) and value.get("state") == "invalid":
+        msg = value.get("message")
+        if isinstance(msg, str):
+            return {"state": "invalid", "message": msg}
+    return value
+
+
+def _encode_prop_value(key: str, value: Any) -> Any:
     """Convert a prop value to its wire-compatible representation.
 
     Types implementing :class:`WireEncodable` (with a ``to_wire()``
     method) are encoded automatically. Tuples are converted to lists
     (wire format uses arrays). Other values pass through unchanged.
     """
+    if key == "validation":
+        value = _encode_validation_state(value)
     if isinstance(value, WireEncodable):
         return value.to_wire()
     if isinstance(value, tuple):
@@ -779,7 +798,7 @@ def _encode_prop_value(value: Any) -> Any:
 
 def _encode_props(props: dict[str, Any]) -> dict[str, Any]:
     """Encode all prop values, converting dataclass types to wire dicts."""
-    return {k: _encode_prop_value(v) for k, v in props.items()}
+    return {k: _encode_prop_value(k, v) for k, v in props.items()}
 
 
 def expand_rows(node: Node) -> Node:
