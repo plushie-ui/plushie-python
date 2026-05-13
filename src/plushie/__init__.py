@@ -38,8 +38,9 @@ Quick start::
 
 from __future__ import annotations
 
+import os
 import threading
-from typing import Any
+from typing import Any, cast
 
 __version__ = "0.6.0"
 
@@ -104,6 +105,55 @@ def run(
 
     with Connection.open(binary_path=binary_path, mode=mode, **connection_opts) as conn:
         runtime = Runtime(app, conn, daemon=daemon)
+        runtime.run()
+
+
+def connect(
+    app_class: type[App[Any]] | AppBuilder,
+    *,
+    socket: str | None = None,
+    token: str | None = None,
+    format: str = "msgpack",
+    daemon: bool = False,
+) -> None:
+    """Run a plushie application over a renderer-parent connection.
+
+    Uses ``socket`` or ``PLUSHIE_SOCKET`` when present. Otherwise it
+    falls back to stdio renderer-parent transport.
+
+    Args:
+        app_class: An ``App`` subclass (will be instantiated) or an
+            ``AppBuilder`` instance.
+        socket: Renderer socket address. Defaults to ``PLUSHIE_SOCKET``.
+        token: Renderer listen token. Defaults to ``PLUSHIE_TOKEN``.
+        format: Wire format, ``"msgpack"`` or ``"json"``.
+        daemon: If ``True``, ``AllWindowsClosed`` does not stop the
+            runtime.
+    """
+    from plushie.connection import Connection, StdioConnection
+    from plushie.runtime import Runtime
+    from plushie.transport import SocketAdapter
+
+    app: App[Any]
+    if isinstance(app_class, AppBuilder):
+        app = app_class.build()
+    elif isinstance(app_class, type):
+        app = app_class()
+    else:
+        app = app_class  # type: ignore[assignment]
+
+    socket_addr = socket or os.environ.get("PLUSHIE_SOCKET")
+    token_value = token or os.environ.get("PLUSHIE_TOKEN")
+
+    if socket_addr:
+        adapter = SocketAdapter(socket_addr, format=format)
+        with Connection.from_iostream(adapter, token=token_value) as conn:
+            runtime = Runtime(app, cast(Any, conn), daemon=daemon)
+            runtime.run()
+        return
+
+    with StdioConnection(format=format) as conn:
+        runtime = Runtime(app, cast(Any, conn), daemon=daemon)
         runtime.run()
 
 
@@ -180,6 +230,7 @@ __all__ = [
     "TimerTick",
     "Toggle",
     "__version__",
+    "connect",
     "create_app",
     "run",
     "start",

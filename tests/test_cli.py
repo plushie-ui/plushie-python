@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -60,6 +60,101 @@ def test_run_default_keeps_connection_defaults(monkeypatch: pytest.MonkeyPatch) 
     )
 
     assert calls == [{"mode": None, "daemon": False}]
+
+
+def test_connect_top_level_uses_socket_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    import plushie.connection
+    import plushie.runtime
+    import plushie.transport
+
+    adapter_calls: list[dict[str, Any]] = []
+    connection_calls: list[dict[str, Any]] = []
+    runtime_calls: list[dict[str, Any]] = []
+    runtime_runs: list[bool] = []
+
+    class FakeSocketAdapter:
+        def __init__(self, address: str, **kwargs: Any) -> None:
+            adapter_calls.append({"address": address, **kwargs})
+
+    class FakeConnection:
+        def __enter__(self) -> FakeConnection:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+    class FakeRuntime:
+        def __init__(self, app: object, conn: object, **kwargs: Any) -> None:
+            runtime_calls.append({"app": app, "conn": conn, **kwargs})
+
+        def run(self) -> None:
+            runtime_runs.append(True)
+
+    def fake_from_iostream(adapter: object, **kwargs: Any) -> FakeConnection:
+        connection_calls.append({"adapter": adapter, **kwargs})
+        return FakeConnection()
+
+    monkeypatch.setenv("PLUSHIE_SOCKET", "/tmp/plushie.sock")
+    monkeypatch.setenv("PLUSHIE_TOKEN", "listen-token")
+    monkeypatch.setattr(plushie.transport, "SocketAdapter", FakeSocketAdapter)
+    monkeypatch.setattr(
+        plushie.connection.Connection,
+        "from_iostream",
+        staticmethod(fake_from_iostream),
+    )
+    monkeypatch.setattr(plushie.runtime, "Runtime", FakeRuntime)
+
+    plushie.connect(cast(Any, DummyApp), format="json", daemon=True)
+
+    assert adapter_calls == [{"address": "/tmp/plushie.sock", "format": "json"}]
+    assert len(connection_calls) == 1
+    assert connection_calls[0]["adapter"].__class__ is FakeSocketAdapter
+    assert connection_calls[0]["token"] == "listen-token"
+    assert isinstance(runtime_calls[0]["app"], DummyApp)
+    assert runtime_calls[0]["conn"].__class__ is FakeConnection
+    assert runtime_calls[0]["daemon"] is True
+    assert runtime_runs == [True]
+
+
+def test_connect_top_level_uses_stdio_without_socket(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import plushie.connection
+    import plushie.runtime
+
+    stdio_calls: list[dict[str, Any]] = []
+    runtime_calls: list[dict[str, Any]] = []
+    runtime_runs: list[bool] = []
+
+    class FakeStdioConnection:
+        def __init__(self, **kwargs: Any) -> None:
+            stdio_calls.append(kwargs)
+
+        def __enter__(self) -> FakeStdioConnection:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+    class FakeRuntime:
+        def __init__(self, app: object, conn: object, **kwargs: Any) -> None:
+            runtime_calls.append({"app": app, "conn": conn, **kwargs})
+
+        def run(self) -> None:
+            runtime_runs.append(True)
+
+    monkeypatch.delenv("PLUSHIE_SOCKET", raising=False)
+    monkeypatch.delenv("PLUSHIE_TOKEN", raising=False)
+    monkeypatch.setattr(plushie.connection, "StdioConnection", FakeStdioConnection)
+    monkeypatch.setattr(plushie.runtime, "Runtime", FakeRuntime)
+
+    plushie.connect(cast(Any, DummyApp))
+
+    assert stdio_calls == [{"format": "msgpack"}]
+    assert isinstance(runtime_calls[0]["app"], DummyApp)
+    assert runtime_calls[0]["conn"].__class__ is FakeStdioConnection
+    assert runtime_calls[0]["daemon"] is False
+    assert runtime_runs == [True]
 
 
 def test_connect_json_constructs_stdio_connection_with_json(
