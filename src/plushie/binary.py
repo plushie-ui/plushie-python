@@ -3,9 +3,9 @@
 Resolution chain for ``resolve()``:
 
 1. ``PLUSHIE_BINARY_PATH`` environment variable (fail-fast if set but missing)
-2. Custom extension build in ``build/*/target/``
-3. Downloaded binary in ``~/.local/share/plushie/bin/``
-4. Bundled binary (PyInstaller, Nuitka, Briefcase)
+2. Bundled binary (PyInstaller, Nuitka, Briefcase)
+3. Custom extension build in ``build/*/target/``
+4. Downloaded binary in ``~/.local/share/plushie/bin/``
 5. ``plushie`` on system PATH via ``shutil.which``
 
 Platform detection identifies os (linux/darwin/windows) and arch
@@ -393,9 +393,9 @@ def resolve() -> str:
     1. ``PLUSHIE_BINARY_PATH`` environment variable. If set but the
        file does not exist, raises immediately (explicit config should
        not silently fall through).
-    2. Custom extension build in ``build/*/target/``.
-    3. Downloaded binary in the standard download directory.
-    4. Bundled binary (PyInstaller, Nuitka, Briefcase).
+    2. Bundled binary (PyInstaller, Nuitka, Briefcase).
+    3. Custom extension build in ``build/*/target/``.
+    4. Downloaded binary in the standard download directory.
     5. ``plushie`` on the system PATH.
 
     Returns:
@@ -416,12 +416,17 @@ def resolve() -> str:
             )
         return os.path.abspath(env_path)
 
-    # Step 2: custom extension build in build/ directory
+    # Step 2: bundled binary (PyInstaller / Nuitka / Briefcase)
+    bundled = _resolve_bundled()
+    if bundled is not None:
+        return bundled
+
+    # Step 3: custom extension build in build/ directory
     custom = _resolve_custom_build()
     if custom is not None:
         return custom
 
-    # Step 3: downloaded binary
+    # Step 4: downloaded binary
     try:
         name = download_name()
         downloaded = download_dir() / name
@@ -430,11 +435,6 @@ def resolve() -> str:
     except RuntimeError:
         # Platform detection failed; skip this step
         pass
-
-    # Step 4: bundled binary (PyInstaller / Nuitka / Briefcase)
-    bundled = _resolve_bundled()
-    if bundled is not None:
-        return bundled
 
     # Step 5: system PATH (native binaries only, not Python scripts)
     which_path = shutil.which("plushie-renderer")
@@ -451,9 +451,9 @@ def resolve() -> str:
         "\n"
         "Resolution chain (checked in order):\n"
         "  1. PLUSHIE_BINARY_PATH environment variable (not set)\n"
-        "  2. Custom extension build in build/ (not found)\n"
-        f"  3. Downloaded binary in {dl_dir} (not found)\n"
-        "  4. Bundled binary (PyInstaller/Nuitka/Briefcase) (not found)\n"
+        "  2. Bundled binary (PyInstaller/Nuitka/Briefcase) (not found)\n"
+        "  3. Custom extension build in build/ (not found)\n"
+        f"  4. Downloaded binary in {dl_dir} (not found)\n"
         "  5. 'plushie-renderer' on system PATH (not found)\n"
         "\n"
         "To download a precompiled binary:\n"

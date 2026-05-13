@@ -17,6 +17,7 @@ import argparse
 import importlib
 import json
 import logging
+import os
 import sys
 import tomllib
 from pathlib import Path
@@ -133,14 +134,24 @@ def _cmd_run(args: argparse.Namespace) -> None:
 
 
 def _cmd_connect(args: argparse.Namespace) -> None:
-    """Handle the ``connect`` command (stdio transport)."""
-    from plushie.connection import StdioConnection
+    """Handle the ``connect`` command."""
+    from plushie.connection import Connection, StdioConnection
     from plushie.runtime import Runtime
+    from plushie.transport import SocketAdapter
 
     app_class = _import_app(args.app)
     app = app_class()
 
     wire_format = "json" if args.json else "msgpack"
+    socket_addr = getattr(args, "socket", None) or os.environ.get("PLUSHIE_SOCKET")
+    token = getattr(args, "token", None) or os.environ.get("PLUSHIE_TOKEN")
+
+    if socket_addr:
+        adapter = SocketAdapter(socket_addr, format=wire_format)
+        with Connection.from_iostream(adapter, token=token) as conn:
+            runtime = Runtime(app, cast(Any, conn))
+            runtime.run()
+        return
 
     with StdioConnection(format=wire_format) as conn:
         # StdioConnection doesn't have the same interface as Connection
@@ -512,6 +523,14 @@ def _build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="use JSON wire format instead of msgpack",
+    )
+    connect_parser.add_argument(
+        "--socket",
+        help="renderer socket address (defaults to PLUSHIE_SOCKET)",
+    )
+    connect_parser.add_argument(
+        "--token",
+        help="renderer listen token (defaults to PLUSHIE_TOKEN)",
     )
 
     # download

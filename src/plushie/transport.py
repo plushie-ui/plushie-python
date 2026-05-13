@@ -403,6 +403,7 @@ class SocketAdapter(IoStreamAdapter):
         self,
         address: str,
         *,
+        format: str = "msgpack",
         on_event: Callable[[Any], None] | None = None,
     ) -> None:
         self._socket: socket.socket
@@ -416,6 +417,7 @@ class SocketAdapter(IoStreamAdapter):
         super().__init__(
             self._socket.makefile("rb"),
             self._socket.makefile("wb"),
+            format=format,
             on_event=on_event,
         )
 

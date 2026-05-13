@@ -283,7 +283,7 @@ class TestResolve:
             resolve()
 
     def test_path_fallback(self, tmp_path: Path) -> None:
-        """Falls back to PATH when env var, download, and bundled not available."""
+        """Falls back to PATH when higher-priority locations are unavailable."""
         binary = tmp_path / "plushie-renderer"
         # Write a fake ELF header so _is_native_binary recognizes it
         binary.write_bytes(b"\x7fELF" + b"\x00" * 100)
@@ -302,7 +302,7 @@ class TestResolve:
             assert os.path.basename(result) == "plushie-renderer"
 
     def test_bundled_binary(self, tmp_path: Path) -> None:
-        """Falls through to bundled binary when env var and download are absent."""
+        """Falls through to bundled binary when env var is absent."""
         bundled = tmp_path / "bundled" / "plushie"
         bundled.parent.mkdir()
         bundled.write_bytes(b"\x7fELF" + b"\x00" * 100)
@@ -317,6 +317,31 @@ class TestResolve:
             mock_patch("plushie.binary._resolve_bundled", return_value=str(bundled)),
         ):
             mock_dd.return_value = tmp_path / "nonexistent"
+            result = resolve()
+            assert result == str(bundled)
+
+    def test_bundled_binary_wins_over_downloaded_binary(self, tmp_path: Path) -> None:
+        """Prefers packaged payloads over user-cache downloads."""
+        bundled = tmp_path / "bundled" / "plushie"
+        bundled.parent.mkdir()
+        bundled.write_bytes(b"\x7fELF" + b"\x00" * 100)
+        bundled.chmod(bundled.stat().st_mode | stat.S_IXUSR)
+
+        bin_dir = tmp_path / "downloads"
+        bin_dir.mkdir()
+        downloaded = bin_dir / download_name()
+        downloaded.write_bytes(b"\x7fELF" + b"\x00" * 100)
+        downloaded.chmod(downloaded.stat().st_mode | stat.S_IXUSR)
+
+        env = dict(os.environ)
+        env.pop("PLUSHIE_BINARY_PATH", None)
+        env["PATH"] = "/nonexistent"
+        with (
+            mock_patch.dict(os.environ, env, clear=True),
+            mock_patch("plushie.binary.download_dir") as mock_dd,
+            mock_patch("plushie.binary._resolve_bundled", return_value=str(bundled)),
+        ):
+            mock_dd.return_value = bin_dir
             result = resolve()
             assert result == str(bundled)
 
