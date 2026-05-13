@@ -599,7 +599,7 @@ class TestConnectionFromIostream:
             )
         adapter.close()
 
-    def test_send_settings_rejects_plaintext_token(self) -> None:
+    def test_send_settings_rejects_token_setting(self) -> None:
         reader = _PipeReader()
         writer = _PipeWriter()
         adapter = IoStreamAdapter(reader, writer)

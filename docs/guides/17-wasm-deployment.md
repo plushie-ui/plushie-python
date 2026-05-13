@@ -38,11 +38,9 @@ The build produces two files:
 - `plushie_renderer_wasm.js` (JavaScript glue module)
 - `plushie_renderer_wasm_bg.wasm` (compiled WebAssembly binary)
 
-By default these are installed to the standard WASM directory
-(`~/.local/share/plushie/wasm/` on Linux and macOS,
-`%LOCALAPPDATA%\plushie\wasm\` on Windows). Override the
-destination via `wasm_dir` in `[tool.plushie]` or the
-`--wasm-dir` CLI flag.
+By default these are installed to `_build/plushie-renderer/wasm/`
+under the current project. Override the destination via `wasm_dir` in
+`[tool.plushie]` or the `--wasm-dir` CLI flag.
 
 To have `build` (and `download`) install both artifacts by
 default, declare it in `pyproject.toml`:

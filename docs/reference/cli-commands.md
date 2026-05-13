@@ -142,12 +142,11 @@ defaulting to `["bin"]`.
 
 ### Destinations
 
-The native binary lands in `~/.local/share/plushie/bin/` on Linux
-and macOS (honouring `XDG_DATA_HOME`) and
-`%LOCALAPPDATA%/plushie/bin/` on Windows. The filename is
-`plushie-renderer-<os>-<arch>` (with `.exe` on Windows).
+The native binary lands in `_build/plushie/bin/` under the current
+project. The filename is `plushie-renderer-<os>-<arch>` (with `.exe`
+on Windows).
 
-The WASM bundle extracts to `~/.local/share/plushie/wasm/` and
+The WASM bundle extracts to `_build/plushie-renderer/wasm/` and
 produces `plushie_renderer_wasm.js` and
 `plushie_renderer_wasm_bg.wasm`.
 
@@ -245,7 +244,7 @@ WASM builds always run against a local plushie-rust checkout.
 `PLUSHIE_RUST_SOURCE_PATH` (or `[tool.plushie].source_path`) must
 point at one, and `wasm-pack` must be on `PATH`. The output files
 (`plushie_renderer_wasm.js` and `plushie_renderer_wasm_bg.wasm`) copy
-from the WASM crate's `pkg/` directory into the standard WASM
+from the WASM crate's `pkg/` directory into the project-local WASM
 directory, or `--wasm-dir` / `[tool.plushie].wasm_dir` when
 overridden.
 
@@ -346,18 +345,16 @@ order:
 1. `PLUSHIE_BINARY_PATH` environment variable. If set but pointing at
    a missing file, raises immediately with a clear error; explicit
    config does not silently fall through.
-2. Custom extension build under `build/*/target/release/` then
+2. Bundled binary in a packaged app (PyInstaller's `sys._MEIPASS`,
+   adjacent to the installed `plushie` package, or adjacent to the
+   frozen executable).
+3. Custom extension build under `build/*/target/release/` then
    `build/*/target/debug/`, auto-detected after `python -m plushie
    build` as long as the binary is a native executable (not a
    Python script).
-3. Downloaded binary at
-   `~/.local/share/plushie/bin/plushie-renderer-<os>-<arch>` on
-   Linux and macOS, or `%LOCALAPPDATA%/plushie/bin/...` on Windows.
-4. Bundled binary next to the Python package (PyInstaller's
-   `sys._MEIPASS`, then adjacent to `plushie/binary.py`, then
-   adjacent to `sys.executable`).
-5. `plushie-renderer` on system `PATH` via `shutil.which`, with a
-   magic-byte check to reject Python entry-point scripts.
+4. Downloaded binary at
+   `_build/plushie/bin/plushie-renderer-<os>-<arch>` under the
+   current project.
 
 If nothing is found, the call raises `PlushieNotFoundError` with an
 install hint listing the download and environment-variable options.
@@ -374,8 +371,6 @@ WASM directory for both `plushie_renderer_wasm.js` and
 | `PLUSHIE_BINARY_PATH` | Explicit path to the renderer binary. Errors if set but missing |
 | `PLUSHIE_RUST_SOURCE_PATH` | Path to a local plushie-rust checkout. Switches builds to source mode, pins `cargo-plushie` to the checkout, and enables WASM builds |
 | `PLUSHIE_TEST_BACKEND` | Selects the pytest test backend: `mock` (default), `headless`, or `windowed` |
-| `XDG_DATA_HOME` | Overrides the base for the download directory on Linux and macOS |
-| `LOCALAPPDATA` | Overrides the base for the download directory on Windows |
 | `RUST_LOG` | Passed through to the renderer for tracing-based logging |
 
 ## pyproject.toml keys

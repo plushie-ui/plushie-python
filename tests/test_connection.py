@@ -223,25 +223,8 @@ class TestDownloadName:
 class TestDownloadDir:
     """Tests for download_dir()."""
 
-    def test_xdg_data_home(self) -> None:
-        with (
-            mock_patch.dict(os.environ, {"XDG_DATA_HOME": "/custom/data"}, clear=False),
-            mock_patch("plushie.binary.sys") as mock_sys,
-        ):
-            mock_sys.platform = "linux"
-            d = download_dir()
-            assert d == Path("/custom/data/plushie/bin")
-
-    def test_default_linux(self) -> None:
-        env = dict(os.environ)
-        env.pop("XDG_DATA_HOME", None)
-        with (
-            mock_patch.dict(os.environ, env, clear=True),
-            mock_patch("plushie.binary.sys") as mock_sys,
-        ):
-            mock_sys.platform = "linux"
-            d = download_dir()
-            assert str(d).endswith(".local/share/plushie/bin")
+    def test_project_local(self) -> None:
+        assert download_dir() == Path("_build/plushie/bin")
 
 
 class TestResolve:
@@ -271,7 +254,7 @@ class TestResolve:
         """When nothing is found, PlushieNotFoundError lists the chain."""
         env = dict(os.environ)
         env.pop("PLUSHIE_BINARY_PATH", None)
-        # Override PATH so shutil.which won't find anything
+        # Keep PATH isolated in case the environment has a renderer installed.
         env["PATH"] = "/nonexistent"
         with (
             mock_patch.dict(os.environ, env, clear=True),
@@ -282,10 +265,9 @@ class TestResolve:
             mock_dd.return_value = tmp_path / "nonexistent"
             resolve()
 
-    def test_path_fallback(self, tmp_path: Path) -> None:
-        """Falls back to PATH when higher-priority locations are unavailable."""
+    def test_does_not_fall_back_to_path(self, tmp_path: Path) -> None:
+        """A renderer on PATH is not an app-local renderer."""
         binary = tmp_path / "plushie-renderer"
-        # Write a fake ELF header so _is_native_binary recognizes it
         binary.write_bytes(b"\x7fELF" + b"\x00" * 100)
         binary.chmod(binary.stat().st_mode | stat.S_IXUSR)
 
@@ -296,10 +278,10 @@ class TestResolve:
             mock_patch.dict(os.environ, env, clear=True),
             mock_patch("plushie.binary.download_dir") as mock_dd,
             mock_patch("plushie.binary._resolve_bundled", return_value=None),
+            pytest.raises(PlushieNotFoundError, match="project-local"),
         ):
             mock_dd.return_value = tmp_path / "nonexistent"
-            result = resolve()
-            assert os.path.basename(result) == "plushie-renderer"
+            resolve()
 
     def test_bundled_binary(self, tmp_path: Path) -> None:
         """Falls through to bundled binary when env var is absent."""
@@ -321,7 +303,7 @@ class TestResolve:
             assert result == str(bundled)
 
     def test_bundled_binary_wins_over_downloaded_binary(self, tmp_path: Path) -> None:
-        """Prefers packaged payloads over user-cache downloads."""
+        """Prefers packaged payloads over project-local downloads."""
         bundled = tmp_path / "bundled" / "plushie"
         bundled.parent.mkdir()
         bundled.write_bytes(b"\x7fELF" + b"\x00" * 100)
@@ -378,25 +360,8 @@ class TestResolve:
 class TestWasmDir:
     """Tests for wasm_dir()."""
 
-    def test_xdg_data_home(self) -> None:
-        with (
-            mock_patch.dict(os.environ, {"XDG_DATA_HOME": "/custom/data"}, clear=False),
-            mock_patch("plushie.binary.sys") as mock_sys,
-        ):
-            mock_sys.platform = "linux"
-            d = wasm_dir()
-            assert d == Path("/custom/data/plushie/wasm")
-
-    def test_default_linux(self) -> None:
-        env = dict(os.environ)
-        env.pop("XDG_DATA_HOME", None)
-        with (
-            mock_patch.dict(os.environ, env, clear=True),
-            mock_patch("plushie.binary.sys") as mock_sys,
-        ):
-            mock_sys.platform = "linux"
-            d = wasm_dir()
-            assert str(d).endswith(".local/share/plushie/wasm")
+    def test_project_local(self) -> None:
+        assert wasm_dir() == Path("_build/plushie-renderer/wasm")
 
 
 class TestWasmDownloadName:

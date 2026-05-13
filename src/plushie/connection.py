@@ -326,7 +326,7 @@ class Connection:
             token: Optional shared secret for renderer authentication.
                 The connection sends only the SHA-256 digest in Settings.
             token_sha256: Optional precomputed token digest for callers
-                that do not keep the plaintext token.
+                that do not keep the original token.
 
         Returns:
             A connection-like object wrapping the adapter.

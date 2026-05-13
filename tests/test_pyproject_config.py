@@ -694,7 +694,7 @@ class TestArtifactPathConfig:
         assert resolved == "bin/plushie-renderer"
 
     def test_neither_cli_nor_pyproject_gives_none(self) -> None:
-        """Without --bin-file or pyproject, result is None (standard location)."""
+        """Without --bin-file or pyproject, result is None (project-local location)."""
         cli_val = None
         cfg_val = None
         resolved = cli_val or cfg_val

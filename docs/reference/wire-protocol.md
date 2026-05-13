@@ -293,11 +293,12 @@ feed bytes through.
 ## Resolving the binary
 
 `Connection.open(binary_path=...)` accepts an explicit path. When
-omitted, `plushie.binary.resolve()` walks a fixed search order:
-the `PLUSHIE_BINARY_PATH` environment variable first, then the
-project's download cache, then the built extensions directory. If
-`PLUSHIE_BINARY_PATH` is set but the file is missing, resolution
-raises immediately rather than silently falling back.
+omitted, `plushie.binary.resolve()` walks a fixed project-local search
+order: the `PLUSHIE_BINARY_PATH` environment variable first, then a
+bundled renderer, then the built extensions directory, then the
+project's downloaded binary. If `PLUSHIE_BINARY_PATH` is set but the
+file is missing, resolution raises immediately rather than silently
+falling back.
 
 ## See also
 

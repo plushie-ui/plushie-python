@@ -12,7 +12,7 @@ The build flow:
    path dependency, plus an app-level ``[package.metadata.plushie]``
    block carrying ``binary_name`` and ``source_path``.
 4. Shell out to ``cargo plushie build --manifest-path <spec>/Cargo.toml``.
-5. Install the resulting binary into the standard download location so
+5. Install the resulting binary into the project-local renderer location so
    :func:`plushie.binary.resolve` picks it up.
 """
 
@@ -186,7 +186,7 @@ def install_built_binary(
     The Python SDK's :func:`plushie.binary.resolve` looks for binaries
     named ``plushie-renderer-<os>-<arch>`` under
     :func:`plushie.binary.download_dir`, so copy the output into that
-    canonical location. Also honor ``bin_file`` (from ``[tool.plushie]``)
+    project-local location. Also honor ``bin_file`` (from ``[tool.plushie]``)
     if the app wants the binary somewhere else.
     """
     profile = "release" if release else "debug"

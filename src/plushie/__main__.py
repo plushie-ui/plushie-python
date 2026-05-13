@@ -213,10 +213,10 @@ def _cmd_download(args: argparse.Namespace) -> None:
         )
         raise SystemExit(1)
 
-    # Resolve bin_file: CLI flag > pyproject.toml > None (standard location)
+    # Resolve bin_file: CLI flag > pyproject.toml > None (project-local location)
     bin_file = getattr(args, "bin_file", None) or pyproject_cfg.get("bin_file")
 
-    # Resolve wasm_dir: CLI flag > pyproject.toml > None (standard location)
+    # Resolve wasm_dir: CLI flag > pyproject.toml > None (project-local location)
     wasm_dir_override = getattr(args, "wasm_dir", None) or pyproject_cfg.get("wasm_dir")
 
     if want_bin:
@@ -352,7 +352,7 @@ def _cmd_build(args: argparse.Namespace) -> None:
     ``[package.metadata.plushie.widget]`` blocks into each widget
     crate's ``Cargo.toml``, writing a virtual app ``Cargo.toml``
     carrying ``[package.metadata.plushie]``, and copying the resulting
-    binary into the standard download location.
+    binary into the project-local renderer location.
     """
     import os
 

@@ -60,11 +60,9 @@ handles platform input. Fetch the precompiled renderer with:
 python -m plushie download
 ```
 
-The binary lands in the OS-standard data directory:
-
-- Linux and macOS: `~/.local/share/plushie/bin/plushie-renderer-<os>-<arch>`
-  (honours `XDG_DATA_HOME`).
-- Windows: `%LOCALAPPDATA%/plushie/bin/plushie-renderer-<os>-<arch>.exe`.
+The binary lands under the current project's `_build/plushie/bin/`
+directory. Each app keeps its own renderer copy unless you explicitly
+point `PLUSHIE_BINARY_PATH` somewhere else.
 
 Every download is verified against the `.sha256` sidecar on GitHub
 releases. A mismatch deletes the artifact and exits with an error;
@@ -79,8 +77,8 @@ To use a binary you already have, export `PLUSHIE_BINARY_PATH`:
 export PLUSHIE_BINARY_PATH=/path/to/plushie-renderer
 ```
 
-For the full resolution chain (env var, custom build, download,
-bundled, system PATH) see the
+For the full resolution chain (env var, bundled binary, custom build,
+project-local download) see the
 [CLI Commands reference](../reference/cli-commands.md).
 
 ### Building from source

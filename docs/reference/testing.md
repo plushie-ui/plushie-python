@@ -446,7 +446,8 @@ python -m plushie download                  # fetch prebuilt binary
 PLUSHIE_TEST_BACKEND=headless pytest        # real rendering in CI
 ```
 
-The `plushie` binary must be on `PATH` or resolvable via
+The renderer must be downloaded into the project with
+`python -m plushie download` or configured explicitly with
 `PLUSHIE_BINARY_PATH` before the pytest plugin can start the pool.
 When the binary is missing, the plugin logs a warning and the
 `plushie_pool` fixture skips every test that requests it, so unit

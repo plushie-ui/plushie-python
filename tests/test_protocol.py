@@ -148,9 +148,9 @@ class TestSettings:
         assert msg["settings"]["token_sha256"] == digest
         assert "token" not in msg["settings"]
 
-    def test_rejects_plaintext_token(self) -> None:
+    def test_rejects_token_setting(self) -> None:
         with pytest.raises(ValueError, match="unknown setting key: token"):
-            settings({"token": "secret"})
+            settings({"token": "do-not-send"})
 
     def test_rejects_extension_config(self) -> None:
         with pytest.raises(ValueError, match="unknown setting key: extension_config"):

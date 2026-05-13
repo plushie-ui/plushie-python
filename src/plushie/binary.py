@@ -5,8 +5,7 @@ Resolution chain for ``resolve()``:
 1. ``PLUSHIE_BINARY_PATH`` environment variable (fail-fast if set but missing)
 2. Bundled binary (PyInstaller, Nuitka, Briefcase)
 3. Custom extension build in ``build/*/target/``
-4. Downloaded binary in ``~/.local/share/plushie/bin/``
-5. ``plushie`` on system PATH via ``shutil.which``
+4. Project-local downloaded binary in ``_build/plushie/bin/``
 
 Platform detection identifies os (linux/darwin/windows) and arch
 (x86_64/aarch64) for download naming.
@@ -229,19 +228,15 @@ def download_name(*, os_name: str | None = None, arch: str | None = None) -> str
 
 
 def download_dir() -> Path:
-    """Return the standard directory for downloaded plushie binaries.
+    """Return the project-local directory for downloaded plushie binaries.
 
-    Uses ``~/.local/share/plushie/bin/`` on Linux/macOS and
-    ``%LOCALAPPDATA%/plushie/bin/`` on Windows.
+    ``python -m plushie download`` installs one renderer per app
+    project under ``_build/plushie/bin/`` by default.
 
     Returns:
         Path to the download directory (may not exist yet).
     """
-    if sys.platform == "win32":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-    else:
-        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
-    return base / "plushie" / "bin"
+    return Path("_build") / "plushie" / "bin"
 
 
 # ---------------------------------------------------------------------------
@@ -250,19 +245,15 @@ def download_dir() -> Path:
 
 
 def wasm_dir() -> Path:
-    """Return the standard directory for WASM renderer files.
+    """Return the project-local directory for WASM renderer files.
 
-    Uses ``~/.local/share/plushie/wasm/`` on Linux/macOS and
-    ``%LOCALAPPDATA%/plushie/wasm/`` on Windows.
+    WASM downloads and builds install one renderer bundle per app
+    project under ``_build/plushie-renderer/wasm/`` by default.
 
     Returns:
         Path to the WASM directory (may not exist yet).
     """
-    if sys.platform == "win32":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-    else:
-        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
-    return base / "plushie" / "wasm"
+    return Path("_build") / "plushie-renderer" / "wasm"
 
 
 def wasm_download_name() -> str:
@@ -347,7 +338,7 @@ def _resolve_bundled() -> str | None:
 
     1. PyInstaller's ``sys._MEIPASS`` temporary directory
     2. Adjacent to this Python file (Nuitka, Briefcase)
-    3. Adjacent to the running executable (``sys.executable``)
+    3. Adjacent to the frozen app executable (``sys.executable``)
 
     Returns:
         Absolute path to the binary if found, ``None`` otherwise.
@@ -371,11 +362,14 @@ def _resolve_bundled() -> str | None:
     if os.path.isfile(candidate) and _is_native_binary(candidate):
         return os.path.abspath(candidate)
 
-    # Adjacent to the running executable
-    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-    candidate = os.path.join(exe_dir, binary_name)
-    if os.path.isfile(candidate) and _is_native_binary(candidate):
-        return os.path.abspath(candidate)
+    # Adjacent to the running executable, only for frozen app bundles.
+    # For a normal interpreter this would silently pick up a user-global
+    # renderer from /usr/bin, a venv, or another unrelated environment.
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+        candidate = os.path.join(exe_dir, binary_name)
+        if os.path.isfile(candidate) and _is_native_binary(candidate):
+            return os.path.abspath(candidate)
 
     return None
 
@@ -395,8 +389,7 @@ def resolve() -> str:
        not silently fall through).
     2. Bundled binary (PyInstaller, Nuitka, Briefcase).
     3. Custom extension build in ``build/*/target/``.
-    4. Downloaded binary in the standard download directory.
-    5. ``plushie`` on the system PATH.
+    4. Downloaded binary in the project-local download directory.
 
     Returns:
         Absolute path to the plushie binary.
@@ -426,7 +419,7 @@ def resolve() -> str:
     if custom is not None:
         return custom
 
-    # Step 4: downloaded binary
+    # Step 4: project-local downloaded binary
     try:
         name = download_name()
         downloaded = download_dir() / name
@@ -436,15 +429,10 @@ def resolve() -> str:
         # Platform detection failed; skip this step
         pass
 
-    # Step 5: system PATH (native binaries only, not Python scripts)
-    which_path = shutil.which("plushie-renderer")
-    if which_path is not None and _is_native_binary(which_path):
-        return os.path.abspath(which_path)
-
     try:
         dl_dir = str(download_dir())
     except RuntimeError:
-        dl_dir = "~/.local/share/plushie/bin/"
+        dl_dir = "_build/plushie/bin/"
 
     raise PlushieNotFoundError(
         "plushie-renderer binary not found.\n"
@@ -453,10 +441,9 @@ def resolve() -> str:
         "  1. PLUSHIE_BINARY_PATH environment variable (not set)\n"
         "  2. Bundled binary (PyInstaller/Nuitka/Briefcase) (not found)\n"
         "  3. Custom extension build in build/ (not found)\n"
-        f"  4. Downloaded binary in {dl_dir} (not found)\n"
-        "  5. 'plushie-renderer' on system PATH (not found)\n"
+        f"  4. Project-local downloaded binary in {dl_dir} (not found)\n"
         "\n"
-        "To download a precompiled binary:\n"
+        "To download a project-local precompiled binary:\n"
         "  python -m plushie download\n"
         "\n"
         "To use an existing binary:\n"
@@ -477,7 +464,7 @@ def download(
 ) -> str:
     """Download a precompiled plushie binary from GitHub releases.
 
-    The binary is saved to the standard download directory and made
+    The binary is saved to the project-local download directory and made
     executable on Unix systems. After download, the SHA-256 checksum
     is verified against the sidecar ``.sha256`` file on GitHub.
 
@@ -486,7 +473,7 @@ def download(
             uses ``PLUSHIE_RUST_VERSION`` (the pinned default for this SDK).
         force: Re-download even if the binary already exists.
         bin_file: Override the destination path. If ``None``, uses the
-            standard download directory.
+            project-local download directory.
 
     Returns:
         Path to the downloaded binary.
@@ -551,14 +538,14 @@ def download_wasm(
 
     Downloads ``plushie-renderer-wasm.tar.gz``, verifies its SHA-256 checksum,
     then extracts ``plushie_renderer_wasm.js`` and ``plushie_renderer_wasm_bg.wasm`` into
-    the standard WASM directory.
+    the project-local WASM directory.
 
     Args:
         version: Release version tag (e.g. ``"0.5.1"``). If ``None``,
             uses ``PLUSHIE_RUST_VERSION`` (the pinned default for this SDK).
         force: Re-download even if WASM files already exist.
         wasm_dir_path: Override the WASM output directory. If ``None``,
-            uses the standard WASM directory.
+            uses the project-local WASM directory.
 
     Returns:
         Path to the WASM directory containing the extracted files.
@@ -636,7 +623,7 @@ def build_wasm(
             ``None``, reads from ``PLUSHIE_RUST_SOURCE_PATH`` env var.
         release: Build with optimizations. Default is debug build.
         wasm_dir_path: Override the WASM output directory. If ``None``,
-            uses the standard WASM directory.
+            uses the project-local WASM directory.
 
     Returns:
         Path to the WASM output directory.
@@ -693,7 +680,7 @@ def build_wasm(
             f"{result.stdout}\n{result.stderr}"
         )
 
-    # Copy output to WASM directory (override or standard location)
+    # Copy output to WASM directory (override or project-local location)
     pkg_dir = os.path.join(wasm_crate, "pkg")
     dest = Path(wasm_dir_path) if wasm_dir_path else wasm_dir()
     dest.mkdir(parents=True, exist_ok=True)
@@ -717,7 +704,7 @@ def build_wasm(
 def resolve_wasm() -> tuple[Path, Path]:
     """Resolve paths to the WASM renderer JS and WASM files.
 
-    Checks the standard WASM directory for ``plushie_renderer_wasm.js`` and
+    Checks the project-local WASM directory for ``plushie_renderer_wasm.js`` and
     ``plushie_renderer_wasm_bg.wasm``.
 
     Returns:

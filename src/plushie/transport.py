@@ -303,7 +303,7 @@ class WebSocketAdapter(IoStreamAdapter):
     WebSocketAdapter wraps an already-connected socket, so it does not
     add authentication headers. Pass ``token=...`` to
     ``Connection.from_iostream()`` to authenticate through the Settings
-    handshake without sending the plaintext token.
+    handshake without sending the original token.
     """
 
     def __init__(
