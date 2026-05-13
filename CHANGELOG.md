@@ -409,7 +409,7 @@ the plushie-elixir and plushie-gleam SDKs, verified by cross-SDK audit.
 ### Transports
 
 - Spawn mode (default, Python manages renderer subprocess)
-- Stdio mode (`StdioConnection` for `plushie --exec`)
+- Stdio mode (`StdioConnection` for renderer-parent stdio)
 - Custom transports: `IoStreamAdapter`, `WebSocketAdapter`
 - `Connection.from_iostream()` for SSH, TCP, WebSocket bridges
 - Env var whitelisting for renderer subprocess security

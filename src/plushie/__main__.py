@@ -516,7 +516,7 @@ def _build_parser() -> argparse.ArgumentParser:
     # connect
     connect_parser = subparsers.add_parser(
         "connect",
-        help="stdio transport mode (for plushie --exec)",
+        help="stdio transport mode for renderer-parent startup",
     )
     connect_parser.add_argument("app", help="app specifier (module:Class)")
     connect_parser.add_argument(

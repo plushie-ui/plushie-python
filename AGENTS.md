@@ -69,10 +69,11 @@ protected today (typed event decoding via `decode_message`, unknowns
 become `RawEvent` not opaque blobs, effect/query response correlation
 by request ID, no host-side eval/exec/getattr based on renderer-
 supplied data, strict whitelists for enums). Host-to-renderer = broad
-by design (file paths, fonts, images, screenshots, effects, `--exec`);
-bounding it is the capability-manifest roadmap in plushie-rust. Wire
-= byte-stream agnostic; confidentiality + integrity delegated to outer
-transport (`IoStreamAdapter`, `SocketAdapter`). Same-access (user
+by design (file paths, fonts, images, screenshots, effects, structured
+renderer exec args); bounding it is the capability-manifest roadmap in
+plushie-rust. Wire = byte-stream agnostic; confidentiality + integrity
+delegated to outer transport (`IoStreamAdapter`, `SocketAdapter`).
+Same-access (user
 attacking themselves) out of scope.
 
 ### Resilience
@@ -821,4 +822,3 @@ These are expected as sibling directories (e.g. `../plushie-rust/`):
 - plushie-rust - Rust workspace (SDK, widget SDK, renderer)
 - plushie-elixir - Elixir SDK (reference implementation)
 - plushie-iced - vendored iced fork
-
