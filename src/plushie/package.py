@@ -6,11 +6,15 @@ import hashlib
 import json
 import os
 import platform
+import shutil
+import stat
+import subprocess
+import sys
 from pathlib import Path
 from typing import Literal, TypedDict
 
 from plushie import __version__
-from plushie.binary import PLUSHIE_RUST_VERSION
+from plushie.binary import PLUSHIE_RUST_VERSION, PlushieNotFoundError
 from plushie.protocol import PROTOCOL_VERSION
 
 RendererKind = Literal["stock", "custom"]
@@ -38,6 +42,17 @@ class PackageManifest(TypedDict):
     payload_archive: str
     payload_hash: str
     payload_size: int
+
+
+class PyInstallerPackageResult(TypedDict):
+    """Files produced by a PyInstaller package build."""
+
+    payload_root: Path
+    payload_archive: Path
+    manifest_path: Path
+    renderer_path: str
+    host_command: list[str]
+    platform_icon: str | None
 
 
 def normalize_package_target(os_name: str, arch: str) -> str:
@@ -169,6 +184,412 @@ def manifest_for_payload(
         "payload_hash": sha256_file(archive_path),
         "payload_size": file_size(archive_path),
     }
+
+
+def package_pyinstaller_payload(
+    *,
+    entry: str | Path,
+    name: str,
+    app_id: str,
+    app_version: str,
+    app_name: str | None = None,
+    target: str | None = None,
+    renderer_kind: RendererKind = "stock",
+    renderer_source: str | None = None,
+    app_icon: str | Path | None = None,
+    add_data: list[str] | None = None,
+    hidden_import: list[str] | None = None,
+    collect_submodules: list[str] | None = None,
+    pyinstaller_arg: list[str] | None = None,
+    package_dir: str | Path = Path("dist") / "package",
+    dist_dir: str | Path = "dist",
+    spec_dir: str | Path = Path("build") / "pyinstaller-spec",
+    work_dir: str | Path = Path("build") / "pyinstaller",
+    output: str | Path | None = None,
+    working_dir: str = ".",
+) -> PyInstallerPackageResult:
+    """Build a PyInstaller payload and write ``plushie-package.toml``.
+
+    The payload contains the PyInstaller one-folder app under ``host/``,
+    a payload-local renderer under ``bin/``, and platform icon assets
+    under ``assets/``. The payload archive is written before the
+    manifest so the manifest records the final archive hash and size.
+    """
+    package_root = Path(package_dir)
+    payload_root = package_root / "payload"
+    payload_archive = package_root / "payload.tar.zst"
+    manifest_path = (
+        Path(output) if output is not None else package_root / "plushie-package.toml"
+    )
+
+    staged_renderer, resolved_renderer_source = _stage_renderer_for_pyinstaller()
+    effective_renderer_source = renderer_source or resolved_renderer_source
+
+    _run_pyinstaller(
+        entry=Path(entry),
+        name=name,
+        staged_renderer=staged_renderer,
+        app_icon=Path(app_icon) if app_icon is not None else None,
+        add_data=add_data or [],
+        hidden_import=hidden_import or [],
+        collect_submodules=collect_submodules or [],
+        pyinstaller_arg=pyinstaller_arg or [],
+        dist_dir=Path(dist_dir),
+        spec_dir=Path(spec_dir),
+        work_dir=Path(work_dir),
+    )
+
+    if payload_root.exists():
+        shutil.rmtree(payload_root)
+    payload_root.mkdir(parents=True)
+
+    renderer_rel = _payload_renderer_path()
+    renderer_dest = payload_root / renderer_rel
+    renderer_dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(staged_renderer, renderer_dest)
+    _ensure_executable(renderer_dest)
+
+    host_rel = _payload_host_executable_path(name)
+    host_root = payload_root / "host" / name
+    host_root.parent.mkdir(parents=True, exist_ok=True)
+    source_host = Path(dist_dir) / name
+    if not source_host.is_dir():
+        raise FileNotFoundError(f"PyInstaller output missing at {source_host}")
+    if host_root.exists():
+        shutil.rmtree(host_root)
+    shutil.copytree(source_host, host_root, symlinks=True)
+    _remove_nested_renderer(host_root)
+
+    platform_icon = _materialize_platform_icon(
+        payload_root,
+        app_icon=Path(app_icon) if app_icon is not None else None,
+    )
+
+    _dereference_payload_symlinks(payload_root)
+    archive_payload(payload_root, payload_archive)
+
+    manifest = manifest_for_payload(
+        app_id=app_id,
+        app_name=app_name,
+        app_version=app_version,
+        target=target,
+        renderer_kind=renderer_kind,
+        renderer_source=effective_renderer_source,
+        renderer_path=renderer_rel,
+        host_command=[host_rel],
+        working_dir=working_dir,
+        platform_icon=platform_icon,
+        payload_archive=payload_archive,
+    )
+    write_manifest(manifest_path, manifest)
+
+    return {
+        "payload_root": payload_root,
+        "payload_archive": payload_archive,
+        "manifest_path": manifest_path,
+        "renderer_path": renderer_rel,
+        "host_command": [host_rel],
+        "platform_icon": platform_icon,
+    }
+
+
+def archive_payload(payload_dir: str | Path, archive_path: str | Path) -> None:
+    """Write a deterministic ``.tar.zst`` archive for a package payload."""
+    payload_root = Path(payload_dir)
+    archive = Path(archive_path)
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    _validate_payload_archive_inputs(payload_root)
+
+    tar_bin = _archive_tar_command()
+    if _archive_tar_supports_zstd(tar_bin):
+        subprocess.run(
+            [
+                tar_bin,
+                "-C",
+                os.fspath(payload_root),
+                "--sort=name",
+                "--mtime=UTC 1970-01-01",
+                "--owner=0",
+                "--group=0",
+                "--numeric-owner",
+                "--zstd",
+                "-cf",
+                os.fspath(archive),
+                ".",
+            ],
+            check=True,
+        )
+        return
+
+    if not _archive_tar_supports_gnu_flags(tar_bin):
+        raise RuntimeError(
+            "GNU tar or gtar is required for deterministic payload archives"
+        )
+
+    zstd = shutil.which("zstd")
+    if zstd is None:
+        raise RuntimeError("missing required command: zstd")
+
+    tar_proc = subprocess.Popen(
+        [
+            tar_bin,
+            "-C",
+            os.fspath(payload_root),
+            "--sort=name",
+            "--mtime=UTC 1970-01-01",
+            "--owner=0",
+            "--group=0",
+            "--numeric-owner",
+            "-cf",
+            "-",
+            ".",
+        ],
+        stdout=subprocess.PIPE,
+    )
+    try:
+        zstd_proc = subprocess.run(
+            [zstd, "-q", "-o", os.fspath(archive)],
+            stdin=tar_proc.stdout,
+            check=False,
+        )
+        if tar_proc.stdout is not None:
+            tar_proc.stdout.close()
+        tar_return = tar_proc.wait()
+    finally:
+        if tar_proc.poll() is None:
+            tar_proc.kill()
+
+    if tar_return != 0:
+        raise subprocess.CalledProcessError(tar_return, tar_bin)
+    if zstd_proc.returncode != 0:
+        raise subprocess.CalledProcessError(zstd_proc.returncode, zstd)
+
+
+def _stage_renderer_for_pyinstaller() -> tuple[Path, str]:
+    renderer, source = _resolve_package_renderer()
+    staged = Path("build") / "standalone" / "renderer" / _renderer_binary_name()
+    staged.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(renderer, staged)
+    _ensure_executable(staged)
+    return staged, source
+
+
+def _resolve_package_renderer() -> tuple[Path, str]:
+    env_binary = os.environ.get("PLUSHIE_BINARY_PATH")
+    if env_binary:
+        path = Path(env_binary)
+        if not path.is_file():
+            raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
+        return path.resolve(), "local-path"
+
+    source_path = os.environ.get("PLUSHIE_RUST_SOURCE_PATH")
+    if source_path:
+        manifest = Path(source_path) / "Cargo.toml"
+        if not manifest.is_file():
+            raise FileNotFoundError(
+                f"PLUSHIE_RUST_SOURCE_PATH does not contain Cargo.toml: {source_path}"
+            )
+        subprocess.run(
+            [
+                "cargo",
+                "build",
+                "--release",
+                "-p",
+                "plushie-renderer",
+                "--manifest-path",
+                os.fspath(manifest),
+            ],
+            check=True,
+        )
+        built = (
+            Path(source_path).resolve() / "target" / "release" / _renderer_binary_name()
+        )
+        if not built.is_file():
+            raise FileNotFoundError(
+                f"cargo build completed but renderer is missing at {built}"
+            )
+        return built, "local-build"
+
+    from plushie.binary import download, resolve
+
+    try:
+        return Path(resolve()).resolve(), "local-resolve"
+    except PlushieNotFoundError:
+        return Path(download()).resolve(), "download"
+
+
+def _run_pyinstaller(
+    *,
+    entry: Path,
+    name: str,
+    staged_renderer: Path,
+    app_icon: Path | None,
+    add_data: list[str],
+    hidden_import: list[str],
+    collect_submodules: list[str],
+    pyinstaller_arg: list[str],
+    dist_dir: Path,
+    spec_dir: Path,
+    work_dir: Path,
+) -> None:
+    args = [
+        sys.executable,
+        "-m",
+        "PyInstaller",
+        "--name",
+        name,
+        "--specpath",
+        os.fspath(spec_dir),
+        "--distpath",
+        os.fspath(dist_dir),
+        "--workpath",
+        os.fspath(work_dir),
+        "--add-binary",
+        f"{staged_renderer.resolve()}{os.pathsep}.",
+        "--noconfirm",
+    ]
+    if app_icon is not None:
+        args += ["--icon", os.fspath(app_icon)]
+    for value in add_data:
+        args += ["--add-data", value]
+    for value in hidden_import:
+        args += ["--hidden-import", value]
+    for value in collect_submodules:
+        args += ["--collect-submodules", value]
+    args += pyinstaller_arg
+    args.append(os.fspath(entry))
+    subprocess.run(args, check=True)
+
+
+def _materialize_platform_icon(
+    payload_root: Path, *, app_icon: Path | None
+) -> str | None:
+    assets = payload_root / "assets"
+    assets.mkdir(parents=True, exist_ok=True)
+
+    if app_icon is not None:
+        dest = assets / app_icon.name
+        shutil.copy2(app_icon, dest)
+        return _payload_relative(payload_root, dest)
+
+    _run_cargo_plushie("default-icons", "--out", os.fspath(assets))
+    default_icon = assets / "plushie-checkbox-512x512.png"
+    if default_icon.is_file():
+        return _payload_relative(payload_root, default_icon)
+    return None
+
+
+def _run_cargo_plushie(subcommand: str, *args: str) -> None:
+    from plushie.cargo_plushie import resolve_cargo_plushie
+
+    command, prefix = resolve_cargo_plushie()
+    subprocess.run(
+        [command, *prefix, subcommand, *args],
+        check=True,
+    )
+
+
+def _payload_renderer_path() -> str:
+    return f"bin/{_renderer_binary_name()}"
+
+
+def _payload_host_executable_path(name: str) -> str:
+    executable = f"{name}.exe" if sys.platform in ("win32", "cygwin") else name
+    return f"host/{name}/{executable}"
+
+
+def _renderer_binary_name() -> str:
+    return (
+        "plushie-renderer.exe"
+        if sys.platform in ("win32", "cygwin")
+        else "plushie-renderer"
+    )
+
+
+def _ensure_executable(path: Path) -> None:
+    if sys.platform in ("win32", "cygwin"):
+        return
+    mode = path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+    path.chmod(mode)
+
+
+def _remove_nested_renderer(root: Path) -> None:
+    for candidate in root.rglob(_renderer_binary_name()):
+        if candidate.is_file():
+            candidate.unlink()
+
+
+def _payload_relative(payload_root: Path, path: Path) -> str:
+    return path.relative_to(payload_root).as_posix()
+
+
+def _validate_payload_archive_inputs(payload_root: Path) -> None:
+    for path in payload_root.rglob("*"):
+        try:
+            stat_result = path.lstat()
+        except OSError as exc:
+            raise RuntimeError(f"payload path cannot be inspected: {path}") from exc
+        mode = stat_result.st_mode
+        rel = path.relative_to(payload_root)
+        if stat.S_ISLNK(mode):
+            raise RuntimeError(f"payload contains unsupported symlink: {rel}")
+        if (
+            stat.S_ISFIFO(mode)
+            or stat.S_ISSOCK(mode)
+            or stat.S_ISBLK(mode)
+            or stat.S_ISCHR(mode)
+        ):
+            raise RuntimeError(f"payload contains unsupported special file: {rel}")
+        if stat.S_ISREG(mode) and stat_result.st_nlink > 1:
+            raise RuntimeError(f"payload contains unsupported hard-linked file: {rel}")
+
+
+def _dereference_payload_symlinks(payload_root: Path) -> None:
+    links = [path for path in payload_root.rglob("*") if path.is_symlink()]
+    for link in links:
+        target = link.resolve(strict=True)
+        tmp = link.with_name(f"{link.name}.deref.{os.getpid()}")
+        if target.is_dir():
+            shutil.copytree(target, tmp)
+        else:
+            shutil.copy2(target, tmp)
+        link.unlink()
+        tmp.rename(link)
+
+
+def _archive_tar_command() -> str:
+    if _is_gnu_tar("tar"):
+        return "tar"
+    gtar = shutil.which("gtar")
+    if gtar is not None:
+        return gtar
+    return "tar"
+
+
+def _archive_tar_supports_gnu_flags(tar_bin: str) -> bool:
+    return tar_bin != "tar" or _is_gnu_tar("tar")
+
+
+def _archive_tar_supports_zstd(tar_bin: str) -> bool:
+    if not _archive_tar_supports_gnu_flags(tar_bin):
+        return False
+    result = subprocess.run(
+        [tar_bin, "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0 and "--zstd" in result.stdout
+
+
+def _is_gnu_tar(tar_bin: str) -> bool:
+    result = subprocess.run(
+        [tar_bin, "--version"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0 and "GNU tar" in result.stdout
 
 
 def _toml_string(value: str) -> str:

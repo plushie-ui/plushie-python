@@ -264,11 +264,26 @@ overridden.
 
 ## python -m plushie package
 
-Writes `plushie-package.toml` for a prepared Python payload archive.
-The SDK owns the manifest shape, target normalization, SDK version,
-renderer version, protocol version, payload hash, and payload size.
-The caller still owns building the Python host payload, for example a
-PyInstaller one-folder app.
+Stages a standalone Python package payload and writes
+`plushie-package.toml` for the shared Rust launcher. PyInstaller mode
+is the first-class SDK-owned path. The SDK resolves or builds the
+renderer, copies it into the payload, runs PyInstaller, materializes
+platform icons, creates `payload.tar.zst`, and writes the manifest
+after the final archive hash and size are known.
+
+```bash
+python -m plushie package \
+  --app-id dev.example.my_app \
+  --app-name "My App" \
+  --pyinstaller-entry src/my_app/__main__.py \
+  --pyinstaller-name MyApp \
+  --add-data "assets:assets" \
+  --collect-submodules plushie
+```
+
+Prepared payload mode remains available for custom staging flows. In
+that mode the caller owns the payload archive and the SDK writes only
+the manifest.
 
 ```bash
 python -m plushie package \
@@ -294,17 +309,27 @@ cargo plushie package --manifest dist/package/plushie-package.toml --release
 | `--app-version VERSION` | App version. Defaults to `[project].version` or `0.1.0` |
 | `--target TARGET` | Package target. Defaults to the current OS and architecture |
 | `--renderer-kind stock|custom` | Renderer provenance kind. Defaults to `stock` |
-| `--renderer-source SOURCE` | Renderer provenance source. Defaults to `local-resolve` |
-| `--renderer-path PATH` | Payload-relative renderer executable path. Required |
-| `--payload-archive PATH` | Payload archive to hash and record. Required |
+| `--renderer-source SOURCE` | Renderer provenance source. Defaults to detected source in PyInstaller mode, or `local-resolve` in prepared mode |
+| `--pyinstaller-entry PATH` | Build and stage a PyInstaller payload from this entry script |
+| `--pyinstaller-name NAME` | PyInstaller app name. Defaults to `--app-name` |
+| `--app-icon PATH` | Icon file to pass to PyInstaller and copy into the payload |
+| `--add-data SOURCE:DEST` | Data mapping passed to PyInstaller. Repeatable |
+| `--hidden-import MODULE` | Hidden import passed to PyInstaller. Repeatable |
+| `--collect-submodules MODULE` | Module package whose submodules PyInstaller should collect. Repeatable |
+| `--pyinstaller-arg ARG` | Extra argument passed through to PyInstaller. Repeatable |
+| `--package-dir PATH` | Directory for payload, archive, and manifest. Defaults to `dist/package` |
+| `--dist-dir PATH` | PyInstaller dist directory. Defaults to `dist` |
+| `--spec-dir PATH` | PyInstaller spec output directory. Defaults to `build/pyinstaller-spec` |
+| `--work-dir PATH` | PyInstaller work directory. Defaults to `build/pyinstaller` |
+| `--renderer-path PATH` | Payload-relative renderer executable path. Required in prepared mode |
+| `--payload-archive PATH` | Payload archive to hash and record. Required in prepared mode |
 | `--platform-icon PATH` | Payload-relative app icon path for `[platform].icon` |
 | `--output PATH` | Manifest output path. Defaults to `dist/package/plushie-package.toml` |
 | `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
-| `--host-command ARG...` | Payload-relative host command argv. Required |
+| `--host-command ARG...` | Payload-relative host command argv. Required in prepared mode |
 
-This command does not run PyInstaller or call `cargo plushie package`.
-Those steps stay explicit so projects can choose their host packaging
-tool while still using one SDK-owned manifest generator.
+This command does not call `cargo plushie package`. That final launcher
+build stays explicit.
 
 ## python -m plushie inspect
 

@@ -12,7 +12,7 @@ The packaged payload should contain:
 
 - a PyInstaller one-folder build for the Python host
 - a payload-local `bin/plushie-renderer`
-- a `bin/connect` entry point or equivalent host command
+- a host command pointing at the PyInstaller executable
 - `payload.tar.zst`
 - `plushie-package.toml`
 
@@ -46,6 +46,44 @@ One-file PyInstaller can still be evaluated later for projects that
 need a Python-only artifact, but it is not the cross-SDK standalone
 default.
 
+Build the payload through the SDK-owned package command:
+
+```bash
+python -m plushie package \
+  --app-id dev.example.myapp \
+  --app-name "My App" \
+  --pyinstaller-entry src/myapp/__main__.py \
+  --pyinstaller-name MyApp \
+  --add-data "assets:assets" \
+  --hidden-import myapp \
+  --collect-submodules plushie
+```
+
+The command resolves or builds the renderer, copies it into the
+payload under `bin/`, runs PyInstaller, stages the PyInstaller
+one-folder output under `host/`, materializes platform icons, writes
+`payload.tar.zst`, then writes `plushie-package.toml` with the final
+archive hash and size. If `--app-icon` is provided, that file is
+copied into the payload and recorded in the manifest. Otherwise the
+command asks `cargo-plushie default-icons` to export Plushie's
+bundled default icons into the payload.
+
+The generated manifest is the handoff to the shared launcher:
+
+```bash
+cargo plushie package --manifest dist/package/plushie-package.toml --release
+```
+
+Prepared payloads remain supported for custom staging flows:
+
+```bash
+python -m plushie package \
+  --app-id dev.example.myapp \
+  --renderer-path bin/plushie-renderer \
+  --payload-archive dist/package/payload.tar.zst \
+  --host-command host/MyApp/MyApp
+```
+
 ## Demo Proof
 
 The current proof lives in:
@@ -54,11 +92,9 @@ The current proof lives in:
 plushie-demos/python/data-explorer
 ```
 
-The demo package script builds the PyInstaller payload, adds the
-payload-local renderer, exports Plushie's bundled default icons into
-the payload, then calls `python -m plushie package` to write
-`plushie-package.toml`. `cargo plushie package` builds the outer
-launcher from that manifest.
+The demo package script delegates PyInstaller payload staging to
+`python -m plushie package --pyinstaller-entry`. `cargo plushie
+package` builds the outer launcher from the generated manifest.
 
 Strict artifact smoke runs the generated launcher from a temporary
 working directory with a narrowed runtime `PATH`. The smoke requires

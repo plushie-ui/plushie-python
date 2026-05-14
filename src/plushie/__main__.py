@@ -177,11 +177,66 @@ def _cmd_connect(args: argparse.Namespace) -> None:
 
 
 def _cmd_package(args: argparse.Namespace) -> None:
-    """Handle the ``package`` command for prepared payloads."""
-    from plushie.package import manifest_for_payload, write_manifest
+    """Handle the ``package`` command."""
+    from plushie.package import (
+        manifest_for_payload,
+        package_pyinstaller_payload,
+        write_manifest,
+    )
 
     project_cfg = _load_project_config()
     app_version = args.app_version or project_cfg.get("version") or "0.1.0"
+
+    if args.pyinstaller_entry is not None:
+        name = args.pyinstaller_name or args.app_name
+        if name is None:
+            print(
+                "error: --pyinstaller-entry requires --pyinstaller-name or --app-name",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+
+        result = package_pyinstaller_payload(
+            entry=args.pyinstaller_entry,
+            name=name,
+            app_id=args.app_id,
+            app_name=args.app_name,
+            app_version=app_version,
+            target=args.target,
+            renderer_kind=args.renderer_kind,
+            renderer_source=args.renderer_source,
+            app_icon=args.app_icon,
+            add_data=args.add_data,
+            hidden_import=args.hidden_import,
+            collect_submodules=args.collect_submodules,
+            pyinstaller_arg=args.pyinstaller_arg,
+            package_dir=args.package_dir,
+            dist_dir=args.dist_dir,
+            spec_dir=args.spec_dir,
+            work_dir=args.work_dir,
+            output=args.output,
+            working_dir=args.working_dir,
+        )
+        print(f"Wrote {result['manifest_path']}")
+        print(f"Wrote {result['payload_archive']}")
+        return
+
+    if args.renderer_path is None:
+        print(
+            "error: --renderer-path is required for prepared payloads", file=sys.stderr
+        )
+        raise SystemExit(1)
+    if args.payload_archive is None:
+        print(
+            "error: --payload-archive is required for prepared payloads",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    if args.host_command is None:
+        print(
+            "error: --host-command is required for prepared payloads", file=sys.stderr
+        )
+        raise SystemExit(1)
 
     manifest = manifest_for_payload(
         app_id=args.app_id,
@@ -189,15 +244,16 @@ def _cmd_package(args: argparse.Namespace) -> None:
         app_version=app_version,
         target=args.target,
         renderer_kind=args.renderer_kind,
-        renderer_source=args.renderer_source,
+        renderer_source=args.renderer_source or "local-resolve",
         renderer_path=args.renderer_path,
         host_command=args.host_command,
         working_dir=args.working_dir,
         platform_icon=args.platform_icon,
         payload_archive=args.payload_archive,
     )
-    write_manifest(args.output, manifest)
-    print(f"Wrote {args.output}")
+    output = args.output or "dist/package/plushie-package.toml"
+    write_manifest(output, manifest)
+    print(f"Wrote {output}")
 
 
 def _resolve_artifacts(
@@ -575,7 +631,7 @@ def _build_parser() -> argparse.ArgumentParser:
     # package
     package_parser = subparsers.add_parser(
         "package",
-        help="write a plushie-package.toml for a prepared payload",
+        help="stage a standalone package payload",
     )
     package_parser.add_argument("--app-id", required=True, help="package app id")
     package_parser.add_argument("--app-name", default=None, help="display app name")
@@ -597,17 +653,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     package_parser.add_argument(
         "--renderer-source",
-        default="local-resolve",
+        default=None,
         help="renderer provenance source",
     )
     package_parser.add_argument(
         "--renderer-path",
-        required=True,
+        default=None,
         help="payload-relative renderer executable path",
     )
     package_parser.add_argument(
         "--payload-archive",
-        required=True,
+        default=None,
         help="payload archive to hash and record",
     )
     package_parser.add_argument(
@@ -617,7 +673,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     package_parser.add_argument(
         "--output",
-        default="dist/package/plushie-package.toml",
+        default=None,
         help="manifest output path",
     )
     package_parser.add_argument(
@@ -627,9 +683,68 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     package_parser.add_argument(
         "--host-command",
-        required=True,
+        default=None,
         nargs="+",
         help="payload-relative host command argv",
+    )
+    package_parser.add_argument(
+        "--pyinstaller-entry",
+        default=None,
+        help="build and stage a PyInstaller payload from this entry script",
+    )
+    package_parser.add_argument(
+        "--pyinstaller-name",
+        default=None,
+        help="PyInstaller app name (default: --app-name)",
+    )
+    package_parser.add_argument(
+        "--app-icon",
+        default=None,
+        help="icon file to pass to PyInstaller and copy into the payload",
+    )
+    package_parser.add_argument(
+        "--add-data",
+        action="append",
+        default=[],
+        help="PyInstaller data mapping, using PyInstaller's source:dest form",
+    )
+    package_parser.add_argument(
+        "--hidden-import",
+        action="append",
+        default=[],
+        help="hidden import to pass to PyInstaller",
+    )
+    package_parser.add_argument(
+        "--collect-submodules",
+        action="append",
+        default=[],
+        help="module package whose submodules PyInstaller should collect",
+    )
+    package_parser.add_argument(
+        "--pyinstaller-arg",
+        action="append",
+        default=[],
+        help="extra argument passed through to PyInstaller",
+    )
+    package_parser.add_argument(
+        "--package-dir",
+        default="dist/package",
+        help="directory for payload, archive, and manifest",
+    )
+    package_parser.add_argument(
+        "--dist-dir",
+        default="dist",
+        help="PyInstaller dist directory",
+    )
+    package_parser.add_argument(
+        "--spec-dir",
+        default="build/pyinstaller-spec",
+        help="PyInstaller spec output directory",
+    )
+    package_parser.add_argument(
+        "--work-dir",
+        default="build/pyinstaller",
+        help="PyInstaller work directory",
     )
 
     # download

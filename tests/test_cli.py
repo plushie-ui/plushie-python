@@ -308,3 +308,53 @@ def test_connect_parser_accepts_socket_and_token() -> None:
     assert args.command == "connect"
     assert args.socket == "/tmp/plushie.sock"
     assert args.token == "abc"
+
+
+def test_package_parser_accepts_prepared_payload_shape() -> None:
+    args = cli._build_parser().parse_args(
+        [
+            "package",
+            "--app-id",
+            "dev.plushie.test",
+            "--renderer-path",
+            "bin/plushie-renderer",
+            "--payload-archive",
+            "dist/package/payload.tar.zst",
+            "--host-command",
+            "host/Test/Test",
+        ]
+    )
+
+    assert args.command == "package"
+    assert args.renderer_path == "bin/plushie-renderer"
+    assert args.payload_archive == "dist/package/payload.tar.zst"
+    assert args.host_command == ["host/Test/Test"]
+
+
+def test_package_parser_accepts_pyinstaller_shape() -> None:
+    args = cli._build_parser().parse_args(
+        [
+            "package",
+            "--app-id",
+            "dev.plushie.test",
+            "--app-name",
+            "Test App",
+            "--pyinstaller-entry",
+            "src/test_app/__main__.py",
+            "--pyinstaller-name",
+            "TestApp",
+            "--add-data",
+            "assets:assets",
+            "--hidden-import",
+            "pandas",
+            "--collect-submodules",
+            "plushie",
+        ]
+    )
+
+    assert args.command == "package"
+    assert args.pyinstaller_entry == "src/test_app/__main__.py"
+    assert args.pyinstaller_name == "TestApp"
+    assert args.add_data == ["assets:assets"]
+    assert args.hidden_import == ["pandas"]
+    assert args.collect_submodules == ["plushie"]
