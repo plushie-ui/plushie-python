@@ -297,6 +297,7 @@ cargo plushie package --manifest dist/package/plushie-package.toml --release
 | `--renderer-source SOURCE` | Renderer provenance source. Defaults to `local-resolve` |
 | `--renderer-path PATH` | Payload-relative renderer executable path. Required |
 | `--payload-archive PATH` | Payload archive to hash and record. Required |
+| `--platform-icon PATH` | Payload-relative app icon path for `[platform].icon` |
 | `--output PATH` | Manifest output path. Defaults to `dist/package/plushie-package.toml` |
 | `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
 | `--host-command ARG...` | Payload-relative host command argv. Required |

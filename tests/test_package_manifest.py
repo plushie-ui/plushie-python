@@ -43,6 +43,7 @@ def test_manifest_for_payload_records_hash_and_size(tmp_path: Path) -> None:
         renderer_source="local-build",
         renderer_path="bin/plushie-renderer",
         host_command=["host/app", "--flag"],
+        platform_icon="assets/icon.png",
         working_dir=".",
         payload_archive=archive,
     )
@@ -55,11 +56,12 @@ def test_manifest_for_payload_records_hash_and_size(tmp_path: Path) -> None:
     assert 'host_sdk = "python"' in toml
     assert f'host_sdk_version = "{__version__}"' in toml
     assert f'plushie_rust_version = "{PLUSHIE_RUST_VERSION}"' in toml
-    assert 'protocol_version = 1' in toml
+    assert "protocol_version = 1" in toml
     assert 'renderer_path = "bin/plushie-renderer"' in toml
     assert 'host_command = ["host/app", "--flag"]' in toml
     assert 'kind = "custom"' in toml
     assert 'source = "local-build"' in toml
+    assert 'icon = "assets/icon.png"' in toml
 
 
 def test_write_manifest_creates_parent_directories(tmp_path: Path) -> None:

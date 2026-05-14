@@ -32,6 +32,7 @@ class PackageManifest(TypedDict):
     app_version: str
     target: str
     renderer: RendererManifest
+    platform_icon: str | None
     host_command: list[str]
     working_dir: str
     payload_archive: str
@@ -46,9 +47,7 @@ def normalize_package_target(os_name: str, arch: str) -> str:
         os_part = "linux"
     elif os_key.startswith("darwin") or os_key == "macos":
         os_part = "darwin"
-    elif os_key in {"win32", "windows", "cygwin", "msys"} or os_key.startswith(
-        "mingw"
-    ):
+    elif os_key in {"win32", "windows", "cygwin", "msys"} or os_key.startswith("mingw"):
         os_part = "windows"
     else:
         raise ValueError(f"unsupported package OS: {os_name}")
@@ -108,6 +107,18 @@ def render_manifest(manifest: PackageManifest) -> str:
             f"kind = {_toml_string(manifest['renderer']['kind'])}",
             f"source = {_toml_string(manifest['renderer']['source'])}",
             "",
+        ]
+    )
+    if manifest["platform_icon"] is not None:
+        lines.extend(
+            [
+                "[platform]",
+                f"icon = {_toml_string(manifest['platform_icon'])}",
+                "",
+            ]
+        )
+    lines.extend(
+        [
             "[payload]",
             f"archive = {_toml_string(manifest['payload_archive'])}",
             f"hash = {_toml_string('sha256:' + manifest['payload_hash'])}",
@@ -136,6 +147,7 @@ def manifest_for_payload(
     target: str | None = None,
     renderer_kind: RendererKind = "stock",
     renderer_source: str = "local-resolve",
+    platform_icon: str | None = None,
     working_dir: str = ".",
 ) -> PackageManifest:
     """Build manifest values for an existing payload archive."""
@@ -150,6 +162,7 @@ def manifest_for_payload(
             "source": renderer_source,
             "path": renderer_path,
         },
+        "platform_icon": platform_icon,
         "host_command": host_command,
         "working_dir": working_dir,
         "payload_archive": os.fspath(archive_path.name),

@@ -55,7 +55,8 @@ plushie-demos/python/data-explorer
 ```
 
 The demo package script builds the PyInstaller payload, adds the
-payload-local renderer, then calls `python -m plushie package` to write
+payload-local renderer, exports Plushie's bundled default icons into
+the payload, then calls `python -m plushie package` to write
 `plushie-package.toml`. `cargo plushie package` builds the outer
 launcher from that manifest.
 

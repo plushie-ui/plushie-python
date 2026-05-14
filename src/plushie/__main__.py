@@ -193,6 +193,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
         renderer_path=args.renderer_path,
         host_command=args.host_command,
         working_dir=args.working_dir,
+        platform_icon=args.platform_icon,
         payload_archive=args.payload_archive,
     )
     write_manifest(args.output, manifest)
@@ -608,6 +609,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--payload-archive",
         required=True,
         help="payload archive to hash and record",
+    )
+    package_parser.add_argument(
+        "--platform-icon",
+        default=None,
+        help="payload-relative platform icon path",
     )
     package_parser.add_argument(
         "--output",
