@@ -103,6 +103,21 @@ def _load_pyproject_config(project_dir: str | Path | None = None) -> dict[str, A
     return data.get("tool", {}).get("plushie", {})
 
 
+def _load_project_config(project_dir: str | Path | None = None) -> dict[str, Any]:
+    """Load ``[project]`` from pyproject.toml if present."""
+    root = Path(project_dir) if project_dir else Path.cwd()
+    toml_path = root / "pyproject.toml"
+    if not toml_path.is_file():
+        return {}
+    try:
+        with open(toml_path, "rb") as f:
+            data = tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+    project = data.get("project", {})
+    return project if isinstance(project, dict) else {}
+
+
 # ---------------------------------------------------------------------------
 # Command handlers
 # ---------------------------------------------------------------------------
@@ -159,6 +174,29 @@ def _cmd_connect(args: argparse.Namespace) -> None:
         # both implement the same send/receive interface.
         runtime = Runtime(app, conn)  # type: ignore[arg-type]
         runtime.run()
+
+
+def _cmd_package(args: argparse.Namespace) -> None:
+    """Handle the ``package`` command for prepared payloads."""
+    from plushie.package import manifest_for_payload, write_manifest
+
+    project_cfg = _load_project_config()
+    app_version = args.app_version or project_cfg.get("version") or "0.1.0"
+
+    manifest = manifest_for_payload(
+        app_id=args.app_id,
+        app_name=args.app_name,
+        app_version=app_version,
+        target=args.target,
+        renderer_kind=args.renderer_kind,
+        renderer_source=args.renderer_source,
+        renderer_path=args.renderer_path,
+        host_command=args.host_command,
+        working_dir=args.working_dir,
+        payload_archive=args.payload_archive,
+    )
+    write_manifest(args.output, manifest)
+    print(f"Wrote {args.output}")
 
 
 def _resolve_artifacts(
@@ -533,6 +571,61 @@ def _build_parser() -> argparse.ArgumentParser:
         help="renderer listen token (defaults to PLUSHIE_TOKEN)",
     )
 
+    # package
+    package_parser = subparsers.add_parser(
+        "package",
+        help="write a plushie-package.toml for a prepared payload",
+    )
+    package_parser.add_argument("--app-id", required=True, help="package app id")
+    package_parser.add_argument("--app-name", default=None, help="display app name")
+    package_parser.add_argument(
+        "--app-version",
+        default=None,
+        help="app version (default: [project].version or 0.1.0)",
+    )
+    package_parser.add_argument(
+        "--target",
+        default=None,
+        help="package target (default: current OS and architecture)",
+    )
+    package_parser.add_argument(
+        "--renderer-kind",
+        choices=["stock", "custom"],
+        default="stock",
+        help="renderer provenance kind",
+    )
+    package_parser.add_argument(
+        "--renderer-source",
+        default="local-resolve",
+        help="renderer provenance source",
+    )
+    package_parser.add_argument(
+        "--renderer-path",
+        required=True,
+        help="payload-relative renderer executable path",
+    )
+    package_parser.add_argument(
+        "--payload-archive",
+        required=True,
+        help="payload archive to hash and record",
+    )
+    package_parser.add_argument(
+        "--output",
+        default="dist/package/plushie-package.toml",
+        help="manifest output path",
+    )
+    package_parser.add_argument(
+        "--working-dir",
+        default=".",
+        help="payload-relative host working directory",
+    )
+    package_parser.add_argument(
+        "--host-command",
+        required=True,
+        nargs="+",
+        help="payload-relative host command argv",
+    )
+
     # download
     download_parser = subparsers.add_parser(
         "download",
@@ -652,6 +745,7 @@ def main() -> None:
     command_map: dict[str, Any] = {
         "run": _cmd_run,
         "connect": _cmd_connect,
+        "package": _cmd_package,
         "download": _cmd_download,
         "build": _cmd_build,
         "inspect": _cmd_inspect,
