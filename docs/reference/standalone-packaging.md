@@ -55,8 +55,9 @@ plushie-demos/python/data-explorer
 ```
 
 The demo package script builds the PyInstaller payload, adds the
-payload-local renderer, writes `plushie-package.toml`, and lets
-`cargo plushie package` build the outer launcher.
+payload-local renderer, then calls `python -m plushie package` to write
+`plushie-package.toml`. `cargo plushie package` builds the outer
+launcher from that manifest.
 
 Strict artifact smoke runs the generated launcher from a temporary
 working directory with a narrowed runtime `PATH`. The smoke requires

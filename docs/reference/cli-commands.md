@@ -15,6 +15,7 @@ of the Python CLI; it is a bash script in the project root.
 | [`connect`](#python--m-plushie-connect) | Stdio transport mode for renderer-parent startup |
 | [`download`](#python--m-plushie-download) | Fetch a precompiled renderer binary or WASM bundle |
 | [`build`](#python--m-plushie-build) | Build the renderer binary from source with extensions |
+| [`package`](#python--m-plushie-package) | Write a package manifest for a prepared payload |
 | [`inspect`](#python--m-plushie-inspect) | Print the initial UI tree as JSON |
 | [`script`](#python--m-plushie-script) | Run `.plushie` test scripts headlessly |
 | [`replay`](#python--m-plushie-replay) | Replay a script with real windows |
@@ -260,6 +261,49 @@ overridden.
   with `cargo install cargo-plushie --version <version> --locked`,
   or `PLUSHIE_RUST_SOURCE_PATH` set to a local plushie-rust checkout.
 - For WASM: `wasm-pack` on `PATH` and a local plushie-rust checkout.
+
+## python -m plushie package
+
+Writes `plushie-package.toml` for a prepared Python payload archive.
+The SDK owns the manifest shape, target normalization, SDK version,
+renderer version, protocol version, payload hash, and payload size.
+The caller still owns building the Python host payload, for example a
+PyInstaller one-folder app.
+
+```bash
+python -m plushie package \
+  --app-id dev.example.my_app \
+  --app-name "My App" \
+  --renderer-path bin/plushie-renderer \
+  --payload-archive dist/package/payload.tar.zst \
+  --host-command host/MyApp/MyApp
+```
+
+The output is intended for the shared Rust launcher:
+
+```bash
+cargo plushie package --manifest dist/package/plushie-package.toml --release
+```
+
+### Flags
+
+| Flag | Description |
+|---|---|
+| `--app-id ID` | Package app identifier. Required |
+| `--app-name NAME` | Display app name |
+| `--app-version VERSION` | App version. Defaults to `[project].version` or `0.1.0` |
+| `--target TARGET` | Package target. Defaults to the current OS and architecture |
+| `--renderer-kind stock|custom` | Renderer provenance kind. Defaults to `stock` |
+| `--renderer-source SOURCE` | Renderer provenance source. Defaults to `local-resolve` |
+| `--renderer-path PATH` | Payload-relative renderer executable path. Required |
+| `--payload-archive PATH` | Payload archive to hash and record. Required |
+| `--output PATH` | Manifest output path. Defaults to `dist/package/plushie-package.toml` |
+| `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
+| `--host-command ARG...` | Payload-relative host command argv. Required |
+
+This command does not run PyInstaller or call `cargo plushie package`.
+Those steps stay explicit so projects can choose their host packaging
+tool while still using one SDK-owned manifest generator.
 
 ## python -m plushie inspect
 
