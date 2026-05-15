@@ -61,7 +61,7 @@ class TestGitHubReleaseURL:
 
     def test_url_uses_plushie_ui_org(self) -> None:
         assert GITHUB_RELEASE_URL == (
-            "https://github.com/plushie-ui/plushie-renderer/releases/download"
+            "https://github.com/plushie-ui/plushie-rust/releases/download"
         )
 
     def test_url_does_not_use_anthropics(self) -> None:

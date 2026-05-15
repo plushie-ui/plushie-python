@@ -29,7 +29,7 @@ from pathlib import Path
 
 logger = logging.getLogger("plushie")
 
-GITHUB_RELEASE_URL = "https://github.com/plushie-ui/plushie-renderer/releases/download"
+GITHUB_RELEASE_URL = "https://github.com/plushie-ui/plushie-rust/releases/download"
 """Base URL for GitHub release asset downloads."""
 
 WASM_ARCHIVE_NAME = "plushie-renderer-wasm.tar.gz"
@@ -578,14 +578,48 @@ def sync_renderer_with_tool(version: str | None = None, *, force: bool = False) 
     release_version = _validate_release_version(
         PLUSHIE_RUST_VERSION if version is None else version
     )
-    tool = download_tool(version=release_version, force=force)
-    args = [tool, "tools", "sync", "--required-version", release_version]
-    if force:
-        args.append("--force")
+    args = _tool_sync_command(release_version=release_version, force=force)
     result = subprocess.run(args, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"bin/plushie download failed with status {result.returncode}")
+        raise RuntimeError(
+            f"bin/plushie download failed with status {result.returncode}"
+        )
     return str(download_dir() / download_name())
+
+
+def _tool_sync_command(*, release_version: str, force: bool) -> list[str]:
+    source_path = os.environ.get("PLUSHIE_RUST_SOURCE_PATH")
+    if source_path:
+        manifest_path = Path(source_path) / "Cargo.toml"
+        if not manifest_path.is_file():
+            raise RuntimeError(
+                f"PLUSHIE_RUST_SOURCE_PATH={source_path!r} but no Cargo.toml at "
+                f"{manifest_path}"
+            )
+        args = [
+            "cargo",
+            "run",
+            "--manifest-path",
+            str(manifest_path),
+            "-p",
+            "cargo-plushie",
+            "--bin",
+            "plushie",
+            "--release",
+            "--quiet",
+            "--",
+            "tools",
+            "sync",
+            "--required-version",
+            release_version,
+        ]
+    else:
+        tool = download_tool(version=release_version, force=force)
+        args = [tool, "tools", "sync", "--required-version", release_version]
+
+    if force:
+        args.append("--force")
+    return args
 
 
 # ---------------------------------------------------------------------------

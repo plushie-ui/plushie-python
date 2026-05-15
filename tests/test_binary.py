@@ -21,6 +21,7 @@ from plushie.binary import (
     download_tool,
     download_wasm,
     release_name,
+    sync_renderer_with_tool,
     tool_name,
     tool_release_name,
 )
@@ -97,7 +98,9 @@ class TestReleaseName:
 
 class TestToolReleaseName:
     def test_linux_x86(self) -> None:
-        assert tool_release_name(os_name="linux", arch="x86_64") == "plushie-linux-x86_64"
+        assert (
+            tool_release_name(os_name="linux", arch="x86_64") == "plushie-linux-x86_64"
+        )
 
 
 # -- Checksum verification --------------------------------------------------
@@ -287,13 +290,44 @@ class TestDownloadForce:
             patch("plushie.binary.sys") as mock_sys,
         ):
             mock_sys.platform = "linux"
-            mock_retrieve.side_effect = lambda _url, dest: Path(dest).write_bytes(b"tool")
+            mock_retrieve.side_effect = lambda _url, dest: Path(dest).write_bytes(
+                b"tool"
+            )
 
             result = download_tool(version="0.4.0", force=True)
 
             assert result == str(tmp_path / "plushie")
             assert "plushie-linux-" in mock_retrieve.call_args.args[0]
             mock_verify.assert_called_once()
+
+    def test_sync_renderer_uses_source_plushie_tool(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        source = tmp_path / "plushie-rust"
+        source.mkdir()
+        manifest = source / "Cargo.toml"
+        manifest.write_text("[workspace]\n", encoding="utf-8")
+        monkeypatch.setenv("PLUSHIE_RUST_SOURCE_PATH", str(source))
+
+        with patch("plushie.binary.subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+
+            result = sync_renderer_with_tool(version="0.4.0")
+
+        args = mock_run.call_args.args[0]
+        assert args[:9] == [
+            "cargo",
+            "run",
+            "--manifest-path",
+            str(manifest),
+            "-p",
+            "cargo-plushie",
+            "--bin",
+            "plushie",
+            "--release",
+        ]
+        assert args[-4:] == ["tools", "sync", "--required-version", "0.4.0"]
+        assert result == str(Path("bin") / download_name())
 
 
 class TestDownloadVersionValidation:
