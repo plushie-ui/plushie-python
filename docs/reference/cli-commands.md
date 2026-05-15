@@ -171,6 +171,17 @@ the same release. On mismatch or if the checksum file cannot be
 fetched, the downloaded artifact is deleted and the command exits
 with an error. There is no flag to skip verification.
 
+### Release mirrors
+
+By default downloads come from GitHub releases. Set
+`PLUSHIE_RELEASE_BASE_URL` to verify the same flow against another
+release mirror. The mirror must expose assets as
+`BASE/vVERSION/ARTIFACT` with checksum sidecars at
+`BASE/vVERSION/ARTIFACT.sha256`.
+
+Remote mirrors must use HTTPS. `file://` mirrors and loopback HTTP are
+for local release verification before assets are uploaded.
+
 ### Native extension refusal
 
 When `[tool.plushie].extensions` is populated, `download --bin`
