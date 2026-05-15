@@ -566,7 +566,7 @@ def _prepare_renderer_for_pyinstaller(
     else:
         if not renderer_path.is_file():
             raise FileNotFoundError(f"renderer_path does not exist: {renderer_path}")
-        _ensure_package_tools_available()
+        _ensure_portable_package_tools_available()
         renderer, source = renderer_path.resolve(), "local-path"
 
     prepared = Path("build") / "standalone" / "renderer" / _renderer_binary_name()
@@ -587,38 +587,14 @@ def _resolve_package_renderer(
         path = Path(env_binary)
         if not path.is_file():
             raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
-        _ensure_package_tools_available()
+        _ensure_portable_package_tools_available()
         return path.resolve(), "local-path"
 
     source_path = os.environ.get("PLUSHIE_RUST_SOURCE_PATH")
     if source_path:
-        manifest = Path(source_path) / "Cargo.toml"
-        if not manifest.is_file():
-            raise FileNotFoundError(
-                f"PLUSHIE_RUST_SOURCE_PATH does not contain Cargo.toml: {source_path}"
-            )
-        target_dir = Path("build") / "standalone" / "cargo-target"
-        subprocess.run(
-            [
-                "cargo",
-                "build",
-                "--release",
-                "-p",
-                "plushie-renderer",
-                "--manifest-path",
-                os.fspath(manifest),
-                "--target-dir",
-                os.fspath(target_dir),
-            ],
-            check=True,
-        )
-        built = target_dir.resolve() / "release" / _renderer_binary_name()
-        if not built.is_file():
-            raise FileNotFoundError(
-                f"cargo build completed but renderer is missing at {built}"
-            )
-        _ensure_package_tools_available()
-        return built, "local-build"
+        from plushie.binary import sync_renderer_with_tool
+
+        return Path(sync_renderer_with_tool()).resolve(), "local-build"
 
     from plushie.binary import sync_renderer_with_tool
 
@@ -631,7 +607,7 @@ def _resolve_custom_package_renderer() -> tuple[Path, str]:
         path = Path(env_binary)
         if not path.is_file():
             raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
-        _ensure_package_tools_available()
+        _ensure_portable_package_tools_available()
         return path.resolve(), "local-path"
 
     raise RuntimeError(
@@ -640,14 +616,13 @@ def _resolve_custom_package_renderer() -> tuple[Path, str]:
     )
 
 
-def _ensure_package_tools_available() -> None:
-    from plushie.binary import download_dir, download_name, launcher_name, tool_name
+def _ensure_portable_package_tools_available() -> None:
+    from plushie.binary import download_dir, launcher_name, tool_name
 
     missing = [
         path
         for path in (
             download_dir() / tool_name(),
-            download_dir() / download_name(),
             download_dir() / launcher_name(),
         )
         if not path.is_file()

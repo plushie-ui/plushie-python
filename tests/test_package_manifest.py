@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from plushie import __version__
-from plushie.binary import PLUSHIE_RUST_VERSION, download_name, launcher_name, tool_name
+from plushie.binary import PLUSHIE_RUST_VERSION, launcher_name, tool_name
 from plushie.package import (
     PackageStartConfig,
     _resolve_package_renderer,
@@ -349,7 +349,6 @@ def test_package_pyinstaller_payload_uses_explicit_renderer_path(
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     (bin_dir / tool_name()).write_bytes(b"tool")
-    (bin_dir / download_name()).write_bytes(b"renderer")
     (bin_dir / launcher_name()).write_bytes(b"launcher")
 
     def fake_run_pyinstaller(**kwargs: Any) -> None:
@@ -481,6 +480,27 @@ def test_stock_package_renderer_syncs_managed_tool_set(
     assert source == "download"
 
 
+def test_source_package_renderer_syncs_managed_tool_set(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    synced_renderer = tmp_path / "bin" / "plushie-renderer"
+    synced_renderer.parent.mkdir()
+    synced_renderer.write_bytes(b"renderer")
+    monkeypatch.delenv("PLUSHIE_BINARY_PATH", raising=False)
+    monkeypatch.setenv("PLUSHIE_RUST_SOURCE_PATH", str(tmp_path / "plushie-rust"))
+
+    monkeypatch.setattr(
+        "plushie.binary.sync_renderer_with_tool", lambda: str(synced_renderer)
+    )
+
+    renderer, source = _resolve_package_renderer("stock")
+
+    assert renderer == synced_renderer.resolve()
+    assert source == "local-build"
+
+
 def test_explicit_package_renderer_requires_managed_packaging_tools(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -496,7 +516,6 @@ def test_explicit_package_renderer_requires_managed_packaging_tools(
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     (bin_dir / tool_name()).write_bytes(b"tool")
-    (bin_dir / download_name()).write_bytes(b"renderer")
     (bin_dir / launcher_name()).write_bytes(b"launcher")
 
     resolved, source = _resolve_package_renderer("stock")

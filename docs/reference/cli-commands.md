@@ -360,6 +360,11 @@ renderer from `PLUSHIE_BINARY_PATH` or an earlier `python -m plushie
 build`. Stock renderer resolution is not used for a custom package
 manifest.
 
+When `PLUSHIE_RUST_SOURCE_PATH` is set for stock renderer packaging,
+the package command uses the same managed native-tool sync path as
+`python -m plushie download`, so `bin/plushie`, `bin/plushie-renderer`,
+and `bin/plushie-launcher` are prepared together from the checkout.
+
 By default this command prints the final launcher handoff so the build
 stays explicit:
 
