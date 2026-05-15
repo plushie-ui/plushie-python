@@ -299,7 +299,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
 
 def _print_package_handoff(manifest_path: str | Path) -> None:
     print("Build launcher with:")
-    print(f"  cargo plushie package portable --manifest {manifest_path} --release")
+    print(f"  bin/plushie package portable --manifest {manifest_path}")
 
 
 def _resolve_artifacts(

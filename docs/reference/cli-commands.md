@@ -313,7 +313,7 @@ python -m plushie package \
 The output is intended for the shared Rust launcher:
 
 ```bash
-cargo plushie package portable --manifest dist/package/plushie-package.toml --release
+bin/plushie package portable --manifest dist/package/plushie-package.toml
 ```
 
 ### Flags
@@ -353,7 +353,7 @@ This command does not call `cargo plushie package`. It prints the
 final launcher handoff so the build stays explicit:
 
 ```bash
-cargo plushie package portable --manifest dist/package/plushie-package.toml --release
+bin/plushie package portable --manifest dist/package/plushie-package.toml
 ```
 
 ## python -m plushie inspect

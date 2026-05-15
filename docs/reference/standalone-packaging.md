@@ -69,7 +69,7 @@ bundled default icons into the payload.
 The generated manifest is the handoff to the shared launcher:
 
 ```bash
-cargo plushie package portable --manifest dist/package/plushie-package.toml --release
+bin/plushie package portable --manifest dist/package/plushie-package.toml
 ```
 
 Prepared payloads remain supported for custom assembly flows:
@@ -94,10 +94,10 @@ The demo package script delegates PyInstaller payload assembly to
 `python -m plushie package --pyinstaller-entry`. `cargo plushie
 package` builds the outer launcher from the generated manifest.
 
-Strict artifact postcheck runs the generated launcher from a temporary
+Strict artifact postcheck runs the portable launcher from a temporary
 working directory with a narrowed runtime `PATH`. The artifact
 postcheck checks launcher diagnostics plus process liveness or clean
 host exit until a stronger host-first readiness signal exists. It writes
-a report next to the generated launcher recording payload size, launcher
+a report next to the portable launcher recording payload size, launcher
 size, target, host SDK, runtime path, exit status, and the renderer path
 reported by launcher diagnostics.
