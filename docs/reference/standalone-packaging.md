@@ -16,10 +16,12 @@ The packaged payload should contain:
 - `payload.tar.zst`
 - `plushie-package.toml`
 
-The manifest is consumed by `cargo plushie package`. Paths in the
-manifest are payload-relative, so the renderer path must point inside
-the archived payload. A packaged app must not depend on a downloaded
-renderer cache or a renderer found on `PATH`.
+The manifest is consumed by `bin/plushie package portable` for the
+self-extracting artifact or by `bin/plushie package bundle` for
+platform packages. Paths in the manifest are payload-relative, so the
+renderer path must point inside the archived payload. A packaged app
+must not depend on a downloaded renderer cache or a renderer found on
+`PATH`.
 
 ## Startup
 
@@ -100,8 +102,10 @@ plushie-demos/python/data-explorer
 ```
 
 The demo package script delegates PyInstaller payload assembly to
-`python -m plushie package --pyinstaller-entry`. `cargo plushie
-package` builds the outer launcher from the generated manifest.
+`python -m plushie package --pyinstaller-entry`. `bin/plushie package
+portable` builds the self-extracting launcher from the generated
+manifest, and `bin/plushie package bundle` is the platform-package path
+backed by cargo-packager.
 
 Strict artifact postcheck runs the portable launcher from a temporary
 working directory with a narrowed runtime `PATH`. The artifact
