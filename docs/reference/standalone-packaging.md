@@ -23,17 +23,15 @@ renderer cache or a renderer found on `PATH`.
 
 ## Startup
 
-The shared launcher coordinates the payload-local renderer and starts
-the Python host through structured exec args.
-The host should run:
+The shared launcher is host-first. It extracts the payload, sets
+`PLUSHIE_BINARY_PATH` to the payload-local renderer, and starts the
+Python host command from `start.command`. The Python host then starts
+that renderer through the normal SDK path.
 
-```bash
-python -m plushie connect myapp:App
-```
-
-When `PLUSHIE_SOCKET` is present, `python -m plushie connect` connects
-to that socket and sends the `PLUSHIE_TOKEN` proof as `token_sha256`.
-It does not spawn or discover another renderer.
+Renderer-parent startup is still available for explicit embedding and
+debug flows through `python -m plushie connect`, where the renderer sets
+`PLUSHIE_SOCKET` and the host sends the `PLUSHIE_TOKEN` proof as
+`token_sha256`. It is not the default shared package startup path.
 
 ## PyInstaller Mode
 
@@ -98,7 +96,8 @@ package` builds the outer launcher from the generated manifest.
 
 Strict artifact postcheck runs the generated launcher from a temporary
 working directory with a narrowed runtime `PATH`. The artifact
-postcheck requires the shared renderer-parent ready marker and writes a
-report next to the generated launcher recording payload size, launcher
+postcheck checks launcher diagnostics plus process liveness or clean
+host exit until a stronger host-first readiness signal exists. It writes
+a report next to the generated launcher recording payload size, launcher
 size, target, host SDK, runtime path, exit status, and the renderer path
 reported by launcher diagnostics.

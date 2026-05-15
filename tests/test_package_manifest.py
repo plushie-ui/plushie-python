@@ -387,6 +387,9 @@ def test_package_pyinstaller_payload_rejects_custom_without_custom_renderer(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("PLUSHIE_BINARY_PATH", raising=False)
+    stale_custom = tmp_path / "build" / "demo" / "target" / "release"
+    stale_custom.mkdir(parents=True)
+    (stale_custom / "demo").write_text("not a package renderer")
 
     with pytest.raises(RuntimeError, match="custom renderer packaging requires"):
         package_pyinstaller_payload(

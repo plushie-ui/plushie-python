@@ -611,30 +611,10 @@ def _resolve_custom_package_renderer() -> tuple[Path, str]:
             raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
         return path.resolve(), "local-path"
 
-    custom_build = _resolve_custom_package_build()
-    if custom_build is not None:
-        return custom_build, "local-build"
-
     raise RuntimeError(
         "custom renderer packaging requires an explicit custom renderer binary. "
-        "Set PLUSHIE_BINARY_PATH or run `python -m plushie build` first."
+        "Set PLUSHIE_BINARY_PATH to the renderer built for this app."
     )
-
-
-def _resolve_custom_package_build() -> Path | None:
-    build_root = Path("build")
-    if not build_root.is_dir():
-        return None
-
-    ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
-    for build_dir in build_root.iterdir():
-        if not build_dir.is_dir():
-            continue
-        for profile in ("release", "debug"):
-            candidate = build_dir / "target" / profile / f"{build_dir.name}{ext}"
-            if candidate.is_file():
-                return candidate.resolve()
-    return None
 
 
 def _run_pyinstaller(
