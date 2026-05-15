@@ -218,6 +218,21 @@ def release_name(*, os_name: str | None = None, arch: str | None = None) -> str:
     return f"plushie-renderer-{os_val}-{arch_val}{ext}"
 
 
+def tool_name(*, os_name: str | None = None) -> str:
+    """Return the stable project-local plushie tool filename."""
+    os_val = os_name or detect_os()
+    ext = ".exe" if os_val == "windows" else ""
+    return f"plushie{ext}"
+
+
+def tool_release_name(*, os_name: str | None = None, arch: str | None = None) -> str:
+    """Return the platform-specific plushie tool release asset name."""
+    os_val = os_name or detect_os()
+    arch_val = arch or detect_arch()
+    ext = ".exe" if os_val == "windows" else ""
+    return f"plushie-{os_val}-{arch_val}{ext}"
+
+
 # ---------------------------------------------------------------------------
 # Download directory
 # ---------------------------------------------------------------------------
@@ -519,6 +534,60 @@ def download(
     return str(dest)
 
 
+def download_tool(
+    version: str | None = None,
+    *,
+    force: bool = False,
+) -> str:
+    """Download the standalone plushie tool into the project-local bin directory."""
+    release_version = _validate_release_version(
+        PLUSHIE_RUST_VERSION if version is None else version
+    )
+    name = tool_release_name()
+    tag = f"v{release_version}"
+    url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
+    dest_dir = download_dir()
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / tool_name()
+
+    if dest.is_file() and not force:
+        logger.info("plushie tool already exists at %s", dest)
+        return str(dest)
+
+    logger.info("downloading plushie tool from %s", url)
+
+    try:
+        urllib.request.urlretrieve(url, str(dest))
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(
+            f"failed to download plushie tool from {url}: HTTP {exc.code} {exc.reason}"
+        ) from exc
+
+    if sys.platform != "win32":
+        st = dest.stat()
+        dest.chmod(st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    _verify_checksum(dest, f"{url}.sha256")
+
+    logger.info("plushie tool saved to %s", dest)
+    return str(dest)
+
+
+def sync_renderer_with_tool(version: str | None = None, *, force: bool = False) -> str:
+    """Ask the project-local plushie tool to sync the pinned renderer."""
+    release_version = _validate_release_version(
+        PLUSHIE_RUST_VERSION if version is None else version
+    )
+    tool = download_tool(version=release_version, force=force)
+    args = [tool, "download", "--required-version", release_version]
+    if force:
+        args.append("--force")
+    result = subprocess.run(args, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"bin/plushie download failed with status {result.returncode}")
+    return str(download_dir() / download_name())
+
+
 # ---------------------------------------------------------------------------
 # WASM download
 # ---------------------------------------------------------------------------
@@ -748,10 +817,14 @@ __all__ = [
     "download",
     "download_dir",
     "download_name",
+    "download_tool",
     "download_wasm",
     "release_name",
     "resolve",
     "resolve_wasm",
+    "sync_renderer_with_tool",
+    "tool_name",
+    "tool_release_name",
     "wasm_dir",
     "wasm_download_name",
 ]

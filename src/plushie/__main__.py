@@ -353,9 +353,14 @@ def _cmd_download(args: argparse.Namespace) -> None:
     wasm_dir_override = getattr(args, "wasm_dir", None) or pyproject_cfg.get("wasm_dir")
 
     if want_bin:
-        from plushie.binary import download
+        if bin_file is None:
+            from plushie.binary import sync_renderer_with_tool
 
-        path = download(version=version, force=force, bin_file=bin_file)
+            path = sync_renderer_with_tool(version=version, force=force)
+        else:
+            from plushie.binary import download
+
+            path = download(version=version, force=force, bin_file=bin_file)
         print(f"downloaded: {path}")
 
     if want_wasm:

@@ -18,8 +18,11 @@ from plushie.binary import (
     detect_os,
     download,
     download_name,
+    download_tool,
     download_wasm,
     release_name,
+    tool_name,
+    tool_release_name,
 )
 
 # -- Platform detection ------------------------------------------------------
@@ -75,12 +78,26 @@ class TestDownloadName:
         assert name.endswith(".exe")
 
 
+class TestToolName:
+    def test_linux_x86(self) -> None:
+        assert tool_name(os_name="linux") == "plushie"
+
+    def test_windows_gets_exe(self) -> None:
+        name = tool_name(os_name="windows")
+        assert name.endswith(".exe")
+
+
 class TestReleaseName:
     def test_linux_x86(self) -> None:
         assert (
             release_name(os_name="linux", arch="x86_64")
             == "plushie-renderer-linux-x86_64"
         )
+
+
+class TestToolReleaseName:
+    def test_linux_x86(self) -> None:
+        assert tool_release_name(os_name="linux", arch="x86_64") == "plushie-linux-x86_64"
 
 
 # -- Checksum verification --------------------------------------------------
@@ -260,6 +277,22 @@ class TestDownloadForce:
             download(version="0.4.0", force=True)
 
             mock_retrieve.assert_called_once()
+            mock_verify.assert_called_once()
+
+    def test_download_tool_uses_plushie_release_asset(self, tmp_path: Path) -> None:
+        with (
+            patch("plushie.binary.download_dir", return_value=tmp_path),
+            patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
+            patch("plushie.binary._verify_checksum") as mock_verify,
+            patch("plushie.binary.sys") as mock_sys,
+        ):
+            mock_sys.platform = "linux"
+            mock_retrieve.side_effect = lambda _url, dest: Path(dest).write_bytes(b"tool")
+
+            result = download_tool(version="0.4.0", force=True)
+
+            assert result == str(tmp_path / "plushie")
+            assert "plushie-linux-" in mock_retrieve.call_args.args[0]
             mock_verify.assert_called_once()
 
 
