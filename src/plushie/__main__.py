@@ -262,6 +262,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
             result["manifest_path"],
             portable=args.portable,
             portable_out=args.portable_out,
+            strict_tools=args.strict_tools,
         )
         return
 
@@ -303,17 +304,26 @@ def _cmd_package(args: argparse.Namespace) -> None:
         output,
         portable=args.portable,
         portable_out=args.portable_out,
+        strict_tools=args.strict_tools,
     )
 
 
-def _print_package_handoff(manifest_path: str | Path) -> None:
+def _print_package_handoff(manifest_path: str | Path, *, strict_tools: bool) -> None:
     from plushie.binary import tool_name
 
     print("Build launcher with:")
-    print(f"  {Path('bin') / tool_name()} package portable --manifest {manifest_path}")
+    command = f"{Path('bin') / tool_name()} package portable --manifest {manifest_path}"
+    if strict_tools:
+        command = f"{command} --strict-tools"
+    print(f"  {command}")
 
 
-def _run_package_portable(manifest_path: str | Path, portable_out: str | None) -> None:
+def _run_package_portable(
+    manifest_path: str | Path,
+    portable_out: str | None,
+    *,
+    strict_tools: bool,
+) -> None:
     from plushie.binary import tool_name
 
     command = [
@@ -325,6 +335,8 @@ def _run_package_portable(manifest_path: str | Path, portable_out: str | None) -
     ]
     if portable_out is not None:
         command.extend(["--out", portable_out])
+    if strict_tools:
+        command.append("--strict-tools")
     subprocess.run(command, check=True)
 
 
@@ -333,11 +345,16 @@ def _handle_package_handoff(
     *,
     portable: bool,
     portable_out: str | None,
+    strict_tools: bool,
 ) -> None:
     if portable:
-        _run_package_portable(manifest_path, portable_out)
+        _run_package_portable(
+            manifest_path,
+            portable_out,
+            strict_tools=strict_tools,
+        )
         return
-    _print_package_handoff(manifest_path)
+    _print_package_handoff(manifest_path, strict_tools=strict_tools)
 
 
 def _resolve_artifacts(
@@ -774,6 +791,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--portable-out",
         default=None,
         help="portable launcher output path",
+    )
+    package_parser.add_argument(
+        "--strict-tools",
+        action="store_true",
+        help="require strict native package tool identity before portable packaging",
     )
     package_parser.add_argument(
         "--working-dir",

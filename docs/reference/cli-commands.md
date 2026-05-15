@@ -318,7 +318,9 @@ bin/plushie package portable --manifest dist/package/plushie-package.toml
 
 Pass `--portable` to run that final step immediately after writing the
 manifest. Pass `--portable-out PATH` to choose the portable executable
-output path.
+output path. Pass `--strict-tools` with `--portable` to require native
+package tools to be present, version-matched, and strict-provenance
+before portable packaging.
 
 ### Flags
 
@@ -347,6 +349,7 @@ output path.
 | `--output PATH` | Manifest output path. Defaults to `dist/package/plushie-package.toml` |
 | `--portable` | Run `bin/plushie package portable --manifest <manifest>` after writing the manifest |
 | `--portable-out PATH` | Pass `--out PATH` to the portable package command when `--portable` is set |
+| `--strict-tools` | Pass `--strict-tools` to the portable package command when `--portable` is set |
 | `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
 | `--start-command ARG...` | Payload-relative app start command argv. Required in prepared mode |
 
@@ -360,6 +363,14 @@ stays explicit:
 
 ```bash
 bin/plushie package portable --manifest dist/package/plushie-package.toml
+```
+
+For release builds that should fail when native package tools are
+missing, use the strict tool gate:
+
+```bash
+python -m plushie package --portable --strict-tools ...
+bin/plushie package check --manifest dist/package/plushie-package.toml --strict-tools
 ```
 
 ## python -m plushie inspect

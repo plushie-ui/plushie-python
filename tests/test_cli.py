@@ -344,6 +344,7 @@ def test_package_parser_accepts_portable_options() -> None:
             "--portable",
             "--portable-out",
             "dist/portable/TestApp",
+            "--strict-tools",
             "--renderer-path",
             "bin/plushie-renderer",
             "--payload-archive",
@@ -356,6 +357,7 @@ def test_package_parser_accepts_portable_options() -> None:
     assert args.command == "package"
     assert args.portable is True
     assert args.portable_out == "dist/portable/TestApp"
+    assert args.strict_tools is True
 
 
 def test_package_parser_accepts_package_config() -> None:
@@ -461,6 +463,7 @@ def test_package_command_prints_launcher_handoff(
             output=None,
             portable=False,
             portable_out=None,
+            strict_tools=False,
         )
     )
 
@@ -507,6 +510,7 @@ def test_package_command_runs_portable_launcher(
             output=None,
             portable=True,
             portable_out="dist/portable/TestApp",
+            strict_tools=True,
         )
     )
 
@@ -522,5 +526,6 @@ def test_package_command_runs_portable_launcher(
             "dist/package/plushie-package.toml",
             "--out",
             "dist/portable/TestApp",
+            "--strict-tools",
         ]
     ]

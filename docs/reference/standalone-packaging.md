@@ -72,6 +72,15 @@ The generated manifest is the handoff to the shared launcher:
 bin/plushie package portable --manifest dist/package/plushie-package.toml
 ```
 
+Use `python -m plushie package --portable --strict-tools ...` for
+release jobs that should fail when native package tools are missing,
+stale, dirty, mixed, or mismatched. The same gate is available on the
+Rust verifier:
+
+```bash
+bin/plushie package check --manifest dist/package/plushie-package.toml --strict-tools
+```
+
 Prepared payloads remain supported for custom assembly flows:
 
 ```bash
