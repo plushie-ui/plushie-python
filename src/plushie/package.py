@@ -16,7 +16,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Literal, TypedDict
 
 from plushie import __version__
-from plushie.binary import PLUSHIE_RUST_VERSION, PlushieNotFoundError
+from plushie.binary import PLUSHIE_RUST_VERSION
 from plushie.protocol import PROTOCOL_VERSION
 
 DEFAULT_FORWARD_ENV = (
@@ -602,12 +602,9 @@ def _resolve_package_renderer(
             )
         return built, "local-build"
 
-    from plushie.binary import download, resolve
+    from plushie.binary import sync_renderer_with_tool
 
-    try:
-        return Path(resolve()).resolve(), "local-resolve"
-    except PlushieNotFoundError:
-        return Path(download()).resolve(), "download"
+    return Path(sync_renderer_with_tool()).resolve(), "download"
 
 
 def _resolve_custom_package_renderer() -> tuple[Path, str]:

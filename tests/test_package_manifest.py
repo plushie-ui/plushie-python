@@ -11,6 +11,7 @@ from plushie import __version__
 from plushie.binary import PLUSHIE_RUST_VERSION
 from plushie.package import (
     PackageStartConfig,
+    _resolve_package_renderer,
     archive_payload,
     load_package_config,
     manifest_for_payload,
@@ -404,6 +405,27 @@ def test_package_pyinstaller_payload_rejects_custom_without_custom_renderer(
             target="linux-x86_64",
             renderer_kind="custom",
         )
+
+
+def test_stock_package_renderer_syncs_managed_tool_set(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    synced_renderer = tmp_path / "bin" / "plushie-renderer"
+    synced_renderer.parent.mkdir()
+    synced_renderer.write_bytes(b"renderer")
+    monkeypatch.delenv("PLUSHIE_BINARY_PATH", raising=False)
+    monkeypatch.delenv("PLUSHIE_RUST_SOURCE_PATH", raising=False)
+
+    monkeypatch.setattr(
+        "plushie.binary.sync_renderer_with_tool", lambda: str(synced_renderer)
+    )
+
+    renderer, source = _resolve_package_renderer("stock")
+
+    assert renderer == synced_renderer.resolve()
+    assert source == "download"
 
 
 def test_archive_payload_rejects_symlinks(tmp_path: Path) -> None:
