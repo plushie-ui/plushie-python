@@ -151,10 +151,11 @@ defaulting to `["bin"]`.
 
 ### Destinations
 
-The native binary lands in `bin/` under the current project. The
-filename is `plushie-renderer` (with `.exe` on Windows). Release
-assets still use platform-specific filenames, but local projects use
-the stable name.
+The managed native tool set lands in `bin/` under the current project:
+`plushie`, `plushie-renderer`, and `plushie-launcher` (with `.exe` on
+Windows). Release assets still use platform-specific filenames, but
+local projects use stable names. `bin/plushie` owns renderer and
+launcher sync.
 
 The WASM bundle extracts to `_build/plushie-renderer/wasm/` and
 produces `plushie_renderer_wasm.js` and
