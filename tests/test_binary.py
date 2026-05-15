@@ -350,6 +350,7 @@ class TestDownloadForce:
                 *_args: object, **_kwargs: object
             ) -> subprocess.CompletedProcess[bytes]:
                 bin_dir.mkdir(exist_ok=True)
+                (bin_dir / tool_name()).write_bytes(b"tool")
                 (bin_dir / download_name()).write_bytes(b"renderer")
                 (bin_dir / launcher_name()).write_bytes(b"launcher")
                 return subprocess.CompletedProcess(args=[], returncode=0)

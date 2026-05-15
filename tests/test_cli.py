@@ -10,6 +10,7 @@ import pytest
 
 import plushie
 import plushie.__main__ as cli
+from plushie.binary import PLUSHIE_RUST_VERSION
 
 
 class DummyApp:
@@ -435,6 +436,59 @@ def test_package_parser_accepts_pyinstaller_shape() -> None:
     assert args.collect_submodules == ["plushie"]
 
 
+def test_package_pyinstaller_forwards_renderer_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    calls: list[dict[str, Any]] = []
+
+    def fake_package_pyinstaller_payload(**kwargs: Any) -> dict[str, Path | str]:
+        calls.append(kwargs)
+        return {
+            "manifest_path": Path("dist/package/plushie-package.toml"),
+            "payload_archive": Path("dist/package/payload.tar.zst"),
+        }
+
+    monkeypatch.setattr(
+        "plushie.package.package_pyinstaller_payload",
+        fake_package_pyinstaller_payload,
+    )
+
+    cli._cmd_package(
+        argparse.Namespace(
+            write_package_config=False,
+            app_id="dev.plushie.test",
+            app_name="Test App",
+            app_version="0.1.0",
+            package_config=None,
+            working_dir=".",
+            start_command=None,
+            pyinstaller_entry="src/test_app/__main__.py",
+            pyinstaller_name="TestApp",
+            target="linux-x86_64",
+            renderer_kind="stock",
+            renderer_source=None,
+            renderer_path="dist/custom-renderer",
+            app_icon=None,
+            add_data=[],
+            hidden_import=[],
+            collect_submodules=[],
+            pyinstaller_arg=[],
+            package_dir="dist/package",
+            dist_dir="dist",
+            spec_dir="build/pyinstaller-spec",
+            work_dir="build/pyinstaller",
+            output=None,
+            portable=False,
+            portable_out=None,
+            strict_tools=False,
+        )
+    )
+
+    assert calls[0]["renderer_path"] == "dist/custom-renderer"
+
+
 def test_package_command_prints_launcher_handoff(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -518,6 +572,13 @@ def test_package_command_runs_portable_launcher(
     assert "Wrote dist/package/plushie-package.toml" in output
     assert "Build launcher with:" not in output
     assert calls == [
+        [
+                "bin/plushie",
+                "tools",
+                "check",
+                "--required-version",
+                PLUSHIE_RUST_VERSION,
+            ],
         [
             "bin/plushie",
             "package",

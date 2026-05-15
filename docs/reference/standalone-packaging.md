@@ -65,13 +65,18 @@ one-folder output under `host/`, materializes platform icons, writes
 `payload.tar.zst`, then writes `plushie-package.toml` with the final
 archive hash and size. If `--app-icon` is provided, that file is
 copied into the payload and recorded in the manifest. Otherwise the
-command asks `cargo-plushie default-icons` to export Plushie's
+command asks `bin/plushie default-icons` to export Plushie's
 bundled default icons into the payload.
+
+Pass `--renderer-path PATH` in PyInstaller mode to package a specific
+renderer binary. This bypasses stock renderer resolution while keeping
+the payload-local manifest path at `bin/plushie-renderer`.
 
 The generated manifest is the handoff to the shared launcher:
 
 ```bash
-bin/plushie package portable --manifest dist/package/plushie-package.toml
+bin/plushie package check --manifest dist/package/plushie-package.toml --strict-tools
+bin/plushie package portable --manifest dist/package/plushie-package.toml --strict-tools
 ```
 
 Use `python -m plushie package --portable --strict-tools ...` for

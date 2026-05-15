@@ -343,7 +343,7 @@ before portable packaging.
 | `--dist-dir PATH` | PyInstaller dist directory. Defaults to `dist` |
 | `--spec-dir PATH` | PyInstaller spec output directory. Defaults to `build/pyinstaller-spec` |
 | `--work-dir PATH` | PyInstaller work directory. Defaults to `build/pyinstaller` |
-| `--renderer-path PATH` | Payload-relative renderer executable path. Required in prepared mode |
+| `--renderer-path PATH` | Explicit renderer binary path in PyInstaller mode. Payload-relative renderer executable path in prepared mode, where it is required |
 | `--payload-archive PATH` | Payload archive to hash and record. Required in prepared mode |
 | `--platform-icon PATH` | Payload-relative app icon path for `[platform].icon` |
 | `--output PATH` | Manifest output path. Defaults to `dist/package/plushie-package.toml` |
@@ -353,10 +353,12 @@ before portable packaging.
 | `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
 | `--start-command ARG...` | Payload-relative app start command argv. Required in prepared mode |
 
-In PyInstaller mode, `--renderer-kind custom` requires an explicit
-custom renderer: set `PLUSHIE_BINARY_PATH` or run `python -m plushie
-build` before packaging. Stock renderer resolution is not used for a
-custom package manifest.
+In PyInstaller mode, pass `--renderer-path PATH` to package a specific
+renderer binary without going through stock renderer resolution.
+Without that flag, `--renderer-kind custom` requires an explicit custom
+renderer from `PLUSHIE_BINARY_PATH` or an earlier `python -m plushie
+build`. Stock renderer resolution is not used for a custom package
+manifest.
 
 By default this command prints the final launcher handoff so the build
 stays explicit:

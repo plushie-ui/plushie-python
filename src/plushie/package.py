@@ -373,6 +373,7 @@ def package_pyinstaller_payload(
     target: str | None = None,
     renderer_kind: RendererKind = "stock",
     renderer_source: str | None = None,
+    renderer_path: str | Path | None = None,
     app_icon: str | Path | None = None,
     add_data: list[str] | None = None,
     hidden_import: list[str] | None = None,
@@ -401,9 +402,15 @@ def package_pyinstaller_payload(
         Path(output) if output is not None else package_root / "plushie-package.toml"
     )
 
-    prepared_renderer, resolved_renderer_source = _prepare_renderer_for_pyinstaller(
-        renderer_kind
-    )
+    if renderer_path is None:
+        prepared_renderer, resolved_renderer_source = _prepare_renderer_for_pyinstaller(
+            renderer_kind
+        )
+    else:
+        prepared_renderer, resolved_renderer_source = _prepare_renderer_for_pyinstaller(
+            renderer_kind,
+            renderer_path=Path(renderer_path),
+        )
     effective_renderer_source = renderer_source or resolved_renderer_source
 
     _run_pyinstaller(
@@ -551,8 +558,17 @@ def archive_payload(payload_dir: str | Path, archive_path: str | Path) -> None:
 
 def _prepare_renderer_for_pyinstaller(
     renderer_kind: RendererKind = "stock",
+    *,
+    renderer_path: Path | None = None,
 ) -> tuple[Path, str]:
-    renderer, source = _resolve_package_renderer(renderer_kind)
+    if renderer_path is None:
+        renderer, source = _resolve_package_renderer(renderer_kind)
+    else:
+        if not renderer_path.is_file():
+            raise FileNotFoundError(f"renderer_path does not exist: {renderer_path}")
+        _ensure_package_tools_available()
+        renderer, source = renderer_path.resolve(), "local-path"
+
     prepared = Path("build") / "standalone" / "renderer" / _renderer_binary_name()
     prepared.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(renderer, prepared)
@@ -625,12 +641,13 @@ def _resolve_custom_package_renderer() -> tuple[Path, str]:
 
 
 def _ensure_package_tools_available() -> None:
-    from plushie.binary import download_dir, launcher_name, tool_name
+    from plushie.binary import download_dir, download_name, launcher_name, tool_name
 
     missing = [
         path
         for path in (
             download_dir() / tool_name(),
+            download_dir() / download_name(),
             download_dir() / launcher_name(),
         )
         if not path.is_file()
@@ -697,19 +714,42 @@ def _materialize_platform_icon(
         shutil.copy2(app_icon, dest)
         return _payload_relative(payload_root, dest)
 
-    _run_cargo_plushie("default-icons", "--out", os.fspath(assets))
+    _run_default_icons(os.fspath(assets))
     default_icon = assets / "plushie-checkbox-512x512.png"
     if default_icon.is_file():
         return _payload_relative(payload_root, default_icon)
     return None
 
 
-def _run_cargo_plushie(subcommand: str, *args: str) -> None:
-    from plushie.cargo_plushie import resolve_cargo_plushie
+def _run_default_icons(out_dir: str) -> None:
+    source_path = os.environ.get("PLUSHIE_RUST_SOURCE_PATH")
+    if source_path:
+        manifest_path = Path(source_path) / "Cargo.toml"
+        subprocess.run(
+            [
+                "cargo",
+                "run",
+                "--manifest-path",
+                os.fspath(manifest_path),
+                "-p",
+                "cargo-plushie",
+                "--bin",
+                "plushie",
+                "--release",
+                "--quiet",
+                "--",
+                "default-icons",
+                "--out",
+                out_dir,
+            ],
+            check=True,
+        )
+        return
 
-    command, prefix = resolve_cargo_plushie()
+    from plushie.binary import tool_name
+
     subprocess.run(
-        [command, *prefix, subcommand, *args],
+        [os.fspath(Path("bin") / tool_name()), "default-icons", "--out", out_dir],
         check=True,
     )
 

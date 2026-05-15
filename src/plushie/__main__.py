@@ -242,6 +242,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
             target=args.target,
             renderer_kind=args.renderer_kind,
             renderer_source=args.renderer_source,
+            renderer_path=args.renderer_path,
             app_icon=args.app_icon,
             add_data=args.add_data,
             hidden_import=args.hidden_import,
@@ -340,6 +341,21 @@ def _run_package_portable(
     subprocess.run(command, check=True)
 
 
+def _check_package_tools_strict() -> None:
+    from plushie.binary import PLUSHIE_RUST_VERSION, tool_name
+
+    subprocess.run(
+        [
+            os.fspath(Path("bin") / tool_name()),
+            "tools",
+            "check",
+            "--required-version",
+            PLUSHIE_RUST_VERSION,
+        ],
+        check=True,
+    )
+
+
 def _handle_package_handoff(
     manifest_path: str | Path,
     *,
@@ -347,6 +363,8 @@ def _handle_package_handoff(
     portable_out: str | None,
     strict_tools: bool,
 ) -> None:
+    if strict_tools:
+        _check_package_tools_strict()
     if portable:
         _run_package_portable(
             manifest_path,
@@ -765,7 +783,10 @@ def _build_parser() -> argparse.ArgumentParser:
     package_parser.add_argument(
         "--renderer-path",
         default=None,
-        help="payload-relative renderer executable path",
+        help=(
+            "explicit renderer binary path in PyInstaller mode, or "
+            "payload-relative renderer executable path in prepared mode"
+        ),
     )
     package_parser.add_argument(
         "--payload-archive",

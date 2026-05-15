@@ -613,9 +613,10 @@ def sync_renderer_with_tool(version: str | None = None, *, force: bool = False) 
         raise RuntimeError(
             f"bin/plushie download failed with status {result.returncode}"
         )
+    tool = download_dir() / tool_name()
     renderer = download_dir() / download_name()
     launcher = download_dir() / launcher_name()
-    missing = [path for path in (renderer, launcher) if not path.is_file()]
+    missing = [path for path in (tool, renderer, launcher) if not path.is_file()]
     if missing:
         missing_text = ", ".join(str(path) for path in missing)
         raise RuntimeError(f"bin/plushie tools sync did not install: {missing_text}")
