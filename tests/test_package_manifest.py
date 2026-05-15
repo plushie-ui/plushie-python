@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from plushie import __version__
-from plushie.binary import PLUSHIE_RUST_VERSION
+from plushie.binary import PLUSHIE_RUST_VERSION, launcher_name, tool_name
 from plushie.package import (
     PackageStartConfig,
     _resolve_package_renderer,
@@ -426,6 +426,29 @@ def test_stock_package_renderer_syncs_managed_tool_set(
 
     assert renderer == synced_renderer.resolve()
     assert source == "download"
+
+
+def test_explicit_package_renderer_requires_managed_packaging_tools(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    renderer = tmp_path / "custom-renderer"
+    renderer.write_bytes(b"renderer")
+    monkeypatch.setenv("PLUSHIE_BINARY_PATH", str(renderer))
+
+    with pytest.raises(RuntimeError, match="managed Plushie tool set"):
+        _resolve_package_renderer("stock")
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / tool_name()).write_bytes(b"tool")
+    (bin_dir / launcher_name()).write_bytes(b"launcher")
+
+    resolved, source = _resolve_package_renderer("stock")
+
+    assert resolved == renderer.resolve()
+    assert source == "local-path"
 
 
 def test_archive_payload_rejects_symlinks(tmp_path: Path) -> None:

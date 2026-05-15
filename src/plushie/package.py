@@ -571,6 +571,7 @@ def _resolve_package_renderer(
         path = Path(env_binary)
         if not path.is_file():
             raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
+        _ensure_package_tools_available()
         return path.resolve(), "local-path"
 
     source_path = os.environ.get("PLUSHIE_RUST_SOURCE_PATH")
@@ -600,6 +601,7 @@ def _resolve_package_renderer(
             raise FileNotFoundError(
                 f"cargo build completed but renderer is missing at {built}"
             )
+        _ensure_package_tools_available()
         return built, "local-build"
 
     from plushie.binary import sync_renderer_with_tool
@@ -613,12 +615,32 @@ def _resolve_custom_package_renderer() -> tuple[Path, str]:
         path = Path(env_binary)
         if not path.is_file():
             raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
+        _ensure_package_tools_available()
         return path.resolve(), "local-path"
 
     raise RuntimeError(
         "custom renderer packaging requires an explicit custom renderer binary. "
         "Set PLUSHIE_BINARY_PATH to the renderer built for this app."
     )
+
+
+def _ensure_package_tools_available() -> None:
+    from plushie.binary import download_dir, launcher_name, tool_name
+
+    missing = [
+        path
+        for path in (
+            download_dir() / tool_name(),
+            download_dir() / launcher_name(),
+        )
+        if not path.is_file()
+    ]
+    if missing:
+        missing_text = ", ".join(str(path) for path in missing)
+        raise RuntimeError(
+            "Portable packaging requires the managed Plushie tool set. "
+            f"Missing: {missing_text}. Run `python -m plushie download`."
+        )
 
 
 def _run_pyinstaller(
