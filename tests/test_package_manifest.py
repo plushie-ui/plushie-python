@@ -10,12 +10,16 @@ import pytest
 from plushie import __version__
 from plushie.binary import PLUSHIE_RUST_VERSION
 from plushie.package import (
+    PackageStartConfig,
     archive_payload,
+    load_package_config,
     manifest_for_payload,
     normalize_package_target,
     package_pyinstaller_payload,
     render_manifest,
+    render_package_config,
     write_manifest,
+    write_package_config,
 )
 
 
@@ -107,6 +111,110 @@ def test_manifest_for_payload_allows_empty_forward_env(tmp_path: Path) -> None:
 
     assert manifest["forward_env"] == []
     assert "forward_env = []" in render_manifest(manifest)
+
+
+def test_load_package_config_uses_default_file(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    Path("plushie-package.config.toml").write_text(
+        "\n".join(
+            [
+                "config_version = 1",
+                "",
+                "[start]",
+                'working_dir = "host/DataExplorer"',
+                'command = ["host/DataExplorer/DataExplorer", "--demo"]',
+                'forward_env = ["PATH", "APP_MODE"]',
+            ]
+        )
+    )
+
+    config = load_package_config()
+
+    assert config is not None
+    assert config.working_dir == "host/DataExplorer"
+    assert config.command == ["host/DataExplorer/DataExplorer", "--demo"]
+    assert config.forward_env == ["PATH", "APP_MODE"]
+
+
+def test_load_package_config_returns_none_when_default_file_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    assert load_package_config() is None
+
+
+def test_write_package_config_uses_real_start_values(tmp_path: Path) -> None:
+    path = tmp_path / "plushie-package.config.toml"
+
+    write_package_config(
+        path,
+        PackageStartConfig(
+            working_dir=".",
+            command=["bin/connect"],
+            forward_env=["PATH", "HOME"],
+        ),
+    )
+
+    text = path.read_text()
+    assert "config_version = 1" in text
+    assert 'working_dir = "."' in text
+    assert 'command = ["bin/connect"]' in text
+    assert '"PATH"' in text
+
+
+def test_render_package_config_defaults_to_connect_entrypoint() -> None:
+    text = render_package_config()
+
+    assert 'working_dir = "."' in text
+    assert 'command = ["bin/connect"]' in text
+    assert '"WAYLAND_DISPLAY"' in text
+
+
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [
+        ("config_version = 2\n", "config_version must be 1"),
+        (
+            'config_version = 1\n[start]\nworking_dir = "/tmp/app"\n',
+            "start.working_dir must be payload-relative",
+        ),
+        (
+            'config_version = 1\n[start]\ncommand = ["../app"]\n',
+            "start.command\\[0\\] must not contain parent traversal",
+        ),
+        (
+            "config_version = 1\n[start]\ncommand = []\n",
+            "start.command must not be empty",
+        ),
+        (
+            'config_version = 1\n[start]\ncommand = ["host/app", ""]\n',
+            "start.command\\[1\\] must be a non-empty string",
+        ),
+        (
+            'config_version = 1\n[start]\nforward_env = ["PLUSHIE_BINARY_PATH"]\n',
+            "start.forward_env\\[0\\] is reserved",
+        ),
+        (
+            'config_version = 1\n[start]\nforward_env = ["BAD=VALUE"]\n',
+            "start.forward_env\\[0\\] must not contain comma or equals",
+        ),
+    ],
+)
+def test_load_package_config_validates_start_fields(
+    tmp_path: Path,
+    content: str,
+    message: str,
+) -> None:
+    config_path = tmp_path / "plushie-package.config.toml"
+    config_path.write_text(content)
+
+    with pytest.raises(ValueError, match=message):
+        load_package_config(config_path)
 
 
 def test_package_pyinstaller_payload_stages_archive_inputs(
@@ -210,6 +318,7 @@ def test_package_pyinstaller_payload_copies_app_icon(
         lambda: (staged_renderer, "local-path"),
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
+    monkeypatch.setattr("plushie.package._run_cargo_plushie", lambda *_args: None)
     monkeypatch.setattr("plushie.package.archive_payload", fake_archive_payload)
 
     result = package_pyinstaller_payload(
@@ -222,6 +331,54 @@ def test_package_pyinstaller_payload_copies_app_icon(
     )
 
     assert result["platform_icon"] == "assets/app.png"
+
+
+def test_package_pyinstaller_payload_uses_start_config(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    staged_renderer = tmp_path / "renderer" / "plushie-renderer"
+    staged_renderer.parent.mkdir()
+    staged_renderer.write_bytes(b"renderer")
+
+    def fake_run_pyinstaller(**kwargs: Any) -> None:
+        name = str(kwargs["name"])
+        app_dir = Path(kwargs["dist_dir"]) / name
+        app_dir.mkdir(parents=True)
+        (app_dir / name).write_text("host")
+
+    def fake_archive_payload(
+        _payload_root: str | Path, archive_path: str | Path
+    ) -> None:
+        Path(archive_path).write_bytes(b"archive")
+
+    monkeypatch.setattr(
+        "plushie.package._stage_renderer_for_pyinstaller",
+        lambda: (staged_renderer, "local-path"),
+    )
+    monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
+    monkeypatch.setattr("plushie.package._run_cargo_plushie", lambda *_args: None)
+    monkeypatch.setattr("plushie.package.archive_payload", fake_archive_payload)
+
+    result = package_pyinstaller_payload(
+        entry="app.py",
+        name="ConfigApp",
+        app_id="dev.plushie.test",
+        app_version="0.1.0",
+        target="linux-x86_64",
+        working_dir="host/ConfigApp",
+        start_command=["host/ConfigApp/ConfigApp", "--profile", "demo"],
+        forward_env=["PATH", "APP_MODE"],
+    )
+
+    assert result["start_command"] == ["host/ConfigApp/ConfigApp", "--profile", "demo"]
+
+    manifest = (tmp_path / "dist" / "package" / "plushie-package.toml").read_text()
+    assert 'working_dir = "host/ConfigApp"' in manifest
+    assert 'command = ["host/ConfigApp/ConfigApp", "--profile", "demo"]' in manifest
+    assert 'forward_env = ["PATH", "APP_MODE"]' in manifest
 
 
 def test_archive_payload_rejects_symlinks(tmp_path: Path) -> None:

@@ -334,6 +334,32 @@ def test_package_parser_accepts_prepared_payload_shape() -> None:
     assert args.start_command == ["host/Test/Test"]
 
 
+def test_package_parser_accepts_package_config() -> None:
+    args = cli._build_parser().parse_args(
+        [
+            "package",
+            "--app-id",
+            "dev.plushie.test",
+            "--package-config",
+            "plushie-package.config.toml",
+            "--pyinstaller-entry",
+            "src/test_app/__main__.py",
+            "--pyinstaller-name",
+            "TestApp",
+        ]
+    )
+
+    assert args.command == "package"
+    assert args.package_config == "plushie-package.config.toml"
+
+
+def test_package_parser_accepts_write_package_config_without_app_id() -> None:
+    args = cli._build_parser().parse_args(["package", "--write-package-config"])
+
+    assert args.command == "package"
+    assert args.write_package_config is True
+
+
 def test_package_parser_accepts_pyinstaller_shape() -> None:
     args = cli._build_parser().parse_args(
         [

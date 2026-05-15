@@ -10,8 +10,10 @@ import shutil
 import stat
 import subprocess
 import sys
-from pathlib import Path
-from typing import Literal, TypedDict
+import tomllib
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Any, Literal, TypedDict
 
 from plushie import __version__
 from plushie.binary import PLUSHIE_RUST_VERSION, PlushieNotFoundError
@@ -26,6 +28,8 @@ DEFAULT_FORWARD_ENV = (
     "WAYLAND_DISPLAY",
     "DISPLAY",
 )
+DEFAULT_PACKAGE_CONFIG = "plushie-package.config.toml"
+RESERVED_FORWARD_ENV = frozenset({"PLUSHIE_BINARY_PATH", "PLUSHIE_PACKAGE_DIR"})
 
 RendererKind = Literal["stock", "custom"]
 
@@ -64,6 +68,15 @@ class PyInstallerPackageResult(TypedDict):
     renderer_path: str
     start_command: list[str]
     platform_icon: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class PackageStartConfig:
+    """Validated package start configuration."""
+
+    working_dir: str = "."
+    command: list[str] | None = None
+    forward_env: list[str] | None = None
 
 
 def normalize_package_target(os_name: str, arch: str) -> str:
@@ -106,6 +119,144 @@ def sha256_file(path: str | Path) -> str:
 def file_size(path: str | Path) -> int:
     """Return the file size in bytes."""
     return Path(path).stat().st_size
+
+
+def load_package_config(path: str | Path | None = None) -> PackageStartConfig | None:
+    """Load ``plushie-package.config.toml`` package start configuration.
+
+    Missing default config returns ``None`` so packaging keeps its existing
+    defaults. An explicit path must exist and parse successfully.
+    """
+    config_path = Path(DEFAULT_PACKAGE_CONFIG if path is None else path)
+    if path is None and not config_path.exists():
+        return None
+    if not config_path.is_file():
+        raise FileNotFoundError(f"package config does not exist: {config_path}")
+
+    with config_path.open("rb") as file:
+        data = tomllib.load(file)
+    return _parse_package_config(data, config_path)
+
+
+def default_start_config(command: list[str] | None = None) -> PackageStartConfig:
+    """Return the default package start config for Python payloads."""
+    return PackageStartConfig(
+        working_dir=".",
+        command=["bin/connect"] if command is None else command,
+        forward_env=list(DEFAULT_FORWARD_ENV),
+    )
+
+
+def render_package_config(config: PackageStartConfig | None = None) -> str:
+    """Render a developer-owned package config template."""
+    cfg = default_start_config() if config is None else config
+    command = cfg.command if cfg.command is not None else ["bin/connect"]
+    forward_env = cfg.forward_env if cfg.forward_env is not None else list(DEFAULT_FORWARD_ENV)
+    lines = [
+        "# Plushie standalone package config.",
+        "# Commit this file and edit it when the packaged app needs a",
+        "# different entry point, working directory, or forwarded environment.",
+        "",
+        "config_version = 1",
+        "",
+        "[start]",
+        "# Relative to the extracted app package.",
+        f"working_dir = {_toml_string(cfg.working_dir)}",
+        "# Structured argv. The first item is the packaged host executable.",
+        f"command = {_toml_array(command)}",
+        "# Environment variable names copied from the parent process.",
+        "forward_env = [",
+    ]
+    lines.extend(f"  {_toml_string(name)}," for name in forward_env)
+    lines.extend(["]", ""])
+    return "\n".join(lines)
+
+
+def write_package_config(
+    path: str | Path = DEFAULT_PACKAGE_CONFIG,
+    config: PackageStartConfig | None = None,
+) -> None:
+    """Write a developer-owned package config template."""
+    cfg = default_start_config() if config is None else config
+    _validate_payload_relative_path(cfg.working_dir, Path(path), "start.working_dir")
+    _validate_start_command(cfg.command or ["bin/connect"], Path(path))
+    _validate_forward_env(cfg.forward_env or list(DEFAULT_FORWARD_ENV), Path(path))
+    Path(path).write_text(render_package_config(cfg), encoding="utf-8")
+
+
+def _parse_package_config(data: dict[str, Any], path: Path) -> PackageStartConfig:
+    version = data.get("config_version")
+    if version != 1:
+        raise ValueError(f"{path}: config_version must be 1")
+
+    start = data.get("start", {})
+    if not isinstance(start, dict):
+        raise ValueError(f"{path}: [start] must be a table")
+
+    working_dir = start.get("working_dir", ".")
+    if not isinstance(working_dir, str):
+        raise ValueError(f"{path}: start.working_dir must be a string")
+    _validate_payload_relative_path(working_dir, path, "start.working_dir")
+
+    raw_command = start.get("command")
+    command = None
+    if raw_command is not None:
+        command = _validate_start_command(raw_command, path)
+
+    raw_forward_env = start.get("forward_env")
+    forward_env = None
+    if raw_forward_env is not None:
+        forward_env = _validate_forward_env(raw_forward_env, path)
+
+    return PackageStartConfig(
+        working_dir=working_dir,
+        command=command,
+        forward_env=forward_env,
+    )
+
+
+def _validate_start_command(value: object, path: Path) -> list[str]:
+    if not isinstance(value, list):
+        raise ValueError(f"{path}: start.command must be an array")
+    if not value:
+        raise ValueError(f"{path}: start.command must not be empty")
+    command: list[str] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, str) or item == "":
+            raise ValueError(
+                f"{path}: start.command[{index}] must be a non-empty string"
+            )
+        command.append(item)
+    _validate_payload_relative_path(command[0], path, "start.command[0]")
+    return command
+
+
+def _validate_forward_env(value: object, path: Path) -> list[str]:
+    if not isinstance(value, list):
+        raise ValueError(f"{path}: start.forward_env must be an array")
+    names: list[str] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, str) or item == "":
+            raise ValueError(
+                f"{path}: start.forward_env[{index}] must be a non-empty string"
+            )
+        if "," in item or "=" in item:
+            raise ValueError(
+                f"{path}: start.forward_env[{index}] must not contain comma or equals"
+            )
+        if item in RESERVED_FORWARD_ENV:
+            raise ValueError(f"{path}: start.forward_env[{index}] is reserved")
+        names.append(item)
+    return names
+
+
+def _validate_payload_relative_path(value: str, path: Path, field: str) -> None:
+    posix_candidate = PurePosixPath(value)
+    windows_candidate = PureWindowsPath(value)
+    if posix_candidate.is_absolute() or windows_candidate.is_absolute():
+        raise ValueError(f"{path}: {field} must be payload-relative")
+    if ".." in posix_candidate.parts or ".." in windows_candidate.parts:
+        raise ValueError(f"{path}: {field} must not contain parent traversal")
 
 
 def render_manifest(manifest: PackageManifest) -> str:
@@ -224,6 +375,8 @@ def package_pyinstaller_payload(
     work_dir: str | Path = Path("build") / "pyinstaller",
     output: str | Path | None = None,
     working_dir: str = ".",
+    start_command: list[str] | None = None,
+    forward_env: list[str] | None = None,
 ) -> PyInstallerPackageResult:
     """Build a PyInstaller payload and write ``plushie-package.toml``.
 
@@ -285,6 +438,8 @@ def package_pyinstaller_payload(
     _dereference_payload_symlinks(payload_root)
     archive_payload(payload_root, payload_archive)
 
+    effective_start_command = [host_rel] if start_command is None else start_command
+
     manifest = manifest_for_payload(
         app_id=app_id,
         app_name=app_name,
@@ -293,8 +448,9 @@ def package_pyinstaller_payload(
         renderer_kind=renderer_kind,
         renderer_source=effective_renderer_source,
         renderer_path=renderer_rel,
-        start_command=[host_rel],
+        start_command=effective_start_command,
         working_dir=working_dir,
+        forward_env=forward_env,
         platform_icon=platform_icon,
         payload_archive=payload_archive,
     )
@@ -305,7 +461,7 @@ def package_pyinstaller_payload(
         "payload_archive": payload_archive,
         "manifest_path": manifest_path,
         "renderer_path": renderer_rel,
-        "start_command": [host_rel],
+        "start_command": effective_start_command,
         "platform_icon": platform_icon,
     }
 

@@ -176,13 +176,44 @@ def _cmd_connect(args: argparse.Namespace) -> None:
 def _cmd_package(args: argparse.Namespace) -> None:
     """Handle the ``package`` command."""
     from plushie.package import (
+        default_start_config,
+        load_package_config,
         manifest_for_payload,
         package_pyinstaller_payload,
         write_manifest,
+        write_package_config,
     )
+
+    if args.write_package_config:
+        write_package_config(
+            args.package_config or "plushie-package.config.toml",
+            default_start_config(args.start_command or ["bin/connect"]),
+        )
+        print(f"Wrote {args.package_config or 'plushie-package.config.toml'}")
+        return
+
+    if args.app_id is None:
+        print("error: --app-id is required", file=sys.stderr)
+        raise SystemExit(1)
 
     project_cfg = _load_project_config()
     app_version = args.app_version or project_cfg.get("version") or "0.1.0"
+    package_cfg = load_package_config(args.package_config)
+    working_dir = (
+        args.working_dir
+        if args.working_dir is not None
+        else package_cfg.working_dir
+        if package_cfg is not None
+        else "."
+    )
+    start_command = (
+        args.start_command
+        if args.start_command is not None
+        else package_cfg.command
+        if package_cfg is not None
+        else None
+    )
+    forward_env = package_cfg.forward_env if package_cfg is not None else None
 
     if args.pyinstaller_entry is not None:
         name = args.pyinstaller_name or args.app_name
@@ -212,7 +243,9 @@ def _cmd_package(args: argparse.Namespace) -> None:
             spec_dir=args.spec_dir,
             work_dir=args.work_dir,
             output=args.output,
-            working_dir=args.working_dir,
+            working_dir=working_dir,
+            start_command=start_command,
+            forward_env=forward_env,
         )
         print(f"Wrote {result['manifest_path']}")
         print(f"Wrote {result['payload_archive']}")
@@ -229,7 +262,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
             file=sys.stderr,
         )
         raise SystemExit(1)
-    if args.start_command is None:
+    if start_command is None:
         print(
             "error: --start-command is required for prepared payloads", file=sys.stderr
         )
@@ -243,8 +276,9 @@ def _cmd_package(args: argparse.Namespace) -> None:
         renderer_kind=args.renderer_kind,
         renderer_source=args.renderer_source or "local-resolve",
         renderer_path=args.renderer_path,
-        start_command=args.start_command,
-        working_dir=args.working_dir,
+        start_command=start_command,
+        working_dir=working_dir,
+        forward_env=forward_env,
         platform_icon=args.platform_icon,
         payload_archive=args.payload_archive,
     )
@@ -630,7 +664,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "package",
         help="stage a standalone package payload",
     )
-    package_parser.add_argument("--app-id", required=True, help="package app id")
+    package_parser.add_argument("--app-id", default=None, help="package app id")
     package_parser.add_argument("--app-name", default=None, help="display app name")
     package_parser.add_argument(
         "--app-version",
@@ -675,7 +709,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     package_parser.add_argument(
         "--working-dir",
-        default=".",
+        default=None,
         help="payload-relative host working directory",
     )
     package_parser.add_argument(
@@ -723,6 +757,16 @@ def _build_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         help="extra argument passed through to PyInstaller",
+    )
+    package_parser.add_argument(
+        "--package-config",
+        default=None,
+        help="package config path (default: plushie-package.config.toml when present)",
+    )
+    package_parser.add_argument(
+        "--write-package-config",
+        action="store_true",
+        help="write a package config template and exit",
     )
     package_parser.add_argument(
         "--package-dir",
