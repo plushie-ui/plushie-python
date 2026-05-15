@@ -674,7 +674,7 @@ def _build_parser() -> argparse.ArgumentParser:
     # package
     package_parser = subparsers.add_parser(
         "package",
-        help="stage a standalone package payload",
+        help="assemble a standalone package payload",
     )
     package_parser.add_argument("--app-id", default=None, help="package app id")
     package_parser.add_argument("--app-name", default=None, help="display app name")
@@ -734,7 +734,7 @@ def _build_parser() -> argparse.ArgumentParser:
     package_parser.add_argument(
         "--pyinstaller-entry",
         default=None,
-        help="build and stage a PyInstaller payload from this entry script",
+        help="build and assemble a PyInstaller payload from this entry script",
     )
     package_parser.add_argument(
         "--pyinstaller-name",

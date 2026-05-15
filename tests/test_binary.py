@@ -375,6 +375,15 @@ class TestDownloadForce:
         renderer_asset.write_bytes(renderer_body)
         write_checksum(renderer_asset)
 
+        launcher_body = b"launcher"
+        launcher_release = tool_release_name().replace(
+            "plushie-", "plushie-launcher-", 1
+        )
+        launcher_name = tool_name().replace("plushie", "plushie-launcher", 1)
+        launcher_asset = version_dir / launcher_release
+        launcher_asset.write_bytes(launcher_body)
+        write_checksum(launcher_asset)
+
         tool_script = f"""#!/usr/bin/env python3
 import hashlib
 import os
@@ -394,17 +403,22 @@ if parsed.scheme != "file":
     raise SystemExit(f"expected file mirror, got {{base}}")
 
 root = pathlib.Path(urllib.parse.unquote(parsed.path))
-asset = root / f"v{{version}}" / "{release_name()}"
-checksum = asset.with_name(asset.name + ".sha256")
-body = asset.read_bytes()
-expected = checksum.read_text(encoding="utf-8").split()[0]
-if hashlib.sha256(body).hexdigest() != expected:
-    raise SystemExit("renderer checksum mismatch")
 
-dest = pathlib.Path("bin") / "{download_name()}"
-dest.parent.mkdir(parents=True, exist_ok=True)
-dest.write_bytes(body)
-dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+for release_name, local_name in [
+    ("{release_name()}", "{download_name()}"),
+    ("{launcher_release}", "{launcher_name}"),
+]:
+    asset = root / f"v{{version}}" / release_name
+    checksum = asset.with_name(asset.name + ".sha256")
+    body = asset.read_bytes()
+    expected = checksum.read_text(encoding="utf-8").split()[0]
+    if hashlib.sha256(body).hexdigest() != expected:
+        raise SystemExit(f"{{local_name}} checksum mismatch")
+
+    dest = pathlib.Path("bin") / local_name
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(body)
+    dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 """
         tool_asset = version_dir / tool_release_name()
         tool_asset.write_text(tool_script, encoding="utf-8")
@@ -422,8 +436,10 @@ dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
         installed_tool = tmp_path / "bin" / tool_name()
         installed_renderer = tmp_path / "bin" / download_name()
+        installed_launcher = tmp_path / "bin" / launcher_name
         assert installed_tool.is_file()
         assert installed_renderer.read_bytes() == renderer_body
+        assert installed_launcher.read_bytes() == launcher_body
 
 
 class TestDownloadVersionValidation:

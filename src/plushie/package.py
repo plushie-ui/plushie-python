@@ -396,7 +396,7 @@ def package_pyinstaller_payload(
         Path(output) if output is not None else package_root / "plushie-package.toml"
     )
 
-    staged_renderer, resolved_renderer_source = _stage_renderer_for_pyinstaller(
+    prepared_renderer, resolved_renderer_source = _prepare_renderer_for_pyinstaller(
         renderer_kind
     )
     effective_renderer_source = renderer_source or resolved_renderer_source
@@ -404,7 +404,7 @@ def package_pyinstaller_payload(
     _run_pyinstaller(
         entry=Path(entry),
         name=name,
-        staged_renderer=staged_renderer,
+        prepared_renderer=prepared_renderer,
         app_icon=Path(app_icon) if app_icon is not None else None,
         add_data=add_data or [],
         hidden_import=hidden_import or [],
@@ -422,7 +422,7 @@ def package_pyinstaller_payload(
     renderer_rel = _payload_renderer_path()
     renderer_dest = payload_root / renderer_rel
     renderer_dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(staged_renderer, renderer_dest)
+    shutil.copy2(prepared_renderer, renderer_dest)
     _ensure_executable(renderer_dest)
 
     host_rel = _payload_host_executable_path(name)
@@ -544,15 +544,15 @@ def archive_payload(payload_dir: str | Path, archive_path: str | Path) -> None:
         raise subprocess.CalledProcessError(zstd_proc.returncode, zstd)
 
 
-def _stage_renderer_for_pyinstaller(
+def _prepare_renderer_for_pyinstaller(
     renderer_kind: RendererKind = "stock",
 ) -> tuple[Path, str]:
     renderer, source = _resolve_package_renderer(renderer_kind)
-    staged = Path("build") / "standalone" / "renderer" / _renderer_binary_name()
-    staged.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(renderer, staged)
-    _ensure_executable(staged)
-    return staged, source
+    prepared = Path("build") / "standalone" / "renderer" / _renderer_binary_name()
+    prepared.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(renderer, prepared)
+    _ensure_executable(prepared)
+    return prepared, source
 
 
 def _resolve_package_renderer(
@@ -623,7 +623,7 @@ def _run_pyinstaller(
     *,
     entry: Path,
     name: str,
-    staged_renderer: Path,
+    prepared_renderer: Path,
     app_icon: Path | None,
     add_data: list[str],
     hidden_import: list[str],
@@ -646,7 +646,7 @@ def _run_pyinstaller(
         "--workpath",
         os.fspath(work_dir),
         "--add-binary",
-        f"{staged_renderer.resolve()}{os.pathsep}.",
+        f"{prepared_renderer.resolve()}{os.pathsep}.",
         "--noconfirm",
     ]
     if app_icon is not None:

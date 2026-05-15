@@ -296,7 +296,7 @@ python -m plushie package \
   --collect-submodules plushie
 ```
 
-Prepared payload mode remains available for custom staging flows. In
+Prepared payload mode remains available for custom assembly flows. In
 that mode the caller owns the payload archive and the SDK writes only
 the manifest.
 
@@ -325,7 +325,7 @@ cargo plushie package portable --manifest dist/package/plushie-package.toml --re
 | `--target TARGET` | Package target. Defaults to the current OS and architecture |
 | `--renderer-kind stock|custom` | Renderer provenance kind. Defaults to `stock` |
 | `--renderer-source SOURCE` | Renderer provenance source. Defaults to detected source in PyInstaller mode, or `local-resolve` in prepared mode |
-| `--pyinstaller-entry PATH` | Build and stage a PyInstaller payload from this entry script |
+| `--pyinstaller-entry PATH` | Build and assemble a PyInstaller payload from this entry script |
 | `--pyinstaller-name NAME` | PyInstaller app name. Defaults to `--app-name` |
 | `--app-icon PATH` | Icon file to pass to PyInstaller and copy into the payload |
 | `--add-data SOURCE:DEST` | Data mapping passed to PyInstaller. Repeatable |

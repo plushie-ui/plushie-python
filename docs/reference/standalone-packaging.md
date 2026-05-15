@@ -58,7 +58,7 @@ python -m plushie package \
 ```
 
 The command resolves or builds the renderer, copies it into the
-payload under `bin/`, runs PyInstaller, stages the PyInstaller
+payload under `bin/`, runs PyInstaller, places the PyInstaller
 one-folder output under `host/`, materializes platform icons, writes
 `payload.tar.zst`, then writes `plushie-package.toml` with the final
 archive hash and size. If `--app-icon` is provided, that file is
@@ -72,7 +72,7 @@ The generated manifest is the handoff to the shared launcher:
 cargo plushie package portable --manifest dist/package/plushie-package.toml --release
 ```
 
-Prepared payloads remain supported for custom staging flows:
+Prepared payloads remain supported for custom assembly flows:
 
 ```bash
 python -m plushie package \
@@ -90,7 +90,7 @@ The current proof lives in:
 plushie-demos/python/data-explorer
 ```
 
-The demo package script delegates PyInstaller payload staging to
+The demo package script delegates PyInstaller payload assembly to
 `python -m plushie package --pyinstaller-entry`. `cargo plushie
 package` builds the outer launcher from the generated manifest.
 

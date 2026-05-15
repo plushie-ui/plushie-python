@@ -221,15 +221,15 @@ def test_load_package_config_validates_start_fields(
         load_package_config(config_path)
 
 
-def test_package_pyinstaller_payload_stages_archive_inputs(
+def test_package_pyinstaller_payload_assembles_archive_inputs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(tmp_path)
 
-    staged_renderer = tmp_path / "renderer" / "plushie-renderer"
-    staged_renderer.parent.mkdir()
-    staged_renderer.write_bytes(b"renderer")
+    prepared_renderer = tmp_path / "renderer" / "plushie-renderer"
+    prepared_renderer.parent.mkdir()
+    prepared_renderer.write_bytes(b"renderer")
 
     def fake_run_pyinstaller(**kwargs: Any) -> None:
         name = str(kwargs["name"])
@@ -260,8 +260,8 @@ def test_package_pyinstaller_payload_stages_archive_inputs(
         Path(archive_path).write_bytes(b"archive")
 
     monkeypatch.setattr(
-        "plushie.package._stage_renderer_for_pyinstaller",
-        lambda _renderer_kind="stock": (staged_renderer, "local-path"),
+        "plushie.package._prepare_renderer_for_pyinstaller",
+        lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr("plushie.package._run_cargo_plushie", fake_run_cargo_plushie)
@@ -297,9 +297,9 @@ def test_package_pyinstaller_payload_copies_app_icon(
 ) -> None:
     monkeypatch.chdir(tmp_path)
 
-    staged_renderer = tmp_path / "renderer" / "plushie-renderer"
-    staged_renderer.parent.mkdir()
-    staged_renderer.write_bytes(b"renderer")
+    prepared_renderer = tmp_path / "renderer" / "plushie-renderer"
+    prepared_renderer.parent.mkdir()
+    prepared_renderer.write_bytes(b"renderer")
     icon = tmp_path / "app.png"
     icon.write_bytes(b"app icon")
 
@@ -318,8 +318,8 @@ def test_package_pyinstaller_payload_copies_app_icon(
         Path(archive_path).write_bytes(b"archive")
 
     monkeypatch.setattr(
-        "plushie.package._stage_renderer_for_pyinstaller",
-        lambda _renderer_kind="stock": (staged_renderer, "local-path"),
+        "plushie.package._prepare_renderer_for_pyinstaller",
+        lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr("plushie.package._run_cargo_plushie", lambda *_args: None)
@@ -343,9 +343,9 @@ def test_package_pyinstaller_payload_uses_start_config(
 ) -> None:
     monkeypatch.chdir(tmp_path)
 
-    staged_renderer = tmp_path / "renderer" / "plushie-renderer"
-    staged_renderer.parent.mkdir()
-    staged_renderer.write_bytes(b"renderer")
+    prepared_renderer = tmp_path / "renderer" / "plushie-renderer"
+    prepared_renderer.parent.mkdir()
+    prepared_renderer.write_bytes(b"renderer")
 
     def fake_run_pyinstaller(**kwargs: Any) -> None:
         name = str(kwargs["name"])
@@ -359,8 +359,8 @@ def test_package_pyinstaller_payload_uses_start_config(
         Path(archive_path).write_bytes(b"archive")
 
     monkeypatch.setattr(
-        "plushie.package._stage_renderer_for_pyinstaller",
-        lambda _renderer_kind="stock": (staged_renderer, "local-path"),
+        "plushie.package._prepare_renderer_for_pyinstaller",
+        lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr("plushie.package._run_cargo_plushie", lambda *_args: None)
