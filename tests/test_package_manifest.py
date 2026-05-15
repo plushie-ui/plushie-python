@@ -45,7 +45,7 @@ def test_manifest_for_payload_records_hash_and_size(tmp_path: Path) -> None:
         renderer_kind="custom",
         renderer_source="local-build",
         renderer_path="bin/plushie-renderer",
-        host_command=["host/app", "--flag"],
+        start_command=["host/app", "--flag"],
         platform_icon="assets/icon.png",
         working_dir=".",
         payload_archive=archive,
@@ -60,8 +60,14 @@ def test_manifest_for_payload_records_hash_and_size(tmp_path: Path) -> None:
     assert f'host_sdk_version = "{__version__}"' in toml
     assert f'plushie_rust_version = "{PLUSHIE_RUST_VERSION}"' in toml
     assert "protocol_version = 1" in toml
-    assert 'renderer_path = "bin/plushie-renderer"' in toml
-    assert 'host_command = ["host/app", "--flag"]' in toml
+    assert "[start]" in toml
+    assert 'working_dir = "."' in toml
+    assert 'command = ["host/app", "--flag"]' in toml
+    assert (
+        'forward_env = ["PATH", "HOME", "LANG", "LC_ALL", '
+        '"XDG_RUNTIME_DIR", "WAYLAND_DISPLAY", "DISPLAY"]'
+    ) in toml
+    assert '[renderer]\npath = "bin/plushie-renderer"' in toml
     assert 'kind = "custom"' in toml
     assert 'source = "local-build"' in toml
     assert 'icon = "assets/icon.png"' in toml
@@ -75,7 +81,7 @@ def test_write_manifest_creates_parent_directories(tmp_path: Path) -> None:
         app_version="0.1.0",
         target="linux-x86_64",
         renderer_path="bin/plushie-renderer",
-        host_command=["host/app"],
+        start_command=["host/app"],
         payload_archive=archive,
     )
 
@@ -83,6 +89,24 @@ def test_write_manifest_creates_parent_directories(tmp_path: Path) -> None:
     write_manifest(output, manifest)
 
     assert output.read_text() == render_manifest(manifest)
+
+
+def test_manifest_for_payload_allows_empty_forward_env(tmp_path: Path) -> None:
+    archive = tmp_path / "payload.tar.zst"
+    archive.write_bytes(b"payload")
+
+    manifest = manifest_for_payload(
+        app_id="dev.plushie.test",
+        app_version="0.1.0",
+        target="linux-x86_64",
+        renderer_path="bin/plushie-renderer",
+        start_command=["host/app"],
+        forward_env=[],
+        payload_archive=archive,
+    )
+
+    assert manifest["forward_env"] == []
+    assert "forward_env = []" in render_manifest(manifest)
 
 
 def test_package_pyinstaller_payload_stages_archive_inputs(
@@ -144,12 +168,12 @@ def test_package_pyinstaller_payload_stages_archive_inputs(
     )
 
     assert result["renderer_path"] == "bin/plushie-renderer"
-    assert result["host_command"] == ["host/DataExplorer/DataExplorer"]
+    assert result["start_command"] == ["host/DataExplorer/DataExplorer"]
     assert result["platform_icon"] == "assets/plushie-checkbox-512x512.png"
 
     manifest = (tmp_path / "dist" / "package" / "plushie-package.toml").read_text()
-    assert 'renderer_path = "bin/plushie-renderer"' in manifest
-    assert 'host_command = ["host/DataExplorer/DataExplorer"]' in manifest
+    assert '[renderer]\npath = "bin/plushie-renderer"' in manifest
+    assert 'command = ["host/DataExplorer/DataExplorer"]' in manifest
     assert 'source = "local-path"' in manifest
     assert 'icon = "assets/plushie-checkbox-512x512.png"' in manifest
     assert 'archive = "payload.tar.zst"' in manifest

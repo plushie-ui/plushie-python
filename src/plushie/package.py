@@ -17,6 +17,16 @@ from plushie import __version__
 from plushie.binary import PLUSHIE_RUST_VERSION, PlushieNotFoundError
 from plushie.protocol import PROTOCOL_VERSION
 
+DEFAULT_FORWARD_ENV = (
+    "PATH",
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "XDG_RUNTIME_DIR",
+    "WAYLAND_DISPLAY",
+    "DISPLAY",
+)
+
 RendererKind = Literal["stock", "custom"]
 
 
@@ -37,8 +47,9 @@ class PackageManifest(TypedDict):
     target: str
     renderer: RendererManifest
     platform_icon: str | None
-    host_command: list[str]
+    start_command: list[str]
     working_dir: str
+    forward_env: list[str]
     payload_archive: str
     payload_hash: str
     payload_size: int
@@ -51,7 +62,7 @@ class PyInstallerPackageResult(TypedDict):
     payload_archive: Path
     manifest_path: Path
     renderer_path: str
-    host_command: list[str]
+    start_command: list[str]
     platform_icon: str | None
 
 
@@ -113,12 +124,14 @@ def render_manifest(manifest: PackageManifest) -> str:
             f"host_sdk_version = {_toml_string(__version__)}",
             f"plushie_rust_version = {_toml_string(PLUSHIE_RUST_VERSION)}",
             f"protocol_version = {PROTOCOL_VERSION}",
-            f"renderer_path = {_toml_string(manifest['renderer']['path'])}",
-            f"host_command = {_toml_array(manifest['host_command'])}",
+            "",
+            "[start]",
             f"working_dir = {_toml_string(manifest['working_dir'])}",
-            "exec_env = []",
+            f"command = {_toml_array(manifest['start_command'])}",
+            f"forward_env = {_toml_array(manifest['forward_env'])}",
             "",
             "[renderer]",
+            f"path = {_toml_string(manifest['renderer']['path'])}",
             f"kind = {_toml_string(manifest['renderer']['kind'])}",
             f"source = {_toml_string(manifest['renderer']['source'])}",
             "",
@@ -156,7 +169,7 @@ def manifest_for_payload(
     app_id: str,
     app_version: str,
     renderer_path: str,
-    host_command: list[str],
+    start_command: list[str],
     payload_archive: str | Path,
     app_name: str | None = None,
     target: str | None = None,
@@ -164,6 +177,7 @@ def manifest_for_payload(
     renderer_source: str = "local-resolve",
     platform_icon: str | None = None,
     working_dir: str = ".",
+    forward_env: list[str] | None = None,
 ) -> PackageManifest:
     """Build manifest values for an existing payload archive."""
     archive_path = Path(payload_archive)
@@ -178,8 +192,11 @@ def manifest_for_payload(
             "path": renderer_path,
         },
         "platform_icon": platform_icon,
-        "host_command": host_command,
+        "start_command": start_command,
         "working_dir": working_dir,
+        "forward_env": list(
+            DEFAULT_FORWARD_ENV if forward_env is None else forward_env
+        ),
         "payload_archive": os.fspath(archive_path.name),
         "payload_hash": sha256_file(archive_path),
         "payload_size": file_size(archive_path),
@@ -276,7 +293,7 @@ def package_pyinstaller_payload(
         renderer_kind=renderer_kind,
         renderer_source=effective_renderer_source,
         renderer_path=renderer_rel,
-        host_command=[host_rel],
+        start_command=[host_rel],
         working_dir=working_dir,
         platform_icon=platform_icon,
         payload_archive=payload_archive,
@@ -288,7 +305,7 @@ def package_pyinstaller_payload(
         "payload_archive": payload_archive,
         "manifest_path": manifest_path,
         "renderer_path": renderer_rel,
-        "host_command": [host_rel],
+        "start_command": [host_rel],
         "platform_icon": platform_icon,
     }
 

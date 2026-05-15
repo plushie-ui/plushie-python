@@ -116,21 +116,18 @@ def test_connect_top_level_uses_socket_env(monkeypatch: pytest.MonkeyPatch) -> N
     assert runtime_runs == [True]
 
 
-def test_connect_top_level_uses_stdio_without_socket(
+def test_connect_top_level_spawns_renderer_without_socket(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import plushie.connection
     import plushie.runtime
 
-    stdio_calls: list[dict[str, Any]] = []
+    open_calls: list[dict[str, Any]] = []
     runtime_calls: list[dict[str, Any]] = []
     runtime_runs: list[bool] = []
 
-    class FakeStdioConnection:
-        def __init__(self, **kwargs: Any) -> None:
-            stdio_calls.append(kwargs)
-
-        def __enter__(self) -> FakeStdioConnection:
+    class FakeConnection:
+        def __enter__(self) -> FakeConnection:
             return self
 
         def __exit__(self, *_args: object) -> None:
@@ -145,33 +142,34 @@ def test_connect_top_level_uses_stdio_without_socket(
 
     monkeypatch.delenv("PLUSHIE_SOCKET", raising=False)
     monkeypatch.delenv("PLUSHIE_TOKEN", raising=False)
-    monkeypatch.setattr(plushie.connection, "StdioConnection", FakeStdioConnection)
+    monkeypatch.setattr(
+        plushie.connection.Connection,
+        "open",
+        staticmethod(lambda **kwargs: open_calls.append(kwargs) or FakeConnection()),
+    )
     monkeypatch.setattr(plushie.runtime, "Runtime", FakeRuntime)
 
     plushie.connect(cast(Any, DummyApp))
 
-    assert stdio_calls == [{"format": "msgpack"}]
+    assert open_calls == [{"format": "msgpack"}]
     assert isinstance(runtime_calls[0]["app"], DummyApp)
-    assert runtime_calls[0]["conn"].__class__ is FakeStdioConnection
+    assert runtime_calls[0]["conn"].__class__ is FakeConnection
     assert runtime_calls[0]["daemon"] is False
     assert runtime_runs == [True]
 
 
-def test_connect_json_constructs_stdio_connection_with_json(
+def test_connect_json_opens_spawn_connection_with_json(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import plushie.connection
     import plushie.runtime
 
-    stdio_calls: list[dict[str, Any]] = []
+    open_calls: list[dict[str, Any]] = []
     runtime_calls: list[tuple[object, object]] = []
     runtime_runs: list[bool] = []
 
-    class FakeStdioConnection:
-        def __init__(self, **kwargs: Any) -> None:
-            stdio_calls.append(kwargs)
-
-        def __enter__(self) -> FakeStdioConnection:
+    class FakeConnection:
+        def __enter__(self) -> FakeConnection:
             return self
 
         def __exit__(self, *_args: object) -> None:
@@ -185,31 +183,32 @@ def test_connect_json_constructs_stdio_connection_with_json(
             runtime_runs.append(True)
 
     monkeypatch.setattr(cli, "_import_app", lambda _spec: DummyApp)
-    monkeypatch.setattr(plushie.connection, "StdioConnection", FakeStdioConnection)
+    monkeypatch.setattr(
+        plushie.connection.Connection,
+        "open",
+        staticmethod(lambda **kwargs: open_calls.append(kwargs) or FakeConnection()),
+    )
     monkeypatch.setattr(plushie.runtime, "Runtime", FakeRuntime)
     monkeypatch.delenv("PLUSHIE_SOCKET", raising=False)
 
     cli._cmd_connect(argparse.Namespace(app="demo:App", json=True))
 
-    assert stdio_calls == [{"format": "json"}]
+    assert open_calls == [{"format": "json"}]
     assert isinstance(runtime_calls[0][0], DummyApp)
-    assert runtime_calls[0][1].__class__ is FakeStdioConnection
+    assert runtime_calls[0][1].__class__ is FakeConnection
     assert runtime_runs == [True]
 
 
-def test_connect_default_constructs_stdio_connection_with_msgpack(
+def test_connect_default_opens_spawn_connection_with_msgpack(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import plushie.connection
     import plushie.runtime
 
-    stdio_calls: list[dict[str, Any]] = []
+    open_calls: list[dict[str, Any]] = []
 
-    class FakeStdioConnection:
-        def __init__(self, **kwargs: Any) -> None:
-            stdio_calls.append(kwargs)
-
-        def __enter__(self) -> FakeStdioConnection:
+    class FakeConnection:
+        def __enter__(self) -> FakeConnection:
             return self
 
         def __exit__(self, *_args: object) -> None:
@@ -223,13 +222,17 @@ def test_connect_default_constructs_stdio_connection_with_msgpack(
             pass
 
     monkeypatch.setattr(cli, "_import_app", lambda _spec: DummyApp)
-    monkeypatch.setattr(plushie.connection, "StdioConnection", FakeStdioConnection)
+    monkeypatch.setattr(
+        plushie.connection.Connection,
+        "open",
+        staticmethod(lambda **kwargs: open_calls.append(kwargs) or FakeConnection()),
+    )
     monkeypatch.setattr(plushie.runtime, "Runtime", FakeRuntime)
     monkeypatch.delenv("PLUSHIE_SOCKET", raising=False)
 
     cli._cmd_connect(argparse.Namespace(app="demo:App", json=False))
 
-    assert stdio_calls == [{"format": "msgpack"}]
+    assert open_calls == [{"format": "msgpack"}]
 
 
 def test_connect_socket_constructs_iostream_connection(
@@ -320,7 +323,7 @@ def test_package_parser_accepts_prepared_payload_shape() -> None:
             "bin/plushie-renderer",
             "--payload-archive",
             "dist/package/payload.tar.zst",
-            "--host-command",
+            "--start-command",
             "host/Test/Test",
         ]
     )
@@ -328,7 +331,7 @@ def test_package_parser_accepts_prepared_payload_shape() -> None:
     assert args.command == "package"
     assert args.renderer_path == "bin/plushie-renderer"
     assert args.payload_archive == "dist/package/payload.tar.zst"
-    assert args.host_command == ["host/Test/Test"]
+    assert args.start_command == ["host/Test/Test"]
 
 
 def test_package_parser_accepts_pyinstaller_shape() -> None:

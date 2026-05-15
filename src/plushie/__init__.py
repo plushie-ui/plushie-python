@@ -116,10 +116,11 @@ def connect(
     format: str = "msgpack",
     daemon: bool = False,
 ) -> None:
-    """Run a plushie application over a renderer-parent connection.
+    """Run a plushie application from a standalone entry point.
 
     Uses ``socket`` or ``PLUSHIE_SOCKET`` when present. Otherwise it
-    falls back to stdio renderer-parent transport.
+    starts the renderer as a child process using normal binary
+    resolution, including ``PLUSHIE_BINARY_PATH``.
 
     Args:
         app_class: An ``App`` subclass (will be instantiated) or an
@@ -130,7 +131,7 @@ def connect(
         daemon: If ``True``, ``AllWindowsClosed`` does not stop the
             runtime.
     """
-    from plushie.connection import Connection, StdioConnection
+    from plushie.connection import Connection
     from plushie.runtime import Runtime
     from plushie.transport import SocketAdapter
 
@@ -152,8 +153,8 @@ def connect(
             runtime.run()
         return
 
-    with StdioConnection(format=format) as conn:
-        runtime = Runtime(app, cast(Any, conn), daemon=daemon)
+    with Connection.open(format=format) as conn:
+        runtime = Runtime(app, conn, daemon=daemon)
         runtime.run()
 
 

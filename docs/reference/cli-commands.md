@@ -94,10 +94,10 @@ RUST_LOG=plushie=debug python -m plushie run myapp:Counter --json
 
 ## python -m plushie connect
 
-Runs a Plushie app in stdio transport mode. The Rust renderer spawns
-the Python process (not the other way around) and communicates over
-stdin and stdout. Use this when embedding Plushie inside a host that
-manages the renderer lifecycle, typically via renderer-parent exec.
+Runs a Plushie app from a standalone entry point. When `--socket` or
+`PLUSHIE_SOCKET` is present, it connects to that renderer. Otherwise it
+starts the renderer through normal binary resolution, including
+`PLUSHIE_BINARY_PATH`.
 
 ```bash
 plushie \
@@ -113,9 +113,12 @@ plushie \
 | Flag | Description |
 |---|---|
 | `--json` | Use JSON wire format instead of MessagePack |
+| `--socket PATH_OR_ADDR` | Connect to an existing renderer socket |
+| `--token TOKEN` | Authentication token for socket-mode startup |
 
-The runtime blocks until stdin closes. All log output routes to
-stderr so stdout stays a clean protocol channel.
+In socket mode, stdout remains available to the caller and protocol
+traffic goes through the socket. In spawn mode, the SDK starts the
+renderer as a child process.
 
 ## python -m plushie download
 
@@ -291,7 +294,7 @@ python -m plushie package \
   --app-name "My App" \
   --renderer-path bin/plushie-renderer \
   --payload-archive dist/package/payload.tar.zst \
-  --host-command host/MyApp/MyApp
+  --start-command host/MyApp/MyApp
 ```
 
 The output is intended for the shared Rust launcher:
@@ -326,7 +329,7 @@ cargo plushie package --manifest dist/package/plushie-package.toml --release
 | `--platform-icon PATH` | Payload-relative app icon path for `[platform].icon` |
 | `--output PATH` | Manifest output path. Defaults to `dist/package/plushie-package.toml` |
 | `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
-| `--host-command ARG...` | Payload-relative host command argv. Required in prepared mode |
+| `--start-command ARG...` | Payload-relative app start command argv. Required in prepared mode |
 
 This command does not call `cargo plushie package`. That final launcher
 build stays explicit.

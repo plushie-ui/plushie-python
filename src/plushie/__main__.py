@@ -3,7 +3,7 @@
 Provides commands matching the Elixir mix tasks:
 
 - ``run`` - resolve binary, spawn renderer, start runtime, block
-- ``connect`` - stdio transport mode for renderer-parent startup
+- ``connect`` - standalone app entrypoint for socket or spawned renderer startup
 - ``download`` - fetch precompiled binary
 - ``build`` - build custom binary with extensions
 - ``inspect`` - init app, call view, normalize, print as JSON
@@ -150,7 +150,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
 
 def _cmd_connect(args: argparse.Namespace) -> None:
     """Handle the ``connect`` command."""
-    from plushie.connection import Connection, StdioConnection
+    from plushie.connection import Connection
     from plushie.runtime import Runtime
     from plushie.transport import SocketAdapter
 
@@ -168,11 +168,8 @@ def _cmd_connect(args: argparse.Namespace) -> None:
             runtime.run()
         return
 
-    with StdioConnection(format=wire_format) as conn:
-        # StdioConnection doesn't have the same interface as Connection
-        # but Runtime expects Connection. We use duck typing here since
-        # both implement the same send/receive interface.
-        runtime = Runtime(app, conn)  # type: ignore[arg-type]
+    with Connection.open(format=wire_format) as conn:
+        runtime = Runtime(app, conn)
         runtime.run()
 
 
@@ -232,9 +229,9 @@ def _cmd_package(args: argparse.Namespace) -> None:
             file=sys.stderr,
         )
         raise SystemExit(1)
-    if args.host_command is None:
+    if args.start_command is None:
         print(
-            "error: --host-command is required for prepared payloads", file=sys.stderr
+            "error: --start-command is required for prepared payloads", file=sys.stderr
         )
         raise SystemExit(1)
 
@@ -246,7 +243,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
         renderer_kind=args.renderer_kind,
         renderer_source=args.renderer_source or "local-resolve",
         renderer_path=args.renderer_path,
-        host_command=args.host_command,
+        start_command=args.start_command,
         working_dir=args.working_dir,
         platform_icon=args.platform_icon,
         payload_archive=args.payload_archive,
@@ -611,7 +608,7 @@ def _build_parser() -> argparse.ArgumentParser:
     # connect
     connect_parser = subparsers.add_parser(
         "connect",
-        help="stdio transport mode for renderer-parent startup",
+        help="standalone app entrypoint for socket or spawned renderer startup",
     )
     connect_parser.add_argument("app", help="app specifier (module:Class)")
     connect_parser.add_argument(
@@ -682,10 +679,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="payload-relative host working directory",
     )
     package_parser.add_argument(
-        "--host-command",
+        "--start-command",
+        dest="start_command",
         default=None,
         nargs="+",
-        help="payload-relative host command argv",
+        help="payload-relative app start command argv",
     )
     package_parser.add_argument(
         "--pyinstaller-entry",

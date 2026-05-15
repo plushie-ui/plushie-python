@@ -81,7 +81,7 @@ python -m plushie package \
   --app-id dev.example.myapp \
   --renderer-path bin/plushie-renderer \
   --payload-archive dist/package/payload.tar.zst \
-  --host-command host/MyApp/MyApp
+  --start-command host/MyApp/MyApp
 ```
 
 ## Demo Proof
