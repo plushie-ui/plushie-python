@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -25,6 +26,15 @@ from plushie.binary import (
     tool_name,
     tool_release_name,
 )
+
+
+def write_checksum(path: Path) -> None:
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    path.with_name(path.name + ".sha256").write_text(
+        f"{digest}  {path.name}\n",
+        encoding="utf-8",
+    )
+
 
 # -- Platform detection ------------------------------------------------------
 
@@ -350,6 +360,70 @@ class TestDownloadForce:
         ]
         assert args[-4:] == ["tools", "sync", "--required-version", "0.4.0"]
         assert result == str(Path("bin") / download_name())
+
+    def test_default_download_bootstraps_tool_and_renderer_from_file_mirror(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from plushie.__main__ import main
+
+        mirror = tmp_path / "mirror"
+        version_dir = mirror / "v0.4.0"
+        version_dir.mkdir(parents=True)
+
+        renderer_body = b"renderer"
+        renderer_asset = version_dir / release_name()
+        renderer_asset.write_bytes(renderer_body)
+        write_checksum(renderer_asset)
+
+        tool_script = f"""#!/usr/bin/env python3
+import hashlib
+import os
+import pathlib
+import stat
+import sys
+import urllib.parse
+
+args = sys.argv[1:]
+if args[:3] != ["tools", "sync", "--required-version"]:
+    raise SystemExit(f"unexpected args: {{args!r}}")
+
+version = args[3]
+base = os.environ["PLUSHIE_RELEASE_BASE_URL"].rstrip("/")
+parsed = urllib.parse.urlparse(base)
+if parsed.scheme != "file":
+    raise SystemExit(f"expected file mirror, got {{base}}")
+
+root = pathlib.Path(urllib.parse.unquote(parsed.path))
+asset = root / f"v{{version}}" / "{release_name()}"
+checksum = asset.with_name(asset.name + ".sha256")
+body = asset.read_bytes()
+expected = checksum.read_text(encoding="utf-8").split()[0]
+if hashlib.sha256(body).hexdigest() != expected:
+    raise SystemExit("renderer checksum mismatch")
+
+dest = pathlib.Path("bin") / "{download_name()}"
+dest.parent.mkdir(parents=True, exist_ok=True)
+dest.write_bytes(body)
+dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+"""
+        tool_asset = version_dir / tool_release_name()
+        tool_asset.write_text(tool_script, encoding="utf-8")
+        write_checksum(tool_asset)
+
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("PLUSHIE_RELEASE_BASE_URL", mirror.as_uri())
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["python", "download", "--version", "0.4.0", "--force"],
+        )
+
+        main()
+
+        installed_tool = tmp_path / "bin" / tool_name()
+        installed_renderer = tmp_path / "bin" / download_name()
+        assert installed_tool.is_file()
+        assert installed_renderer.read_bytes() == renderer_body
 
 
 class TestDownloadVersionValidation:
