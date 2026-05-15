@@ -316,6 +316,10 @@ The output is intended for the shared Rust launcher:
 bin/plushie package portable --manifest dist/package/plushie-package.toml
 ```
 
+Pass `--portable` to run that final step immediately after writing the
+manifest. Pass `--portable-out PATH` to choose the portable executable
+output path.
+
 ### Flags
 
 | Flag | Description |
@@ -341,6 +345,8 @@ bin/plushie package portable --manifest dist/package/plushie-package.toml
 | `--payload-archive PATH` | Payload archive to hash and record. Required in prepared mode |
 | `--platform-icon PATH` | Payload-relative app icon path for `[platform].icon` |
 | `--output PATH` | Manifest output path. Defaults to `dist/package/plushie-package.toml` |
+| `--portable` | Run `bin/plushie package portable --manifest <manifest>` after writing the manifest |
+| `--portable-out PATH` | Pass `--out PATH` to the portable package command when `--portable` is set |
 | `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
 | `--start-command ARG...` | Payload-relative app start command argv. Required in prepared mode |
 
@@ -349,8 +355,8 @@ custom renderer: set `PLUSHIE_BINARY_PATH` or run `python -m plushie
 build` before packaging. Stock renderer resolution is not used for a
 custom package manifest.
 
-This command does not call `cargo plushie package`. It prints the
-final launcher handoff so the build stays explicit:
+By default this command prints the final launcher handoff so the build
+stays explicit:
 
 ```bash
 bin/plushie package portable --manifest dist/package/plushie-package.toml

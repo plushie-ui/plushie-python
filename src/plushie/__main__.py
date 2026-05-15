@@ -18,6 +18,7 @@ import importlib
 import json
 import logging
 import os
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -257,7 +258,11 @@ def _cmd_package(args: argparse.Namespace) -> None:
         )
         print(f"Wrote {result['manifest_path']}")
         print(f"Wrote {result['payload_archive']}")
-        _print_package_handoff(result["manifest_path"])
+        _handle_package_handoff(
+            result["manifest_path"],
+            portable=args.portable,
+            portable_out=args.portable_out,
+        )
         return
 
     if args.renderer_path is None:
@@ -294,12 +299,45 @@ def _cmd_package(args: argparse.Namespace) -> None:
     output = args.output or "dist/package/plushie-package.toml"
     write_manifest(output, manifest)
     print(f"Wrote {output}")
-    _print_package_handoff(output)
+    _handle_package_handoff(
+        output,
+        portable=args.portable,
+        portable_out=args.portable_out,
+    )
 
 
 def _print_package_handoff(manifest_path: str | Path) -> None:
+    from plushie.binary import tool_name
+
     print("Build launcher with:")
-    print(f"  bin/plushie package portable --manifest {manifest_path}")
+    print(f"  {Path('bin') / tool_name()} package portable --manifest {manifest_path}")
+
+
+def _run_package_portable(manifest_path: str | Path, portable_out: str | None) -> None:
+    from plushie.binary import tool_name
+
+    command = [
+        os.fspath(Path("bin") / tool_name()),
+        "package",
+        "portable",
+        "--manifest",
+        os.fspath(manifest_path),
+    ]
+    if portable_out is not None:
+        command.extend(["--out", portable_out])
+    subprocess.run(command, check=True)
+
+
+def _handle_package_handoff(
+    manifest_path: str | Path,
+    *,
+    portable: bool,
+    portable_out: str | None,
+) -> None:
+    if portable:
+        _run_package_portable(manifest_path, portable_out)
+        return
+    _print_package_handoff(manifest_path)
 
 
 def _resolve_artifacts(
@@ -726,6 +764,16 @@ def _build_parser() -> argparse.ArgumentParser:
         "--output",
         default=None,
         help="manifest output path",
+    )
+    package_parser.add_argument(
+        "--portable",
+        action="store_true",
+        help="build the portable launcher after writing the manifest",
+    )
+    package_parser.add_argument(
+        "--portable-out",
+        default=None,
+        help="portable launcher output path",
     )
     package_parser.add_argument(
         "--working-dir",

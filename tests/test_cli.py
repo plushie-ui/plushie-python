@@ -335,6 +335,29 @@ def test_package_parser_accepts_prepared_payload_shape() -> None:
     assert args.start_command == ["host/Test/Test"]
 
 
+def test_package_parser_accepts_portable_options() -> None:
+    args = cli._build_parser().parse_args(
+        [
+            "package",
+            "--app-id",
+            "dev.plushie.test",
+            "--portable",
+            "--portable-out",
+            "dist/portable/TestApp",
+            "--renderer-path",
+            "bin/plushie-renderer",
+            "--payload-archive",
+            "dist/package/payload.tar.zst",
+            "--start-command",
+            "host/Test/Test",
+        ]
+    )
+
+    assert args.command == "package"
+    assert args.portable is True
+    assert args.portable_out == "dist/portable/TestApp"
+
+
 def test_package_parser_accepts_package_config() -> None:
     args = cli._build_parser().parse_args(
         [
@@ -436,6 +459,8 @@ def test_package_command_prints_launcher_handoff(
             payload_archive=archive,
             platform_icon=None,
             output=None,
+            portable=False,
+            portable_out=None,
         )
     )
 
@@ -445,3 +470,57 @@ def test_package_command_prints_launcher_handoff(
         "bin/plushie package portable --manifest dist/package/plushie-package.toml"
         in output
     )
+
+
+def test_package_command_runs_portable_launcher(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    archive = tmp_path / "payload.tar.zst"
+    archive.write_bytes(b"payload")
+    calls: list[list[str]] = []
+
+    def fake_run(command: list[str], *, check: bool) -> None:
+        calls.append(command)
+        assert check is True
+
+    monkeypatch.setattr(cli.subprocess, "run", fake_run)
+
+    cli._cmd_package(
+        argparse.Namespace(
+            write_package_config=False,
+            app_id="dev.plushie.test",
+            app_name=None,
+            app_version="0.1.0",
+            package_config=None,
+            working_dir=".",
+            start_command=["host/Test/Test"],
+            pyinstaller_entry=None,
+            target="linux-x86_64",
+            renderer_kind="stock",
+            renderer_source=None,
+            renderer_path="bin/plushie-renderer",
+            payload_archive=archive,
+            platform_icon=None,
+            output=None,
+            portable=True,
+            portable_out="dist/portable/TestApp",
+        )
+    )
+
+    output = capsys.readouterr().out
+    assert "Wrote dist/package/plushie-package.toml" in output
+    assert "Build launcher with:" not in output
+    assert calls == [
+        [
+            "bin/plushie",
+            "package",
+            "portable",
+            "--manifest",
+            "dist/package/plushie-package.toml",
+            "--out",
+            "dist/portable/TestApp",
+        ]
+    ]
