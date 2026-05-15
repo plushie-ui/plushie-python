@@ -21,6 +21,7 @@ from plushie.binary import (
     download_name,
     download_tool,
     download_wasm,
+    launcher_name,
     release_name,
     sync_renderer_with_tool,
     tool_name,
@@ -335,14 +336,25 @@ class TestDownloadForce:
     def test_sync_renderer_uses_source_plushie_tool(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        monkeypatch.chdir(tmp_path)
         source = tmp_path / "plushie-rust"
         source.mkdir()
         manifest = source / "Cargo.toml"
         manifest.write_text("[workspace]\n", encoding="utf-8")
         monkeypatch.setenv("PLUSHIE_RUST_SOURCE_PATH", str(source))
+        bin_dir = Path("bin")
 
         with patch("plushie.binary.subprocess.run") as mock_run:
-            mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+
+            def fake_run(
+                *_args: object, **_kwargs: object
+            ) -> subprocess.CompletedProcess[bytes]:
+                bin_dir.mkdir(exist_ok=True)
+                (bin_dir / download_name()).write_bytes(b"renderer")
+                (bin_dir / launcher_name()).write_bytes(b"launcher")
+                return subprocess.CompletedProcess(args=[], returncode=0)
+
+            mock_run.side_effect = fake_run
 
             result = sync_renderer_with_tool(version="0.4.0")
 
@@ -360,6 +372,21 @@ class TestDownloadForce:
         ]
         assert args[-4:] == ["tools", "sync", "--required-version", "0.4.0"]
         assert result == str(Path("bin") / download_name())
+
+    def test_sync_renderer_requires_renderer_and_launcher_outputs(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        source = tmp_path / "plushie-rust"
+        source.mkdir()
+        (source / "Cargo.toml").write_text("[workspace]\n", encoding="utf-8")
+        monkeypatch.setenv("PLUSHIE_RUST_SOURCE_PATH", str(source))
+
+        with patch("plushie.binary.subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+
+            with pytest.raises(RuntimeError, match="did not install"):
+                sync_renderer_with_tool(version="0.4.0")
 
     def test_default_download_bootstraps_tool_and_renderer_from_file_mirror(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -12,10 +12,10 @@ of the Python CLI; it is a bash script in the project root.
 | Command | Purpose |
 |---|---|
 | [`run`](#python--m-plushie-run) | Run a Plushie app |
-| [`connect`](#python--m-plushie-connect) | Stdio transport mode for renderer-parent startup |
+| [`connect`](#python--m-plushie-connect) | Standalone host entry point for packaged or socket startup |
 | [`download`](#python--m-plushie-download) | Fetch a precompiled renderer binary or WASM bundle |
 | [`build`](#python--m-plushie-build) | Build the renderer binary from source with extensions |
-| [`package`](#python--m-plushie-package) | Write a package manifest for a prepared payload |
+| [`package`](#python--m-plushie-package) | Assemble a package payload or write a manifest for a prepared payload |
 | [`inspect`](#python--m-plushie-inspect) | Print the initial UI tree as JSON |
 | [`script`](#python--m-plushie-script) | Run `.plushie` test scripts headlessly |
 | [`replay`](#python--m-plushie-replay) | Replay a script with real windows |
@@ -279,7 +279,7 @@ overridden.
 
 ## python -m plushie package
 
-Stages a standalone Python package payload and writes
+Assembles a standalone Python package payload and writes
 `plushie-package.toml` for the shared Rust launcher. PyInstaller mode
 is the first-class SDK-owned path. The SDK resolves or builds the
 renderer, copies it into the payload, runs PyInstaller, materializes

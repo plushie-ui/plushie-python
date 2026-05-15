@@ -361,6 +361,26 @@ def test_package_parser_accepts_write_package_config_without_app_id() -> None:
     assert args.write_package_config is True
 
 
+def test_package_write_config_uses_pyinstaller_entrypoint(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    cli._cmd_package(
+        argparse.Namespace(
+            write_package_config=True,
+            package_config=None,
+            start_command=None,
+            pyinstaller_name="ConfigApp",
+            app_name=None,
+        )
+    )
+
+    text = (tmp_path / "plushie-package.config.toml").read_text(encoding="utf-8")
+    assert 'command = ["host/ConfigApp/ConfigApp"]' in text
+
+
 def test_package_parser_accepts_pyinstaller_shape() -> None:
     args = cli._build_parser().parse_args(
         [

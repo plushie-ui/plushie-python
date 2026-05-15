@@ -257,6 +257,13 @@ def tool_release_name(*, os_name: str | None = None, arch: str | None = None) ->
     return f"plushie-{os_val}-{arch_val}{ext}"
 
 
+def launcher_name(*, os_name: str | None = None) -> str:
+    """Return the stable project-local plushie launcher filename."""
+    os_val = os_name or detect_os()
+    ext = ".exe" if os_val == "windows" else ""
+    return f"plushie-launcher{ext}"
+
+
 # ---------------------------------------------------------------------------
 # Download directory
 # ---------------------------------------------------------------------------
@@ -596,7 +603,7 @@ def download_tool(
 
 
 def sync_renderer_with_tool(version: str | None = None, *, force: bool = False) -> str:
-    """Ask the project-local plushie tool to sync the pinned renderer."""
+    """Ask the project-local plushie tool to sync pinned native tools."""
     release_version = _validate_release_version(
         PLUSHIE_RUST_VERSION if version is None else version
     )
@@ -606,7 +613,13 @@ def sync_renderer_with_tool(version: str | None = None, *, force: bool = False) 
         raise RuntimeError(
             f"bin/plushie download failed with status {result.returncode}"
         )
-    return str(download_dir() / download_name())
+    renderer = download_dir() / download_name()
+    launcher = download_dir() / launcher_name()
+    missing = [path for path in (renderer, launcher) if not path.is_file()]
+    if missing:
+        missing_text = ", ".join(str(path) for path in missing)
+        raise RuntimeError(f"bin/plushie tools sync did not install: {missing_text}")
+    return str(renderer)
 
 
 def _tool_sync_command(*, release_version: str, force: bool) -> list[str]:

@@ -180,14 +180,22 @@ def _cmd_package(args: argparse.Namespace) -> None:
         load_package_config,
         manifest_for_payload,
         package_pyinstaller_payload,
+        pyinstaller_start_config,
         write_manifest,
         write_package_config,
     )
 
     if args.write_package_config:
+        config = (
+            default_start_config(args.start_command)
+            if args.start_command is not None
+            else pyinstaller_start_config(args.pyinstaller_name or args.app_name)
+            if args.pyinstaller_name is not None or args.app_name is not None
+            else default_start_config()
+        )
         write_package_config(
             args.package_config or "plushie-package.config.toml",
-            default_start_config(args.start_command or ["bin/connect"]),
+            config,
         )
         print(f"Wrote {args.package_config or 'plushie-package.config.toml'}")
         return

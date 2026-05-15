@@ -149,6 +149,11 @@ def default_start_config(command: list[str] | None = None) -> PackageStartConfig
     )
 
 
+def pyinstaller_start_config(name: str) -> PackageStartConfig:
+    """Return the package start config for a PyInstaller payload."""
+    return default_start_config([_payload_host_executable_path(name)])
+
+
 def render_package_config(config: PackageStartConfig | None = None) -> str:
     """Render a developer-owned package config template."""
     cfg = default_start_config() if config is None else config

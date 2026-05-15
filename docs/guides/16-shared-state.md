@@ -26,11 +26,12 @@ The CLI offers two modes for starting an app.
 
 `python -m plushie run myapp:App` is the familiar path. The SDK resolves the renderer binary, spawns it as a subprocess, and talks to it over pipes.
 
-`python -m plushie connect myapp:App` is the inverse. The SDK does not spawn anything. It reads wire frames from stdin and writes them to stdout, leaving the transport to whoever invoked it. The renderer is already running somewhere else, and a host process (an SSH subsystem, a socket wrapper, a container runtime) funnels bytes between them.
+`python -m plushie connect myapp:App` is the standalone host entry point. In packaged desktop apps it can start the renderer through normal binary resolution. In shared-state deployments, pass `--socket` or set `PLUSHIE_SOCKET` so it connects to an already-running renderer socket instead.
 
 ```bash
 python -m plushie connect myapp:App
 python -m plushie connect myapp:App --json
+python -m plushie connect myapp:App --socket /tmp/plushie.sock
 ```
 
 Flag summary:
@@ -38,8 +39,10 @@ Flag summary:
 | Flag | Description |
 |---|---|
 | `--json` | Use JSON wire format instead of MessagePack |
+| `--socket` | Connect to an existing renderer socket |
+| `--token` | Authentication token for socket-mode startup |
 
-That is all. Connect mode is deliberately tiny: it does one thing, hooks the app up to whatever bidirectional byte channel is on stdio. See [CLI Commands](../reference/cli-commands.md) for the full CLI surface.
+For shared-state work, socket mode is the important part: stdout remains available to the caller and protocol traffic goes through the socket. See [CLI Commands](../reference/cli-commands.md) for the full CLI surface.
 
 The SSH pattern that we describe later uses a subsystem configuration where every inbound connection runs `python -m plushie connect` and each session's stdio is an SSH channel. The host process multiplexes.
 
