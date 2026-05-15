@@ -200,6 +200,10 @@ def test_render_package_config_defaults_to_connect_entrypoint() -> None:
             "start.forward_env\\[0\\] is reserved",
         ),
         (
+            'config_version = 1\n[start]\nforward_env = ["PLUSHIE_PACKAGE_READY_FILE"]\n',
+            "start.forward_env\\[0\\] is reserved",
+        ),
+        (
             'config_version = 1\n[start]\nforward_env = ["BAD=VALUE"]\n',
             "start.forward_env\\[0\\] must not contain comma or equals",
         ),

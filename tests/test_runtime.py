@@ -9,6 +9,7 @@ from __future__ import annotations
 import threading
 from concurrent.futures import Future
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, ClassVar
 
 import pytest
@@ -671,11 +672,15 @@ class TestWindowConfig:
 
 
 class TestRuntimeHandshake:
-    def test_initialize_waits_for_hello_before_initial_snapshot(self) -> None:
+    def test_initialize_waits_for_hello_before_initial_snapshot(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         from plushie.connection import ProtocolMismatchError
         from plushie.runtime import Runtime
 
         calls: list[str] = []
+        ready_file = tmp_path / "ready"
+        monkeypatch.setenv("PLUSHIE_PACKAGE_READY_FILE", str(ready_file))
         builder = create_app("HandshakeTest")
 
         @builder.init
@@ -717,6 +722,69 @@ class TestRuntimeHandshake:
             rt._initialize()
 
         assert calls == ["init", "settings", "send_settings", "wait_hello:10.0"]
+        assert not ready_file.exists()
+
+    def test_initialize_writes_package_ready_file_after_hello(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from plushie.runtime import Runtime
+
+        calls: list[str] = []
+        ready_file = tmp_path / "ready"
+        monkeypatch.setenv("PLUSHIE_PACKAGE_READY_FILE", str(ready_file))
+        builder = create_app("ReadyFileTest")
+
+        @builder.init
+        def init() -> int:
+            calls.append("init")
+            return 0
+
+        @builder.update
+        def update(model: int, _event: object) -> int:
+            return model
+
+        @builder.settings
+        def settings() -> dict[str, Any]:
+            calls.append("settings")
+            return {}
+
+        @builder.view
+        def view(_model: int) -> dict[str, Any]:
+            calls.append(f"view_ready:{ready_file.read_text(encoding='utf-8')}")
+            return {"id": "main", "type": "window", "props": {}, "children": []}
+
+        class Connection:
+            session = ""
+
+            def send_settings(self, _settings: dict[str, Any]) -> None:
+                calls.append("send_settings")
+
+            def wait_hello(self, timeout: float = 10.0) -> Any:
+                calls.append(f"wait_hello:{timeout}")
+                assert not ready_file.exists()
+                return object()
+
+            def send_snapshot(self, _tree: dict[str, Any]) -> None:
+                calls.append("send_snapshot")
+
+            def send(self, _msg: dict[str, Any]) -> None:
+                calls.append("send_window")
+
+        rt = Runtime(builder, Connection())  # type: ignore[arg-type]
+
+        rt._initialize()
+
+        assert ready_file.read_text(encoding="utf-8") == "ready\n"
+        assert not (tmp_path / ".ready.tmp").exists()
+        assert calls == [
+            "init",
+            "settings",
+            "send_settings",
+            "wait_hello:10.0",
+            "view_ready:ready\n",
+            "send_snapshot",
+            "send_window",
+        ]
 
     def test_initialize_rejects_non_dict_settings(self) -> None:
         from plushie.protocol import settings as settings_msg

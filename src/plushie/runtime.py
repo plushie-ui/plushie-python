@@ -26,9 +26,11 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import os
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
+from pathlib import Path
 from queue import Empty, Queue
 from typing import Any
 
@@ -88,6 +90,18 @@ _EFFECT_TIMEOUT_MS: int = 30_000
 
 _DEV_PREFIX = "__plushie_dev__"
 _STOP_SENTINEL = object()
+
+
+def _write_package_ready_file() -> None:
+    ready_file = os.environ.get("PLUSHIE_PACKAGE_READY_FILE")
+    if not ready_file:
+        return
+
+    path = Path(ready_file)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temp_path.write_text("ready\n", encoding="utf-8")
+    os.replace(temp_path, path)
 
 
 def _build_frozen_overlay_bar() -> dict[str, Any]:
@@ -725,6 +739,7 @@ class Runtime:
 
         self._conn.send_settings(app_settings)
         self._conn.wait_hello(timeout=10.0)
+        _write_package_ready_file()
 
         # 3. Render initial view
         tree = self._safe_view(model)

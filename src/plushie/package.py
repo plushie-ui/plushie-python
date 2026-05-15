@@ -29,7 +29,9 @@ DEFAULT_FORWARD_ENV = (
     "DISPLAY",
 )
 DEFAULT_PACKAGE_CONFIG = "plushie-package.config.toml"
-RESERVED_FORWARD_ENV = frozenset({"PLUSHIE_BINARY_PATH", "PLUSHIE_PACKAGE_DIR"})
+RESERVED_FORWARD_ENV = frozenset(
+    {"PLUSHIE_BINARY_PATH", "PLUSHIE_PACKAGE_DIR", "PLUSHIE_PACKAGE_READY_FILE"}
+)
 
 RendererKind = Literal["stock", "custom"]
 
