@@ -151,9 +151,10 @@ defaulting to `["bin"]`.
 
 ### Destinations
 
-The native binary lands in `_build/plushie/bin/` under the current
-project. The filename is `plushie-renderer-<os>-<arch>` (with `.exe`
-on Windows).
+The native binary lands in `bin/` under the current project. The
+filename is `plushie-renderer` (with `.exe` on Windows). Release
+assets still use platform-specific filenames, but local projects use
+the stable name.
 
 The WASM bundle extracts to `_build/plushie-renderer/wasm/` and
 produces `plushie_renderer_wasm.js` and
@@ -300,7 +301,7 @@ python -m plushie package \
 The output is intended for the shared Rust launcher:
 
 ```bash
-cargo plushie package --manifest dist/package/plushie-package.toml --release
+cargo plushie package portable --manifest dist/package/plushie-package.toml --release
 ```
 
 ### Flags
@@ -340,7 +341,7 @@ This command does not call `cargo plushie package`. It prints the
 final launcher handoff so the build stays explicit:
 
 ```bash
-cargo plushie package --manifest dist/package/plushie-package.toml --release
+cargo plushie package portable --manifest dist/package/plushie-package.toml --release
 ```
 
 ## python -m plushie inspect
@@ -439,9 +440,8 @@ order:
    `build/*/target/debug/`, auto-detected after `python -m plushie
    build` as long as the binary is a native executable (not a
    Python script).
-4. Downloaded binary at
-   `_build/plushie/bin/plushie-renderer-<os>-<arch>` under the
-   current project.
+4. Downloaded binary at `bin/plushie-renderer` under the current
+   project.
 
 If nothing is found, the call raises `PlushieNotFoundError` with an
 install hint listing the download and environment-variable options.

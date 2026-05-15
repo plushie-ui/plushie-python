@@ -233,7 +233,7 @@ python -m plushie download
 pytest
 ```
 
-The first line drops the prebuilt renderer into the project's `_build/plushie/bin/` directory. The second runs the suite against the mock backend, which is the speed sweet spot.
+The first line drops the prebuilt renderer into the project's `bin/` directory. The second runs the suite against the mock backend, which is the speed sweet spot.
 
 For pixel regressions, run a second pass less often (a weekly scheduled job, or a nightly build) against headless:
 

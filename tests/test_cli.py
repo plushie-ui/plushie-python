@@ -422,6 +422,6 @@ def test_package_command_prints_launcher_handoff(
     output = capsys.readouterr().out
     assert "Wrote dist/package/plushie-package.toml" in output
     assert (
-        "cargo plushie package --manifest dist/package/plushie-package.toml --release"
+        "cargo plushie package portable --manifest dist/package/plushie-package.toml --release"
         in output
     )

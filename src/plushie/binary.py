@@ -5,7 +5,7 @@ Resolution chain for ``resolve()``:
 1. ``PLUSHIE_BINARY_PATH`` environment variable (fail-fast if set but missing)
 2. Bundled binary (PyInstaller, Nuitka, Briefcase)
 3. Custom extension build in ``build/*/target/``
-4. Project-local downloaded binary in ``_build/plushie/bin/``
+4. Project-local downloaded binary in ``bin/``
 
 Platform detection identifies os (linux/darwin/windows) and arch
 (x86_64/aarch64) for download naming.
@@ -203,19 +203,15 @@ def detect_arch() -> str:
     raise RuntimeError(f"unsupported architecture: {machine}")
 
 
-def download_name(*, os_name: str | None = None, arch: str | None = None) -> str:
-    """Return the platform-specific binary asset name for downloads.
+def download_name(*, os_name: str | None = None) -> str:
+    """Return the stable project-local renderer filename."""
+    os_val = os_name or detect_os()
+    ext = ".exe" if os_val == "windows" else ""
+    return f"plushie-renderer{ext}"
 
-    Format: ``plushie-renderer-{os}-{arch}`` (e.g. ``plushie-renderer-linux-x86_64``).
-    On Windows the ``.exe`` extension is appended.
 
-    Args:
-        os_name: Override OS detection (for testing).
-        arch: Override arch detection (for testing).
-
-    Returns:
-        Asset filename string.
-    """
+def release_name(*, os_name: str | None = None, arch: str | None = None) -> str:
+    """Return the platform-specific renderer release asset name."""
     os_val = os_name or detect_os()
     arch_val = arch or detect_arch()
     ext = ".exe" if os_val == "windows" else ""
@@ -231,12 +227,12 @@ def download_dir() -> Path:
     """Return the project-local directory for downloaded plushie binaries.
 
     ``python -m plushie download`` installs one renderer per app
-    project under ``_build/plushie/bin/`` by default.
+    project under ``bin/`` by default.
 
     Returns:
         Path to the download directory (may not exist yet).
     """
-    return Path("_build") / "plushie" / "bin"
+    return Path("bin")
 
 
 # ---------------------------------------------------------------------------
@@ -432,7 +428,7 @@ def resolve() -> str:
     try:
         dl_dir = str(download_dir())
     except RuntimeError:
-        dl_dir = "_build/plushie/bin/"
+        dl_dir = "bin/"
 
     raise PlushieNotFoundError(
         "plushie-renderer binary not found.\n"
@@ -486,7 +482,7 @@ def download(
     release_version = _validate_release_version(
         PLUSHIE_RUST_VERSION if version is None else version
     )
-    name = download_name()
+    name = release_name()
     tag = f"v{release_version}"
     url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
 
@@ -496,7 +492,7 @@ def download(
     else:
         dest_dir = download_dir()
         dest_dir.mkdir(parents=True, exist_ok=True)
-        dest = dest_dir / name
+        dest = dest_dir / download_name()
 
     if dest.is_file() and not force:
         logger.info("binary already exists at %s (use force=True to re-download)", dest)
@@ -753,6 +749,7 @@ __all__ = [
     "download_dir",
     "download_name",
     "download_wasm",
+    "release_name",
     "resolve",
     "resolve_wasm",
     "wasm_dir",

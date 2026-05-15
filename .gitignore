@@ -8,6 +8,8 @@ build/
 dist/
 *.egg-info/
 *.egg
+bin/plushie-renderer
+bin/plushie-renderer.exe
 
 # Virtual environments
 .venv/

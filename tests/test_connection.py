@@ -30,6 +30,7 @@ from plushie.binary import (
     detect_os,
     download_dir,
     download_name,
+    release_name,
     resolve,
     resolve_wasm,
     wasm_dir,
@@ -202,20 +203,30 @@ class TestDownloadName:
     """Tests for download_name()."""
 
     def test_linux_x86_64(self) -> None:
+        assert download_name(os_name="linux") == "plushie-renderer"
+
+    def test_windows_exe(self) -> None:
+        assert download_name(os_name="windows") == "plushie-renderer.exe"
+
+
+class TestReleaseName:
+    """Tests for release_name()."""
+
+    def test_linux_x86_64(self) -> None:
         assert (
-            download_name(os_name="linux", arch="x86_64")
+            release_name(os_name="linux", arch="x86_64")
             == "plushie-renderer-linux-x86_64"
         )
 
     def test_darwin_aarch64(self) -> None:
         assert (
-            download_name(os_name="darwin", arch="aarch64")
+            release_name(os_name="darwin", arch="aarch64")
             == "plushie-renderer-darwin-aarch64"
         )
 
     def test_windows_exe(self) -> None:
         assert (
-            download_name(os_name="windows", arch="x86_64")
+            release_name(os_name="windows", arch="x86_64")
             == "plushie-renderer-windows-x86_64.exe"
         )
 
@@ -224,7 +235,7 @@ class TestDownloadDir:
     """Tests for download_dir()."""
 
     def test_project_local(self) -> None:
-        assert download_dir() == Path("_build/plushie/bin")
+        assert download_dir() == Path("bin")
 
 
 class TestResolve:
@@ -334,8 +345,7 @@ class TestResolve:
         bin_dir.mkdir()
 
         current_os = detect_os()
-        current_arch = detect_arch()
-        name = download_name(os_name=current_os, arch=current_arch)
+        name = download_name(os_name=current_os)
         binary = bin_dir / name
         binary.write_text("#!/bin/sh\necho hi")
         binary.chmod(binary.stat().st_mode | stat.S_IXUSR)

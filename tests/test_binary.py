@@ -19,6 +19,7 @@ from plushie.binary import (
     download,
     download_name,
     download_wasm,
+    release_name,
 )
 
 # -- Platform detection ------------------------------------------------------
@@ -67,14 +68,19 @@ class TestDetectArch:
 
 class TestDownloadName:
     def test_linux_x86(self) -> None:
-        assert (
-            download_name(os_name="linux", arch="x86_64")
-            == "plushie-renderer-linux-x86_64"
-        )
+        assert download_name(os_name="linux") == "plushie-renderer"
 
     def test_windows_gets_exe(self) -> None:
-        name = download_name(os_name="windows", arch="x86_64")
+        name = download_name(os_name="windows")
         assert name.endswith(".exe")
+
+
+class TestReleaseName:
+    def test_linux_x86(self) -> None:
+        assert (
+            release_name(os_name="linux", arch="x86_64")
+            == "plushie-renderer-linux-x86_64"
+        )
 
 
 # -- Checksum verification --------------------------------------------------
@@ -221,10 +227,10 @@ class TestDownloadForce:
             patch("plushie.binary.download_dir", return_value=tmp_path),
             patch(
                 "plushie.binary.download_name",
-                return_value="plushie-renderer-linux-x86_64",
+                return_value="plushie-renderer",
             ),
         ):
-            existing = tmp_path / "plushie-renderer-linux-x86_64"
+            existing = tmp_path / "plushie-renderer"
             existing.write_bytes(b"existing binary")
 
             result = download(version="0.4.0", force=False)
@@ -235,6 +241,10 @@ class TestDownloadForce:
             patch("plushie.binary.download_dir", return_value=tmp_path),
             patch(
                 "plushie.binary.download_name",
+                return_value="plushie-renderer",
+            ),
+            patch(
+                "plushie.binary.release_name",
                 return_value="plushie-renderer-linux-x86_64",
             ),
             patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
@@ -242,7 +252,7 @@ class TestDownloadForce:
             patch("plushie.binary.sys") as mock_sys,
         ):
             mock_sys.platform = "linux"
-            existing = tmp_path / "plushie-renderer-linux-x86_64"
+            existing = tmp_path / "plushie-renderer"
             existing.write_bytes(b"old binary")
 
             mock_retrieve.side_effect = lambda url, dest: Path(dest).write_bytes(b"new")
@@ -284,7 +294,7 @@ class TestDownloadVersionValidation:
         with (
             patch("plushie.binary.download_dir", return_value=tmp_path),
             patch(
-                "plushie.binary.download_name",
+                "plushie.binary.release_name",
                 return_value="plushie-renderer-linux-x86_64",
             ),
             patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,

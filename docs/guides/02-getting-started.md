@@ -60,7 +60,7 @@ handles platform input. Fetch the precompiled renderer with:
 python -m plushie download
 ```
 
-The binary lands under the current project's `_build/plushie/bin/`
+The binary lands under the current project's `bin/`
 directory. Each app keeps its own renderer copy unless you explicitly
 point `PLUSHIE_BINARY_PATH` somewhere else.
 

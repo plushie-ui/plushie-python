@@ -183,11 +183,10 @@ def install_built_binary(
     workspace's ``cargo build`` then writes the binary under its own
     ``target/<profile>/``, so the final path is
     ``<spec_dir>/target/plushie-renderer/target/<profile>/<binary_name>``.
-    The Python SDK's :func:`plushie.binary.resolve` looks for binaries
-    named ``plushie-renderer-<os>-<arch>`` under
-    :func:`plushie.binary.download_dir`, so copy the output into that
-    project-local location. Also honor ``bin_file`` (from ``[tool.plushie]``)
-    if the app wants the binary somewhere else.
+    The Python SDK's :func:`plushie.binary.resolve` looks for the stable
+    project-local renderer name under :func:`plushie.binary.download_dir`.
+    Also honor ``bin_file`` (from ``[tool.plushie]``) if the app wants the
+    binary somewhere else.
     """
     profile = "release" if release else "debug"
     bin_ext = ".exe" if sys.platform in ("win32", "cygwin") else ""

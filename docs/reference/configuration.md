@@ -90,7 +90,7 @@ rust_constructor = "sparkline::new()"
 | Key | Type | Default | Purpose |
 |---|---|---|---|
 | `artifacts` | `list[str]` | `["bin"]` | Which artifacts `download` and `build` install. Accepts `"bin"`, `"wasm"`, or both. An explicit empty list installs nothing. |
-| `bin_file` | `str` | `None` | Override the destination path for the native binary. Without it, downloads land under `_build/plushie/bin/` in the project. |
+| `bin_file` | `str` | `None` | Override the destination path for the native binary. Without it, downloads land under `bin/` in the project. |
 | `wasm_dir` | `str` | `None` | Override the output directory for WASM artifacts. Without it, downloads land under `_build/plushie-renderer/wasm/` in the project. |
 | `source_path` | `str` | `None` | Rust source checkout path for source builds. The `PLUSHIE_RUST_SOURCE_PATH` env var takes precedence. |
 | `build_name` | `str` | `"plushie-custom"` | Name for the binary produced by `python -m plushie build`. Overridden by the `--name` CLI flag. |

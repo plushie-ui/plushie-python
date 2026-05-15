@@ -69,7 +69,7 @@ bundled default icons into the payload.
 The generated manifest is the handoff to the shared launcher:
 
 ```bash
-cargo plushie package --manifest dist/package/plushie-package.toml --release
+cargo plushie package portable --manifest dist/package/plushie-package.toml --release
 ```
 
 Prepared payloads remain supported for custom staging flows:
