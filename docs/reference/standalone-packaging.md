@@ -40,7 +40,7 @@ It does not spawn or discover another renderer.
 Use PyInstaller one-folder mode as the first supported internal
 payload format. The shared Rust launcher already provides the outer
 single executable, so one-file PyInstaller would add nested
-self-extraction, more startup cost, and less inspectable smoke output.
+self-extraction, more startup cost, and less inspectable postcheck output.
 
 One-file PyInstaller can still be evaluated later for projects that
 need a Python-only artifact, but it is not the cross-SDK standalone
@@ -96,9 +96,9 @@ The demo package script delegates PyInstaller payload staging to
 `python -m plushie package --pyinstaller-entry`. `cargo plushie
 package` builds the outer launcher from the generated manifest.
 
-Strict artifact smoke runs the generated launcher from a temporary
-working directory with a narrowed runtime `PATH`. The smoke requires
-the shared renderer-parent ready marker and writes a report next to
-the generated launcher recording payload size, launcher size, target,
-host SDK, runtime path, exit status, and the renderer path reported by
-launcher diagnostics.
+Strict artifact postcheck runs the generated launcher from a temporary
+working directory with a narrowed runtime `PATH`. The artifact
+postcheck requires the shared renderer-parent ready marker and writes a
+report next to the generated launcher recording payload size, launcher
+size, target, host SDK, runtime path, exit status, and the renderer path
+reported by launcher diagnostics.
