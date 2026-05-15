@@ -579,7 +579,7 @@ def sync_renderer_with_tool(version: str | None = None, *, force: bool = False) 
         PLUSHIE_RUST_VERSION if version is None else version
     )
     tool = download_tool(version=release_version, force=force)
-    args = [tool, "download", "--required-version", release_version]
+    args = [tool, "tools", "sync", "--required-version", release_version]
     if force:
         args.append("--force")
     result = subprocess.run(args, text=True)
