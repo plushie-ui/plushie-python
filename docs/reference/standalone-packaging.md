@@ -4,7 +4,7 @@ The first supported standalone shape for Python apps is a
 PyInstaller host payload wrapped by the shared Rust package launcher.
 PyInstaller owns the Python runtime and application files. The Rust
 launcher owns the outer executable, payload extraction, cache
-lifecycle, renderer-parent startup, and future update hooks.
+lifecycle, shared-launcher startup, and future update hooks.
 
 ## Shape
 
@@ -23,8 +23,8 @@ renderer cache or a renderer found on `PATH`.
 
 ## Startup
 
-The launcher starts the payload-local renderer with renderer-parent
-socket mode, then starts the Python host through structured exec args.
+The shared launcher coordinates the payload-local renderer and starts
+the Python host through structured exec args.
 The host should run:
 
 ```bash

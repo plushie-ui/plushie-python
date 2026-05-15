@@ -151,7 +151,9 @@ def render_package_config(config: PackageStartConfig | None = None) -> str:
     """Render a developer-owned package config template."""
     cfg = default_start_config() if config is None else config
     command = cfg.command if cfg.command is not None else ["bin/connect"]
-    forward_env = cfg.forward_env if cfg.forward_env is not None else list(DEFAULT_FORWARD_ENV)
+    forward_env = (
+        cfg.forward_env if cfg.forward_env is not None else list(DEFAULT_FORWARD_ENV)
+    )
     lines = [
         "# Plushie standalone package config.",
         "# Commit this file and edit it when the packaged app needs a",
@@ -392,7 +394,9 @@ def package_pyinstaller_payload(
         Path(output) if output is not None else package_root / "plushie-package.toml"
     )
 
-    staged_renderer, resolved_renderer_source = _stage_renderer_for_pyinstaller()
+    staged_renderer, resolved_renderer_source = _stage_renderer_for_pyinstaller(
+        renderer_kind
+    )
     effective_renderer_source = renderer_source or resolved_renderer_source
 
     _run_pyinstaller(
@@ -538,8 +542,10 @@ def archive_payload(payload_dir: str | Path, archive_path: str | Path) -> None:
         raise subprocess.CalledProcessError(zstd_proc.returncode, zstd)
 
 
-def _stage_renderer_for_pyinstaller() -> tuple[Path, str]:
-    renderer, source = _resolve_package_renderer()
+def _stage_renderer_for_pyinstaller(
+    renderer_kind: RendererKind = "stock",
+) -> tuple[Path, str]:
+    renderer, source = _resolve_package_renderer(renderer_kind)
     staged = Path("build") / "standalone" / "renderer" / _renderer_binary_name()
     staged.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(renderer, staged)
@@ -547,7 +553,12 @@ def _stage_renderer_for_pyinstaller() -> tuple[Path, str]:
     return staged, source
 
 
-def _resolve_package_renderer() -> tuple[Path, str]:
+def _resolve_package_renderer(
+    renderer_kind: RendererKind = "stock",
+) -> tuple[Path, str]:
+    if renderer_kind == "custom":
+        return _resolve_custom_package_renderer()
+
     env_binary = os.environ.get("PLUSHIE_BINARY_PATH")
     if env_binary:
         path = Path(env_binary)
@@ -562,6 +573,7 @@ def _resolve_package_renderer() -> tuple[Path, str]:
             raise FileNotFoundError(
                 f"PLUSHIE_RUST_SOURCE_PATH does not contain Cargo.toml: {source_path}"
             )
+        target_dir = Path("build") / "standalone" / "cargo-target"
         subprocess.run(
             [
                 "cargo",
@@ -571,12 +583,12 @@ def _resolve_package_renderer() -> tuple[Path, str]:
                 "plushie-renderer",
                 "--manifest-path",
                 os.fspath(manifest),
+                "--target-dir",
+                os.fspath(target_dir),
             ],
             check=True,
         )
-        built = (
-            Path(source_path).resolve() / "target" / "release" / _renderer_binary_name()
-        )
+        built = target_dir.resolve() / "release" / _renderer_binary_name()
         if not built.is_file():
             raise FileNotFoundError(
                 f"cargo build completed but renderer is missing at {built}"
@@ -589,6 +601,40 @@ def _resolve_package_renderer() -> tuple[Path, str]:
         return Path(resolve()).resolve(), "local-resolve"
     except PlushieNotFoundError:
         return Path(download()).resolve(), "download"
+
+
+def _resolve_custom_package_renderer() -> tuple[Path, str]:
+    env_binary = os.environ.get("PLUSHIE_BINARY_PATH")
+    if env_binary:
+        path = Path(env_binary)
+        if not path.is_file():
+            raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
+        return path.resolve(), "local-path"
+
+    custom_build = _resolve_custom_package_build()
+    if custom_build is not None:
+        return custom_build, "local-build"
+
+    raise RuntimeError(
+        "custom renderer packaging requires an explicit custom renderer binary. "
+        "Set PLUSHIE_BINARY_PATH or run `python -m plushie build` first."
+    )
+
+
+def _resolve_custom_package_build() -> Path | None:
+    build_root = Path("build")
+    if not build_root.is_dir():
+        return None
+
+    ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
+    for build_dir in build_root.iterdir():
+        if not build_dir.is_dir():
+            continue
+        for profile in ("release", "debug"):
+            candidate = build_dir / "target" / profile / f"{build_dir.name}{ext}"
+            if candidate.is_file():
+                return candidate.resolve()
+    return None
 
 
 def _run_pyinstaller(

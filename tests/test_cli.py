@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -387,3 +388,40 @@ def test_package_parser_accepts_pyinstaller_shape() -> None:
     assert args.add_data == ["assets:assets"]
     assert args.hidden_import == ["pandas"]
     assert args.collect_submodules == ["plushie"]
+
+
+def test_package_command_prints_launcher_handoff(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    archive = tmp_path / "payload.tar.zst"
+    archive.write_bytes(b"payload")
+
+    cli._cmd_package(
+        argparse.Namespace(
+            write_package_config=False,
+            app_id="dev.plushie.test",
+            app_name=None,
+            app_version="0.1.0",
+            package_config=None,
+            working_dir=".",
+            start_command=["host/Test/Test"],
+            pyinstaller_entry=None,
+            target="linux-x86_64",
+            renderer_kind="stock",
+            renderer_source=None,
+            renderer_path="bin/plushie-renderer",
+            payload_archive=archive,
+            platform_icon=None,
+            output=None,
+        )
+    )
+
+    output = capsys.readouterr().out
+    assert "Wrote dist/package/plushie-package.toml" in output
+    assert (
+        "cargo plushie package --manifest dist/package/plushie-package.toml --release"
+        in output
+    )

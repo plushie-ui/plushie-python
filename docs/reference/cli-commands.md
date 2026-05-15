@@ -331,8 +331,17 @@ cargo plushie package --manifest dist/package/plushie-package.toml --release
 | `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
 | `--start-command ARG...` | Payload-relative app start command argv. Required in prepared mode |
 
-This command does not call `cargo plushie package`. That final launcher
-build stays explicit.
+In PyInstaller mode, `--renderer-kind custom` requires an explicit
+custom renderer: set `PLUSHIE_BINARY_PATH` or run `python -m plushie
+build` before packaging. Stock renderer resolution is not used for a
+custom package manifest.
+
+This command does not call `cargo plushie package`. It prints the
+final launcher handoff so the build stays explicit:
+
+```bash
+cargo plushie package --manifest dist/package/plushie-package.toml --release
+```
 
 ## python -m plushie inspect
 

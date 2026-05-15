@@ -257,7 +257,7 @@ def test_package_pyinstaller_payload_stages_archive_inputs(
 
     monkeypatch.setattr(
         "plushie.package._stage_renderer_for_pyinstaller",
-        lambda: (staged_renderer, "local-path"),
+        lambda _renderer_kind="stock": (staged_renderer, "local-path"),
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr("plushie.package._run_cargo_plushie", fake_run_cargo_plushie)
@@ -315,7 +315,7 @@ def test_package_pyinstaller_payload_copies_app_icon(
 
     monkeypatch.setattr(
         "plushie.package._stage_renderer_for_pyinstaller",
-        lambda: (staged_renderer, "local-path"),
+        lambda _renderer_kind="stock": (staged_renderer, "local-path"),
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr("plushie.package._run_cargo_plushie", lambda *_args: None)
@@ -356,7 +356,7 @@ def test_package_pyinstaller_payload_uses_start_config(
 
     monkeypatch.setattr(
         "plushie.package._stage_renderer_for_pyinstaller",
-        lambda: (staged_renderer, "local-path"),
+        lambda _renderer_kind="stock": (staged_renderer, "local-path"),
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr("plushie.package._run_cargo_plushie", lambda *_args: None)
@@ -379,6 +379,24 @@ def test_package_pyinstaller_payload_uses_start_config(
     assert 'working_dir = "host/ConfigApp"' in manifest
     assert 'command = ["host/ConfigApp/ConfigApp", "--profile", "demo"]' in manifest
     assert 'forward_env = ["PATH", "APP_MODE"]' in manifest
+
+
+def test_package_pyinstaller_payload_rejects_custom_without_custom_renderer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("PLUSHIE_BINARY_PATH", raising=False)
+
+    with pytest.raises(RuntimeError, match="custom renderer packaging requires"):
+        package_pyinstaller_payload(
+            entry="app.py",
+            name="CustomApp",
+            app_id="dev.plushie.test",
+            app_version="0.1.0",
+            target="linux-x86_64",
+            renderer_kind="custom",
+        )
 
 
 def test_archive_payload_rejects_symlinks(tmp_path: Path) -> None:

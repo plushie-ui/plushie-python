@@ -249,6 +249,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
         )
         print(f"Wrote {result['manifest_path']}")
         print(f"Wrote {result['payload_archive']}")
+        _print_package_handoff(result["manifest_path"])
         return
 
     if args.renderer_path is None:
@@ -285,6 +286,12 @@ def _cmd_package(args: argparse.Namespace) -> None:
     output = args.output or "dist/package/plushie-package.toml"
     write_manifest(output, manifest)
     print(f"Wrote {output}")
+    _print_package_handoff(output)
+
+
+def _print_package_handoff(manifest_path: str | Path) -> None:
+    print("Build launcher with:")
+    print(f"  cargo plushie package --manifest {manifest_path} --release")
 
 
 def _resolve_artifacts(
