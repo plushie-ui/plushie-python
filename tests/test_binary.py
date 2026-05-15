@@ -300,6 +300,28 @@ class TestDownloadForce:
             assert "plushie-linux-" in mock_retrieve.call_args.args[0]
             mock_verify.assert_called_once()
 
+    def test_download_tool_uses_alternate_release_base_url(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        mirror = tmp_path / "mirror"
+        version_dir = mirror / "v0.4.0"
+        version_dir.mkdir(parents=True)
+        body = b"tool"
+        artifact = version_dir / tool_release_name()
+        artifact.write_bytes(body)
+        digest = hashlib.sha256(body).hexdigest()
+        artifact.with_name(artifact.name + ".sha256").write_text(
+            f"{digest}  {artifact.name}\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("PLUSHIE_RELEASE_BASE_URL", mirror.as_uri())
+
+        with patch("plushie.binary.download_dir", return_value=tmp_path / "bin"):
+            result = download_tool(version="0.4.0", force=True)
+
+        assert result == str(tmp_path / "bin" / tool_name())
+        assert Path(result).read_bytes() == body
+
     def test_sync_renderer_uses_source_plushie_tool(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

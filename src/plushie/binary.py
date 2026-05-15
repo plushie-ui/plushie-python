@@ -24,6 +24,7 @@ import subprocess
 import sys
 import tarfile
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -31,6 +32,9 @@ logger = logging.getLogger("plushie")
 
 GITHUB_RELEASE_URL = "https://github.com/plushie-ui/plushie-rust/releases/download"
 """Base URL for GitHub release asset downloads."""
+
+RELEASE_BASE_URL_ENV = "PLUSHIE_RELEASE_BASE_URL"
+"""Environment variable that overrides the release asset base URL."""
 
 WASM_ARCHIVE_NAME = "plushie-renderer-wasm.tar.gz"
 """Filename of the WASM renderer archive on GitHub releases."""
@@ -81,6 +85,26 @@ def _validate_release_version(version: str) -> str:
             "'0.6.1' or '0.6.1-rc.1'"
         )
     return version
+
+
+def _release_base_url() -> str:
+    base_url = (
+        os.environ.get(RELEASE_BASE_URL_ENV, GITHUB_RELEASE_URL).strip().rstrip("/")
+    )
+    parsed = urllib.parse.urlparse(base_url)
+    if not base_url:
+        raise RuntimeError(f"{RELEASE_BASE_URL_ENV} must not be empty")
+    if parsed.scheme == "https" or parsed.scheme == "file":
+        return base_url
+    if parsed.scheme == "http" and parsed.hostname in {"localhost", "127.0.0.1", "::1"}:
+        return base_url
+    raise RuntimeError(
+        f"{RELEASE_BASE_URL_ENV} must use https://, file://, or loopback http://"
+    )
+
+
+def _release_url(version: str, artifact: str) -> str:
+    return f"{_release_base_url()}/v{version}/{artifact}"
 
 
 # ---------------------------------------------------------------------------
@@ -498,8 +522,7 @@ def download(
         PLUSHIE_RUST_VERSION if version is None else version
     )
     name = release_name()
-    tag = f"v{release_version}"
-    url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
+    url = _release_url(release_version, name)
 
     if bin_file is not None:
         dest = Path(bin_file)
@@ -544,8 +567,7 @@ def download_tool(
         PLUSHIE_RUST_VERSION if version is None else version
     )
     name = tool_release_name()
-    tag = f"v{release_version}"
-    url = f"{GITHUB_RELEASE_URL}/{tag}/{name}"
+    url = _release_url(release_version, name)
     dest_dir = download_dir()
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / tool_name()
@@ -657,8 +679,7 @@ def download_wasm(
         PLUSHIE_RUST_VERSION if version is None else version
     )
     archive_name = wasm_download_name()
-    tag = f"v{release_version}"
-    url = f"{GITHUB_RELEASE_URL}/{tag}/{archive_name}"
+    url = _release_url(release_version, archive_name)
 
     dest_dir = Path(wasm_dir_path) if wasm_dir_path else wasm_dir()
     js_path = dest_dir / WASM_JS_NAME
