@@ -241,7 +241,6 @@ def _cmd_package(args: argparse.Namespace) -> None:
             app_version=app_version,
             target=args.target,
             renderer_kind=args.renderer_kind,
-            renderer_source=args.renderer_source,
             renderer_path=args.renderer_path,
             app_icon=args.app_icon,
             add_data=args.add_data,
@@ -290,7 +289,6 @@ def _cmd_package(args: argparse.Namespace) -> None:
         app_version=app_version,
         target=args.target,
         renderer_kind=args.renderer_kind,
-        renderer_source=args.renderer_source or "local-resolve",
         renderer_path=args.renderer_path,
         start_command=start_command,
         working_dir=working_dir,
@@ -774,11 +772,6 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["stock", "custom"],
         default="stock",
         help="renderer provenance kind",
-    )
-    package_parser.add_argument(
-        "--renderer-source",
-        default=None,
-        help="renderer provenance source",
     )
     package_parser.add_argument(
         "--renderer-path",

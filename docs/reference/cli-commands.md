@@ -331,7 +331,6 @@ before portable packaging.
 | `--app-version VERSION` | App version. Defaults to `[project].version` or `0.1.0` |
 | `--target TARGET` | Package target. Defaults to the current OS and architecture |
 | `--renderer-kind stock|custom` | Renderer provenance kind. Defaults to `stock` |
-| `--renderer-source SOURCE` | Renderer provenance source. Defaults to detected source in PyInstaller mode, or `local-resolve` in prepared mode |
 | `--pyinstaller-entry PATH` | Build and assemble a PyInstaller payload from this entry script |
 | `--pyinstaller-name NAME` | PyInstaller app name. Defaults to `--app-name` |
 | `--app-icon PATH` | Icon file to pass to PyInstaller and copy into the payload |

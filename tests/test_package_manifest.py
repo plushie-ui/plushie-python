@@ -48,7 +48,6 @@ def test_manifest_for_payload_records_hash_and_size(tmp_path: Path) -> None:
         app_version="0.1.0",
         target="linux-x86_64",
         renderer_kind="custom",
-        renderer_source="local-build",
         renderer_path="bin/plushie-renderer",
         start_command=["host/app", "--flag"],
         platform_icon="assets/icon.png",
@@ -74,7 +73,6 @@ def test_manifest_for_payload_records_hash_and_size(tmp_path: Path) -> None:
     ) in toml
     assert '[renderer]\npath = "bin/plushie-renderer"' in toml
     assert 'kind = "custom"' in toml
-    assert 'source = "local-build"' in toml
     assert 'icon = "assets/icon.png"' in toml
 
 
@@ -267,7 +265,7 @@ def test_package_pyinstaller_payload_assembles_archive_inputs(
 
     monkeypatch.setattr(
         "plushie.package._prepare_renderer_for_pyinstaller",
-        lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
+        lambda _renderer_kind="stock": prepared_renderer,
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr("plushie.package._run_default_icons", fake_run_default_icons)
@@ -292,7 +290,6 @@ def test_package_pyinstaller_payload_assembles_archive_inputs(
     manifest = (tmp_path / "dist" / "package" / "plushie-package.toml").read_text()
     assert '[renderer]\npath = "bin/plushie-renderer"' in manifest
     assert 'command = ["host/DataExplorer/DataExplorer"]' in manifest
-    assert 'source = "local-path"' in manifest
     assert 'icon = "assets/plushie-checkbox-512x512.png"' in manifest
     assert 'archive = "payload.tar.zst"' in manifest
 
@@ -325,7 +322,7 @@ def test_package_pyinstaller_payload_copies_app_icon(
 
     monkeypatch.setattr(
         "plushie.package._prepare_renderer_for_pyinstaller",
-        lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
+        lambda _renderer_kind="stock": prepared_renderer,
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr("plushie.package._run_default_icons", lambda _out_dir: None)
@@ -396,8 +393,6 @@ def test_package_pyinstaller_payload_uses_explicit_renderer_path(
     )
 
     assert result["renderer_path"] == "bin/plushie-renderer"
-    manifest = (tmp_path / "dist" / "package" / "plushie-package.toml").read_text()
-    assert 'source = "local-path"' in manifest
 
 
 def test_package_pyinstaller_payload_uses_start_config(
@@ -428,7 +423,7 @@ def test_package_pyinstaller_payload_uses_start_config(
 
     monkeypatch.setattr(
         "plushie.package._prepare_renderer_for_pyinstaller",
-        lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
+        lambda _renderer_kind="stock": prepared_renderer,
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     monkeypatch.setattr(
@@ -491,10 +486,9 @@ def test_stock_package_renderer_syncs_managed_tool_set(
         "plushie.binary.sync_renderer_with_tool", lambda: str(synced_renderer)
     )
 
-    renderer, source = _resolve_package_renderer("stock")
+    renderer = _resolve_package_renderer("stock")
 
     assert renderer == synced_renderer.resolve()
-    assert source == "download"
 
 
 def test_source_package_renderer_syncs_managed_tool_set(
@@ -512,10 +506,9 @@ def test_source_package_renderer_syncs_managed_tool_set(
         "plushie.binary.sync_renderer_with_tool", lambda: str(synced_renderer)
     )
 
-    renderer, source = _resolve_package_renderer("stock")
+    renderer = _resolve_package_renderer("stock")
 
     assert renderer == synced_renderer.resolve()
-    assert source == "local-build"
 
 
 def test_explicit_package_renderer_requires_managed_packaging_tools(
@@ -535,10 +528,9 @@ def test_explicit_package_renderer_requires_managed_packaging_tools(
     (bin_dir / tool_name()).write_bytes(b"tool")
     (bin_dir / launcher_name()).write_bytes(b"launcher")
 
-    resolved, source = _resolve_package_renderer("stock")
+    resolved = _resolve_package_renderer("stock")
 
     assert resolved == renderer.resolve()
-    assert source == "local-path"
 
 
 @pytest.mark.parametrize(
@@ -615,7 +607,7 @@ def test_package_pyinstaller_payload_raises_on_missing_default_icon(
 
     monkeypatch.setattr(
         "plushie.package._prepare_renderer_for_pyinstaller",
-        lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
+        lambda _renderer_kind="stock": prepared_renderer,
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
     # _run_default_icons that produces nothing

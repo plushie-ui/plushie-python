@@ -40,7 +40,6 @@ class RendererManifest(TypedDict):
     """Renderer provenance recorded in a package manifest."""
 
     kind: RendererKind
-    source: str
     path: str
 
 
@@ -297,7 +296,6 @@ def render_manifest(manifest: PackageManifest) -> str:
             "[renderer]",
             f"path = {_toml_string(manifest['renderer']['path'])}",
             f"kind = {_toml_string(manifest['renderer']['kind'])}",
-            f"source = {_toml_string(manifest['renderer']['source'])}",
             "",
         ]
     )
@@ -338,7 +336,6 @@ def manifest_for_payload(
     app_name: str | None = None,
     target: str | None = None,
     renderer_kind: RendererKind = "stock",
-    renderer_source: str = "local-resolve",
     platform_icon: str | None = None,
     working_dir: str = ".",
     forward_env: list[str] | None = None,
@@ -364,7 +361,6 @@ def manifest_for_payload(
         "target": target or package_target(),
         "renderer": {
             "kind": renderer_kind,
-            "source": renderer_source,
             "path": renderer_path,
         },
         "platform_icon": platform_icon,
@@ -386,7 +382,6 @@ def package_pyinstaller_payload(
     app_name: str | None = None,
     target: str | None = None,
     renderer_kind: RendererKind = "stock",
-    renderer_source: str | None = None,
     renderer_path: str | Path | None = None,
     app_icon: str | Path | None = None,
     add_data: list[str] | None = None,
@@ -417,15 +412,12 @@ def package_pyinstaller_payload(
     )
 
     if renderer_path is None:
-        prepared_renderer, resolved_renderer_source = _prepare_renderer_for_pyinstaller(
-            renderer_kind
-        )
+        prepared_renderer = _prepare_renderer_for_pyinstaller(renderer_kind)
     else:
-        prepared_renderer, resolved_renderer_source = _prepare_renderer_for_pyinstaller(
+        prepared_renderer = _prepare_renderer_for_pyinstaller(
             renderer_kind,
             renderer_path=Path(renderer_path),
         )
-    effective_renderer_source = renderer_source or resolved_renderer_source
 
     _run_pyinstaller(
         entry=Path(entry),
@@ -478,7 +470,6 @@ def package_pyinstaller_payload(
         app_version=app_version,
         target=target,
         renderer_kind=renderer_kind,
-        renderer_source=effective_renderer_source,
         renderer_path=renderer_rel,
         start_command=effective_start_command,
         working_dir=working_dir,
@@ -574,25 +565,25 @@ def _prepare_renderer_for_pyinstaller(
     renderer_kind: RendererKind = "stock",
     *,
     renderer_path: Path | None = None,
-) -> tuple[Path, str]:
+) -> Path:
     if renderer_path is None:
-        renderer, source = _resolve_package_renderer(renderer_kind)
+        renderer = _resolve_package_renderer(renderer_kind)
     else:
         if not renderer_path.is_file():
             raise FileNotFoundError(f"renderer_path does not exist: {renderer_path}")
         _ensure_portable_package_tools_available()
-        renderer, source = renderer_path.resolve(), "local-path"
+        renderer = renderer_path.resolve()
 
     prepared = Path("build") / "standalone" / "renderer" / _renderer_binary_name()
     prepared.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(renderer, prepared)
     _ensure_executable(prepared)
-    return prepared, source
+    return prepared
 
 
 def _resolve_package_renderer(
     renderer_kind: RendererKind = "stock",
-) -> tuple[Path, str]:
+) -> Path:
     if renderer_kind == "custom":
         return _resolve_custom_package_renderer()
 
@@ -602,27 +593,27 @@ def _resolve_package_renderer(
         if not path.is_file():
             raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
         _ensure_portable_package_tools_available()
-        return path.resolve(), "local-path"
+        return path.resolve()
 
     source_path = os.environ.get("PLUSHIE_RUST_SOURCE_PATH")
     if source_path:
         from plushie.binary import sync_renderer_with_tool
 
-        return Path(sync_renderer_with_tool()).resolve(), "local-build"
+        return Path(sync_renderer_with_tool()).resolve()
 
     from plushie.binary import sync_renderer_with_tool
 
-    return Path(sync_renderer_with_tool()).resolve(), "download"
+    return Path(sync_renderer_with_tool()).resolve()
 
 
-def _resolve_custom_package_renderer() -> tuple[Path, str]:
+def _resolve_custom_package_renderer() -> Path:
     env_binary = os.environ.get("PLUSHIE_BINARY_PATH")
     if env_binary:
         path = Path(env_binary)
         if not path.is_file():
             raise FileNotFoundError(f"PLUSHIE_BINARY_PATH does not exist: {env_binary}")
         _ensure_portable_package_tools_available()
-        return path.resolve(), "local-path"
+        return path.resolve()
 
     raise RuntimeError(
         "custom renderer packaging requires an explicit custom renderer binary. "
