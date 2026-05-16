@@ -8,18 +8,17 @@ lifecycle, shared-launcher startup, and future update hooks.
 
 ## Shape
 
-The packaged payload should contain:
+The packaged payload contains:
 
-- a PyInstaller one-folder build for the Python host
+- a PyInstaller one-folder build for the Python host under `host/`
 - a payload-local `bin/plushie-renderer`
-- a host command pointing at the PyInstaller executable
-- `payload.tar.zst`
-- `plushie-package.toml`
+- a partial `plushie-package.toml` written by the Python SDK
+- the final `plushie-package.toml` completed by `cargo plushie package assemble`
 
 The manifest is consumed by `bin/plushie package portable` for the
 self-extracting artifact or by `bin/plushie package bundle` for
 platform packages. Paths in the manifest are payload-relative, so the
-renderer path must point inside the archived payload. A packaged app
+renderer path must point inside the payload directory. A packaged app
 must not depend on a downloaded renderer cache or a renderer found on
 `PATH`.
 
@@ -61,69 +60,65 @@ python -m plushie package \
 
 The command resolves or builds the renderer, copies it into the
 payload under `bin/`, runs PyInstaller, places the PyInstaller
-one-folder output under `host/`, materializes platform icons, writes
-`payload.tar.zst`, then writes `plushie-package.toml` with the final
-archive hash and size. If `--app-icon` is provided, that file is
-copied into the payload and recorded in the manifest. Otherwise the
-command asks `bin/plushie default-icons` to export Plushie's
-bundled default icons into the payload.
+one-folder output under `host/`, writes a partial manifest, then
+shells out to `cargo plushie package assemble`. cargo-plushie archives
+the payload, computes its hash and size, materializes platform icons,
+and writes the final `plushie-package.toml`.
 
 Pass `--renderer-path PATH` in PyInstaller mode to package a specific
 renderer binary. This bypasses stock renderer resolution while keeping
 the payload-local manifest path at `bin/plushie-renderer`.
 
-After writing the manifest the command prints the handoff:
+Pass `--package-config PATH` to forward a `plushie-package.config.toml`
+path to `cargo plushie package assemble`. cargo-plushie reads the config
+for `working_dir`, `forward_env`, and `[platform]` fields.
 
-```
-Build launcher with:
-  bin/plushie package portable --manifest dist/package/plushie-package.toml
-```
-
-Run the handoff command to build the portable launcher. For release
-builds that require the strict tool gate:
+Prepared payloads remain supported for custom assembly flows. The
+caller assembles the payload directory, then the SDK writes a partial
+manifest and invokes assemble:
 
 ```bash
-bin/plushie package check --manifest dist/package/plushie-package.toml --strict-tools
-bin/plushie package portable --manifest dist/package/plushie-package.toml --strict-tools
-```
-
-Prepared payloads remain supported for custom assembly flows. Start
-command and working directory come from `plushie-package.config.toml`:
-
-```bash
-python -m plushie package --write-package-config --pyinstaller-name MyApp
-# edit plushie-package.config.toml as needed
-
 python -m plushie package \
   --app-id dev.example.myapp \
   --renderer-path bin/plushie-renderer \
-  --payload-archive dist/package/payload.tar.zst
+  --payload-dir dist/package/payload \
+  --start-command host/MyApp/MyApp
 ```
 
 ## Platform metadata
 
 Optional metadata for the package manifest is declared in
-`plushie-package.config.toml` under `[platform]`:
+`plushie-package.config.toml` under `[platform]`. cargo-plushie reads
+this file during `package assemble`:
 
 ```toml
-[platform]
-publisher = "Example Corp"
-copyright = "Copyright 2025 Example Corp"
-category = "Productivity"
-description = "A desktop app built with Plushie"
-bundle_id = "com.example.myapp"
+config_version = 1
 
-[platform.macos]
-bundle_version = "1"
+[start]
+working_dir = "."
+command = ["host/MyApp/MyApp"]
+# forward_env = ["PATH", "HOME", ...]
 
-[platform.windows]
-install_scope = "perUser"  # or "perMachine"
+# [platform]
+# publisher = "Example Corp"
+# copyright = "Copyright 2025 Example Corp"
+# category = "Productivity"
+# description = "A desktop app built with Plushie"
+# bundle_id = "com.example.myapp"
+#
+# [platform.macos]
+# bundle_version = "1"
+#
+# [platform.windows]
+# install_scope = "perUser"  # or "perMachine"
 ```
 
-All fields are optional. The `[platform]` section is omitted from the
-emitted manifest entirely when no fields are populated. Set
-`--write-package-config` to generate a config template with all
-platform fields commented out.
+All fields are optional. Set `--write-package-config` to generate a
+config template:
+
+```bash
+python -m plushie package --write-package-config --pyinstaller-name MyApp
+```
 
 ## Demo Proof
 

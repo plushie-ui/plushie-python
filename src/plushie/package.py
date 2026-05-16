@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import platform
@@ -10,91 +9,18 @@ import shutil
 import stat
 import subprocess
 import sys
-import tomllib
 from dataclasses import dataclass, field
-from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Any, Literal, TypedDict
+from pathlib import Path
+from typing import Literal
 
 from plushie import __version__
 from plushie.binary import PLUSHIE_RUST_VERSION
 from plushie.protocol import PROTOCOL_VERSION
 
-DEFAULT_FORWARD_ENV = (
-    "PATH",
-    "HOME",
-    "LANG",
-    "LC_ALL",
-    "XDG_RUNTIME_DIR",
-    "WAYLAND_DISPLAY",
-    "DISPLAY",
-)
 DEFAULT_PACKAGE_CONFIG = "plushie-package.config.toml"
-RESERVED_FORWARD_ENV = frozenset(
-    {"PLUSHIE_BINARY_PATH", "PLUSHIE_PACKAGE_DIR", "PLUSHIE_PACKAGE_READY_FILE"}
-)
 
 InstallScope = Literal["perUser", "perMachine"]
 RendererKind = Literal["stock", "custom"]
-
-
-class RendererManifest(TypedDict):
-    """Renderer provenance recorded in a package manifest."""
-
-    kind: RendererKind
-    path: str
-
-
-class PlatformMacosConfig(TypedDict, total=False):
-    """macOS-specific platform fields from ``plushie-package.config.toml``."""
-
-    bundle_version: str
-
-
-class PlatformWindowsConfig(TypedDict, total=False):
-    """Windows-specific platform fields from ``plushie-package.config.toml``."""
-
-    install_scope: InstallScope
-
-
-class PlatformConfig(TypedDict, total=False):
-    """``[platform]`` fields from ``plushie-package.config.toml``."""
-
-    publisher: str
-    copyright: str
-    category: str
-    description: str
-    bundle_id: str
-    macos: PlatformMacosConfig
-    windows: PlatformWindowsConfig
-
-
-class PackageManifest(TypedDict):
-    """Fields required to render ``plushie-package.toml``."""
-
-    app_id: str
-    app_name: str | None
-    app_version: str
-    target: str
-    renderer: RendererManifest
-    platform_icon: str | None
-    platform: PlatformConfig
-    start_command: list[str]
-    working_dir: str
-    forward_env: list[str]
-    payload_archive: str
-    payload_hash: str
-    payload_size: int
-
-
-class PyInstallerPackageResult(TypedDict):
-    """Files produced by a PyInstaller package build."""
-
-    payload_root: Path
-    payload_archive: Path
-    manifest_path: Path
-    renderer_path: str
-    start_command: list[str]
-    platform_icon: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,7 +30,11 @@ class PackageStartConfig:
     working_dir: str = "."
     command: list[str] | None = None
     forward_env: list[str] | None = None
-    platform: PlatformConfig = field(default_factory=dict)  # type: ignore[assignment]
+    platform: dict = field(default_factory=dict)  # type: ignore[assignment]
+
+
+class PyInstallerPackageResult(dict):
+    """Files produced by a PyInstaller package build."""
 
 
 def normalize_package_target(os_name: str, arch: str) -> str:
@@ -135,43 +65,11 @@ def package_target() -> str:
     return normalize_package_target(platform.system(), platform.machine())
 
 
-def sha256_file(path: str | Path) -> str:
-    """Return the hex SHA-256 digest for a file."""
-    digest = hashlib.sha256()
-    with open(path, "rb") as file:
-        for chunk in iter(lambda: file.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def file_size(path: str | Path) -> int:
-    """Return the file size in bytes."""
-    return Path(path).stat().st_size
-
-
-def load_package_config(path: str | Path | None = None) -> PackageStartConfig | None:
-    """Load ``plushie-package.config.toml`` package start configuration.
-
-    Missing default config returns ``None`` so packaging keeps its existing
-    defaults. An explicit path must exist and parse successfully.
-    """
-    config_path = Path(DEFAULT_PACKAGE_CONFIG if path is None else path)
-    if path is None and not config_path.exists():
-        return None
-    if not config_path.is_file():
-        raise FileNotFoundError(f"package config does not exist: {config_path}")
-
-    with config_path.open("rb") as file:
-        data = tomllib.load(file)
-    return _parse_package_config(data, config_path)
-
-
 def default_start_config(command: list[str] | None = None) -> PackageStartConfig:
     """Return the default package start config for Python payloads."""
     return PackageStartConfig(
         working_dir=".",
         command=["bin/connect"] if command is None else command,
-        forward_env=list(DEFAULT_FORWARD_ENV),
     )
 
 
@@ -184,9 +82,6 @@ def render_package_config(config: PackageStartConfig | None = None) -> str:
     """Render a developer-owned package config template."""
     cfg = default_start_config() if config is None else config
     command = cfg.command if cfg.command is not None else ["bin/connect"]
-    forward_env = (
-        cfg.forward_env if cfg.forward_env is not None else list(DEFAULT_FORWARD_ENV)
-    )
     lines = [
         "# Plushie standalone package config.",
         "# Commit this file and edit it when the packaged app needs a",
@@ -200,30 +95,24 @@ def render_package_config(config: PackageStartConfig | None = None) -> str:
         "# Structured argv. The first item is the packaged host executable.",
         f"command = {_toml_array(command)}",
         "# Environment variable names copied from the parent process.",
-        "forward_env = [",
+        '# forward_env = ["PATH", "HOME", ...]',
+        "",
+        "# Optional platform metadata passed through to plushie-package.toml.",
+        "# Remove the comment markers for any fields you want to set.",
+        "# [platform]",
+        '# publisher = "Example Corp"',
+        '# copyright = "Copyright 2025 Example Corp"',
+        '# category = "Productivity"',
+        '# description = "A brief description of the app"',
+        '# bundle_id = "com.example.myapp"',
+        "#",
+        "# [platform.macos]",
+        '# bundle_version = "1"',
+        "#",
+        "# [platform.windows]",
+        '# install_scope = "perUser"  # or "perMachine"',
+        "",
     ]
-    lines.extend(f"  {_toml_string(name)}," for name in forward_env)
-    lines.extend(
-        [
-            "]",
-            "",
-            "# Optional platform metadata passed through to plushie-package.toml.",
-            "# Remove the comment markers for any fields you want to set.",
-            "# [platform]",
-            '# publisher = "Example Corp"',
-            '# copyright = "Copyright 2025 Example Corp"',
-            '# category = "Productivity"',
-            '# description = "A brief description of the app"',
-            '# bundle_id = "com.example.myapp"',
-            "#",
-            "# [platform.macos]",
-            '# bundle_version = "1"',
-            "#",
-            "# [platform.windows]",
-            '# install_scope = "perUser"  # or "perMachine"',
-            "",
-        ]
-    )
     return "\n".join(lines)
 
 
@@ -233,265 +122,81 @@ def write_package_config(
 ) -> None:
     """Write a developer-owned package config template."""
     cfg = default_start_config() if config is None else config
-    _validate_payload_relative_path(cfg.working_dir, Path(path), "start.working_dir")
-    _validate_start_command(cfg.command or ["bin/connect"], Path(path))
-    _validate_forward_env(cfg.forward_env or list(DEFAULT_FORWARD_ENV), Path(path))
     Path(path).write_text(render_package_config(cfg), encoding="utf-8")
 
 
-def _parse_package_config(data: dict[str, Any], path: Path) -> PackageStartConfig:
-    version = data.get("config_version")
-    if version != 1:
-        raise ValueError(f"{path}: config_version must be 1")
+def write_partial_manifest(
+    path: str | Path,
+    *,
+    app_id: str,
+    app_version: str,
+    app_name: str | None = None,
+    target: str | None = None,
+    renderer_path: str,
+    renderer_kind: RendererKind = "stock",
+    start_command: list[str],
+) -> None:
+    """Write the partial ``plushie-package.toml`` manifest.
 
-    if "start" not in data:
-        raise ValueError(f"{path}: plushie-package.config.toml must include [start]")
-    start = data["start"]
-    if not isinstance(start, dict):
-        raise ValueError(f"{path}: [start] must be a table")
-
-    working_dir = start.get("working_dir", ".")
-    if not isinstance(working_dir, str):
-        raise ValueError(f"{path}: start.working_dir must be a string")
-    _validate_payload_relative_path(working_dir, path, "start.working_dir")
-
-    raw_command = start.get("command")
-    command = None
-    if raw_command is not None:
-        command = _validate_start_command(raw_command, path)
-
-    raw_forward_env = start.get("forward_env")
-    forward_env = None
-    if raw_forward_env is not None:
-        forward_env = _validate_forward_env(raw_forward_env, path)
-
-    platform_config: PlatformConfig = {}
-    raw_platform = data.get("platform")
-    if raw_platform is not None:
-        platform_config = _parse_platform_config(raw_platform, path)
-
-    return PackageStartConfig(
-        working_dir=working_dir,
-        command=command,
-        forward_env=forward_env,
-        platform=platform_config,
-    )
-
-
-def _parse_platform_config(data: object, path: Path) -> PlatformConfig:
-    if not isinstance(data, dict):
-        raise ValueError(f"{path}: [platform] must be a table")
-    result: PlatformConfig = {}
-    for key in ("publisher", "copyright", "category", "description", "bundle_id"):
-        raw = data.get(key)
-        if raw is not None:
-            if not isinstance(raw, str) or raw == "":
-                raise ValueError(f"{path}: platform.{key} must be a non-empty string")
-            result[key] = raw  # type: ignore[literal-required]
-    raw_macos = data.get("macos")
-    if raw_macos is not None:
-        if not isinstance(raw_macos, dict):
-            raise ValueError(f"{path}: [platform.macos] must be a table")
-        macos: PlatformMacosConfig = {}
-        raw_bundle_version = raw_macos.get("bundle_version")
-        if raw_bundle_version is not None:
-            if not isinstance(raw_bundle_version, str) or raw_bundle_version == "":
-                raise ValueError(
-                    f"{path}: platform.macos.bundle_version must be a non-empty string"
-                )
-            macos["bundle_version"] = raw_bundle_version
-        if macos:
-            result["macos"] = macos
-    raw_windows = data.get("windows")
-    if raw_windows is not None:
-        if not isinstance(raw_windows, dict):
-            raise ValueError(f"{path}: [platform.windows] must be a table")
-        windows: PlatformWindowsConfig = {}
-        raw_install_scope = raw_windows.get("install_scope")
-        if raw_install_scope is not None:
-            if raw_install_scope not in ("perUser", "perMachine"):
-                raise ValueError(
-                    f"{path}: platform.windows.install_scope must be"
-                    ' "perUser" or "perMachine"'
-                )
-            windows["install_scope"] = raw_install_scope
-        if windows:
-            result["windows"] = windows
-    return result
-
-
-def _validate_start_command(value: object, path: Path) -> list[str]:
-    if not isinstance(value, list):
-        raise ValueError(f"{path}: start.command must be an array")
-    if not value:
-        raise ValueError(f"{path}: start.command must not be empty")
-    command: list[str] = []
-    for index, item in enumerate(value):
-        if not isinstance(item, str) or item == "":
-            raise ValueError(
-                f"{path}: start.command[{index}] must be a non-empty string"
-            )
-        command.append(item)
-    _validate_payload_relative_path(command[0], path, "start.command[0]")
-    return command
-
-
-def _validate_forward_env(value: object, path: Path) -> list[str]:
-    if not isinstance(value, list):
-        raise ValueError(f"{path}: start.forward_env must be an array")
-    names: list[str] = []
-    for index, item in enumerate(value):
-        if not isinstance(item, str) or item == "":
-            raise ValueError(
-                f"{path}: start.forward_env[{index}] must be a non-empty string"
-            )
-        if "," in item or "=" in item:
-            raise ValueError(
-                f"{path}: start.forward_env[{index}] must not contain comma or equals"
-            )
-        if item in RESERVED_FORWARD_ENV:
-            raise ValueError(f"{path}: start.forward_env[{index}] is reserved")
-        names.append(item)
-    return names
-
-
-def _validate_payload_relative_path(value: str, path: Path, field: str) -> None:
-    if value == "":
-        raise ValueError(f"{path}: {field} must not be empty")
-    posix_candidate = PurePosixPath(value)
-    windows_candidate = PureWindowsPath(value)
-    if posix_candidate.is_absolute() or windows_candidate.is_absolute():
-        raise ValueError(f"{path}: {field} must be payload-relative")
-    if ".." in posix_candidate.parts or ".." in windows_candidate.parts:
-        raise ValueError(f"{path}: {field} must not contain parent traversal")
-
-
-def _render_platform_section(manifest: PackageManifest) -> list[str]:
-    """Return TOML lines for the ``[platform]`` section, or empty when nothing to emit."""
-    icon = manifest.get("platform_icon")
-    platform = manifest.get("platform") or {}
-    top_keys = ("publisher", "copyright", "category", "description", "bundle_id")
-    top_fields = {k: platform[k] for k in top_keys if k in platform}  # type: ignore[literal-required]
-    macos = platform.get("macos") or {}
-    windows = platform.get("windows") or {}
-    if not icon and not top_fields and not macos and not windows:
-        return []
-    lines: list[str] = ["[platform]"]
-    if icon is not None:
-        lines.append(f"icon = {_toml_string(icon)}")
-    for key, value in top_fields.items():
-        lines.append(f"{key} = {_toml_string(value)}")
-    lines.append("")
-    if macos:
-        lines.append("[platform.macos]")
-        if "bundle_version" in macos:
-            lines.append(f"bundle_version = {_toml_string(macos['bundle_version'])}")
-        lines.append("")
-    if windows:
-        lines.append("[platform.windows]")
-        if "install_scope" in windows:
-            lines.append(f"install_scope = {_toml_string(windows['install_scope'])}")
-        lines.append("")
-    return lines
-
-
-def render_manifest(manifest: PackageManifest) -> str:
-    """Render a Plushie package manifest as TOML."""
+    cargo-plushie reads this during ``package assemble`` and fills in
+    the payload archive, hash, size, and platform sections.
+    """
+    resolved_target = target or package_target()
     lines = [
         "schema_version = 1",
-        f"app_id = {_toml_string(manifest['app_id'])}",
+        f"app_id = {_toml_string(app_id)}",
     ]
-    if manifest["app_name"] is not None:
-        lines.append(f"app_name = {_toml_string(manifest['app_name'])}")
+    if app_name is not None:
+        lines.append(f"app_name = {_toml_string(app_name)}")
     lines.extend(
         [
-            f"app_version = {_toml_string(manifest['app_version'])}",
-            f"target = {_toml_string(manifest['target'])}",
+            f"app_version = {_toml_string(app_version)}",
+            f"target = {_toml_string(resolved_target)}",
             'host_sdk = "python"',
             f"host_sdk_version = {_toml_string(__version__)}",
             f"plushie_rust_version = {_toml_string(PLUSHIE_RUST_VERSION)}",
             f"protocol_version = {PROTOCOL_VERSION}",
             "",
             "[start]",
-            f"working_dir = {_toml_string(manifest['working_dir'])}",
-            f"command = {_toml_array(manifest['start_command'])}",
-            f"forward_env = {_toml_array(manifest['forward_env'])}",
+            f"command = {_toml_array(start_command)}",
             "",
             "[renderer]",
-            f"path = {_toml_string(manifest['renderer']['path'])}",
-            f"kind = {_toml_string(manifest['renderer']['kind'])}",
+            f"path = {_toml_string(renderer_path)}",
+            f"kind = {_toml_string(renderer_kind)}",
             "",
         ]
     )
-    platform_lines = _render_platform_section(manifest)
-    if platform_lines:
-        lines.extend(platform_lines)
-    lines.extend(
-        [
-            "[payload]",
-            f"archive = {_toml_string(manifest['payload_archive'])}",
-            f"hash = {_toml_string('sha256:' + manifest['payload_hash'])}",
-            f"size = {manifest['payload_size']}",
-            "",
-        ]
-    )
-    return "\n".join(lines)
-
-
-def write_manifest(path: str | Path, manifest: PackageManifest) -> None:
-    """Write a Plushie package manifest to ``path``."""
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(render_manifest(manifest), encoding="utf-8")
+    output.write_text("\n".join(lines), encoding="utf-8")
 
 
-def manifest_for_payload(
+def assemble_package(
+    manifest_path: str | Path,
+    payload_dir: str | Path,
     *,
-    app_id: str,
-    app_version: str,
-    renderer_path: str,
-    start_command: list[str],
-    payload_archive: str | Path,
-    app_name: str | None = None,
-    target: str | None = None,
-    renderer_kind: RendererKind = "stock",
-    platform_icon: str | None = None,
-    platform: PlatformConfig | None = None,
-    working_dir: str = ".",
-    forward_env: list[str] | None = None,
-) -> PackageManifest:
-    """Build manifest values for an existing payload archive."""
-    _sentinel = Path("<manifest_for_payload>")
-    _validate_payload_relative_path(renderer_path, _sentinel, "renderer_path")
-    _validate_payload_relative_path(working_dir, _sentinel, "working_dir")
-    if not start_command:
-        raise ValueError("manifest_for_payload: start_command must not be empty")
-    _validate_payload_relative_path(start_command[0], _sentinel, "start_command[0]")
-    if platform_icon is not None:
-        _validate_payload_relative_path(platform_icon, _sentinel, "platform_icon")
-    resolved_forward_env = list(
-        DEFAULT_FORWARD_ENV if forward_env is None else forward_env
-    )
-    _validate_forward_env(resolved_forward_env, _sentinel)
-    archive_path = Path(payload_archive)
-    return {
-        "app_id": app_id,
-        "app_name": app_name,
-        "app_version": app_version,
-        "target": target or package_target(),
-        "renderer": {
-            "kind": renderer_kind,
-            "path": renderer_path,
-        },
-        "platform_icon": platform_icon,
-        "platform": platform or {},
-        "start_command": start_command,
-        "working_dir": working_dir,
-        "forward_env": resolved_forward_env,
-        "payload_archive": os.fspath(archive_path.name),
-        "payload_hash": sha256_file(archive_path),
-        "payload_size": file_size(archive_path),
-    }
+    package_config: str | Path | None = None,
+) -> None:
+    """Shell out to ``cargo plushie package assemble``.
+
+    Raises ``subprocess.CalledProcessError`` on non-zero exit.
+    """
+    from plushie.cargo_plushie import resolve_cargo_plushie
+
+    cmd, prefix = resolve_cargo_plushie()
+    args = [
+        cmd,
+        *prefix,
+        "package",
+        "assemble",
+        "--manifest",
+        os.fspath(manifest_path),
+        "--payload-dir",
+        os.fspath(payload_dir),
+    ]
+    if package_config is not None:
+        args += ["--package-config", os.fspath(package_config)]
+    subprocess.run(args, check=True)
 
 
 def package_pyinstaller_payload(
@@ -514,21 +219,18 @@ def package_pyinstaller_payload(
     spec_dir: str | Path = Path("build") / "pyinstaller-spec",
     work_dir: str | Path = Path("build") / "pyinstaller",
     output: str | Path | None = None,
-    working_dir: str = ".",
     start_command: list[str] | None = None,
-    forward_env: list[str] | None = None,
-    platform: PlatformConfig | None = None,
-) -> PyInstallerPackageResult:
-    """Build a PyInstaller payload and write ``plushie-package.toml``.
+    package_config: str | Path | None = None,
+) -> dict[str, Path | str | list[str]]:
+    """Build a PyInstaller payload and shell out to ``cargo plushie package assemble``.
 
-    The payload contains the PyInstaller one-folder app under ``host/``,
-    a payload-local renderer under ``bin/``, and platform icon assets
-    under ``assets/``. The payload archive is written before the
-    manifest so the manifest records the final archive hash and size.
+    The payload contains the PyInstaller one-folder app under ``host/``
+    and a payload-local renderer under ``bin/``. cargo-plushie handles
+    archiving, hashing, platform icon materialisation, and writing the
+    final ``plushie-package.toml``.
     """
     package_root = Path(package_dir)
     payload_root = package_root / "payload"
-    payload_archive = package_root / "payload.tar.zst"
     manifest_path = (
         Path(output) if output is not None else package_root / "plushie-package.toml"
     )
@@ -565,7 +267,6 @@ def package_pyinstaller_payload(
     shutil.copy2(prepared_renderer, renderer_dest)
     _ensure_executable(renderer_dest)
 
-    host_rel = _payload_host_executable_path(name)
     host_root = payload_root / "host" / name
     host_root.parent.mkdir(parents=True, exist_ok=True)
     source_host = Path(dist_dir) / name
@@ -576,17 +277,14 @@ def package_pyinstaller_payload(
     shutil.copytree(source_host, host_root, symlinks=True)
     _remove_nested_renderer(host_root)
 
-    platform_icon = _materialize_platform_icon(
-        payload_root,
-        app_icon=Path(app_icon) if app_icon is not None else None,
+    effective_start_command = (
+        [_payload_host_executable_path(name)]
+        if start_command is None
+        else start_command
     )
 
-    _dereference_payload_symlinks(payload_root)
-    archive_payload(payload_root, payload_archive)
-
-    effective_start_command = [host_rel] if start_command is None else start_command
-
-    manifest = manifest_for_payload(
+    write_partial_manifest(
+        manifest_path,
         app_id=app_id,
         app_name=app_name,
         app_version=app_version,
@@ -594,94 +292,55 @@ def package_pyinstaller_payload(
         renderer_kind=renderer_kind,
         renderer_path=renderer_rel,
         start_command=effective_start_command,
-        working_dir=working_dir,
-        forward_env=forward_env,
-        platform_icon=platform_icon,
-        platform=platform,
-        payload_archive=payload_archive,
     )
-    write_manifest(manifest_path, manifest)
+
+    assemble_package(manifest_path, payload_root, package_config=package_config)
 
     return {
         "payload_root": payload_root,
-        "payload_archive": payload_archive,
         "manifest_path": manifest_path,
         "renderer_path": renderer_rel,
         "start_command": effective_start_command,
-        "platform_icon": platform_icon,
     }
 
 
-def archive_payload(payload_dir: str | Path, archive_path: str | Path) -> None:
-    """Write a deterministic ``.tar.zst`` archive for a package payload."""
-    payload_root = Path(payload_dir)
-    archive = Path(archive_path)
-    archive.parent.mkdir(parents=True, exist_ok=True)
-    _validate_payload_archive_inputs(payload_root)
+def package_prepared_payload(
+    *,
+    app_id: str,
+    app_version: str,
+    renderer_path: str,
+    start_command: list[str],
+    payload_dir: str | Path,
+    app_name: str | None = None,
+    target: str | None = None,
+    renderer_kind: RendererKind = "stock",
+    manifest_out: str | Path | None = None,
+    package_config: str | Path | None = None,
+) -> Path:
+    """Write a partial manifest for a caller-assembled payload and assemble.
 
-    tar_bin = _archive_tar_command()
-    if _archive_tar_supports_zstd(tar_bin):
-        subprocess.run(
-            [
-                tar_bin,
-                "-C",
-                os.fspath(payload_root),
-                "--sort=name",
-                "--mtime=UTC 1970-01-01",
-                "--owner=0",
-                "--group=0",
-                "--numeric-owner",
-                "--zstd",
-                "-cf",
-                os.fspath(archive),
-                ".",
-            ],
-            check=True,
-        )
-        return
-
-    if not _archive_tar_supports_gnu_flags(tar_bin):
-        raise RuntimeError(
-            "GNU tar or gtar is required for deterministic payload archives"
-        )
-
-    zstd = shutil.which("zstd")
-    if zstd is None:
-        raise RuntimeError("missing required command: zstd")
-
-    tar_proc = subprocess.Popen(
-        [
-            tar_bin,
-            "-C",
-            os.fspath(payload_root),
-            "--sort=name",
-            "--mtime=UTC 1970-01-01",
-            "--owner=0",
-            "--group=0",
-            "--numeric-owner",
-            "-cf",
-            "-",
-            ".",
-        ],
-        stdout=subprocess.PIPE,
+    Returns the manifest path.
+    """
+    manifest_path = Path(
+        manifest_out
+        if manifest_out is not None
+        else "dist/package/plushie-package.toml"
     )
-    try:
-        zstd_proc = subprocess.run(
-            [zstd, "-q", "-o", os.fspath(archive)],
-            stdin=tar_proc.stdout,
-            check=False,
-        )
-        if tar_proc.stdout is not None:
-            tar_proc.stdout.close()
-        tar_return = tar_proc.wait()
-    finally:
-        if tar_proc.poll() is None:
-            tar_proc.kill()
 
-    if tar_return != 0:
-        raise subprocess.CalledProcessError(tar_return, tar_bin)
-    if zstd_proc.returncode != 0:
-        raise subprocess.CalledProcessError(zstd_proc.returncode, zstd)
+    write_partial_manifest(
+        manifest_path,
+        app_id=app_id,
+        app_name=app_name,
+        app_version=app_version,
+        target=target,
+        renderer_kind=renderer_kind,
+        renderer_path=renderer_path,
+        start_command=start_command,
+    )
+
+    assemble_package(manifest_path, payload_dir, package_config=package_config)
+
+    return manifest_path
 
 
 def _prepare_renderer_for_pyinstaller(
@@ -689,6 +348,7 @@ def _prepare_renderer_for_pyinstaller(
     *,
     renderer_path: Path | None = None,
 ) -> Path:
+    """Resolve and stage a renderer binary for PyInstaller bundling."""
     if renderer_path is None:
         renderer = _resolve_package_renderer(renderer_kind)
     else:
@@ -707,6 +367,7 @@ def _prepare_renderer_for_pyinstaller(
 def _resolve_package_renderer(
     renderer_kind: RendererKind = "stock",
 ) -> Path:
+    """Resolve the renderer binary for packaging."""
     if renderer_kind == "custom":
         return _resolve_custom_package_renderer()
 
@@ -730,6 +391,7 @@ def _resolve_package_renderer(
 
 
 def _resolve_custom_package_renderer() -> Path:
+    """Resolve the renderer binary for custom packaging."""
     env_binary = os.environ.get("PLUSHIE_BINARY_PATH")
     if env_binary:
         path = Path(env_binary)
@@ -745,6 +407,7 @@ def _resolve_custom_package_renderer() -> Path:
 
 
 def _ensure_portable_package_tools_available() -> None:
+    """Raise if the managed Plushie tool set is not present."""
     from plushie.binary import download_dir, launcher_name, tool_name
 
     missing = [
@@ -777,6 +440,7 @@ def _run_pyinstaller(
     spec_dir: Path,
     work_dir: Path,
 ) -> None:
+    """Invoke PyInstaller to build a one-folder app."""
     args = [
         sys.executable,
         "-m",
@@ -806,69 +470,19 @@ def _run_pyinstaller(
     subprocess.run(args, check=True)
 
 
-def _materialize_platform_icon(
-    payload_root: Path, *, app_icon: Path | None
-) -> str | None:
-    assets = payload_root / "assets"
-    assets.mkdir(parents=True, exist_ok=True)
-
-    if app_icon is not None:
-        dest = assets / app_icon.name
-        shutil.copy2(app_icon, dest)
-        return _payload_relative(payload_root, dest)
-
-    _run_default_icons(os.fspath(assets))
-    default_icon = assets / "default-app-icon-512.png"
-    if not default_icon.is_file():
-        raise RuntimeError(
-            f"default icon materialization failed; expected {default_icon} to exist"
-        )
-    return _payload_relative(payload_root, default_icon)
-
-
-def _run_default_icons(out_dir: str) -> None:
-    source_path = os.environ.get("PLUSHIE_RUST_SOURCE_PATH")
-    if source_path:
-        manifest_path = Path(source_path) / "Cargo.toml"
-        subprocess.run(
-            [
-                "cargo",
-                "run",
-                "--manifest-path",
-                os.fspath(manifest_path),
-                "-p",
-                "cargo-plushie",
-                "--bin",
-                "plushie",
-                "--release",
-                "--quiet",
-                "--",
-                "default-icons",
-                "--out",
-                out_dir,
-            ],
-            check=True,
-        )
-        return
-
-    from plushie.binary import tool_name
-
-    subprocess.run(
-        [os.fspath(Path("bin") / tool_name()), "default-icons", "--out", out_dir],
-        check=True,
-    )
-
-
 def _payload_renderer_path() -> str:
+    """Return the payload-relative path for the renderer binary."""
     return f"bin/{_renderer_binary_name()}"
 
 
 def _payload_host_executable_path(name: str) -> str:
+    """Return the payload-relative path for the PyInstaller host executable."""
     executable = f"{name}.exe" if sys.platform in ("win32", "cygwin") else name
     return f"host/{name}/{executable}"
 
 
 def _renderer_binary_name() -> str:
+    """Return the platform-appropriate renderer binary name."""
     return (
         "plushie-renderer.exe"
         if sys.platform in ("win32", "cygwin")
@@ -877,6 +491,7 @@ def _renderer_binary_name() -> str:
 
 
 def _ensure_executable(path: Path) -> None:
+    """Ensure a file has executable permission bits set."""
     if sys.platform in ("win32", "cygwin"):
         return
     mode = path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
@@ -884,87 +499,17 @@ def _ensure_executable(path: Path) -> None:
 
 
 def _remove_nested_renderer(root: Path) -> None:
+    """Remove any nested renderer binary from a PyInstaller output tree."""
     for candidate in root.rglob(_renderer_binary_name()):
         if candidate.is_file():
             candidate.unlink()
 
 
-def _payload_relative(payload_root: Path, path: Path) -> str:
-    return path.relative_to(payload_root).as_posix()
-
-
-def _validate_payload_archive_inputs(payload_root: Path) -> None:
-    for path in payload_root.rglob("*"):
-        try:
-            stat_result = path.lstat()
-        except OSError as exc:
-            raise RuntimeError(f"payload path cannot be inspected: {path}") from exc
-        mode = stat_result.st_mode
-        rel = path.relative_to(payload_root)
-        if stat.S_ISLNK(mode):
-            raise RuntimeError(f"payload contains unsupported symlink: {rel}")
-        if (
-            stat.S_ISFIFO(mode)
-            or stat.S_ISSOCK(mode)
-            or stat.S_ISBLK(mode)
-            or stat.S_ISCHR(mode)
-        ):
-            raise RuntimeError(f"payload contains unsupported special file: {rel}")
-        if stat.S_ISREG(mode) and stat_result.st_nlink > 1:
-            raise RuntimeError(f"payload contains unsupported hard-linked file: {rel}")
-
-
-def _dereference_payload_symlinks(payload_root: Path) -> None:
-    links = [path for path in payload_root.rglob("*") if path.is_symlink()]
-    for link in links:
-        target = link.resolve(strict=True)
-        tmp = link.with_name(f"{link.name}.deref.{os.getpid()}")
-        if target.is_dir():
-            shutil.copytree(target, tmp)
-        else:
-            shutil.copy2(target, tmp)
-        link.unlink()
-        tmp.rename(link)
-
-
-def _archive_tar_command() -> str:
-    if _is_gnu_tar("tar"):
-        return "tar"
-    gtar = shutil.which("gtar")
-    if gtar is not None:
-        return gtar
-    return "tar"
-
-
-def _archive_tar_supports_gnu_flags(tar_bin: str) -> bool:
-    return tar_bin != "tar" or _is_gnu_tar("tar")
-
-
-def _archive_tar_supports_zstd(tar_bin: str) -> bool:
-    if not _archive_tar_supports_gnu_flags(tar_bin):
-        return False
-    result = subprocess.run(
-        [tar_bin, "--help"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.returncode == 0 and "--zstd" in result.stdout
-
-
-def _is_gnu_tar(tar_bin: str) -> bool:
-    result = subprocess.run(
-        [tar_bin, "--version"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.returncode == 0 and "GNU tar" in result.stdout
-
-
 def _toml_string(value: str) -> str:
+    """Encode a string value as a TOML inline string."""
     return json.dumps(value)
 
 
 def _toml_array(values: list[str]) -> str:
+    """Encode a list of strings as a TOML inline array."""
     return "[" + ", ".join(_toml_string(value) for value in values) + "]"

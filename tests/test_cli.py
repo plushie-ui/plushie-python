@@ -323,32 +323,17 @@ def test_package_parser_accepts_prepared_payload_shape() -> None:
             "dev.plushie.test",
             "--renderer-path",
             "bin/plushie-renderer",
-            "--payload-archive",
-            "dist/package/payload.tar.zst",
+            "--payload-dir",
+            "dist/package/payload",
+            "--start-command",
+            "host/app",
         ]
     )
 
     assert args.command == "package"
     assert args.renderer_path == "bin/plushie-renderer"
-    assert args.payload_archive == "dist/package/payload.tar.zst"
-
-
-def test_package_parser_accepts_strict_tools() -> None:
-    args = cli._build_parser().parse_args(
-        [
-            "package",
-            "--app-id",
-            "dev.plushie.test",
-            "--strict-tools",
-            "--renderer-path",
-            "bin/plushie-renderer",
-            "--payload-archive",
-            "dist/package/payload.tar.zst",
-        ]
-    )
-
-    assert args.command == "package"
-    assert args.strict_tools is True
+    assert args.payload_dir == "dist/package/payload"
+    assert args.start_command == ["host/app"]
 
 
 def test_package_parser_accepts_package_config() -> None:
@@ -436,7 +421,6 @@ def test_package_pyinstaller_forwards_renderer_path(
         calls.append(kwargs)
         return {
             "manifest_path": Path("dist/package/plushie-package.toml"),
-            "payload_archive": Path("dist/package/payload.tar.zst"),
         }
 
     monkeypatch.setattr(
@@ -466,7 +450,6 @@ def test_package_pyinstaller_forwards_renderer_path(
             spec_dir="build/pyinstaller-spec",
             work_dir="build/pyinstaller",
             manifest_out=None,
-            strict_tools=False,
         )
     )
 
@@ -711,26 +694,29 @@ def test_read_token_from_stdin_errors_on_wrong_shape(
     assert exc_info.value.code == 1
 
 
-def test_package_command_prints_launcher_handoff(
+def test_package_prepared_payload_writes_and_assembles(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    archive = tmp_path / "payload.tar.zst"
-    archive.write_bytes(b"payload")
 
-    Path("plushie-package.config.toml").write_text(
-        "\n".join(
-            [
-                "config_version = 1",
-                "",
-                "[start]",
-                'working_dir = "."',
-                'command = ["host/Test/Test"]',
-            ]
-        )
+    assemble_calls: list[dict[str, Any]] = []
+
+    def fake_package_prepared_payload(**kwargs: Any) -> Path:
+        assemble_calls.append(kwargs)
+        manifest = Path("dist/package/plushie-package.toml")
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text("schema_version = 1\n")
+        return manifest
+
+    monkeypatch.setattr(
+        "plushie.package.package_prepared_payload",
+        fake_package_prepared_payload,
     )
+
+    payload_dir = tmp_path / "dist" / "package" / "payload"
+    payload_dir.mkdir(parents=True)
 
     cli._cmd_package(
         argparse.Namespace(
@@ -743,16 +729,13 @@ def test_package_command_prints_launcher_handoff(
             target="linux-x86_64",
             renderer_kind="stock",
             renderer_path="bin/plushie-renderer",
-            payload_archive=archive,
-            platform_icon=None,
+            payload_dir=str(payload_dir),
+            start_command=["host/Test/Test"],
             manifest_out=None,
-            strict_tools=False,
         )
     )
 
     output = capsys.readouterr().out
     assert "Wrote dist/package/plushie-package.toml" in output
-    assert (
-        "bin/plushie package portable --manifest dist/package/plushie-package.toml"
-        in output
-    )
+    assert assemble_calls[0]["renderer_path"] == "bin/plushie-renderer"
+    assert assemble_calls[0]["start_command"] == ["host/Test/Test"]

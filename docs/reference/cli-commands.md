@@ -308,12 +308,13 @@ overridden.
 
 ## python -m plushie package
 
-Assembles a standalone Python package payload and writes
-`plushie-package.toml` for the shared Rust launcher. PyInstaller mode
-is the first-class SDK-owned path. The SDK resolves or builds the
-renderer, copies it into the payload, runs PyInstaller, materializes
-platform icons, creates `payload.tar.zst`, and writes the manifest
-after the final archive hash and size are known.
+Assembles a standalone Python package payload and delegates final
+archiving and manifest completion to `cargo plushie package assemble`.
+PyInstaller mode is the first-class SDK-owned path. The SDK resolves
+or builds the renderer, copies it into the payload, runs PyInstaller,
+writes a partial `plushie-package.toml`, and shells out to
+`cargo plushie package assemble`. cargo-plushie handles archiving,
+hashing, platform icon materialisation, and writing the final manifest.
 
 ```bash
 python -m plushie package \
@@ -326,27 +327,17 @@ python -m plushie package \
 ```
 
 Prepared payload mode remains available for custom assembly flows. In
-that mode the caller owns the payload archive and the SDK writes only
-the manifest. Start command and working directory come from
-`plushie-package.config.toml` (set with `--write-package-config`).
+that mode the caller owns the payload directory and provides the start
+command explicitly:
 
 ```bash
 python -m plushie package \
   --app-id dev.example.my_app \
   --app-name "My App" \
   --renderer-path bin/plushie-renderer \
-  --payload-archive dist/package/payload.tar.zst
+  --payload-dir dist/package/payload \
+  --start-command host/MyApp/MyApp
 ```
-
-After writing the manifest the command prints the handoff:
-
-```
-Build launcher with:
-  bin/plushie package portable --manifest <path>
-```
-
-Pass `--strict-tools` to append `--strict-tools` to the printed command
-as a reminder to enforce the strict tool gate for release builds.
 
 ### Flags
 
@@ -359,22 +350,20 @@ as a reminder to enforce the strict tool gate for release builds.
 | `--renderer-kind stock|custom` | Renderer provenance kind. Defaults to `stock` |
 | `--pyinstaller-entry PATH` | Build and assemble a PyInstaller payload from this entry script |
 | `--pyinstaller-name NAME` | PyInstaller app name. Defaults to `--app-name` |
-| `--app-icon PATH` | Icon file to pass to PyInstaller and copy into the payload |
+| `--app-icon PATH` | Icon file to pass to PyInstaller |
 | `--add-data SOURCE:DEST` | Data mapping passed to PyInstaller. Repeatable |
 | `--hidden-import MODULE` | Hidden import passed to PyInstaller. Repeatable |
 | `--collect-submodules MODULE` | Module package whose submodules PyInstaller should collect. Repeatable |
 | `--pyinstaller-arg ARG` | Extra argument passed through to PyInstaller. Repeatable |
-| `--package-dir PATH` | Directory for payload, archive, and manifest. Defaults to `dist` |
+| `--package-dir PATH` | Directory for payload and manifest. Defaults to `dist` |
 | `--dist-dir PATH` | PyInstaller dist directory. Defaults to `dist` |
 | `--spec-dir PATH` | PyInstaller spec output directory. Defaults to `build/pyinstaller-spec` |
 | `--work-dir PATH` | PyInstaller work directory. Defaults to `build/pyinstaller` |
-| `--renderer-path PATH` | Explicit renderer binary path in PyInstaller mode. Payload-relative renderer executable path in prepared mode, where it is required |
-| `--payload-archive PATH` | Payload archive to hash and record. Required in prepared mode |
-| `--platform-icon PATH` | Payload-relative app icon path for `[platform].icon` |
-| (via `plushie-package.config.toml`) | Additional `[platform]` metadata: `publisher`, `copyright`, `category`, `description`, `bundle_id`, `[platform.macos].bundle_version`, `[platform.windows].install_scope` |
+| `--renderer-path PATH` | Explicit renderer binary path in PyInstaller mode. Payload-relative renderer path in prepared mode, where it is required |
+| `--payload-dir PATH` | Payload directory for prepared payloads. Required in prepared mode |
+| `--start-command CMD...` | Start command for prepared payloads. Required in prepared mode |
 | `--manifest-out PATH` | Manifest output file path in prepared payload mode |
-| `--strict-tools` | Append `--strict-tools` to the printed handoff command |
-| `--package-config PATH` | Package config path. Defaults to `plushie-package.config.toml` when present |
+| `--package-config PATH` | Config file forwarded to `cargo plushie package assemble`. cargo-plushie reads `working_dir`, `forward_env`, and `[platform]` from it |
 | `--write-package-config` | Write a package config template and exit |
 
 In PyInstaller mode, pass `--renderer-path PATH` to package a specific
@@ -388,21 +377,6 @@ When `PLUSHIE_RUST_SOURCE_PATH` is set for stock renderer packaging,
 the package command uses the same managed native-tool sync path as
 `python -m plushie download`, so `bin/plushie`, `bin/plushie-renderer`,
 and `bin/plushie-launcher` are prepared together from the checkout.
-
-After writing the manifest the command always prints the handoff:
-
-```
-Build launcher with:
-  bin/plushie package portable --manifest dist/package/plushie-package.toml
-```
-
-Run the handoff command separately to build the portable launcher. For
-release builds that require the strict tool gate:
-
-```bash
-bin/plushie package check --manifest dist/package/plushie-package.toml --strict-tools
-bin/plushie package portable --manifest dist/package/plushie-package.toml --strict-tools
-```
 
 ## python -m plushie inspect
 
