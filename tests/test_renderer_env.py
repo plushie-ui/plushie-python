@@ -54,14 +54,51 @@ def test_forwards_prefix_matched_vars(monkeypatch):
     assert env.get("MESA_GL_VERSION_OVERRIDE") == "4.5"
 
 
-def test_forwards_plushie_prefix(monkeypatch):
+def test_forwards_plushie_no_catch_unwind(monkeypatch):
     monkeypatch.setenv("PLUSHIE_NO_CATCH_UNWIND", "1")
-    monkeypatch.setenv("PLUSHIE_DEBUG_FOO", "bar")
 
     env = _build_env()
 
     assert env.get("PLUSHIE_NO_CATCH_UNWIND") == "1"
-    assert env.get("PLUSHIE_DEBUG_FOO") == "bar"
+
+
+def test_plushie_closed_allowlist(monkeypatch):
+    """Only PLUSHIE_NO_CATCH_UNWIND crosses the process boundary.
+
+    All other PLUSHIE_* names are host-side, launcher-set, or secrets that
+    must not leak to the renderer subprocess.
+    """
+    monkeypatch.setenv("PLUSHIE_NO_CATCH_UNWIND", "1")
+    for name in (
+        "PLUSHIE_TOKEN",
+        "PLUSHIE_SOCKET",
+        "PLUSHIE_TRANSPORT",
+        "PLUSHIE_FORMAT",
+        "PLUSHIE_RUST_SOURCE_PATH",
+        "PLUSHIE_BINARY_PATH",
+        "PLUSHIE_PACKAGE_DIR",
+        "PLUSHIE_PACKAGE_READY_FILE",
+        "PLUSHIE_RELEASE_BASE_URL",
+        "PLUSHIE_CACHE_DIR",
+    ):
+        monkeypatch.setenv(name, "should-not-leak")
+
+    env = _build_env()
+
+    assert env.get("PLUSHIE_NO_CATCH_UNWIND") == "1"
+    for name in (
+        "PLUSHIE_TOKEN",
+        "PLUSHIE_SOCKET",
+        "PLUSHIE_TRANSPORT",
+        "PLUSHIE_FORMAT",
+        "PLUSHIE_RUST_SOURCE_PATH",
+        "PLUSHIE_BINARY_PATH",
+        "PLUSHIE_PACKAGE_DIR",
+        "PLUSHIE_PACKAGE_READY_FILE",
+        "PLUSHIE_RELEASE_BASE_URL",
+        "PLUSHIE_CACHE_DIR",
+    ):
+        assert name not in env, f"{name} must not be forwarded to the renderer"
 
 
 def test_strips_non_whitelisted_secrets(monkeypatch):

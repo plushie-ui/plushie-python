@@ -1270,8 +1270,6 @@ _ENV_WHITELIST_EXACT = frozenset(
 )
 
 # Prefixes: any variable starting with one of these is forwarded.
-# "PLUSHIE_" catches all plushie-reserved debug toggles (e.g.
-# PLUSHIE_NO_CATCH_UNWIND) without per-var maintenance.
 _ENV_WHITELIST_PREFIXES = (
     "LC_",
     "MESA_",
@@ -1281,7 +1279,15 @@ _ENV_WHITELIST_PREFIXES = (
     "GALLIUM_",
     "AT_SPI_",
     "FONTCONFIG_",
-    "PLUSHIE_",
+)
+
+# The renderer subprocess in spawn mode reads at most PLUSHIE_NO_CATCH_UNWIND
+# from inherited env. Other PLUSHIE_* names are host-side, launcher-set, or
+# secrets (e.g. PLUSHIE_TOKEN) that must not leak across the process boundary.
+_ENV_WHITELIST_PLUSHIE = frozenset(
+    {
+        "PLUSHIE_NO_CATCH_UNWIND",
+    }
 )
 
 
@@ -1301,8 +1307,10 @@ def _build_env(extra: Mapping[str, object] | None = None) -> dict[str, str]:
     """
     env: dict[str, str] = {}
     for key, value in os.environ.items():
-        if key in _ENV_WHITELIST_EXACT or any(
-            key.startswith(p) for p in _ENV_WHITELIST_PREFIXES
+        if (
+            key in _ENV_WHITELIST_EXACT
+            or key in _ENV_WHITELIST_PLUSHIE
+            or any(key.startswith(p) for p in _ENV_WHITELIST_PREFIXES)
         ):
             env[key] = str(value)
     if extra:
