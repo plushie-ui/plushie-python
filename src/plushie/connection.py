@@ -1234,38 +1234,44 @@ class StdioConnection:
 
 # Exact variable names to forward to the renderer subprocess.
 # Prevents leaking sensitive variables (API keys, tokens, DB URLs).
-# Matches the canonical whitelist shared across every host SDK.
+# Mirrors the canonical whitelist in plushie-rust's runner/env.rs,
+# shared across every host SDK (Elixir, Gleam, Python, Ruby, TypeScript).
 _ENV_WHITELIST_EXACT = frozenset(
     {
+        # Display servers
         "DISPLAY",
         "WAYLAND_DISPLAY",
         "WAYLAND_SOCKET",
         "WINIT_UNIX_BACKEND",
-        "XDG_CURRENT_DESKTOP",
         "XDG_RUNTIME_DIR",
-        "XDG_SESSION_TYPE",
         "XDG_DATA_DIRS",
         "XDG_DATA_HOME",
+        # PATH / shared library resolution
         "PATH",
         "LD_LIBRARY_PATH",
         "DYLD_LIBRARY_PATH",
         "DYLD_FALLBACK_LIBRARY_PATH",
+        # Locale
         "LANG",
         "LANGUAGE",
+        # Desktop integration
         "DBUS_SESSION_BUS_ADDRESS",
         "GTK_MODULES",
-        "GDK_BACKEND",
-        "GSK_RENDERER",
-        "CLUTTER_BACKEND",
-        "SDL_VIDEO_wayland",
-        "QT_QPA_PLATFORM",
         "NO_AT_BRIDGE",
-        "SWAYSOCK",
+        # Renderer + log controls
         "WGPU_BACKEND",
         "RUST_LOG",
         "RUST_BACKTRACE",
+        # Identity
         "HOME",
         "USER",
+        # Windows: required for DLL loader, child process resolution, and tempdir.
+        # Harmless on other platforms (just absent from the host env).
+        "SystemRoot",
+        "WINDIR",
+        "PATHEXT",
+        "TEMP",
+        "TMP",
     }
 )
 

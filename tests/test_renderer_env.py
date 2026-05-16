@@ -24,8 +24,25 @@ def test_forwards_whitelisted_exact_vars(monkeypatch):
     assert env.get("RUST_LOG") == "plushie=debug"
 
 
-def test_forwards_wayland_session_and_backend_vars(monkeypatch):
-    expected = {
+def test_forwards_display_server_vars(monkeypatch):
+    monkeypatch.setenv("WAYLAND_DISPLAY", "wayland-1")
+    monkeypatch.setenv("WAYLAND_SOCKET", "/run/user/1000/wayland-0")
+    monkeypatch.setenv("XDG_RUNTIME_DIR", "/run/user/1000")
+    monkeypatch.setenv("XDG_DATA_DIRS", "/usr/share")
+    monkeypatch.setenv("XDG_DATA_HOME", "/home/tester/.local/share")
+
+    env = _build_env()
+
+    assert env.get("WAYLAND_DISPLAY") == "wayland-1"
+    assert env.get("WAYLAND_SOCKET") == "/run/user/1000/wayland-0"
+    assert env.get("XDG_RUNTIME_DIR") == "/run/user/1000"
+    assert env.get("XDG_DATA_DIRS") == "/usr/share"
+    assert env.get("XDG_DATA_HOME") == "/home/tester/.local/share"
+
+
+def test_strips_non_canonical_desktop_vars(monkeypatch):
+    """Vars not in the canonical list must be dropped even if desktop-related."""
+    for key, value in {
         "XDG_CURRENT_DESKTOP": "sway",
         "XDG_SESSION_TYPE": "wayland",
         "GDK_BACKEND": "wayland",
@@ -34,14 +51,22 @@ def test_forwards_wayland_session_and_backend_vars(monkeypatch):
         "SDL_VIDEO_wayland": "1",
         "QT_QPA_PLATFORM": "wayland",
         "SWAYSOCK": "/run/user/1000/sway-ipc.sock",
-    }
-    for key, value in expected.items():
+    }.items():
         monkeypatch.setenv(key, value)
 
     env = _build_env()
 
-    for key, value in expected.items():
-        assert env.get(key) == value
+    for key in (
+        "XDG_CURRENT_DESKTOP",
+        "XDG_SESSION_TYPE",
+        "GDK_BACKEND",
+        "GSK_RENDERER",
+        "CLUTTER_BACKEND",
+        "SDL_VIDEO_wayland",
+        "QT_QPA_PLATFORM",
+        "SWAYSOCK",
+    ):
+        assert key not in env, f"{key} must not be forwarded to the renderer"
 
 
 def test_forwards_prefix_matched_vars(monkeypatch):
@@ -132,6 +157,26 @@ def test_forwarded_environment_values_are_converted_to_strings():
         env = _build_env()
 
     assert env.get("HOME") == "1234"
+
+
+def test_forwards_windows_critical_vars(monkeypatch):
+    """Windows DLL loader, PATHEXT resolution, and tempdir vars are forwarded.
+
+    Harmless on non-Windows hosts: they simply won't be present in the env.
+    """
+    monkeypatch.setenv("SystemRoot", "C:\\Windows")
+    monkeypatch.setenv("WINDIR", "C:\\Windows")
+    monkeypatch.setenv("PATHEXT", ".COM;.EXE;.BAT")
+    monkeypatch.setenv("TEMP", "C:\\Temp")
+    monkeypatch.setenv("TMP", "C:\\Temp")
+
+    env = _build_env()
+
+    assert env.get("SystemRoot") == "C:\\Windows"
+    assert env.get("WINDIR") == "C:\\Windows"
+    assert env.get("PATHEXT") == ".COM;.EXE;.BAT"
+    assert env.get("TEMP") == "C:\\Temp"
+    assert env.get("TMP") == "C:\\Temp"
 
 
 def test_subprocess_does_not_see_leaked_secret(monkeypatch):
