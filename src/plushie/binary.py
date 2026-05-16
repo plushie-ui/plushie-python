@@ -4,8 +4,7 @@ Resolution chain for ``resolve()``:
 
 1. ``PLUSHIE_BINARY_PATH`` environment variable (fail-fast if set but missing)
 2. Bundled binary (PyInstaller, Nuitka, Briefcase)
-3. Custom extension build in ``build/*/target/``
-4. Project-local downloaded binary in ``bin/``
+3. Project-local downloaded binary in ``bin/``
 
 Platform detection identifies os (linux/darwin/windows) and arch
 (x86_64/aarch64) for download naming.
@@ -337,38 +336,6 @@ def _is_native_binary(path: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Custom extension build resolution
-# ---------------------------------------------------------------------------
-
-
-def _resolve_custom_build() -> str | None:
-    """Check for a custom-built binary in the build/ directory.
-
-    Looks for binaries built by ``python -m plushie build`` in
-    ``build/*/target/{release,debug}/``. Checks release first,
-    then debug.
-
-    Returns:
-        Absolute path to the binary if found, ``None`` otherwise.
-    """
-    build_root = Path("build")
-    if not build_root.is_dir():
-        return None
-
-    ext = ".exe" if sys.platform in ("win32", "cygwin") else ""
-
-    for build_dir in build_root.iterdir():
-        if not build_dir.is_dir():
-            continue
-        for profile in ("release", "debug"):
-            candidate = build_dir / "target" / profile / f"{build_dir.name}{ext}"
-            if candidate.is_file() and _is_native_binary(str(candidate)):
-                return str(candidate.resolve())
-
-    return None
-
-
-# ---------------------------------------------------------------------------
 # Bundled binary resolution (PyInstaller / Nuitka / Briefcase)
 # ---------------------------------------------------------------------------
 
@@ -430,8 +397,7 @@ def resolve() -> str:
        file does not exist, raises immediately (explicit config should
        not silently fall through).
     2. Bundled binary (PyInstaller, Nuitka, Briefcase).
-    3. Custom extension build in ``build/*/target/``.
-    4. Downloaded binary in the project-local download directory.
+    3. Downloaded binary in the project-local download directory.
 
     Returns:
         Absolute path to the plushie binary.
@@ -456,12 +422,7 @@ def resolve() -> str:
     if bundled is not None:
         return bundled
 
-    # Step 3: custom extension build in build/ directory
-    custom = _resolve_custom_build()
-    if custom is not None:
-        return custom
-
-    # Step 4: project-local downloaded binary
+    # Step 3: project-local downloaded binary
     try:
         name = download_name()
         downloaded = download_dir() / name
@@ -482,8 +443,7 @@ def resolve() -> str:
         "Resolution chain (checked in order):\n"
         "  1. PLUSHIE_BINARY_PATH environment variable (not set)\n"
         "  2. Bundled binary (PyInstaller/Nuitka/Briefcase) (not found)\n"
-        "  3. Custom extension build in build/ (not found)\n"
-        f"  4. Project-local downloaded binary in {dl_dir} (not found)\n"
+        f"  3. Project-local downloaded binary in {dl_dir} (not found)\n"
         "\n"
         "To download a project-local precompiled binary:\n"
         "  python -m plushie download\n"
