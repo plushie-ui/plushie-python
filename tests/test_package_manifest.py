@@ -151,6 +151,17 @@ def test_render_package_config_includes_platform_template() -> None:
     assert "install_scope" in text
 
 
+def test_render_package_config_includes_assets_template() -> None:
+    text = render_package_config()
+    assert "# [assets]" in text
+    assert '# dir = "package_assets"' in text
+    # The assets block sits between [start] and the platform block.
+    start_idx = text.index("[start]")
+    assets_idx = text.index("# [assets]")
+    platform_idx = text.index("# [platform]")
+    assert start_idx < assets_idx < platform_idx
+
+
 # ---- renderer resolution ----
 
 

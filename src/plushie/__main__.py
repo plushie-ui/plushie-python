@@ -321,6 +321,9 @@ def _cmd_package(args: argparse.Namespace) -> None:
             package_config=args.package_config,
         )
         print(f"Wrote {result['manifest_path']}")
+        from plushie._gitignore import warn_if_not_gitignored
+
+        warn_if_not_gitignored(args.package_dir)
         return
 
     if args.renderer_path is None:
@@ -354,6 +357,9 @@ def _cmd_package(args: argparse.Namespace) -> None:
         package_config=args.package_config,
     )
     print(f"Wrote {manifest_path}")
+    from plushie._gitignore import warn_if_not_gitignored
+
+    warn_if_not_gitignored(Path(manifest_path).parent)
 
 
 def _resolve_artifacts(
@@ -414,6 +420,8 @@ def _cmd_download(args: argparse.Namespace) -> None:
     # Resolve wasm_dir: CLI flag > pyproject.toml > None (project-local location)
     wasm_dir_override = getattr(args, "wasm_dir", None) or pyproject_cfg.get("wasm_dir")
 
+    from plushie._gitignore import warn_if_not_gitignored
+
     if want_bin:
         if bin_file is None:
             from plushie.binary import sync_renderer_with_tool
@@ -424,6 +432,7 @@ def _cmd_download(args: argparse.Namespace) -> None:
 
             path = download(version=version, force=force, bin_file=bin_file)
         print(f"downloaded: {path}")
+        warn_if_not_gitignored(Path(path).parent)
 
     if want_wasm:
         from plushie.binary import download_wasm
@@ -432,6 +441,7 @@ def _cmd_download(args: argparse.Namespace) -> None:
             version=version, force=force, wasm_dir_path=wasm_dir_override
         )
         print(f"downloaded WASM bundle: {path}")
+        warn_if_not_gitignored(Path(path).parent)
 
 
 def _parse_extensions(raw: list[dict[str, Any]]) -> list[NativeWidget]:
