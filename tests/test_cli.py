@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 from typing import Any, cast
 
@@ -470,6 +471,244 @@ def test_package_pyinstaller_forwards_renderer_path(
     )
 
     assert calls[0]["renderer_path"] == "dist/custom-renderer"
+
+
+def test_connect_token_flag_wins_over_env_and_stdin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import plushie.connection
+    import plushie.runtime
+    import plushie.transport
+
+    connection_calls: list[dict[str, Any]] = []
+
+    class FakeSocketAdapter:
+        def __init__(self, address: str, **kwargs: Any) -> None:
+            pass
+
+    class FakeConnection:
+        def __enter__(self) -> FakeConnection:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+    def fake_from_iostream(adapter: object, **kwargs: Any) -> FakeConnection:
+        connection_calls.append(kwargs)
+        return FakeConnection()
+
+    class FakeRuntime:
+        def __init__(self, _app: object, _conn: object) -> None:
+            pass
+
+        def run(self) -> None:
+            pass
+
+    monkeypatch.setattr(cli, "_import_app", lambda _spec: DummyApp)
+    monkeypatch.setattr(plushie.transport, "SocketAdapter", FakeSocketAdapter)
+    monkeypatch.setattr(
+        plushie.connection.Connection,
+        "from_iostream",
+        staticmethod(fake_from_iostream),
+    )
+    monkeypatch.setattr(plushie.runtime, "Runtime", FakeRuntime)
+    monkeypatch.setenv("PLUSHIE_TOKEN", "env-token")
+    monkeypatch.setattr(cli, "_read_token_from_stdin", lambda: "stdin-token")
+
+    cli._cmd_connect(
+        argparse.Namespace(
+            app="demo:App",
+            json=False,
+            socket="/tmp/plushie.sock",
+            token="flag-token",
+        )
+    )
+
+    assert connection_calls[0]["token"] == "flag-token"
+
+
+def test_connect_env_token_wins_over_stdin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import plushie.connection
+    import plushie.runtime
+    import plushie.transport
+
+    connection_calls: list[dict[str, Any]] = []
+
+    class FakeSocketAdapter:
+        def __init__(self, address: str, **kwargs: Any) -> None:
+            pass
+
+    class FakeConnection:
+        def __enter__(self) -> FakeConnection:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+    def fake_from_iostream(adapter: object, **kwargs: Any) -> FakeConnection:
+        connection_calls.append(kwargs)
+        return FakeConnection()
+
+    class FakeRuntime:
+        def __init__(self, _app: object, _conn: object) -> None:
+            pass
+
+        def run(self) -> None:
+            pass
+
+    monkeypatch.setattr(cli, "_import_app", lambda _spec: DummyApp)
+    monkeypatch.setattr(plushie.transport, "SocketAdapter", FakeSocketAdapter)
+    monkeypatch.setattr(
+        plushie.connection.Connection,
+        "from_iostream",
+        staticmethod(fake_from_iostream),
+    )
+    monkeypatch.setattr(plushie.runtime, "Runtime", FakeRuntime)
+    monkeypatch.setenv("PLUSHIE_TOKEN", "env-token")
+    monkeypatch.setattr(cli, "_read_token_from_stdin", lambda: "stdin-token")
+
+    cli._cmd_connect(
+        argparse.Namespace(
+            app="demo:App",
+            json=False,
+            socket="/tmp/plushie.sock",
+            token=None,
+        )
+    )
+
+    assert connection_calls[0]["token"] == "env-token"
+
+
+def test_connect_stdin_token_used_when_no_flag_or_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import plushie.connection
+    import plushie.runtime
+    import plushie.transport
+
+    connection_calls: list[dict[str, Any]] = []
+
+    class FakeSocketAdapter:
+        def __init__(self, address: str, **kwargs: Any) -> None:
+            pass
+
+    class FakeConnection:
+        def __enter__(self) -> FakeConnection:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            pass
+
+    def fake_from_iostream(adapter: object, **kwargs: Any) -> FakeConnection:
+        connection_calls.append(kwargs)
+        return FakeConnection()
+
+    class FakeRuntime:
+        def __init__(self, _app: object, _conn: object) -> None:
+            pass
+
+        def run(self) -> None:
+            pass
+
+    monkeypatch.setattr(cli, "_import_app", lambda _spec: DummyApp)
+    monkeypatch.setattr(plushie.transport, "SocketAdapter", FakeSocketAdapter)
+    monkeypatch.setattr(
+        plushie.connection.Connection,
+        "from_iostream",
+        staticmethod(fake_from_iostream),
+    )
+    monkeypatch.setattr(plushie.runtime, "Runtime", FakeRuntime)
+    monkeypatch.delenv("PLUSHIE_TOKEN", raising=False)
+    monkeypatch.setattr(cli, "_read_token_from_stdin", lambda: "stdin-token")
+
+    cli._cmd_connect(
+        argparse.Namespace(
+            app="demo:App",
+            json=False,
+            socket="/tmp/plushie.sock",
+            token=None,
+        )
+    )
+
+    assert connection_calls[0]["token"] == "stdin-token"
+
+
+def test_connect_errors_on_stdin_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "_import_app", lambda _spec: DummyApp)
+    monkeypatch.delenv("PLUSHIE_TOKEN", raising=False)
+    monkeypatch.setattr(cli, "_read_token_from_stdin", lambda: None)
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli._cmd_connect(
+            argparse.Namespace(
+                app="demo:App",
+                json=False,
+                socket="/tmp/plushie.sock",
+                token=None,
+            )
+        )
+
+    assert exc_info.value.code == 1
+
+
+def test_read_token_from_stdin_parses_valid_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import io
+    import select
+
+    monkeypatch.setattr(select, "select", lambda *_args, **_kwargs: ([True], [], []))
+    monkeypatch.setattr(sys, "stdin", io.StringIO('{"token": "abc123"}\n'))
+
+    result = cli._read_token_from_stdin()
+
+    assert result == "abc123"
+
+
+def test_read_token_from_stdin_returns_none_on_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import select
+
+    monkeypatch.setattr(select, "select", lambda *_args, **_kwargs: ([], [], []))
+
+    result = cli._read_token_from_stdin()
+
+    assert result is None
+
+
+def test_read_token_from_stdin_errors_on_invalid_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import io
+    import select
+
+    monkeypatch.setattr(select, "select", lambda *_args, **_kwargs: ([True], [], []))
+    monkeypatch.setattr(sys, "stdin", io.StringIO("not-json\n"))
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli._read_token_from_stdin()
+
+    assert exc_info.value.code == 1
+
+
+def test_read_token_from_stdin_errors_on_wrong_shape(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import io
+    import select
+
+    monkeypatch.setattr(select, "select", lambda *_args, **_kwargs: ([True], [], []))
+    monkeypatch.setattr(sys, "stdin", io.StringIO('{"not_token": "abc"}\n'))
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli._read_token_from_stdin()
+
+    assert exc_info.value.code == 1
 
 
 def test_package_command_prints_launcher_handoff(

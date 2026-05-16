@@ -148,6 +148,48 @@ def _cmd_run(args: argparse.Namespace) -> None:
         plushie.run(app_class, mode=mode, daemon=daemon, **conn_opts)
 
 
+def _read_token_from_stdin(timeout: float = 1.0) -> str | None:
+    """Try to read a JSON token line from stdin within *timeout* seconds.
+
+    Returns the token string on success, or ``None`` if stdin is closed or
+    the timeout expires with no data.
+
+    Raises ``SystemExit`` if data arrives but cannot be parsed as a JSON
+    object with a ``"token"`` string key.
+    """
+    import select
+
+    ready, _, _ = select.select([sys.stdin], [], [], timeout)
+    if not ready:
+        return None
+
+    line = sys.stdin.readline()
+    if not line:
+        return None
+
+    line = line.strip()
+    if not line:
+        return None
+
+    try:
+        obj = json.loads(line)
+    except json.JSONDecodeError as exc:
+        print(
+            "renderer-parent token stdin must be JSON object with 'token' string",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from exc
+
+    if not isinstance(obj, dict) or not isinstance(obj.get("token"), str):
+        print(
+            "renderer-parent token stdin must be JSON object with 'token' string",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    return obj["token"]
+
+
 def _cmd_connect(args: argparse.Namespace) -> None:
     """Handle the ``connect`` command."""
     from plushie.connection import Connection
@@ -160,6 +202,16 @@ def _cmd_connect(args: argparse.Namespace) -> None:
     wire_format = "json" if args.json else "msgpack"
     socket_addr = getattr(args, "socket", None) or os.environ.get("PLUSHIE_SOCKET")
     token = getattr(args, "token", None) or os.environ.get("PLUSHIE_TOKEN")
+
+    if socket_addr and token is None:
+        token = _read_token_from_stdin()
+        if token is None:
+            print(
+                "renderer-parent token not provided: pass --token, set PLUSHIE_TOKEN,"
+                " or write a JSON token line on stdin",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
 
     if socket_addr:
         adapter = SocketAdapter(socket_addr, format=wire_format)

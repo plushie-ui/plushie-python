@@ -120,6 +120,34 @@ In socket mode, stdout remains available to the caller and protocol
 traffic goes through the socket. In spawn mode, the SDK starts the
 renderer as a child process.
 
+### Token resolution in socket mode
+
+When `--socket` is set, the connect command resolves the negotiation
+token using this precedence:
+
+1. `--token` flag
+2. `PLUSHIE_TOKEN` environment variable
+3. A single JSON line read from stdin with a 1-second timeout
+
+The stdin fallback covers launch environments where environment
+variables cannot be forwarded (SSH exec, sandboxed process launches).
+The renderer-parent writes `{"token": "..."}` on the child's stdin
+before any other I/O.
+
+If all three sources fail (stdin times out or is empty), the command
+exits with:
+
+```
+renderer-parent token not provided: pass --token, set PLUSHIE_TOKEN, or write a JSON token line on stdin
+```
+
+If stdin data arrives but cannot be parsed as a JSON object with a
+`"token"` string key, the command exits with:
+
+```
+renderer-parent token stdin must be JSON object with 'token' string
+```
+
 ## python -m plushie download
 
 Downloads a precompiled renderer binary or WASM bundle from GitHub
