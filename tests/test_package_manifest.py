@@ -373,12 +373,17 @@ def test_package_pyinstaller_payload_uses_explicit_renderer_path(
     def fail_prepare_renderer(*_args: Any, **_kwargs: Any) -> tuple[Path, str]:
         raise AssertionError("stock renderer resolution should not run")
 
+    def fake_run_default_icons(out_dir: str) -> None:
+        out_path = Path(out_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+        (out_path / "plushie-checkbox-512x512.png").write_bytes(b"icon")
+
     monkeypatch.setattr(
         "plushie.package._resolve_package_renderer",
         fail_prepare_renderer,
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
-    monkeypatch.setattr("plushie.package._run_default_icons", lambda _out_dir: None)
+    monkeypatch.setattr("plushie.package._run_default_icons", fake_run_default_icons)
     monkeypatch.setattr("plushie.package.archive_payload", fake_archive_payload)
 
     result = package_pyinstaller_payload(
@@ -416,12 +421,19 @@ def test_package_pyinstaller_payload_uses_start_config(
     ) -> None:
         Path(archive_path).write_bytes(b"archive")
 
+    def fake_run_default_icons_config(out_dir: str) -> None:
+        out_path = Path(out_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+        (out_path / "plushie-checkbox-512x512.png").write_bytes(b"icon")
+
     monkeypatch.setattr(
         "plushie.package._prepare_renderer_for_pyinstaller",
         lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
     )
     monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
-    monkeypatch.setattr("plushie.package._run_default_icons", lambda _out_dir: None)
+    monkeypatch.setattr(
+        "plushie.package._run_default_icons", fake_run_default_icons_config
+    )
     monkeypatch.setattr("plushie.package.archive_payload", fake_archive_payload)
 
     result = package_pyinstaller_payload(
@@ -578,6 +590,46 @@ def test_manifest_for_payload_validates_paths(
     base.update(kwargs)
     with pytest.raises(ValueError, match=match):
         manifest_for_payload(**base)  # type: ignore[arg-type]
+
+
+def test_package_pyinstaller_payload_raises_on_missing_default_icon(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    prepared_renderer = tmp_path / "renderer" / "plushie-renderer"
+    prepared_renderer.parent.mkdir()
+    prepared_renderer.write_bytes(b"renderer")
+
+    def fake_run_pyinstaller(**kwargs: Any) -> None:
+        name = str(kwargs["name"])
+        app_dir = Path(kwargs["dist_dir"]) / name
+        app_dir.mkdir(parents=True)
+        (app_dir / name).write_text("host")
+
+    def fake_archive_payload(
+        _payload_root: str | Path, archive_path: str | Path
+    ) -> None:
+        Path(archive_path).write_bytes(b"archive")
+
+    monkeypatch.setattr(
+        "plushie.package._prepare_renderer_for_pyinstaller",
+        lambda _renderer_kind="stock": (prepared_renderer, "local-path"),
+    )
+    monkeypatch.setattr("plushie.package._run_pyinstaller", fake_run_pyinstaller)
+    # _run_default_icons that produces nothing
+    monkeypatch.setattr("plushie.package._run_default_icons", lambda _out_dir: None)
+    monkeypatch.setattr("plushie.package.archive_payload", fake_archive_payload)
+
+    with pytest.raises(RuntimeError, match="default icon materialization failed"):
+        package_pyinstaller_payload(
+            entry="app.py",
+            name="NoIconApp",
+            app_id="dev.plushie.test",
+            app_version="0.1.0",
+            target="linux-x86_64",
+        )
 
 
 def test_manifest_for_payload_rejects_reserved_forward_env(tmp_path: Path) -> None:
