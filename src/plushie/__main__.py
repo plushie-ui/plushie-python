@@ -18,7 +18,6 @@ import importlib
 import json
 import logging
 import os
-import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -177,7 +176,6 @@ def _cmd_connect(args: argparse.Namespace) -> None:
 def _cmd_package(args: argparse.Namespace) -> None:
     """Handle the ``package`` command."""
     from plushie.package import (
-        default_start_config,
         load_package_config,
         manifest_for_payload,
         package_pyinstaller_payload,
@@ -187,10 +185,10 @@ def _cmd_package(args: argparse.Namespace) -> None:
     )
 
     if args.write_package_config:
+        from plushie.package import default_start_config
+
         config = (
-            default_start_config(args.start_command)
-            if args.start_command is not None
-            else pyinstaller_start_config(args.pyinstaller_name or args.app_name)
+            pyinstaller_start_config(args.pyinstaller_name or args.app_name)
             if args.pyinstaller_name is not None or args.app_name is not None
             else default_start_config()
         )
@@ -208,20 +206,8 @@ def _cmd_package(args: argparse.Namespace) -> None:
     project_cfg = _load_project_config()
     app_version = args.app_version or project_cfg.get("version") or "0.1.0"
     package_cfg = load_package_config(args.package_config)
-    working_dir = (
-        args.working_dir
-        if args.working_dir is not None
-        else package_cfg.working_dir
-        if package_cfg is not None
-        else "."
-    )
-    start_command = (
-        args.start_command
-        if args.start_command is not None
-        else package_cfg.command
-        if package_cfg is not None
-        else None
-    )
+    working_dir = package_cfg.working_dir if package_cfg is not None else "."
+    start_command = package_cfg.command if package_cfg is not None else None
     forward_env = package_cfg.forward_env if package_cfg is not None else None
 
     if args.pyinstaller_entry is not None:
@@ -251,19 +237,14 @@ def _cmd_package(args: argparse.Namespace) -> None:
             dist_dir=args.dist_dir,
             spec_dir=args.spec_dir,
             work_dir=args.work_dir,
-            output=args.output,
+            output=args.manifest_out,
             working_dir=working_dir,
             start_command=start_command,
             forward_env=forward_env,
         )
         print(f"Wrote {result['manifest_path']}")
         print(f"Wrote {result['payload_archive']}")
-        _handle_package_handoff(
-            result["manifest_path"],
-            portable=args.portable,
-            portable_out=args.portable_out,
-            strict_tools=args.strict_tools,
-        )
+        _print_package_handoff(result["manifest_path"], strict_tools=args.strict_tools)
         return
 
     if args.renderer_path is None:
@@ -279,7 +260,9 @@ def _cmd_package(args: argparse.Namespace) -> None:
         raise SystemExit(1)
     if start_command is None:
         print(
-            "error: --start-command is required for prepared payloads", file=sys.stderr
+            "error: start_command is required for prepared payloads; "
+            "set it via --package-config",
+            file=sys.stderr,
         )
         raise SystemExit(1)
 
@@ -296,15 +279,10 @@ def _cmd_package(args: argparse.Namespace) -> None:
         platform_icon=args.platform_icon,
         payload_archive=args.payload_archive,
     )
-    output = args.output or "dist/package/plushie-package.toml"
-    write_manifest(output, manifest)
-    print(f"Wrote {output}")
-    _handle_package_handoff(
-        output,
-        portable=args.portable,
-        portable_out=args.portable_out,
-        strict_tools=args.strict_tools,
-    )
+    manifest_out = args.manifest_out or "dist/package/plushie-package.toml"
+    write_manifest(manifest_out, manifest)
+    print(f"Wrote {manifest_out}")
+    _print_package_handoff(manifest_out, strict_tools=args.strict_tools)
 
 
 def _print_package_handoff(manifest_path: str | Path, *, strict_tools: bool) -> None:
@@ -315,62 +293,6 @@ def _print_package_handoff(manifest_path: str | Path, *, strict_tools: bool) -> 
     if strict_tools:
         command = f"{command} --strict-tools"
     print(f"  {command}")
-
-
-def _run_package_portable(
-    manifest_path: str | Path,
-    portable_out: str | None,
-    *,
-    strict_tools: bool,
-) -> None:
-    from plushie.binary import tool_name
-
-    command = [
-        os.fspath(Path("bin") / tool_name()),
-        "package",
-        "portable",
-        "--manifest",
-        os.fspath(manifest_path),
-    ]
-    if portable_out is not None:
-        command.extend(["--out", portable_out])
-    if strict_tools:
-        command.append("--strict-tools")
-    subprocess.run(command, check=True)
-
-
-def _check_package_tools_strict() -> None:
-    from plushie.binary import PLUSHIE_RUST_VERSION, tool_name
-
-    subprocess.run(
-        [
-            os.fspath(Path("bin") / tool_name()),
-            "tools",
-            "check",
-            "--required-version",
-            PLUSHIE_RUST_VERSION,
-        ],
-        check=True,
-    )
-
-
-def _handle_package_handoff(
-    manifest_path: str | Path,
-    *,
-    portable: bool,
-    portable_out: str | None,
-    strict_tools: bool,
-) -> None:
-    if strict_tools:
-        _check_package_tools_strict()
-    if portable:
-        _run_package_portable(
-            manifest_path,
-            portable_out,
-            strict_tools=strict_tools,
-        )
-        return
-    _print_package_handoff(manifest_path, strict_tools=strict_tools)
 
 
 def _resolve_artifacts(
@@ -792,36 +714,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="payload-relative platform icon path",
     )
     package_parser.add_argument(
-        "--output",
+        "--manifest-out",
         default=None,
-        help="manifest output path",
-    )
-    package_parser.add_argument(
-        "--portable",
-        action="store_true",
-        help="build the portable launcher after writing the manifest",
-    )
-    package_parser.add_argument(
-        "--portable-out",
-        default=None,
-        help="portable launcher output path",
+        help="manifest output file path (prepared payload mode)",
     )
     package_parser.add_argument(
         "--strict-tools",
         action="store_true",
-        help="require strict native package tool identity before portable packaging",
-    )
-    package_parser.add_argument(
-        "--working-dir",
-        default=None,
-        help="payload-relative host working directory",
-    )
-    package_parser.add_argument(
-        "--start-command",
-        dest="start_command",
-        default=None,
-        nargs="+",
-        help="payload-relative app start command argv",
+        help="append --strict-tools to the printed handoff command",
     )
     package_parser.add_argument(
         "--pyinstaller-entry",
@@ -874,7 +774,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     package_parser.add_argument(
         "--package-dir",
-        default="dist/package",
+        default="dist",
         help="directory for payload, archive, and manifest",
     )
     package_parser.add_argument(

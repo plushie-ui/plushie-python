@@ -10,7 +10,6 @@ import pytest
 
 import plushie
 import plushie.__main__ as cli
-from plushie.binary import PLUSHIE_RUST_VERSION
 
 
 class DummyApp:
@@ -325,39 +324,29 @@ def test_package_parser_accepts_prepared_payload_shape() -> None:
             "bin/plushie-renderer",
             "--payload-archive",
             "dist/package/payload.tar.zst",
-            "--start-command",
-            "host/Test/Test",
         ]
     )
 
     assert args.command == "package"
     assert args.renderer_path == "bin/plushie-renderer"
     assert args.payload_archive == "dist/package/payload.tar.zst"
-    assert args.start_command == ["host/Test/Test"]
 
 
-def test_package_parser_accepts_portable_options() -> None:
+def test_package_parser_accepts_strict_tools() -> None:
     args = cli._build_parser().parse_args(
         [
             "package",
             "--app-id",
             "dev.plushie.test",
-            "--portable",
-            "--portable-out",
-            "dist/portable/TestApp",
             "--strict-tools",
             "--renderer-path",
             "bin/plushie-renderer",
             "--payload-archive",
             "dist/package/payload.tar.zst",
-            "--start-command",
-            "host/Test/Test",
         ]
     )
 
     assert args.command == "package"
-    assert args.portable is True
-    assert args.portable_out == "dist/portable/TestApp"
     assert args.strict_tools is True
 
 
@@ -397,7 +386,6 @@ def test_package_write_config_uses_pyinstaller_entrypoint(
         argparse.Namespace(
             write_package_config=True,
             package_config=None,
-            start_command=None,
             pyinstaller_name="ConfigApp",
             app_name=None,
         )
@@ -462,8 +450,6 @@ def test_package_pyinstaller_forwards_renderer_path(
             app_name="Test App",
             app_version="0.1.0",
             package_config=None,
-            working_dir=".",
-            start_command=None,
             pyinstaller_entry="src/test_app/__main__.py",
             pyinstaller_name="TestApp",
             target="linux-x86_64",
@@ -474,13 +460,11 @@ def test_package_pyinstaller_forwards_renderer_path(
             hidden_import=[],
             collect_submodules=[],
             pyinstaller_arg=[],
-            package_dir="dist/package",
+            package_dir="dist",
             dist_dir="dist",
             spec_dir="build/pyinstaller-spec",
             work_dir="build/pyinstaller",
-            output=None,
-            portable=False,
-            portable_out=None,
+            manifest_out=None,
             strict_tools=False,
         )
     )
@@ -497,6 +481,18 @@ def test_package_command_prints_launcher_handoff(
     archive = tmp_path / "payload.tar.zst"
     archive.write_bytes(b"payload")
 
+    Path("plushie-package.config.toml").write_text(
+        "\n".join(
+            [
+                "config_version = 1",
+                "",
+                "[start]",
+                'working_dir = "."',
+                'command = ["host/Test/Test"]',
+            ]
+        )
+    )
+
     cli._cmd_package(
         argparse.Namespace(
             write_package_config=False,
@@ -504,17 +500,13 @@ def test_package_command_prints_launcher_handoff(
             app_name=None,
             app_version="0.1.0",
             package_config=None,
-            working_dir=".",
-            start_command=["host/Test/Test"],
             pyinstaller_entry=None,
             target="linux-x86_64",
             renderer_kind="stock",
             renderer_path="bin/plushie-renderer",
             payload_archive=archive,
             platform_icon=None,
-            output=None,
-            portable=False,
-            portable_out=None,
+            manifest_out=None,
             strict_tools=False,
         )
     )
@@ -525,65 +517,3 @@ def test_package_command_prints_launcher_handoff(
         "bin/plushie package portable --manifest dist/package/plushie-package.toml"
         in output
     )
-
-
-def test_package_command_runs_portable_launcher(
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.chdir(tmp_path)
-    archive = tmp_path / "payload.tar.zst"
-    archive.write_bytes(b"payload")
-    calls: list[list[str]] = []
-
-    def fake_run(command: list[str], *, check: bool) -> None:
-        calls.append(command)
-        assert check is True
-
-    monkeypatch.setattr(cli.subprocess, "run", fake_run)
-
-    cli._cmd_package(
-        argparse.Namespace(
-            write_package_config=False,
-            app_id="dev.plushie.test",
-            app_name=None,
-            app_version="0.1.0",
-            package_config=None,
-            working_dir=".",
-            start_command=["host/Test/Test"],
-            pyinstaller_entry=None,
-            target="linux-x86_64",
-            renderer_kind="stock",
-            renderer_path="bin/plushie-renderer",
-            payload_archive=archive,
-            platform_icon=None,
-            output=None,
-            portable=True,
-            portable_out="dist/portable/TestApp",
-            strict_tools=True,
-        )
-    )
-
-    output = capsys.readouterr().out
-    assert "Wrote dist/package/plushie-package.toml" in output
-    assert "Build launcher with:" not in output
-    assert calls == [
-        [
-            "bin/plushie",
-            "tools",
-            "check",
-            "--required-version",
-            PLUSHIE_RUST_VERSION,
-        ],
-        [
-            "bin/plushie",
-            "package",
-            "portable",
-            "--manifest",
-            "dist/package/plushie-package.toml",
-            "--out",
-            "dist/portable/TestApp",
-            "--strict-tools",
-        ],
-    ]

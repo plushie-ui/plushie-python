@@ -299,28 +299,26 @@ python -m plushie package \
 
 Prepared payload mode remains available for custom assembly flows. In
 that mode the caller owns the payload archive and the SDK writes only
-the manifest.
+the manifest. Start command and working directory come from
+`plushie-package.config.toml` (set with `--write-package-config`).
 
 ```bash
 python -m plushie package \
   --app-id dev.example.my_app \
   --app-name "My App" \
   --renderer-path bin/plushie-renderer \
-  --payload-archive dist/package/payload.tar.zst \
-  --start-command host/MyApp/MyApp
+  --payload-archive dist/package/payload.tar.zst
 ```
 
-The output is intended for the shared Rust launcher:
+After writing the manifest the command prints the handoff:
 
-```bash
-bin/plushie package portable --manifest dist/package/plushie-package.toml
+```
+Build launcher with:
+  bin/plushie package portable --manifest <path>
 ```
 
-Pass `--portable` to run that final step immediately after writing the
-manifest. Pass `--portable-out PATH` to choose the portable executable
-output path. Pass `--strict-tools` with `--portable` to require native
-package tools to be present, version-matched, and strict-provenance
-before portable packaging.
+Pass `--strict-tools` to append `--strict-tools` to the printed command
+as a reminder to enforce the strict tool gate for release builds.
 
 ### Flags
 
@@ -338,19 +336,17 @@ before portable packaging.
 | `--hidden-import MODULE` | Hidden import passed to PyInstaller. Repeatable |
 | `--collect-submodules MODULE` | Module package whose submodules PyInstaller should collect. Repeatable |
 | `--pyinstaller-arg ARG` | Extra argument passed through to PyInstaller. Repeatable |
-| `--package-dir PATH` | Directory for payload, archive, and manifest. Defaults to `dist/package` |
+| `--package-dir PATH` | Directory for payload, archive, and manifest. Defaults to `dist` |
 | `--dist-dir PATH` | PyInstaller dist directory. Defaults to `dist` |
 | `--spec-dir PATH` | PyInstaller spec output directory. Defaults to `build/pyinstaller-spec` |
 | `--work-dir PATH` | PyInstaller work directory. Defaults to `build/pyinstaller` |
 | `--renderer-path PATH` | Explicit renderer binary path in PyInstaller mode. Payload-relative renderer executable path in prepared mode, where it is required |
 | `--payload-archive PATH` | Payload archive to hash and record. Required in prepared mode |
 | `--platform-icon PATH` | Payload-relative app icon path for `[platform].icon` |
-| `--output PATH` | Manifest output path. Defaults to `dist/package/plushie-package.toml` |
-| `--portable` | Run `bin/plushie package portable --manifest <manifest>` after writing the manifest |
-| `--portable-out PATH` | Pass `--out PATH` to the portable package command when `--portable` is set |
-| `--strict-tools` | Pass `--strict-tools` to the portable package command when `--portable` is set |
-| `--working-dir PATH` | Payload-relative host working directory. Defaults to `.` |
-| `--start-command ARG...` | Payload-relative app start command argv. Required in prepared mode |
+| `--manifest-out PATH` | Manifest output file path in prepared payload mode |
+| `--strict-tools` | Append `--strict-tools` to the printed handoff command |
+| `--package-config PATH` | Package config path. Defaults to `plushie-package.config.toml` when present |
+| `--write-package-config` | Write a package config template and exit |
 
 In PyInstaller mode, pass `--renderer-path PATH` to package a specific
 renderer binary without going through stock renderer resolution.
@@ -364,19 +360,19 @@ the package command uses the same managed native-tool sync path as
 `python -m plushie download`, so `bin/plushie`, `bin/plushie-renderer`,
 and `bin/plushie-launcher` are prepared together from the checkout.
 
-By default this command prints the final launcher handoff so the build
-stays explicit:
+After writing the manifest the command always prints the handoff:
 
-```bash
-bin/plushie package portable --manifest dist/package/plushie-package.toml
+```
+Build launcher with:
+  bin/plushie package portable --manifest dist/package/plushie-package.toml
 ```
 
-For release builds that should fail when native package tools are
-missing, use the strict tool gate:
+Run the handoff command separately to build the portable launcher. For
+release builds that require the strict tool gate:
 
 ```bash
-python -m plushie package --portable --strict-tools ...
 bin/plushie package check --manifest dist/package/plushie-package.toml --strict-tools
+bin/plushie package portable --manifest dist/package/plushie-package.toml --strict-tools
 ```
 
 ## python -m plushie inspect

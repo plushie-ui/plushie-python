@@ -72,30 +72,32 @@ Pass `--renderer-path PATH` in PyInstaller mode to package a specific
 renderer binary. This bypasses stock renderer resolution while keeping
 the payload-local manifest path at `bin/plushie-renderer`.
 
-The generated manifest is the handoff to the shared launcher:
+After writing the manifest the command prints the handoff:
+
+```
+Build launcher with:
+  bin/plushie package portable --manifest dist/package/plushie-package.toml
+```
+
+Run the handoff command to build the portable launcher. For release
+builds that require the strict tool gate:
 
 ```bash
 bin/plushie package check --manifest dist/package/plushie-package.toml --strict-tools
 bin/plushie package portable --manifest dist/package/plushie-package.toml --strict-tools
 ```
 
-Use `python -m plushie package --portable --strict-tools ...` for
-release jobs that should fail when native package tools are missing,
-stale, dirty, mixed, or mismatched. The same gate is available on the
-Rust verifier:
+Prepared payloads remain supported for custom assembly flows. Start
+command and working directory come from `plushie-package.config.toml`:
 
 ```bash
-bin/plushie package check --manifest dist/package/plushie-package.toml --strict-tools
-```
+python -m plushie package --write-package-config --pyinstaller-name MyApp
+# edit plushie-package.config.toml as needed
 
-Prepared payloads remain supported for custom assembly flows:
-
-```bash
 python -m plushie package \
   --app-id dev.example.myapp \
   --renderer-path bin/plushie-renderer \
-  --payload-archive dist/package/payload.tar.zst \
-  --start-command host/MyApp/MyApp
+  --payload-archive dist/package/payload.tar.zst
 ```
 
 ## Demo Proof
