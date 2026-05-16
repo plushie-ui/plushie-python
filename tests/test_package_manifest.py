@@ -76,6 +76,24 @@ def test_manifest_for_payload_records_hash_and_size(tmp_path: Path) -> None:
     assert 'icon = "assets/icon.png"' in toml
 
 
+def test_render_manifest_omits_platform_section_when_no_icon(tmp_path: Path) -> None:
+    archive = tmp_path / "payload.tar.zst"
+    archive.write_bytes(b"payload")
+
+    manifest = manifest_for_payload(
+        app_id="dev.plushie.test",
+        app_version="0.1.0",
+        target="linux-x86_64",
+        renderer_path="bin/plushie-renderer",
+        start_command=["host/app"],
+        payload_archive=archive,
+    )
+
+    toml = render_manifest(manifest)
+    assert "[platform]" not in toml
+    assert "icon" not in toml
+
+
 def test_write_manifest_creates_parent_directories(tmp_path: Path) -> None:
     archive = tmp_path / "payload.tar.zst"
     archive.write_bytes(b"payload")
@@ -249,7 +267,7 @@ def test_package_pyinstaller_payload_assembles_archive_inputs(
     def fake_run_default_icons(out_dir: str) -> None:
         out_path = Path(out_dir)
         out_path.mkdir(parents=True, exist_ok=True)
-        (out_path / "plushie-checkbox-512x512.png").write_bytes(b"icon")
+        (out_path / "default-app-icon-512.png").write_bytes(b"icon")
 
     def fake_archive_payload(
         payload_root: str | Path, archive_path: str | Path
@@ -259,7 +277,7 @@ def test_package_pyinstaller_payload_assembles_archive_inputs(
         assert (root / "host" / "DataExplorer" / "DataExplorer").read_text() == "host"
         assert not (root / "host" / "DataExplorer" / "plushie-renderer").exists()
         assert (
-            root / "assets" / "plushie-checkbox-512x512.png"
+            root / "assets" / "default-app-icon-512.png"
         ).read_bytes() == b"icon"
         Path(archive_path).write_bytes(b"archive")
 
@@ -285,12 +303,12 @@ def test_package_pyinstaller_payload_assembles_archive_inputs(
 
     assert result["renderer_path"] == "bin/plushie-renderer"
     assert result["start_command"] == ["host/DataExplorer/DataExplorer"]
-    assert result["platform_icon"] == "assets/plushie-checkbox-512x512.png"
+    assert result["platform_icon"] == "assets/default-app-icon-512.png"
 
     manifest = (tmp_path / "dist" / "package" / "plushie-package.toml").read_text()
     assert '[renderer]\npath = "bin/plushie-renderer"' in manifest
     assert 'command = ["host/DataExplorer/DataExplorer"]' in manifest
-    assert 'icon = "assets/plushie-checkbox-512x512.png"' in manifest
+    assert 'icon = "assets/default-app-icon-512.png"' in manifest
     assert 'archive = "payload.tar.zst"' in manifest
 
 
@@ -373,7 +391,7 @@ def test_package_pyinstaller_payload_uses_explicit_renderer_path(
     def fake_run_default_icons(out_dir: str) -> None:
         out_path = Path(out_dir)
         out_path.mkdir(parents=True, exist_ok=True)
-        (out_path / "plushie-checkbox-512x512.png").write_bytes(b"icon")
+        (out_path / "default-app-icon-512.png").write_bytes(b"icon")
 
     monkeypatch.setattr(
         "plushie.package._resolve_package_renderer",
@@ -419,7 +437,7 @@ def test_package_pyinstaller_payload_uses_start_config(
     def fake_run_default_icons_config(out_dir: str) -> None:
         out_path = Path(out_dir)
         out_path.mkdir(parents=True, exist_ok=True)
-        (out_path / "plushie-checkbox-512x512.png").write_bytes(b"icon")
+        (out_path / "default-app-icon-512.png").write_bytes(b"icon")
 
     monkeypatch.setattr(
         "plushie.package._prepare_renderer_for_pyinstaller",

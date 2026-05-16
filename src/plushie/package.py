@@ -695,7 +695,7 @@ def _materialize_platform_icon(
         return _payload_relative(payload_root, dest)
 
     _run_default_icons(os.fspath(assets))
-    default_icon = assets / "plushie-checkbox-512x512.png"
+    default_icon = assets / "default-app-icon-512.png"
     if not default_icon.is_file():
         raise RuntimeError(
             f"default icon materialization failed; expected {default_icon} to exist"
