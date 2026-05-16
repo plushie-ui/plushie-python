@@ -580,6 +580,33 @@ def test_manifest_for_payload_validates_paths(
         manifest_for_payload(**base)  # type: ignore[arg-type]
 
 
+def test_manifest_for_payload_rejects_reserved_forward_env(tmp_path: Path) -> None:
+    archive = tmp_path / "payload.tar.zst"
+    archive.write_bytes(b"payload")
+
+    with pytest.raises(ValueError, match="is reserved"):
+        manifest_for_payload(
+            app_id="dev.plushie.test",
+            app_version="0.1.0",
+            target="linux-x86_64",
+            renderer_path="bin/plushie-renderer",
+            start_command=["host/app"],
+            forward_env=["PLUSHIE_BINARY_PATH"],
+            payload_archive=archive,
+        )
+
+    with pytest.raises(ValueError, match="is reserved"):
+        manifest_for_payload(
+            app_id="dev.plushie.test",
+            app_version="0.1.0",
+            target="linux-x86_64",
+            renderer_path="bin/plushie-renderer",
+            start_command=["host/app"],
+            forward_env=["PLUSHIE_PACKAGE_DIR"],
+            payload_archive=archive,
+        )
+
+
 def test_archive_payload_rejects_symlinks(tmp_path: Path) -> None:
     payload = tmp_path / "payload"
     payload.mkdir()
