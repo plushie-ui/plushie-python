@@ -180,6 +180,7 @@ def test_render_package_config_defaults_to_connect_entrypoint() -> None:
     ("content", "message"),
     [
         ("config_version = 2\n", "config_version must be 1"),
+        ("config_version = 1\n", "must include \\[start\\]"),
         (
             'config_version = 1\n[start]\nworking_dir = ""\n',
             "start.working_dir must not be empty",

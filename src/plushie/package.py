@@ -198,7 +198,9 @@ def _parse_package_config(data: dict[str, Any], path: Path) -> PackageStartConfi
     if version != 1:
         raise ValueError(f"{path}: config_version must be 1")
 
-    start = data.get("start", {})
+    if "start" not in data:
+        raise ValueError(f"{path}: plushie-package.config.toml must include [start]")
+    start = data["start"]
     if not isinstance(start, dict):
         raise ValueError(f"{path}: [start] must be a table")
 
