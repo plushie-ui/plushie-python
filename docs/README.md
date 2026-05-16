@@ -40,7 +40,7 @@ Lookup material organized by topic. Each page is self-contained.
 - [Events](reference/events.md) - event dataclasses, pattern matching, event flow
 - [Python Typing](reference/python-typing.md) - pyright / mypy, TypedDict, Protocol, overload resolution
 - [Scoped IDs](reference/scoped-ids.md) - ID scoping rules, scope matching, command paths
-- [Standalone Packaging](reference/standalone-packaging.md) - PyInstaller payloads wrapped by the shared Rust launcher
+- [Packaging and Distribution](reference/packaging-and-distribution.md) - PyInstaller payloads, manifest assembly, portable artifacts, OS installers, CI
 - [Subscriptions](reference/subscriptions.md) - timer, keyboard, pointer, window, animation frames
 - [Testing](reference/testing.md) - AppFixture, SessionPool, backends, selectors, screenshot diffs
 - [Themes and Styling](reference/themes-and-styling.md) - built-in themes, custom palettes, style maps
