@@ -316,6 +316,10 @@ writes a partial `plushie-package.toml`, and shells out to
 `cargo plushie package assemble`. cargo-plushie handles archiving,
 hashing, platform icon materialisation, and writing the final manifest.
 
+See the [Packaging and Distribution reference](packaging-and-distribution.md)
+for the full pipeline, payload layout, package config schema,
+artifact build commands, and CI workflow.
+
 ```bash
 python -m plushie package \
   --app-id dev.example.my_app \
@@ -335,7 +339,7 @@ python -m plushie package \
   --app-id dev.example.my_app \
   --app-name "My App" \
   --renderer-path bin/plushie-renderer \
-  --payload-dir dist/package/payload \
+  --payload-dir dist/payload \
   --start-command host/MyApp/MyApp
 ```
 

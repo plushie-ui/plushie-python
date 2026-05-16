@@ -11,6 +11,8 @@ from plushie import __version__
 from plushie.binary import PLUSHIE_RUST_VERSION, launcher_name, tool_name
 from plushie.package import (
     PackageStartConfig,
+    _payload_host_executable_path,
+    _payload_renderer_path,
     _resolve_package_renderer,
     normalize_package_target,
     package_pyinstaller_payload,
@@ -125,21 +127,24 @@ def test_write_package_config_uses_real_start_values(tmp_path: Path) -> None:
         path,
         PackageStartConfig(
             working_dir=".",
-            command=["bin/connect"],
+            command=["host/MyApp/MyApp"],
         ),
     )
 
     text = path.read_text()
     assert "config_version = 1" in text
     assert 'working_dir = "."' in text
-    assert 'command = ["bin/connect"]' in text
+    assert 'command = ["host/MyApp/MyApp"]' in text
 
 
-def test_render_package_config_defaults_to_connect_entrypoint() -> None:
+def test_render_package_config_defaults_to_pyinstaller_host_placeholder() -> None:
     text = render_package_config()
 
     assert 'working_dir = "."' in text
-    assert 'command = ["bin/connect"]' in text
+    # PyInstaller bakes the entry into a host executable; there is no
+    # wrapper script. The placeholder points at the host path the user
+    # is expected to edit.
+    assert 'command = ["host/<app>/<app>"]' in text
 
 
 def test_render_package_config_includes_platform_template() -> None:
@@ -160,6 +165,27 @@ def test_render_package_config_includes_assets_template() -> None:
     assets_idx = text.index("# [assets]")
     platform_idx = text.index("# [platform]")
     assert start_idx < assets_idx < platform_idx
+
+
+# ---- payload paths (target-driven, not host-driven) ----
+
+
+def test_payload_host_executable_uses_target_for_windows_suffix() -> None:
+    # Cross-compile from any host to windows-x86_64 must produce a
+    # `.exe`-suffixed manifest path.
+    assert (
+        _payload_host_executable_path("MyApp", "windows-x86_64")
+        == "host/MyApp/MyApp.exe"
+    )
+    assert _payload_host_executable_path("MyApp", "linux-x86_64") == "host/MyApp/MyApp"
+    assert (
+        _payload_host_executable_path("MyApp", "darwin-aarch64") == "host/MyApp/MyApp"
+    )
+
+
+def test_payload_renderer_uses_target_for_windows_suffix() -> None:
+    assert _payload_renderer_path("windows-x86_64") == "bin/plushie-renderer.exe"
+    assert _payload_renderer_path("linux-x86_64") == "bin/plushie-renderer"
 
 
 # ---- renderer resolution ----
@@ -290,14 +316,14 @@ def test_package_pyinstaller_payload_assembles_payload_dir(
     ).read_text() == "host"
     assert not (payload_root / "host" / "DataExplorer" / "plushie-renderer").exists()
 
-    partial = (tmp_path / "dist" / "package" / "plushie-package.toml").read_text()
+    partial = (tmp_path / "dist" / "plushie-package.toml").read_text()
     assert '[renderer]\npath = "bin/plushie-renderer"' in partial
     assert 'command = ["host/DataExplorer/DataExplorer"]' in partial
     assert "[payload]" not in partial
 
     assert len(assemble_calls) == 1
     assert Path(assemble_calls[0]["manifest_path"]).resolve() == (
-        tmp_path / "dist" / "package" / "plushie-package.toml"
+        tmp_path / "dist" / "plushie-package.toml"
     )
     assert assemble_calls[0]["payload_dir"].resolve() == payload_root.resolve()
 
@@ -384,7 +410,7 @@ def test_package_pyinstaller_payload_uses_start_command(
 
     assert result["start_command"] == ["host/ConfigApp/ConfigApp", "--profile", "demo"]
 
-    partial = (tmp_path / "dist" / "package" / "plushie-package.toml").read_text()
+    partial = (tmp_path / "dist" / "plushie-package.toml").read_text()
     assert 'command = ["host/ConfigApp/ConfigApp", "--profile", "demo"]' in partial
 
 

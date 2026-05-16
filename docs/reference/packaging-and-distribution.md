@@ -17,7 +17,7 @@ project.
 | [Quickstart](#quickstart) | Three commands from a working app to a portable artifact |
 | [The packaging pipeline](#the-packaging-pipeline) | How the SDK, cargo-plushie, and the launcher hand off |
 | [python -m plushie package](#python--m-plushie-package) | Command flags and what the SDK owns |
-| [The payload](#the-payload) | What goes in `dist/package/payload/` |
+| [The payload](#the-payload) | What goes in `dist/payload/` |
 | [Source layout](#source-layout) | What to commit and what to gitignore |
 | [Renderer selection](#renderer-selection) | Stock versus custom |
 | [Bundled assets](#bundled-assets) | Icons, fonts, and other payload files |
@@ -43,7 +43,7 @@ python -m plushie package \
   --app-id dev.example.my_app \
   --pyinstaller-entry src/my_app/__main__.py \
   --pyinstaller-name MyApp                                                  # build payload + manifest
-bin/plushie package portable --manifest dist/package/plushie-package.toml   # produce the artifact
+bin/plushie package portable --manifest dist/plushie-package.toml           # produce the artifact
 ```
 
 Output lands under `target/plushie/package/`. `--app-id` is the only
@@ -55,10 +55,10 @@ and a name.
 A packaged app moves through three stages:
 
 1. **SDK build.** `python -m plushie package` resolves or builds the
-   renderer, copies it into `dist/package/payload/bin/`, runs
+   renderer, copies it into `dist/payload/bin/`, runs
    PyInstaller in one-folder mode to produce the Python host under
-   `dist/package/payload/host/<name>/`, and emits a partial
-   `dist/package/plushie-package.toml` carrying SDK identity, version
+   `dist/payload/host/<name>/`, and emits a partial
+   `dist/plushie-package.toml` carrying SDK identity, version
    pins, target triple, the start command, and the renderer
    descriptor.
 2. **Manifest assembly.** `python -m plushie package` then shells out
@@ -116,7 +116,7 @@ it.
 assembly.
 
 The output directory is rebuilt from scratch on every run. Anything
-under `dist/package/payload/` from a previous run is removed before
+under `dist/payload/` from a previous run is removed before
 the new payload is assembled.
 
 There are two operating modes:
@@ -131,21 +131,20 @@ There are two operating modes:
 
 ## The payload
 
-`dist/package/payload/` is the directory that gets archived into the
+`dist/payload/` is the directory that gets archived into the
 artifact:
 
 ```
 dist/
-  package/
-    plushie-package.toml           # manifest (partial then completed)
-    payload/
-      bin/
-        plushie-renderer           # payload-local renderer copy
-      host/
-        MyApp/                     # PyInstaller one-folder output
-          MyApp                    # frozen host executable (MyApp.exe on Windows)
-          _internal/               # Python runtime, libs, hidden imports, --add-data
-      assets/                      # icon and other files from package_assets/
+  plushie-package.toml             # manifest (partial then completed)
+  payload/
+    bin/
+      plushie-renderer             # payload-local renderer copy
+    host/
+      MyApp/                       # PyInstaller one-folder output
+        MyApp                      # frozen host executable (MyApp.exe on Windows)
+        _internal/                 # Python runtime, libs, hidden imports, --add-data
+    assets/                        # icon and other files from package_assets/
                                    #   (see Bundled assets below)
 ```
 
@@ -205,6 +204,8 @@ The command picks a renderer based on the `--renderer-kind` flag
   `PLUSHIE_BINARY_PATH` or `--renderer-path`. Build it first with
   `python -m plushie build`; the package command does not invoke the
   build step itself when `--renderer-kind custom` is set.
+  `PLUSHIE_RUST_SOURCE_PATH` is not consulted in custom mode; the
+  custom renderer must be a fully built binary already.
 
 Use `--renderer-path PATH` in PyInstaller mode to package a specific
 binary regardless of kind. The payload-local path is always
@@ -408,7 +409,7 @@ apps, the standard PyInstaller output is fine.
 |---|---|
 | `plushie` | Orchestration tool. Owns `tools sync`, `package assemble`, `package portable`, `package bundle`. |
 | `plushie-renderer` | The renderer binary used at runtime. Resolved by `plushie.binary.resolve`. |
-| `plushie-launcher` | The shared launcher used by `package portable` to build the self-extracting artifact. |
+| `plushie-launcher` | The substrate that `bin/plushie package portable` wraps with the archived payload to produce the self-extracting artifact. |
 
 The version of each file matches the `PLUSHIE_RUST_VERSION` pin in
 `plushie.binary`. `python -m plushie download` downloads `plushie`
@@ -416,10 +417,11 @@ first, then invokes `bin/plushie tools sync --required-version
 VERSION` to fetch the matching renderer and launcher.
 
 `python -m plushie package` requires all three files. The renderer
-is copied into the payload, `plushie` runs the assemble step, and
-`plushie-launcher` is the substrate that `package portable` wraps
-the payload with. The command raises early if any are missing and
-prints a `python -m plushie download` hint.
+is copied into the payload, `bin/plushie` runs the assemble step,
+and `bin/plushie package portable` later wraps `plushie-launcher`
+around the archived payload to produce the artifact. The command
+raises early if any are missing and prints a `python -m plushie
+download` hint.
 
 The Windows variants of these files carry an `.exe` suffix. The
 tool name (`plushie` versus `plushie.exe`) is platform-specific;
@@ -458,8 +460,9 @@ manifest adds:
   compression format.
 - `[start].working_dir` and `[start].forward_env` defaults from the
   package config.
-- A `[platform]` block if one is set in the package config.
-- An `[icon]` entry pointing at the materialized icon image.
+- A `[platform]` block if one is set in the package config, with
+  `[platform].icon` resolved to the materialized icon image's
+  payload-relative path.
 
 The split exists so that cargo-plushie owns the cross-SDK schema
 once. Every Plushie SDK writes a partial manifest in this shape and
@@ -553,7 +556,7 @@ shapes.
 ### Portable single-file launcher
 
 ```bash
-bin/plushie package portable --manifest dist/package/plushie-package.toml
+bin/plushie package portable --manifest dist/plushie-package.toml
 ```
 
 Produces a self-extracting executable wrapping `plushie-launcher`
@@ -569,15 +572,17 @@ the extraction.
 ### OS-native installers
 
 ```bash
-bin/plushie package bundle --manifest dist/package/plushie-package.toml --formats appimage
-bin/plushie package bundle --manifest dist/package/plushie-package.toml --formats dmg,app
-bin/plushie package bundle --manifest dist/package/plushie-package.toml --formats nsis
+bin/plushie package bundle --manifest dist/plushie-package.toml --format appimage
+bin/plushie package bundle --manifest dist/plushie-package.toml --format dmg --format app
+bin/plushie package bundle --manifest dist/plushie-package.toml --format nsis
 ```
+
+`--format` is singular and repeatable; pass it once per format.
 
 Delegates to
 [cargo-packager](https://github.com/crabnebula-dev/cargo-packager)
-for AppImage (Linux), `.app` and `.dmg` (macOS), and `.nsis` and
-`.wix` (Windows). Format availability depends on the runner: Apple
+for AppImage (Linux), `app` and `dmg` (macOS), and `nsis` and
+`wix` (Windows). Format availability depends on the runner: Apple
 formats need a macOS runner, Windows formats need a Windows runner.
 
 Both commands default to a strict-tools check: they verify that the
@@ -665,7 +670,7 @@ jobs:
             --collect-submodules plushie
 
       - name: Build the portable artifact
-        run: bin/plushie package portable --manifest dist/package/plushie-package.toml
+        run: bin/plushie package portable --manifest dist/plushie-package.toml
 
       - name: Compute SHA-256 sidecar
         shell: bash
@@ -707,7 +712,7 @@ Lines to tweak for your project:
   `body` (or `body_path`) if you write release notes by hand.
 
 To also build OS-native installers, add a second matrix entry that
-calls `bin/plushie package bundle --formats <list>` instead of
+calls `bin/plushie package bundle --format <name>` (repeat the flag per format) instead of
 `package portable`, and adjust the upload glob accordingly. Apple
 formats need a macOS runner with valid signing identities; Windows
 formats need a Windows runner with the appropriate SDKs.
@@ -749,7 +754,7 @@ and spawns the Python command with `PLUSHIE_SOCKET` pointing at it
 and a `PLUSHIE_TOKEN` proof:
 
 ```bash
-plushie --listen \
+plushie-renderer --listen \
   --exec-bin python \
   --exec-arg -m \
   --exec-arg plushie \
@@ -761,12 +766,11 @@ plushie --listen \
 the token from `--token`, `PLUSHIE_TOKEN`, or a single JSON line on
 stdin (see the [CLI Commands reference](cli-commands.md#token-resolution-in-socket-mode)).
 
-The same `connect` command is what a prepared payload's
-`bin/connect` entry points at, so driving a packaged app from an
-external renderer is possible but requires adding `PLUSHIE_SOCKET`
-and `PLUSHIE_TOKEN` to `[start].forward_env` so the launcher passes
-the variables through. This is not a default-on configuration. The
-PyInstaller payload's frozen host executable embeds the same entry
+Driving a packaged PyInstaller app from an external renderer is
+possible but requires adding `PLUSHIE_SOCKET` and `PLUSHIE_TOKEN`
+to `[start].forward_env` so the launcher passes the variables
+through. This is not a default-on configuration. The PyInstaller
+payload's frozen host executable embeds the same `connect` entry
 point and behaves the same way when those variables are forwarded.
 
 ## See also

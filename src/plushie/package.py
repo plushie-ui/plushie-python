@@ -65,11 +65,24 @@ def package_target() -> str:
     return normalize_package_target(platform.system(), platform.machine())
 
 
+_PLACEHOLDER_HOST_NAME = "<app>"
+
+
 def default_start_config(command: list[str] | None = None) -> PackageStartConfig:
-    """Return the default package start config for Python payloads."""
+    """Return the default package start config for Python payloads.
+
+    PyInstaller bakes the Python interpreter and entry into a single
+    host executable; there is no wrapper script. The default command
+    points at the placeholder host path the template tells the user
+    to edit.
+    """
     return PackageStartConfig(
         working_dir=".",
-        command=["bin/connect"] if command is None else command,
+        command=(
+            [_payload_host_executable_path(_PLACEHOLDER_HOST_NAME)]
+            if command is None
+            else command
+        ),
     )
 
 
@@ -81,7 +94,11 @@ def pyinstaller_start_config(name: str) -> PackageStartConfig:
 def render_package_config(config: PackageStartConfig | None = None) -> str:
     """Render a developer-owned package config template."""
     cfg = default_start_config() if config is None else config
-    command = cfg.command if cfg.command is not None else ["bin/connect"]
+    command = (
+        cfg.command
+        if cfg.command is not None
+        else [_payload_host_executable_path(_PLACEHOLDER_HOST_NAME)]
+    )
     lines = [
         "# Plushie standalone package config.",
         "# Commit this file and edit it when the packaged app needs a",
@@ -221,7 +238,7 @@ def package_pyinstaller_payload(
     hidden_import: list[str] | None = None,
     collect_submodules: list[str] | None = None,
     pyinstaller_arg: list[str] | None = None,
-    package_dir: str | Path = Path("dist") / "package",
+    package_dir: str | Path = "dist",
     dist_dir: str | Path = "dist",
     spec_dir: str | Path = Path("build") / "pyinstaller-spec",
     work_dir: str | Path = Path("build") / "pyinstaller",
@@ -241,6 +258,7 @@ def package_pyinstaller_payload(
     manifest_path = (
         Path(output) if output is not None else package_root / "plushie-package.toml"
     )
+    resolved_target = target or package_target()
 
     if renderer_path is None:
         prepared_renderer = _prepare_renderer_for_pyinstaller(renderer_kind)
@@ -268,7 +286,7 @@ def package_pyinstaller_payload(
         shutil.rmtree(payload_root)
     payload_root.mkdir(parents=True)
 
-    renderer_rel = _payload_renderer_path()
+    renderer_rel = _payload_renderer_path(resolved_target)
     renderer_dest = payload_root / renderer_rel
     renderer_dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(prepared_renderer, renderer_dest)
@@ -285,7 +303,7 @@ def package_pyinstaller_payload(
     _remove_nested_renderer(host_root)
 
     effective_start_command = (
-        [_payload_host_executable_path(name)]
+        [_payload_host_executable_path(name, resolved_target)]
         if start_command is None
         else start_command
     )
@@ -295,7 +313,7 @@ def package_pyinstaller_payload(
         app_id=app_id,
         app_name=app_name,
         app_version=app_version,
-        target=target,
+        target=resolved_target,
         renderer_kind=renderer_kind,
         renderer_path=renderer_rel,
         start_command=effective_start_command,
@@ -329,9 +347,7 @@ def package_prepared_payload(
     Returns the manifest path.
     """
     manifest_path = Path(
-        manifest_out
-        if manifest_out is not None
-        else "dist/package/plushie-package.toml"
+        manifest_out if manifest_out is not None else "dist/plushie-package.toml"
     )
 
     write_partial_manifest(
@@ -477,24 +493,34 @@ def _run_pyinstaller(
     subprocess.run(args, check=True)
 
 
-def _payload_renderer_path() -> str:
+def _is_windows_target(target: str | None) -> bool:
+    """Return True if the target triple denotes Windows.
+
+    Falls back to the host platform when no target is supplied.
+    """
+    if target is None:
+        return sys.platform in ("win32", "cygwin")
+    return target.lower().startswith("windows")
+
+
+def _payload_renderer_path(target: str | None = None) -> str:
     """Return the payload-relative path for the renderer binary."""
-    return f"bin/{_renderer_binary_name()}"
+    return f"bin/{_renderer_binary_name(target)}"
 
 
-def _payload_host_executable_path(name: str) -> str:
-    """Return the payload-relative path for the PyInstaller host executable."""
-    executable = f"{name}.exe" if sys.platform in ("win32", "cygwin") else name
+def _payload_host_executable_path(name: str, target: str | None = None) -> str:
+    """Return the payload-relative path for the PyInstaller host executable.
+
+    Driven by the package target so cross-compile manifests carry the
+    correct `.exe` suffix regardless of the build host.
+    """
+    executable = f"{name}.exe" if _is_windows_target(target) else name
     return f"host/{name}/{executable}"
 
 
-def _renderer_binary_name() -> str:
-    """Return the platform-appropriate renderer binary name."""
-    return (
-        "plushie-renderer.exe"
-        if sys.platform in ("win32", "cygwin")
-        else "plushie-renderer"
-    )
+def _renderer_binary_name(target: str | None = None) -> str:
+    """Return the target-appropriate renderer binary name."""
+    return "plushie-renderer.exe" if _is_windows_target(target) else "plushie-renderer"
 
 
 def _ensure_executable(path: Path) -> None:
