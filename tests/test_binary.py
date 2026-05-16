@@ -451,6 +451,7 @@ for release_name, local_name in [
         write_checksum(tool_asset)
 
         monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("PLUSHIE_RUST_SOURCE_PATH", raising=False)
         monkeypatch.setenv("PLUSHIE_RELEASE_BASE_URL", mirror.as_uri())
         monkeypatch.setattr(
             sys,
