@@ -261,6 +261,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
     working_dir = package_cfg.working_dir if package_cfg is not None else "."
     start_command = package_cfg.command if package_cfg is not None else None
     forward_env = package_cfg.forward_env if package_cfg is not None else None
+    platform_cfg = package_cfg.platform if package_cfg is not None else None
 
     if args.pyinstaller_entry is not None:
         name = args.pyinstaller_name or args.app_name
@@ -293,6 +294,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
             working_dir=working_dir,
             start_command=start_command,
             forward_env=forward_env,
+            platform=platform_cfg or {},
         )
         print(f"Wrote {result['manifest_path']}")
         print(f"Wrote {result['payload_archive']}")
@@ -329,6 +331,7 @@ def _cmd_package(args: argparse.Namespace) -> None:
         working_dir=working_dir,
         forward_env=forward_env,
         platform_icon=args.platform_icon,
+        platform=platform_cfg or {},
         payload_archive=args.payload_archive,
     )
     manifest_out = args.manifest_out or "dist/package/plushie-package.toml"

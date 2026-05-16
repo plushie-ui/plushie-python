@@ -23,6 +23,8 @@ from plushie.package import (
     write_package_config,
 )
 
+# ---- platform config helpers ----
+
 
 def test_normalize_package_target() -> None:
     assert normalize_package_target("Linux", "x86_64") == "linux-x86_64"
@@ -276,9 +278,7 @@ def test_package_pyinstaller_payload_assembles_archive_inputs(
         assert (root / "bin" / "plushie-renderer").read_bytes() == b"renderer"
         assert (root / "host" / "DataExplorer" / "DataExplorer").read_text() == "host"
         assert not (root / "host" / "DataExplorer" / "plushie-renderer").exists()
-        assert (
-            root / "assets" / "default-app-icon-512.png"
-        ).read_bytes() == b"icon"
+        assert (root / "assets" / "default-app-icon-512.png").read_bytes() == b"icon"
         Path(archive_path).write_bytes(b"archive")
 
     monkeypatch.setattr(
@@ -677,3 +677,178 @@ def test_archive_payload_rejects_symlinks(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="unsupported symlink"):
         archive_payload(payload, tmp_path / "payload.tar.zst")
+
+
+def _make_archive(tmp_path: Path) -> Path:
+    archive = tmp_path / "payload.tar.zst"
+    archive.write_bytes(b"payload")
+    return archive
+
+
+def test_render_manifest_platform_fields(tmp_path: Path) -> None:
+    archive = _make_archive(tmp_path)
+    manifest = manifest_for_payload(
+        app_id="dev.plushie.test",
+        app_version="1.0.0",
+        target="linux-x86_64",
+        renderer_path="bin/plushie-renderer",
+        start_command=["host/app"],
+        platform={
+            "publisher": "Example Corp",
+            "copyright": "Copyright 2025 Example Corp",
+            "category": "Productivity",
+            "description": "A great app",
+            "bundle_id": "com.example.myapp",
+        },
+        payload_archive=archive,
+    )
+    toml = render_manifest(manifest)
+    assert "[platform]" in toml
+    assert 'publisher = "Example Corp"' in toml
+    assert 'copyright = "Copyright 2025 Example Corp"' in toml
+    assert 'category = "Productivity"' in toml
+    assert 'description = "A great app"' in toml
+    assert 'bundle_id = "com.example.myapp"' in toml
+    assert "[platform.macos]" not in toml
+    assert "[platform.windows]" not in toml
+
+
+def test_render_manifest_platform_macos(tmp_path: Path) -> None:
+    archive = _make_archive(tmp_path)
+    manifest = manifest_for_payload(
+        app_id="dev.plushie.test",
+        app_version="1.0.0",
+        target="darwin-aarch64",
+        renderer_path="bin/plushie-renderer",
+        start_command=["host/app"],
+        platform={"macos": {"bundle_version": "42"}},
+        payload_archive=archive,
+    )
+    toml = render_manifest(manifest)
+    assert "[platform]" in toml
+    assert "[platform.macos]" in toml
+    assert 'bundle_version = "42"' in toml
+    assert "[platform.windows]" not in toml
+
+
+def test_render_manifest_platform_windows(tmp_path: Path) -> None:
+    archive = _make_archive(tmp_path)
+    manifest = manifest_for_payload(
+        app_id="dev.plushie.test",
+        app_version="1.0.0",
+        target="windows-x86_64",
+        renderer_path="bin/plushie-renderer",
+        start_command=["host/app"],
+        platform={"windows": {"install_scope": "perMachine"}},
+        payload_archive=archive,
+    )
+    toml = render_manifest(manifest)
+    assert "[platform]" in toml
+    assert "[platform.windows]" in toml
+    assert 'install_scope = "perMachine"' in toml
+    assert "[platform.macos]" not in toml
+
+
+def test_render_manifest_platform_omitted_when_empty(tmp_path: Path) -> None:
+    archive = _make_archive(tmp_path)
+    manifest = manifest_for_payload(
+        app_id="dev.plushie.test",
+        app_version="1.0.0",
+        target="linux-x86_64",
+        renderer_path="bin/plushie-renderer",
+        start_command=["host/app"],
+        payload_archive=archive,
+    )
+    toml = render_manifest(manifest)
+    assert "[platform]" not in toml
+
+
+def test_render_manifest_platform_icon_with_extra_fields(tmp_path: Path) -> None:
+    archive = _make_archive(tmp_path)
+    manifest = manifest_for_payload(
+        app_id="dev.plushie.test",
+        app_version="1.0.0",
+        target="linux-x86_64",
+        renderer_path="bin/plushie-renderer",
+        start_command=["host/app"],
+        platform_icon="assets/icon.png",
+        platform={"publisher": "Acme"},
+        payload_archive=archive,
+    )
+    toml = render_manifest(manifest)
+    assert "[platform]" in toml
+    assert 'icon = "assets/icon.png"' in toml
+    assert 'publisher = "Acme"' in toml
+
+
+def test_load_package_config_parses_platform(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    Path("plushie-package.config.toml").write_text(
+        "\n".join(
+            [
+                "config_version = 1",
+                "",
+                "[start]",
+                'working_dir = "."',
+                'command = ["host/app"]',
+                "",
+                "[platform]",
+                'publisher = "Acme"',
+                'bundle_id = "com.acme.app"',
+                "",
+                "[platform.macos]",
+                'bundle_version = "7"',
+                "",
+                "[platform.windows]",
+                'install_scope = "perUser"',
+            ]
+        )
+    )
+    config = load_package_config()
+    assert config is not None
+    assert config.platform.get("publisher") == "Acme"
+    assert config.platform.get("bundle_id") == "com.acme.app"
+    macos = config.platform.get("macos") or {}
+    assert macos.get("bundle_version") == "7"
+    windows = config.platform.get("windows") or {}
+    assert windows.get("install_scope") == "perUser"
+
+
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [
+        (
+            'config_version = 1\n[start]\nworking_dir = "."\n[platform]\npublisher = ""\n',
+            "platform.publisher must be a non-empty string",
+        ),
+        (
+            'config_version = 1\n[start]\nworking_dir = "."\n[platform.windows]\ninstall_scope = "invalid"\n',
+            'platform.windows.install_scope must be "perUser" or "perMachine"',
+        ),
+        (
+            'config_version = 1\n[start]\nworking_dir = "."\n[platform.macos]\nbundle_version = ""\n',
+            "platform.macos.bundle_version must be a non-empty string",
+        ),
+    ],
+)
+def test_load_package_config_validates_platform_fields(
+    tmp_path: Path,
+    content: str,
+    message: str,
+) -> None:
+    config_path = tmp_path / "plushie-package.config.toml"
+    config_path.write_text(content)
+    with pytest.raises(ValueError, match=message):
+        load_package_config(config_path)
+
+
+def test_render_package_config_includes_platform_template() -> None:
+    text = render_package_config()
+    assert "# [platform]" in text
+    assert "# publisher" in text
+    assert "# [platform.macos]" in text
+    assert "# [platform.windows]" in text
+    assert 'install_scope = "perUser"' in text or "install_scope" in text

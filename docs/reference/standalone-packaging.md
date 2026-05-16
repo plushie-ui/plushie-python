@@ -100,6 +100,31 @@ python -m plushie package \
   --payload-archive dist/package/payload.tar.zst
 ```
 
+## Platform metadata
+
+Optional metadata for the package manifest is declared in
+`plushie-package.config.toml` under `[platform]`:
+
+```toml
+[platform]
+publisher = "Example Corp"
+copyright = "Copyright 2025 Example Corp"
+category = "Productivity"
+description = "A desktop app built with Plushie"
+bundle_id = "com.example.myapp"
+
+[platform.macos]
+bundle_version = "1"
+
+[platform.windows]
+install_scope = "perUser"  # or "perMachine"
+```
+
+All fields are optional. The `[platform]` section is omitted from the
+emitted manifest entirely when no fields are populated. Set
+`--write-package-config` to generate a config template with all
+platform fields commented out.
+
 ## Demo Proof
 
 The current proof lives in:

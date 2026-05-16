@@ -371,6 +371,7 @@ as a reminder to enforce the strict tool gate for release builds.
 | `--renderer-path PATH` | Explicit renderer binary path in PyInstaller mode. Payload-relative renderer executable path in prepared mode, where it is required |
 | `--payload-archive PATH` | Payload archive to hash and record. Required in prepared mode |
 | `--platform-icon PATH` | Payload-relative app icon path for `[platform].icon` |
+| (via `plushie-package.config.toml`) | Additional `[platform]` metadata: `publisher`, `copyright`, `category`, `description`, `bundle_id`, `[platform.macos].bundle_version`, `[platform.windows].install_scope` |
 | `--manifest-out PATH` | Manifest output file path in prepared payload mode |
 | `--strict-tools` | Append `--strict-tools` to the printed handoff command |
 | `--package-config PATH` | Package config path. Defaults to `plushie-package.config.toml` when present |

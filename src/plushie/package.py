@@ -11,7 +11,7 @@ import stat
 import subprocess
 import sys
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Literal, TypedDict
 
@@ -33,6 +33,7 @@ RESERVED_FORWARD_ENV = frozenset(
     {"PLUSHIE_BINARY_PATH", "PLUSHIE_PACKAGE_DIR", "PLUSHIE_PACKAGE_READY_FILE"}
 )
 
+InstallScope = Literal["perUser", "perMachine"]
 RendererKind = Literal["stock", "custom"]
 
 
@@ -41,6 +42,30 @@ class RendererManifest(TypedDict):
 
     kind: RendererKind
     path: str
+
+
+class PlatformMacosConfig(TypedDict, total=False):
+    """macOS-specific platform fields from ``plushie-package.config.toml``."""
+
+    bundle_version: str
+
+
+class PlatformWindowsConfig(TypedDict, total=False):
+    """Windows-specific platform fields from ``plushie-package.config.toml``."""
+
+    install_scope: InstallScope
+
+
+class PlatformConfig(TypedDict, total=False):
+    """``[platform]`` fields from ``plushie-package.config.toml``."""
+
+    publisher: str
+    copyright: str
+    category: str
+    description: str
+    bundle_id: str
+    macos: PlatformMacosConfig
+    windows: PlatformWindowsConfig
 
 
 class PackageManifest(TypedDict):
@@ -52,6 +77,7 @@ class PackageManifest(TypedDict):
     target: str
     renderer: RendererManifest
     platform_icon: str | None
+    platform: PlatformConfig
     start_command: list[str]
     working_dir: str
     forward_env: list[str]
@@ -78,6 +104,7 @@ class PackageStartConfig:
     working_dir: str = "."
     command: list[str] | None = None
     forward_env: list[str] | None = None
+    platform: PlatformConfig = field(default_factory=dict)  # type: ignore[assignment]
 
 
 def normalize_package_target(os_name: str, arch: str) -> str:
@@ -176,7 +203,27 @@ def render_package_config(config: PackageStartConfig | None = None) -> str:
         "forward_env = [",
     ]
     lines.extend(f"  {_toml_string(name)}," for name in forward_env)
-    lines.extend(["]", ""])
+    lines.extend(
+        [
+            "]",
+            "",
+            "# Optional platform metadata passed through to plushie-package.toml.",
+            "# Remove the comment markers for any fields you want to set.",
+            "# [platform]",
+            '# publisher = "Example Corp"',
+            '# copyright = "Copyright 2025 Example Corp"',
+            '# category = "Productivity"',
+            '# description = "A brief description of the app"',
+            '# bundle_id = "com.example.myapp"',
+            "#",
+            "# [platform.macos]",
+            '# bundle_version = "1"',
+            "#",
+            "# [platform.windows]",
+            '# install_scope = "perUser"  # or "perMachine"',
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -218,11 +265,59 @@ def _parse_package_config(data: dict[str, Any], path: Path) -> PackageStartConfi
     if raw_forward_env is not None:
         forward_env = _validate_forward_env(raw_forward_env, path)
 
+    platform_config: PlatformConfig = {}
+    raw_platform = data.get("platform")
+    if raw_platform is not None:
+        platform_config = _parse_platform_config(raw_platform, path)
+
     return PackageStartConfig(
         working_dir=working_dir,
         command=command,
         forward_env=forward_env,
+        platform=platform_config,
     )
+
+
+def _parse_platform_config(data: object, path: Path) -> PlatformConfig:
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: [platform] must be a table")
+    result: PlatformConfig = {}
+    for key in ("publisher", "copyright", "category", "description", "bundle_id"):
+        raw = data.get(key)
+        if raw is not None:
+            if not isinstance(raw, str) or raw == "":
+                raise ValueError(f"{path}: platform.{key} must be a non-empty string")
+            result[key] = raw  # type: ignore[literal-required]
+    raw_macos = data.get("macos")
+    if raw_macos is not None:
+        if not isinstance(raw_macos, dict):
+            raise ValueError(f"{path}: [platform.macos] must be a table")
+        macos: PlatformMacosConfig = {}
+        raw_bundle_version = raw_macos.get("bundle_version")
+        if raw_bundle_version is not None:
+            if not isinstance(raw_bundle_version, str) or raw_bundle_version == "":
+                raise ValueError(
+                    f"{path}: platform.macos.bundle_version must be a non-empty string"
+                )
+            macos["bundle_version"] = raw_bundle_version
+        if macos:
+            result["macos"] = macos
+    raw_windows = data.get("windows")
+    if raw_windows is not None:
+        if not isinstance(raw_windows, dict):
+            raise ValueError(f"{path}: [platform.windows] must be a table")
+        windows: PlatformWindowsConfig = {}
+        raw_install_scope = raw_windows.get("install_scope")
+        if raw_install_scope is not None:
+            if raw_install_scope not in ("perUser", "perMachine"):
+                raise ValueError(
+                    f"{path}: platform.windows.install_scope must be"
+                    ' "perUser" or "perMachine"'
+                )
+            windows["install_scope"] = raw_install_scope
+        if windows:
+            result["windows"] = windows
+    return result
 
 
 def _validate_start_command(value: object, path: Path) -> list[str]:
@@ -271,6 +366,35 @@ def _validate_payload_relative_path(value: str, path: Path, field: str) -> None:
         raise ValueError(f"{path}: {field} must not contain parent traversal")
 
 
+def _render_platform_section(manifest: PackageManifest) -> list[str]:
+    """Return TOML lines for the ``[platform]`` section, or empty when nothing to emit."""
+    icon = manifest.get("platform_icon")
+    platform = manifest.get("platform") or {}
+    top_keys = ("publisher", "copyright", "category", "description", "bundle_id")
+    top_fields = {k: platform[k] for k in top_keys if k in platform}  # type: ignore[literal-required]
+    macos = platform.get("macos") or {}
+    windows = platform.get("windows") or {}
+    if not icon and not top_fields and not macos and not windows:
+        return []
+    lines: list[str] = ["[platform]"]
+    if icon is not None:
+        lines.append(f"icon = {_toml_string(icon)}")
+    for key, value in top_fields.items():
+        lines.append(f"{key} = {_toml_string(value)}")
+    lines.append("")
+    if macos:
+        lines.append("[platform.macos]")
+        if "bundle_version" in macos:
+            lines.append(f"bundle_version = {_toml_string(macos['bundle_version'])}")
+        lines.append("")
+    if windows:
+        lines.append("[platform.windows]")
+        if "install_scope" in windows:
+            lines.append(f"install_scope = {_toml_string(windows['install_scope'])}")
+        lines.append("")
+    return lines
+
+
 def render_manifest(manifest: PackageManifest) -> str:
     """Render a Plushie package manifest as TOML."""
     lines = [
@@ -299,14 +423,9 @@ def render_manifest(manifest: PackageManifest) -> str:
             "",
         ]
     )
-    if manifest["platform_icon"] is not None:
-        lines.extend(
-            [
-                "[platform]",
-                f"icon = {_toml_string(manifest['platform_icon'])}",
-                "",
-            ]
-        )
+    platform_lines = _render_platform_section(manifest)
+    if platform_lines:
+        lines.extend(platform_lines)
     lines.extend(
         [
             "[payload]",
@@ -337,6 +456,7 @@ def manifest_for_payload(
     target: str | None = None,
     renderer_kind: RendererKind = "stock",
     platform_icon: str | None = None,
+    platform: PlatformConfig | None = None,
     working_dir: str = ".",
     forward_env: list[str] | None = None,
 ) -> PackageManifest:
@@ -364,6 +484,7 @@ def manifest_for_payload(
             "path": renderer_path,
         },
         "platform_icon": platform_icon,
+        "platform": platform or {},
         "start_command": start_command,
         "working_dir": working_dir,
         "forward_env": resolved_forward_env,
@@ -396,6 +517,7 @@ def package_pyinstaller_payload(
     working_dir: str = ".",
     start_command: list[str] | None = None,
     forward_env: list[str] | None = None,
+    platform: PlatformConfig | None = None,
 ) -> PyInstallerPackageResult:
     """Build a PyInstaller payload and write ``plushie-package.toml``.
 
@@ -475,6 +597,7 @@ def package_pyinstaller_payload(
         working_dir=working_dir,
         forward_env=forward_env,
         platform_icon=platform_icon,
+        platform=platform,
         payload_archive=payload_archive,
     )
     write_manifest(manifest_path, manifest)
