@@ -220,24 +220,20 @@ production `Connection`; windowed mode does not pool.
 
 ## Before committing
 
-Run `./preflight`. It mirrors CI: ruff format check, ruff lint,
+Run `just preflight`. It mirrors CI: ruff format check, ruff lint,
 interrogate, pyright, pytest.
 
-When `PLUSHIE_RUST_SOURCE_PATH` is set to a plushie-rust checkout,
-preflight first rebuilds `plushie-renderer` from source (`cargo
-build --release -p plushie-renderer`) and exports
-`PLUSHIE_BINARY_PATH` so the test run uses the fresh binary. Tests
-exercise the real renderer, so a stale binary hides real bugs and
-surfaces phantom ones. Without `PLUSHIE_RUST_SOURCE_PATH` set, the
-existing binary resolution chain is used unchanged.
+`just preflight` syncs deps and runs `./bin/preflight`. The renderer
+source is controlled by `PLUSHIE_RUST_SOURCE_PATH`:
 
-When preflight does not exist yet, run the checks individually:
-```
-ruff format --check src tests
-ruff check src tests
-pyright src
-pytest
-```
+- Unset (default): auto-detected from `../plushie-rust` if it exists;
+  otherwise the existing binary resolution chain is used unchanged.
+- Set to a path: plushie-renderer is rebuilt from that checkout via
+  `cargo build --release -p plushie-renderer` and `PLUSHIE_BINARY_PATH`
+  is exported so all subsequent steps use the fresh binary. Guarantees
+  tests run against current source rather than a stale artifact.
+- Set to `""`: suppresses auto-detection; uses the existing binary
+  resolution chain (PLUSHIE_BINARY_PATH, downloaded binary, etc.).
 
 ## Commit hygiene
 
@@ -277,6 +273,15 @@ only appear as part of CLI flag names (e.g. `--watch`, `--release`).
 ## Quick reference
 
 ```
+just preflight                                           # run all CI checks locally
+PLUSHIE_RUST_SOURCE_PATH=../plushie-rust just preflight  # explicit renderer source (rebuilds from checkout)
+PLUSHIE_RUST_SOURCE_PATH="" just preflight               # force non-local (use downloaded binary)
+just test                              # run tests (mock backend)
+just fmt                               # auto-format
+just fmt-check                         # check formatting (CI mode)
+just lint                              # ruff check
+just typecheck                         # pyright
+just clean                             # remove gitignored build artifacts
 ruff format src tests examples         # auto-format
 ruff format --check src tests examples # check formatting (CI mode)
 ruff check src tests examples          # lint

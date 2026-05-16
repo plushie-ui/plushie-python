@@ -1,14 +1,27 @@
 #!/usr/bin/env bash
 # Mirrors CI: format check, lint, type check, test.
-# Run before committing.
+# Run via `just preflight` (handles deps and auto-detects renderer source)
+# or directly as `./bin/preflight`.
 #
 # When PLUSHIE_RUST_SOURCE_PATH points at a plushie-rust checkout,
 # rebuild plushie-renderer from that source first and export
 # PLUSHIE_BINARY_PATH so the test runs use the fresh binary. Tests
 # exercise the real renderer, so a stale binary hides real bugs and
-# surfaces phantom ones. Without the variable set, the existing
-# binary resolution chain is used unchanged.
+# surfaces phantom ones. When not set and ../plushie-rust exists,
+# it is auto-detected. Set PLUSHIE_RUST_SOURCE_PATH="" to force
+# non-local (use downloaded binary).
 set -euo pipefail
+
+# Auto-detect plushie-rust source if not explicitly set.
+# Set PLUSHIE_RUST_SOURCE_PATH="" to force non-local (skip auto-detect).
+if [[ -z "${PLUSHIE_RUST_SOURCE_PATH+x}" ]]; then
+    _candidate="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../plushie-rust"
+    if [[ -d "$_candidate" ]]; then
+        PLUSHIE_RUST_SOURCE_PATH="$(cd "$_candidate" && pwd)"
+        export PLUSHIE_RUST_SOURCE_PATH
+    fi
+    unset _candidate
+fi
 
 if [[ -n "${PLUSHIE_RUST_SOURCE_PATH:-}" ]]; then
     workspace="$(cd "$PLUSHIE_RUST_SOURCE_PATH" && pwd)"
@@ -27,20 +40,20 @@ if [[ -n "${PLUSHIE_RUST_SOURCE_PATH:-}" ]]; then
     echo "    using $PLUSHIE_BINARY_PATH"
 fi
 
-echo "==> ruff format --check"
-ruff format --check src tests examples
+echo "==> uv run ruff format --check"
+uv run ruff format --check src tests examples
 
-echo "==> ruff check"
-ruff check src tests examples
+echo "==> uv run ruff check"
+uv run ruff check src tests examples
 
-echo "==> interrogate"
-interrogate src/plushie/
+echo "==> uv run interrogate"
+uv run interrogate src/plushie/
 
-echo "==> pyright"
-pyright src tests examples
+echo "==> uv run pyright"
+uv run pyright src tests examples
 
-echo "==> pytest"
-pytest
+echo "==> uv run pytest"
+uv run pytest
 
 echo ""
 echo "All checks passed."

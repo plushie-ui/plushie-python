@@ -55,4 +55,3 @@ site/
 # Test snapshots (generated, not tracked)
 tests/snapshots/
 tests/screenshots/
-uv.lock
