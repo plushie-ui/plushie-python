@@ -529,6 +529,57 @@ def test_explicit_package_renderer_requires_managed_packaging_tools(
     assert source == "local-path"
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        (
+            {"renderer_path": "../../etc/shadow"},
+            "renderer_path must not contain parent traversal",
+        ),
+        (
+            {"renderer_path": "/usr/bin/renderer"},
+            "renderer_path must be payload-relative",
+        ),
+        (
+            {"start_command": ["/usr/bin/sh"]},
+            "start_command\\[0\\] must be payload-relative",
+        ),
+        (
+            {"start_command": ["../../../usr/bin/sh"]},
+            "start_command\\[0\\] must not contain parent traversal",
+        ),
+        (
+            {"working_dir": ""},
+            "working_dir must not be empty",
+        ),
+        (
+            {"working_dir": "/tmp"},
+            "working_dir must be payload-relative",
+        ),
+        (
+            {"platform_icon": "../../etc/icon.png"},
+            "platform_icon must not contain parent traversal",
+        ),
+    ],
+)
+def test_manifest_for_payload_validates_paths(
+    tmp_path: Path, kwargs: dict[str, object], match: str
+) -> None:
+    archive = tmp_path / "payload.tar.zst"
+    archive.write_bytes(b"payload")
+    base: dict[str, object] = {
+        "app_id": "dev.plushie.test",
+        "app_version": "0.1.0",
+        "target": "linux-x86_64",
+        "renderer_path": "bin/plushie-renderer",
+        "start_command": ["host/app"],
+        "payload_archive": archive,
+    }
+    base.update(kwargs)
+    with pytest.raises(ValueError, match=match):
+        manifest_for_payload(**base)  # type: ignore[arg-type]
+
+
 def test_archive_payload_rejects_symlinks(tmp_path: Path) -> None:
     payload = tmp_path / "payload"
     payload.mkdir()

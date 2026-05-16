@@ -344,6 +344,18 @@ def manifest_for_payload(
     forward_env: list[str] | None = None,
 ) -> PackageManifest:
     """Build manifest values for an existing payload archive."""
+    _sentinel = Path("<manifest_for_payload>")
+    _validate_payload_relative_path(renderer_path, _sentinel, "renderer_path")
+    _validate_payload_relative_path(working_dir, _sentinel, "working_dir")
+    if not start_command:
+        raise ValueError("manifest_for_payload: start_command must not be empty")
+    _validate_payload_relative_path(start_command[0], _sentinel, "start_command[0]")
+    if platform_icon is not None:
+        _validate_payload_relative_path(platform_icon, _sentinel, "platform_icon")
+    resolved_forward_env = list(
+        DEFAULT_FORWARD_ENV if forward_env is None else forward_env
+    )
+    _validate_forward_env(resolved_forward_env, _sentinel)
     archive_path = Path(payload_archive)
     return {
         "app_id": app_id,
@@ -358,9 +370,7 @@ def manifest_for_payload(
         "platform_icon": platform_icon,
         "start_command": start_command,
         "working_dir": working_dir,
-        "forward_env": list(
-            DEFAULT_FORWARD_ENV if forward_env is None else forward_env
-        ),
+        "forward_env": resolved_forward_env,
         "payload_archive": os.fspath(archive_path.name),
         "payload_hash": sha256_file(archive_path),
         "payload_size": file_size(archive_path),
