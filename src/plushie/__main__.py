@@ -119,6 +119,32 @@ def _load_project_config(project_dir: str | Path | None = None) -> dict[str, Any
 
 
 # ---------------------------------------------------------------------------
+# Native widget detection
+# ---------------------------------------------------------------------------
+
+
+def _app_has_native_widgets(pyproject_cfg: dict[str, Any] | None = None) -> bool:
+    """Return True if the project declares native widgets (extensions).
+
+    Checks ``[tool.plushie] extensions`` in ``pyproject.toml`` first, then
+    falls back to ``plushie_extensions.json`` for legacy projects.
+    """
+    cfg = pyproject_cfg if pyproject_cfg is not None else _load_pyproject_config()
+    if cfg.get("extensions"):
+        return True
+    json_path = Path("plushie_extensions.json")
+    if json_path.is_file():
+        try:
+            with open(json_path) as f:
+                data = json.load(f)
+            if data.get("extensions"):
+                return True
+        except (OSError, json.JSONDecodeError):
+            pass
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Command handlers
 # ---------------------------------------------------------------------------
 
@@ -251,6 +277,14 @@ def _cmd_package(args: argparse.Namespace) -> None:
 
     if args.app_id is None:
         print("error: --app-id is required", file=sys.stderr)
+        raise SystemExit(1)
+
+    if args.renderer_kind == "stock" and _app_has_native_widgets():
+        print(
+            "error: Native widget packaging requires a custom renderer. "
+            "Use --renderer-kind custom.",
+            file=sys.stderr,
+        )
         raise SystemExit(1)
 
     project_cfg = _load_project_config()

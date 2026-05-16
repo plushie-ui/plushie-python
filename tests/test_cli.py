@@ -694,6 +694,125 @@ def test_read_token_from_stdin_errors_on_wrong_shape(
     assert exc_info.value.code == 1
 
 
+def test_package_stock_renderer_rejected_when_native_widgets_in_pyproject(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--renderer-kind stock must fail before doing any payload work when native widgets are declared."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.plushie]\nextensions = [{kind = "rust", crate = "my_widget"}]\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli._cmd_package(
+            argparse.Namespace(
+                write_package_config=False,
+                app_id="dev.plushie.test",
+                app_name=None,
+                app_version=None,
+                package_config=None,
+                pyinstaller_entry=None,
+                target="linux-x86_64",
+                renderer_kind="stock",
+                renderer_path="bin/plushie-renderer",
+                payload_dir=str(tmp_path / "payload"),
+                start_command=["host/Test/Test"],
+                manifest_out=None,
+            )
+        )
+
+    assert exc_info.value.code == 1
+    err = capsys.readouterr().err
+    assert "Native widget packaging requires a custom renderer" in err
+    assert "Use --renderer-kind custom" in err
+    assert not (tmp_path / "payload").exists()
+
+
+def test_package_stock_renderer_rejected_when_native_widgets_in_json_file(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fallback plushie_extensions.json also triggers the stock-renderer rejection."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "plushie_extensions.json").write_text(
+        '{"extensions": [{"kind": "rust", "crate": "my_widget"}]}\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli._cmd_package(
+            argparse.Namespace(
+                write_package_config=False,
+                app_id="dev.plushie.test",
+                app_name=None,
+                app_version=None,
+                package_config=None,
+                pyinstaller_entry=None,
+                target="linux-x86_64",
+                renderer_kind="stock",
+                renderer_path="bin/plushie-renderer",
+                payload_dir=str(tmp_path / "payload"),
+                start_command=["host/Test/Test"],
+                manifest_out=None,
+            )
+        )
+
+    assert exc_info.value.code == 1
+    err = capsys.readouterr().err
+    assert "Native widget packaging requires a custom renderer" in err
+
+
+def test_package_custom_renderer_allowed_when_native_widgets_present(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """--renderer-kind custom must not be rejected even when native widgets are declared."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.plushie]\nextensions = [{kind = "rust", crate = "my_widget"}]\n',
+        encoding="utf-8",
+    )
+
+    calls: list[dict[str, Any]] = []
+
+    def fake_package_prepared_payload(**kwargs: Any) -> Path:
+        calls.append(kwargs)
+        manifest = tmp_path / "plushie-package.toml"
+        manifest.write_text("schema_version = 1\n")
+        return manifest
+
+    monkeypatch.setattr(
+        "plushie.package.package_prepared_payload",
+        fake_package_prepared_payload,
+    )
+
+    payload_dir = tmp_path / "payload"
+    payload_dir.mkdir()
+
+    cli._cmd_package(
+        argparse.Namespace(
+            write_package_config=False,
+            app_id="dev.plushie.test",
+            app_name=None,
+            app_version=None,
+            package_config=None,
+            pyinstaller_entry=None,
+            target="linux-x86_64",
+            renderer_kind="custom",
+            renderer_path="bin/plushie-renderer",
+            payload_dir=str(payload_dir),
+            start_command=["host/Test/Test"],
+            manifest_out=None,
+        )
+    )
+
+    assert calls, "package_prepared_payload should have been called"
+
+
 def test_package_prepared_payload_writes_and_assembles(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
