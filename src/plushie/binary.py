@@ -454,6 +454,33 @@ def resolve() -> str:
 
 
 # ---------------------------------------------------------------------------
+# Download helpers
+# ---------------------------------------------------------------------------
+
+_DOWNLOAD_TIMEOUT = 30
+"""Socket timeout in seconds for HTTP downloads. Applied per-read, so a
+wedged mirror eventually times out rather than blocking indefinitely."""
+
+
+def _download_to_file(url: str, dest: Path) -> None:
+    """Stream *url* to *dest* with a socket timeout.
+
+    Raises:
+        urllib.error.HTTPError: On a non-200 HTTP response.
+        urllib.error.URLError: On network errors or timeout.
+    """
+    with (
+        urllib.request.urlopen(url, timeout=_DOWNLOAD_TIMEOUT) as resp,
+        dest.open("wb") as out,
+    ):
+        while True:
+            chunk = resp.read(1024 * 1024)
+            if not chunk:
+                break
+            out.write(chunk)
+
+
+# ---------------------------------------------------------------------------
 # Download
 # ---------------------------------------------------------------------------
 
@@ -506,7 +533,7 @@ def download(
     logger.info("downloading plushie binary from %s", url)
 
     try:
-        urllib.request.urlretrieve(url, str(dest))
+        _download_to_file(url, dest)
     except urllib.error.HTTPError as exc:
         raise RuntimeError(
             f"failed to download plushie binary from {url}: "
@@ -546,7 +573,7 @@ def download_tool(
     logger.info("downloading plushie tool from %s", url)
 
     try:
-        urllib.request.urlretrieve(url, str(dest))
+        _download_to_file(url, dest)
     except urllib.error.HTTPError as exc:
         raise RuntimeError(
             f"failed to download plushie tool from {url}: HTTP {exc.code} {exc.reason}"
@@ -672,7 +699,7 @@ def download_wasm(
     logger.info("downloading WASM bundle from %s", url)
 
     try:
-        urllib.request.urlretrieve(url, str(tarball))
+        _download_to_file(url, tarball)
     except urllib.error.HTTPError as exc:
         raise RuntimeError(
             f"failed to download WASM bundle from {url}: "

@@ -278,7 +278,7 @@ class TestDownloadForce:
                 "plushie.binary.release_name",
                 return_value="plushie-renderer-linux-x86_64",
             ),
-            patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
+            patch("plushie.binary._download_to_file") as mock_download,
             patch("plushie.binary._verify_checksum") as mock_verify,
             patch("plushie.binary.sys") as mock_sys,
         ):
@@ -286,29 +286,27 @@ class TestDownloadForce:
             existing = tmp_path / "plushie-renderer"
             existing.write_bytes(b"old binary")
 
-            mock_retrieve.side_effect = lambda url, dest: Path(dest).write_bytes(b"new")
+            mock_download.side_effect = lambda url, dest: dest.write_bytes(b"new")
 
             download(version="0.4.0", force=True)
 
-            mock_retrieve.assert_called_once()
+            mock_download.assert_called_once()
             mock_verify.assert_called_once()
 
     def test_download_tool_uses_plushie_release_asset(self, tmp_path: Path) -> None:
         with (
             patch("plushie.binary.download_dir", return_value=tmp_path),
-            patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
+            patch("plushie.binary._download_to_file") as mock_download,
             patch("plushie.binary._verify_checksum") as mock_verify,
             patch("plushie.binary.sys") as mock_sys,
         ):
             mock_sys.platform = "linux"
-            mock_retrieve.side_effect = lambda _url, dest: Path(dest).write_bytes(
-                b"tool"
-            )
+            mock_download.side_effect = lambda _url, dest: dest.write_bytes(b"tool")
 
             result = download_tool(version="0.4.0", force=True)
 
             assert result == str(tmp_path / "plushie")
-            assert "plushie-linux-" in mock_retrieve.call_args.args[0]
+            assert "plushie-linux-" in mock_download.call_args.args[0]
             mock_verify.assert_called_once()
 
     def test_download_tool_uses_alternate_release_base_url(
@@ -488,12 +486,12 @@ class TestDownloadVersionValidation:
     ) -> None:
         with (
             patch("plushie.binary.download_dir", return_value=tmp_path),
-            patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
+            patch("plushie.binary._download_to_file") as mock_download,
             pytest.raises(ValueError, match="invalid plushie release version"),
         ):
             download(version=version, force=True)
 
-        mock_retrieve.assert_not_called()
+        mock_download.assert_not_called()
 
     def test_download_accepts_prerelease_and_build_metadata(
         self, tmp_path: Path
@@ -504,18 +502,16 @@ class TestDownloadVersionValidation:
                 "plushie.binary.release_name",
                 return_value="plushie-renderer-linux-x86_64",
             ),
-            patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
+            patch("plushie.binary._download_to_file") as mock_download,
             patch("plushie.binary._verify_checksum"),
             patch("plushie.binary.sys") as mock_sys,
         ):
             mock_sys.platform = "linux"
-            mock_retrieve.side_effect = lambda url, dest: Path(dest).write_bytes(
-                b"binary"
-            )
+            mock_download.side_effect = lambda url, dest: dest.write_bytes(b"binary")
 
             download(version="0.6.1-rc.1+build.5", force=True)
 
-        url = mock_retrieve.call_args.args[0]
+        url = mock_download.call_args.args[0]
         assert "/v0.6.1-rc.1+build.5/plushie-renderer-linux-x86_64" in url
 
 
@@ -531,24 +527,21 @@ class TestDownloadWasmForce:
     def test_redownload_when_forced(self, tmp_path: Path) -> None:
         with (
             patch("plushie.binary.wasm_dir", return_value=tmp_path),
-            patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
+            patch("plushie.binary._download_to_file") as mock_download,
             patch("plushie.binary._verify_checksum") as mock_verify,
             patch("plushie.binary.tarfile.open") as mock_taropen,
         ):
             (tmp_path / "plushie_renderer_wasm.js").write_text("js")
             (tmp_path / "plushie_renderer_wasm_bg.wasm").write_bytes(b"wasm")
 
-            def fake_retrieve(url: str, dest: str) -> None:
-                Path(dest).write_bytes(b"fake tar")
-
-            mock_retrieve.side_effect = fake_retrieve
+            mock_download.side_effect = lambda _url, dest: dest.write_bytes(b"fake tar")
             mock_tf = MagicMock()
             mock_taropen.return_value.__enter__ = lambda s: mock_tf
             mock_taropen.return_value.__exit__ = MagicMock(return_value=False)
 
             download_wasm(version="0.4.0", force=True)
 
-            mock_retrieve.assert_called_once()
+            mock_download.assert_called_once()
             mock_verify.assert_called_once()
 
 
@@ -559,32 +552,30 @@ class TestDownloadWasmVersionValidation:
     ) -> None:
         with (
             patch("plushie.binary.wasm_dir", return_value=tmp_path),
-            patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
+            patch("plushie.binary._download_to_file") as mock_download,
             pytest.raises(ValueError, match="invalid plushie release version"),
         ):
             download_wasm(version=version, force=True)
 
-        mock_retrieve.assert_not_called()
+        mock_download.assert_not_called()
 
     def test_download_wasm_accepts_prerelease_and_build_metadata(
         self, tmp_path: Path
     ) -> None:
         with (
             patch("plushie.binary.wasm_dir", return_value=tmp_path),
-            patch("plushie.binary.urllib.request.urlretrieve") as mock_retrieve,
+            patch("plushie.binary._download_to_file") as mock_download,
             patch("plushie.binary._verify_checksum"),
             patch("plushie.binary.tarfile.open") as mock_taropen,
         ):
-            mock_retrieve.side_effect = lambda url, dest: Path(dest).write_bytes(
-                b"fake tar"
-            )
+            mock_download.side_effect = lambda _url, dest: dest.write_bytes(b"fake tar")
             mock_tf = MagicMock()
             mock_taropen.return_value.__enter__ = lambda s: mock_tf
             mock_taropen.return_value.__exit__ = MagicMock(return_value=False)
 
             download_wasm(version="0.6.1-rc.1+build.5", force=True)
 
-        url = mock_retrieve.call_args.args[0]
+        url = mock_download.call_args.args[0]
         assert "/v0.6.1-rc.1+build.5/plushie-renderer-wasm.tar.gz" in url
 
 
