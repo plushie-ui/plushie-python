@@ -260,6 +260,8 @@ def _validate_forward_env(value: object, path: Path) -> list[str]:
 
 
 def _validate_payload_relative_path(value: str, path: Path, field: str) -> None:
+    if value == "":
+        raise ValueError(f"{path}: {field} must not be empty")
     posix_candidate = PurePosixPath(value)
     windows_candidate = PureWindowsPath(value)
     if posix_candidate.is_absolute() or windows_candidate.is_absolute():

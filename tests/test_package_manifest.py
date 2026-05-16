@@ -181,6 +181,10 @@ def test_render_package_config_defaults_to_connect_entrypoint() -> None:
     [
         ("config_version = 2\n", "config_version must be 1"),
         (
+            'config_version = 1\n[start]\nworking_dir = ""\n',
+            "start.working_dir must not be empty",
+        ),
+        (
             'config_version = 1\n[start]\nworking_dir = "/tmp/app"\n',
             "start.working_dir must be payload-relative",
         ),
