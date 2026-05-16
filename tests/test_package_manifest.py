@@ -244,9 +244,9 @@ def test_package_pyinstaller_payload_assembles_archive_inputs(
         assert kwargs["collect_submodules"] == ["plushie"]
 
     def fake_run_default_icons(out_dir: str) -> None:
-        out_dir = Path(out_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / "plushie-checkbox-512x512.png").write_bytes(b"icon")
+        out_path = Path(out_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+        (out_path / "plushie-checkbox-512x512.png").write_bytes(b"icon")
 
     def fake_archive_payload(
         payload_root: str | Path, archive_path: str | Path

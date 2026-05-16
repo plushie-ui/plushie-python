@@ -573,12 +573,12 @@ def test_package_command_runs_portable_launcher(
     assert "Build launcher with:" not in output
     assert calls == [
         [
-                "bin/plushie",
-                "tools",
-                "check",
-                "--required-version",
-                PLUSHIE_RUST_VERSION,
-            ],
+            "bin/plushie",
+            "tools",
+            "check",
+            "--required-version",
+            PLUSHIE_RUST_VERSION,
+        ],
         [
             "bin/plushie",
             "package",
@@ -588,5 +588,5 @@ def test_package_command_runs_portable_launcher(
             "--out",
             "dist/portable/TestApp",
             "--strict-tools",
-        ]
+        ],
     ]
